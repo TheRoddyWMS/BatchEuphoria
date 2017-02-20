@@ -7,8 +7,6 @@ import de.dkfz.execution.jobs.Command
  */
 public interface ExecutionService {
 
-    public ExecutionService getInstance()
-
     public void execute(Command command)
 
     public void execute(String command, boolean waitFor)
