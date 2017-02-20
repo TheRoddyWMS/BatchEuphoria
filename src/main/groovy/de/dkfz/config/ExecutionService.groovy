@@ -11,5 +11,7 @@ public interface ExecutionService {
 
     public void execute(Command command)
 
+    public void execute(String command, boolean waitFor)
 
-    }
+
+}

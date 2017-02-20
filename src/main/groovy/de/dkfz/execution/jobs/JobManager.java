@@ -7,6 +7,7 @@
 package de.dkfz.execution.jobs;
 
 import de.dkfz.config.AppConfig;
+import de.dkfz.config.ExecutionService;
 import de.dkfz.config.ResourceSet;
 import de.dkfz.eilslabs.tools.logging.LoggerWrapper;
 
@@ -112,7 +113,7 @@ public abstract class JobManager<C extends Command> {
      */
     public abstract Map<String, JobState> queryJobStatus(List<String> jobIDs);
 
-    public abstract void queryJobAbortion(List<Job> executedJobs);
+    public abstract void queryJobAbortion(List<Job> executedJobs,  ExecutionService executionService);
 
     public abstract void addJobStatusChangeListener(Job job);
 
