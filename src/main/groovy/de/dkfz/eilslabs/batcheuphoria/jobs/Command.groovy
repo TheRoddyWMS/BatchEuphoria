@@ -41,16 +41,19 @@ abstract class Command {
     /**
      * Parameters for the qsub command
      */
-    protected Map<String, String> parameters
+    protected final Map<String, String> parameters = [:]
 
     /**
      * A list of named tags for the command object
      */
-    private Map<String, Object> commandTags
+    private final Map<String, Object> commandTags = [:]
 
-    protected Command(Job job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
-        this.commandTags = commandTags
-        this.parameters = parameters ?: new LinkedHashMap<String, String>()
+    protected final JobManager parentJobManager
+
+    protected Command(JobManager parentJobManager, Job job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
+        this.parentJobManager = parentJobManager
+        this.commandTags.putAll(commandTags ?: [:])
+        this.parameters.putAll(parameters ?: [:])
         this.creatingJob = job
         this.id = id
     }

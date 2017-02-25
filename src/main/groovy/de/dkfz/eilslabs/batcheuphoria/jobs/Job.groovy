@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong
  * object.
  */
 @groovy.transform.CompileStatic
-class Job {
+class Job<J extends Job> {
 
 
     public static class FakeJob extends Job {
@@ -66,7 +66,7 @@ class Job {
      */
     protected final List<String> arrayIndices
 
-    protected final List<Job> parentJobs
+    protected final List<J> parentJobs
 
     /**
      * You should provide i.e. job ids of qsub jobs to automatically create job
@@ -99,6 +99,7 @@ class Job {
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
+//        this.dependencyIDs = parentJobs.collect { Job job -> job.jobID ?: null }.findAll { String it -> it }
     }
 
     private void setJobType(JobType jobType) {
@@ -235,7 +236,7 @@ class Job {
         return processingCommand
     }
 
-    List<Job> getParentJobs() {
+    List<J> getParentJobs() {
         return parentJobs
     }
 

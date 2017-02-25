@@ -8,8 +8,10 @@ package de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs
 
 import de.dkfz.eilslabs.batcheuphoria.jobs.Command
 import de.dkfz.eilslabs.batcheuphoria.jobs.Job
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import de.dkfz.roddy.tools.AppConfig
 import de.dkfz.roddy.tools.LoggerWrapper
 
@@ -75,8 +77,8 @@ class PBSCommand extends Command {
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(Job job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
-        super(job, id, parameters, tags)
+    PBSCommand(PBSJobManager parentManager, Job job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+        super(parentManager, job, id, parameters, tags)
         this.processingCommands = processingCommands
         this.command = command
         this.loggingDirectory = loggingDirectory
@@ -144,10 +146,11 @@ class PBSCommand extends Command {
     @Override
     String toString() {
 
-        String email = configuration.getProperty("email")
-        String groupList = configuration.getProperty("outputFileGroup", null)
-        String accountName = configuration.getProperty("PBS_AccountName", "")
-
+        String email = parentJobManager.getUserEmail()
+        String umask = parentJobManager.getUserMask()
+        String groupList = parentJobManager.getUserGroup()
+        String accountName = parentJobManager.getUserAccount()
+        boolean useParameterFile = parentJobManager.isParameterFileEnabled()
 
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
@@ -182,7 +185,7 @@ class PBSCommand extends Command {
         if (groupList != EMPTY && groupList != "UNDEFINED") {
             qsubCall << getGroupListString(groupList)
         }
-        qsubCall << getUmaskString(configuration.getProperty("umask", ""))
+        qsubCall << getUmaskString(umask)
 
         for (ProcessingCommands pcmd in job.getListOfProcessingCommand()) {
             if (!(pcmd instanceof PBSResourceProcessingCommand)) continue
@@ -196,14 +199,15 @@ class PBSCommand extends Command {
 
         qsubCall << assembleVariableExportString()
 
-        qsubCall << " " << configuration.getProperty("ProcessingToolPath")
+        qsubCall << " " << job.getTool().getAbsolutePath()
         return qsubCall
     }
 
     protected String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
-        qsubCall << getVariablesParameter() + PARM_WRAPPED_SCRIPT << command
-        qsubCall << ",PARAMETER_FILE=" << parameterFile
+        //TODO Properly support parameter files.
+//        qsubCall << getVariablesParameter() + PARM_WRAPPED_SCRIPT << command
+//        qsubCall << ",PARAMETER_FILE=" << parameterFile
         return qsubCall
     }
 

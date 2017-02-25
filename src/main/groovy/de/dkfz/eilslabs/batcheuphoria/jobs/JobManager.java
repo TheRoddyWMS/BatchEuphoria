@@ -48,6 +48,16 @@ public abstract class JobManager<C extends Command> {
 
     protected String userIDForQueries;
 
+    private String userEmail;
+
+    private String userMask;
+
+    private String userGroup;
+
+    private String userAccount;
+
+    private boolean isParameterFileEnabled;
+
     public JobManager(ExecutionService executionService, AppConfig config, boolean createDaemon) {
         this.executionService = executionService;
         //Create a daemon thread which automatically calls queryJobStatus from time to time...
@@ -97,7 +107,7 @@ public abstract class JobManager<C extends Command> {
     public abstract C createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings);
 
     public C createCommand(Job job, File tool, List<String> dependencies) {
-        C c = createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies, job.arrayIndices);
+        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies, job.arrayIndices);
         c.setJob(job);
         return c;
     }
@@ -195,18 +205,82 @@ public abstract class JobManager<C extends Command> {
 
     public abstract String getStringForRunningJob();
 
-    public abstract String getJobIDIdentifier();
+    public String getJobIDIdentifier() {
+        return jobIDIdentifier;
+    }
 
-    public abstract String getJobArrayIndexIdentifier();
+    public void setJobIDIdentifier(String jobIDIdentifier) {
+        this.jobIDIdentifier = jobIDIdentifier;
+    }
 
-    public abstract String getJobScratchIdentifier();
+    public String getJobArrayIndexIdentifier() {
+        return jobArrayIndexIdentifier;
+    }
+
+    public void setJobArrayIndexIdentifier(String jobArrayIndexIdentifier) {
+        this.jobArrayIndexIdentifier = jobArrayIndexIdentifier;
+    }
+
+    public String getJobScratchIdentifier() {
+        return jobScratchIdentifier;
+    }
+
+    public void setJobScratchIdentifier(String jobScratchIdentifier) {
+        this.jobScratchIdentifier = jobScratchIdentifier;
+    }
+
+    public abstract String getSpecificJobIDIdentifier();
+
+    public abstract String getSpecificJobArrayIndexIdentifier();
+
+    public abstract String getSpecificJobScratchIdentifier();
 
     Map<String, String> getSpecificEnvironmentSettings() {
         Map<String, String> map = new LinkedHashMap<>();
-        map.put(jobIDIdentifier, getJobIDIdentifier());
-        map.put(jobArrayIndexIdentifier, getJobArrayIndexIdentifier());
-        map.put(jobScratchIdentifier, getJobScratchIdentifier());
+        map.put(jobIDIdentifier, getSpecificJobIDIdentifier());
+        map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier());
+        map.put(jobScratchIdentifier, getSpecificJobScratchIdentifier());
         return map;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserMask(String userMask) {
+        this.userMask = userMask;
+    }
+
+    public String getUserMask() {
+        return userMask;
+    }
+
+    public void setUserGroup(String userGroup) {
+        this.userGroup = userGroup;
+    }
+
+    public String getUserGroup() {
+        return userGroup;
+    }
+
+    public void setUserAccount(String userAccount) {
+        this.userAccount = userAccount;
+    }
+
+    public String getUserAccount() {
+        return userAccount;
+    }
+
+    public void setParameterFileEnabled(boolean parameterFileEnabled) {
+        isParameterFileEnabled = parameterFileEnabled;
+    }
+
+    public boolean isParameterFileEnabled() {
+        return isParameterFileEnabled;
     }
 
     /**
@@ -257,4 +331,5 @@ public abstract class JobManager<C extends Command> {
     public abstract String parseJobID(String commandOutput);
 
     public abstract String getSubmissionCommand();
+
 }

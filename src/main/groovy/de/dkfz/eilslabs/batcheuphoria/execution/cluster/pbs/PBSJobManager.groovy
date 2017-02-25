@@ -62,9 +62,19 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //    }
 
     @Override
+    PBSCommand createCommand(GenericJobInfo jobInfo) {
+        throw new NotImplementedException()
+    }
+
+//    @Override
     PBSCommand createCommand(Job job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters,  Map<String, Object> tags, List<String> dependencies, List<String> arraySettings, File logDirectory) {
-        PBSCommand pbsCommand = new PBSCommand(job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
+        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
         return pbsCommand
+    }
+
+    @Override
+    PBSCommand createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+        throw new NotImplementedException()
     }
 
     @Override
@@ -75,6 +85,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     JobResult runJob(Job job, boolean runDummy) {
+//        createCommand(job, job.jobName, null, job.tool, job.parameters, job.dependencyIDs, )
+//        executionService.execute()
         throw new NotImplementedException()
     }
 
@@ -482,17 +494,17 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    String getJobIDIdentifier() {
+    String getSpecificJobIDIdentifier() {
         return PBS_JOBID
     }
 
     @Override
-    String getJobArrayIndexIdentifier() {
+    String getSpecificJobArrayIndexIdentifier() {
         return PBS_ARRAYID
     }
 
     @Override
-    String getJobScratchIdentifier() {
+    String getSpecificJobScratchIdentifier() {
         return PBS_SCRATCH
     }
 
@@ -618,13 +630,5 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return PBSCommand.QSUB
     }
 
-    @Override
-    PBSCommand createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
 
-    @Override
-    PBSCommand createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
-        throw new NotImplementedException()
-    }
 }
