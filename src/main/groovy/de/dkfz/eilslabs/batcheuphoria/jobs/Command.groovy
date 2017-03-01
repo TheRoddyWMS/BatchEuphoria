@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2017 eilslabs.
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
@@ -20,10 +20,6 @@ import groovy.transform.CompileStatic
 @CompileStatic
 abstract class Command {
 
-    /**
-     * Static incremental counter for pipeline commands.
-     */
-    protected static volatile int idCounter = -1
     /**
      * The id of this command.
      */
@@ -56,10 +52,6 @@ abstract class Command {
         this.parameters.putAll(parameters ?: [:])
         this.creatingJob = job
         this.id = id
-    }
-
-    protected static synchronized int getNextIDCountValue() {
-        return ++idCounter
     }
 
     final void setExecutionID(JobDependencyID id) {

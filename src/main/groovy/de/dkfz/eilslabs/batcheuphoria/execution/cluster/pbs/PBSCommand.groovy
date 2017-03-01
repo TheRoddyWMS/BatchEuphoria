@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2017 eilslabs.
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
@@ -11,8 +11,6 @@ import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
-import de.dkfz.roddy.tools.AppConfig
 import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.logging.Level

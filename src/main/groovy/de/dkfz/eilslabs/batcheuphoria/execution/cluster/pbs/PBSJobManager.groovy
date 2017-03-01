@@ -4,7 +4,7 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.cluster.pbs
+package de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs
 
 import de.dkfz.eilslabs.batcheuphoria.Constants
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
@@ -16,6 +16,8 @@ import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSResourceProcessin
 import de.dkfz.eilslabs.batcheuphoria.jobs.GenericJobInfo
 import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobResult
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobState
 import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
@@ -50,8 +52,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     private Map<String, Boolean> mapOfInitialQueries = new LinkedHashMap<>()
 
-    PBSJobManager(ExecutionService executionService, AppConfig config = null, boolean createDaemon = true) {
-        super(executionService, null, createDaemon)
+    PBSJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+        super(executionService, parms)
     }
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
@@ -418,7 +420,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 }
             }
 
-            logger.severe("Reading out job stattes from job state logfiles is not possible yet!")
+            logger.severe("Reading out job states from job state logfiles is not possible yet!")
 
             // I don't currently know, if the jslisteners are used.
 //            //Create a local cache of jobstate logfile entries.

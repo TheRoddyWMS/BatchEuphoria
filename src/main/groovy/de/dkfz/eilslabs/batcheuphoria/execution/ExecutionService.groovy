@@ -18,6 +18,8 @@ interface ExecutionService {
 
     ExecutionResult execute(Command command)
 
+    ExecutionResult execute(Command command, boolean waitFor)
+
     ExecutionResult execute(String command)
 
     ExecutionResult execute(String command, boolean waitFor)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2017 eilslabs.
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
@@ -27,18 +27,5 @@ public abstract class JobDependencyID implements Serializable {
     public abstract String getShortID();
 
     public abstract boolean isArrayJob();
-    /*
-    public static FakeJobID getNotExecutedFakeJob(Job job) {
-        return getNotExecutedFakeJob(job, false);
-    }
-    public static FakeJobID getNotExecutedFakeJob(Job job, boolean array) {
-        return new FakeJobID(job, FakeJobReason.NOT_EXECUTED,array);
-    }
 
-    public static FakeJobID getFileExistedFakeJob(ExecutionContext context) {
-        return getFileExistedFakeJob(new Job.FakeJob(context), false);
-    }
-    public static FakeJobID getFileExistedFakeJob(Job job, boolean array) {
-        return new FakeJobID(job, FakeJobReason.FILE_EXISTED, array);
-    }*/
 }

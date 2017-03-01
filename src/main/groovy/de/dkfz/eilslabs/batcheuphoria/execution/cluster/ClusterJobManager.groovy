@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2017 eilslabs.
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
@@ -8,9 +8,11 @@ package de.dkfz.eilslabs.batcheuphoria.execution.cluster;
 
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService;
 import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSCommand;
-import de.dkfz.eilslabs.batcheuphoria.jobs.Command;
+import de.dkfz.eilslabs.batcheuphoria.jobs.Command
+import de.dkfz.eilslabs.batcheuphoria.jobs.FakeJob;
 import de.dkfz.eilslabs.batcheuphoria.jobs.Job;
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager;
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters;
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobState;
 import de.dkfz.roddy.tools.AppConfig;
 import de.dkfz.roddy.tools.LoggerWrapper;
@@ -28,8 +30,8 @@ public abstract class ClusterJobManager<C extends Command> extends JobManager<C>
 
     public static final String CVALUE_ENFORCE_SUBMISSION_TO_NODES="enforceSubmissionToNodes";
 
-    public ClusterJobManager(ExecutionService executionService, AppConfig config, boolean createDaemon) {
-        super(executionService, config, createDaemon);
+    ClusterJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+        super(executionService, parms)
     }
 
     @Override
@@ -40,7 +42,7 @@ public abstract class ClusterJobManager<C extends Command> extends JobManager<C>
         synchronized (listOfCreatedCommands) {
             for (Object _command : listOfCreatedCommands) {
                 PBSCommand command = (PBSCommand) _command
-                if (command.getJob() instanceof Job.FakeJob)
+                if (command.getJob() instanceof FakeJob)
                     continue
                 ids.add(command.getExecutionID().getShortID())
 //                ExecutionContext context = command.getExecutionContext();

@@ -7,16 +7,9 @@
 package de.dkfz.eilslabs.batcheuphoria.jobs;
 
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet;
-import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService;
-import de.dkfz.roddy.tools.AppConfig;
-import de.dkfz.roddy.tools.LoggerWrapper;
-import de.dkfz.roddy.tools.RoddyConversionHelperMethods;
-
-import java.io.File;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
+import de.dkfz.roddy.tools.LoggerWrapper
+import groovy.transform.CompileStatic
 
 /**
  * Basic factory and manager class for Job and Command management
@@ -24,15 +17,27 @@ import java.util.Map;
  *
  * @author michael
  */
+@CompileStatic
 public abstract class JobManager<C extends Command> {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(JobManager.class.getSimpleName());
 
-    protected String jobIDIdentifier = "BE_JOBID";
+    public static final int JOBMANAGER_DEFAULT_UPDATEINTERVAL = 300
+    public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true;
+    public static final boolean JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY = false
+    public static final boolean JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY = false
 
-    protected String jobArrayIndexIdentifier = "BE JOBARRAYINDEX";
+    public static final String BE_DEFAULT_JOBID = "BE_JOBID"
 
-    protected String jobScratchIdentifier = "BE JOBSCRATCH";
+    public static final String BE_DEFAULT_JOBARRAYINDEX = "BE JOBARRAYINDEX"
+
+    public static final String BE_DEFAULT_JOBSCRATCH = "BE JOBSCRATCH"
+
+    protected String jobIDIdentifier = BE_DEFAULT_JOBID;
+
+    protected String jobArrayIndexIdentifier = BE_DEFAULT_JOBARRAYINDEX;
+
+    protected String jobScratchIdentifier = BE_DEFAULT_JOBSCRATCH;
 
     protected final ExecutionService executionService;
 
@@ -58,13 +63,25 @@ public abstract class JobManager<C extends Command> {
 
     private boolean isParameterFileEnabled;
 
-    public JobManager(ExecutionService executionService, AppConfig config, boolean createDaemon) {
+    public JobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         this.executionService = executionService;
+
+        this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
+        this.queryOnlyStartedJobs = parms.trackOnlyStartedJobs
+        this.userIDForQueries = parms.userIdForJobQueries
+        if (!userIDForQueries && isTrackingOfUserJobsEnabled) {
+            logger.warning("Silently falling back to default job tracking behaviour. The user name was not set properly and the system cannot track the users jobs.")
+            isTrackingOfUserJobsEnabled = false
+        }
+        this.jobIDIdentifier = parms.jobIDIdentifier
+        this.jobScratchIdentifier = parms.jobScratchIdentifier
+        this.jobArrayIndexIdentifier = parms.jobArrayIDIdentifier
+
         //Create a daemon thread which automatically calls queryJobStatus from time to time...
         try {
-            if (createDaemon) {
-                int interval = RoddyConversionHelperMethods.toInt(config.getProperty("jobManagerUpdateInterval", "60"));
-                createUpdateDaemonThread(interval);
+            if (parms.createDaemon) {
+                int interval = parms.updateInterval
+                createUpdateDaemonThread(interval)
             }
         } catch (Exception ex) {
             logger.severe("Creating the command factory daemon failed for some reason. Roddy will not be able to query the job system.", ex);
@@ -83,7 +100,7 @@ public abstract class JobManager<C extends Command> {
             updateDaemonThread = null;
         }
 
-        updateDaemonThread = new Thread(() -> {
+        updateDaemonThread = Thread.startDaemon("Command factory update daemon.", {
             while (!closeThread) {
                 try {
                     updateJobStatus();
@@ -96,10 +113,7 @@ public abstract class JobManager<C extends Command> {
                     e.printStackTrace();
                 }
             }
-        });
-        updateDaemonThread.setName("Command factory update daemon.");
-        updateDaemonThread.setDaemon(true);
-        updateDaemonThread.start();
+        })
     }
 
     public abstract C createCommand(GenericJobInfo jobInfo);
@@ -235,7 +249,7 @@ public abstract class JobManager<C extends Command> {
 
     public abstract String getSpecificJobScratchIdentifier();
 
-    Map<String, String> getSpecificEnvironmentSettings() {
+    public Map<String, String> getSpecificEnvironmentSettings() {
         Map<String, String> map = new LinkedHashMap<>();
         map.put(jobIDIdentifier, getSpecificJobIDIdentifier());
         map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier());

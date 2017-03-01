@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2017 eilslabs.
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
@@ -17,15 +17,6 @@ import java.util.concurrent.atomic.AtomicLong
 class Job<J extends Job> {
 
 
-    public static class FakeJob extends Job {
-        public FakeJob() {
-            super("Fakejob", null, null, [], [:], []);
-        }
-
-//        public FakeJob(ExecutionContext context) {
-//            super(context, "Fakejob", null, null);
-//        }
-    }
 
 
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(Job.class.getSimpleName())
