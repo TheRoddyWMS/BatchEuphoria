@@ -20,49 +20,51 @@ import java.util.List;
  *
  * @author michael
  */
-public class JobResult implements Serializable {
-    /**
-     * The command which was used to create this result.
-     */
-    private final Command command;
-    /**
-     * The current job's id, i.e. qsub id.
-     * Used for dependencies.
-     */
-    private final JobDependencyID jobID;
-    /**
-     * Was the job executed?
-     */
-    private final boolean wasExecuted;
-    /**
-     * Was the job an array job?
-     */
-    private final boolean wasArray;
-    /**
-     * The tool which was run for this job.
-     */
-    private final File toolID;
-    /**
-     * Parameters for the job.
-     */
-    private final Map<String, String> jobParameters;
-    /**
-     * Parent jobs.
-     */
-    public transient final List<Job> parentJobs;
+public class JobResult extends de.dkfz.roddy.execution.jobs.JobResult implements Serializable {
+// Currently in base class for compatibility reasons
+    //    /**
+//     * The command which was used to create this result.
+//     */
+//    private final Command command;
+//    /**
+//     * The current job's id, i.e. qsub id.
+//     * Used for dependencies.
+//     */
+//    private final JobDependencyID jobID;
+//    /**
+//     * Was the job executed?
+//     */
+//    private final boolean wasExecuted;
+//    /**
+//     * Was the job an array job?
+//     */
+//    private final boolean wasArray;
+//    /**
+//     * The tool which was run for this job.
+//     */
+//    private final File toolID;
+//    /**
+//     * Parameters for the job.
+//     */
+//    private final Map<String, String> jobParameters;
+//    /**
+//     * Parent jobs.
+//     */
+//    public transient final List<Job> parentJobs;
 
     public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs);
     }
 
     public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
-        this.command = command;
-        this.jobID = jobID;
-        this.wasExecuted = wasExecuted;
-        this.wasArray = wasArray;
-        this.toolID = toolID;
-        this.jobParameters = jobParameters;
-        this.parentJobs = parentJobs;
+        super(command, jobID, wasExecuted, wasArray, toolID, jobParameters, parentJobs);
+//        this.command = command;
+//        this.jobID = jobID;
+//        this.wasExecuted = wasExecuted;
+//        this.wasArray = wasArray;
+//        this.toolID = toolID;
+//        this.jobParameters = jobParameters;
+//        this.parentJobs = parentJobs;
     }
 
 
@@ -84,35 +86,35 @@ public class JobResult implements Serializable {
         }
     }
 
-    public Command getCommand() {
-        return command;
-    }
-
-    public JobDependencyID getJobID() {
-        return jobID;
-    }
-
-    public boolean isWasExecuted() {
-        return wasExecuted;
-    }
-
-    public boolean isWasArray() {
-        return wasArray;
-    }
-
-    public File getToolID() {
-        return toolID;
-    }
-
-    public Job getJob() {
-        return jobID.job;
-    }
-
-    public Map<String, String> getJobParameters() {
-        return jobParameters;
-    }
-
-    public List<Job> getParentJobs() {
-        return parentJobs;
-    }
+//    public Command getCommand() {
+//        return command;
+//    }
+//
+//    public JobDependencyID getJobID() {
+//        return jobID;
+//    }
+//
+//    public boolean isWasExecuted() {
+//        return wasExecuted;
+//    }
+//
+//    public boolean isWasArray() {
+//        return wasArray;
+//    }
+//
+//    public File getToolID() {
+//        return toolID;
+//    }
+//
+//    public Job getJob() {
+//        return jobID.job;
+//    }
+//
+//    public Map<String, String> getJobParameters() {
+//        return jobParameters;
+//    }
+//
+//    public List<Job> getParentJobs() {
+//        return parentJobs;
+//    }
 }

@@ -10,6 +10,9 @@ package de.dkfz.eilslabs.batcheuphoria.execution.direct.synchronousexecution;
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet;
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService;
 import de.dkfz.eilslabs.batcheuphoria.jobs.*;
+import de.dkfz.roddy.execution.jobs.*;
+import de.dkfz.roddy.execution.jobs.JobDependencyID;
+import de.dkfz.roddy.execution.jobs.JobResult;
 
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -18,10 +21,10 @@ import java.util.Map;
 
 /**
  */
-public class DirectSynchronousExecutedJobManager extends JobManager<DirectCommand> {
+public class DirectSynchronousExecutionJobManager extends JobManager<DirectCommand> {
 
 
-    public DirectSynchronousExecutedJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    public DirectSynchronousExecutionJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms);
     }
 
@@ -75,6 +78,11 @@ public class DirectSynchronousExecutedJobManager extends JobManager<DirectComman
         return null;
     }
 
+    @Override
+    public JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
+        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()");
+    }
+
 //    @Override
 //    public Job parseToJob(ExecutionContext executionContext, String commandString) {
 //        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".parseToJob()");
@@ -85,10 +93,10 @@ public class DirectSynchronousExecutedJobManager extends JobManager<DirectComman
 //        return null;
 //    }
 
-    @Override
-    public JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
-        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()");
-    }
+//    @Override
+//    public JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
+//        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()");
+//    }
 
     @Override
     public void updateJobStatus() {

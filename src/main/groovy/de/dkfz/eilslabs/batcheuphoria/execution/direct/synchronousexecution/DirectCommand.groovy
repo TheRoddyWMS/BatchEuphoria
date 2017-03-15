@@ -6,7 +6,6 @@
 
 package de.dkfz.eilslabs.batcheuphoria.execution.direct.synchronousexecution
 
-import de.dkfz.eilslabs.batcheuphoria.execution.direct.synchronousexecution.DirectSynchronousExecutedJobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.Command
 import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
@@ -14,8 +13,6 @@ import de.dkfz.roddy.StringConstants
 
 import static de.dkfz.roddy.StringConstants.BRACE_RIGHT
 import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
-import static de.dkfz.roddy.StringConstants.EMPTY
-import static de.dkfz.roddy.StringConstants.SINGLE_QUOTE
 
 /**
  * Local commands run locally and, if the workflow requires and supports it, concurrent.
@@ -33,7 +30,7 @@ public class DirectCommand extends Command {
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
 
-    public DirectCommand(DirectSynchronousExecutedJobManager parentManager, Job job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    public DirectCommand(DirectSynchronousExecutionJobManager parentManager, Job job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
         super(parentManager, job, id, parameters, tags)
         //, processingCommands, tool, parameters, dependencies, arraySettings);
         this.processingCommands = processingCommands;

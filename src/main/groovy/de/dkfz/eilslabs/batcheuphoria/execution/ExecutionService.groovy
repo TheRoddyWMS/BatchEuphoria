@@ -24,6 +24,8 @@ interface ExecutionService {
 
     ExecutionResult execute(String command, boolean waitFor)
 
+    ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream)
+
     /**
      * Query this to find out, if the service is still active
       */

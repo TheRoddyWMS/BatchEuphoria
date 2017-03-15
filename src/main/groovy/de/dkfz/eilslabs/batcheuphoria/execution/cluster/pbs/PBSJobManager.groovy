@@ -18,11 +18,11 @@ import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobResult
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobState
 import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.JobResult
 import de.dkfz.roddy.tools.*
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 

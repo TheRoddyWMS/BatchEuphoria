@@ -11,7 +11,8 @@ import de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID;
 /**
  * Created by heinold on 23.02.17.
  */
-public class FakeJobID extends JobDependencyID {
+//public class FakeJobID extends JobDependencyID {
+public class FakeJobID extends de.dkfz.roddy.execution.jobs.JobDependencyID.FakeJobID {
     /**
      * Various reasons why a job was not executed and is a fake job.
      */

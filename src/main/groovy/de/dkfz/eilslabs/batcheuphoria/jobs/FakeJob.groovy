@@ -6,6 +6,7 @@
 
 package de.dkfz.eilslabs.batcheuphoria.jobs
 
+import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
 
 /**
@@ -17,9 +18,9 @@ class FakeJob extends Job {
         super("Fakejob", null, null, [], [:], [])
     }
 
-//        public FakeJob(ExecutionContext context) {
-//            super(context, "Fakejob", null, null);
-//        }
+    public FakeJob(InfoObject context) {
+        this()
+    }
 
 
     static FakeJobID getNotExecutedFakeJob(Job job) {
@@ -27,12 +28,12 @@ class FakeJob extends Job {
     }
 
     static FakeJobID getNotExecutedFakeJob(Job job, boolean array) {
-        return new FakeJobID(job, FakeJobID.FakeJobReason.NOT_EXECUTED,array)
+        return new FakeJobID(job, FakeJobID.FakeJobReason.NOT_EXECUTED, array)
     }
 
-//    static FakeJobID getFileExistedFakeJob(ExecutionContext context) {
-//        return getFileExistedFakeJob(new FakeJob(context), false)
-//    }
+    static FakeJobID getFileExistedFakeJob(InfoObject infoObject) {
+        return getFileExistedFakeJob(new FakeJob(infoObject), false)
+    }
 
     static FakeJobID getFileExistedFakeJob(Job job, boolean array) {
         return new FakeJobID(job, FakeJobID.FakeJobReason.FILE_EXISTED, array)

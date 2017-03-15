@@ -6,6 +6,7 @@
 
 package de.dkfz.eilslabs.batcheuphoria.jobs;
 
+import de.dkfz.roddy.execution.jobs.JobResult as JobResult
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet;
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -154,7 +155,7 @@ public abstract class JobManager<C extends Command> {
 
     public abstract JobResult runJob(Job job, boolean runDummy);
 
-    public abstract JobDependencyID createJobDependencyID(Job job, String jobResult);
+    public abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(Job job, String jobResult);
 
     public abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet);
 

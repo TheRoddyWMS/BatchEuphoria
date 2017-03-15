@@ -10,22 +10,16 @@ import java.io.Serializable;
 
 /**
  */
-public abstract class JobDependencyID implements Serializable {
+public abstract class JobDependencyID extends de.dkfz.roddy.execution.jobs.JobDependencyID implements Serializable {
 
     protected JobDependencyID(Job job) {
         this.job = job;
     }
 
-    public abstract boolean isValidID();
-
     public final Job job;
 
-
-
-    public abstract String getId();
-
-    public abstract String getShortID();
-
-    public abstract boolean isArrayJob();
+    public Job getJob() {
+        return job;
+    }
 
 }

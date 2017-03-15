@@ -80,7 +80,7 @@ class Job<J extends Job> {
     /**
      * Stores the result when the job was executed.
      */
-    private JobResult runResult
+    private de.dkfz.roddy.execution.jobs.JobResult runResult
 
     Job(String jobName, File tool, String toolMD5, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs) {
         this.jobName = jobName
@@ -231,11 +231,11 @@ class Job<J extends Job> {
         return parentJobs
     }
 
-    void setRunResult(JobResult result) {
+    void setRunResult(de.dkfz.roddy.execution.jobs.JobResult result) {
         this.runResult = result
     }
 
-    JobResult getRunResult() {
+    de.dkfz.roddy.execution.jobs.JobResult getRunResult() {
         return runResult
     }
 
