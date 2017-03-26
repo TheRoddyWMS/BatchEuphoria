@@ -52,11 +52,11 @@ public class JobResult extends de.dkfz.roddy.execution.jobs.JobResult implements
 //     */
 //    public transient final List<Job> parentJobs;
 
-    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
+    public JobResult(Command command, de.dkfz.roddy.execution.jobs.JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs);
     }
 
-    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
+    public JobResult(Command command, de.dkfz.roddy.execution.jobs.JobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
         super(command, jobID, wasExecuted, wasArray, toolID, jobParameters, parentJobs);
 //        this.command = command;
 //        this.jobID = jobID;

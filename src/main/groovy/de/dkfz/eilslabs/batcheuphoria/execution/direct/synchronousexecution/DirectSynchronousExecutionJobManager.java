@@ -13,6 +13,7 @@ import de.dkfz.eilslabs.batcheuphoria.jobs.*;
 import de.dkfz.roddy.execution.jobs.*;
 import de.dkfz.roddy.execution.jobs.JobDependencyID;
 import de.dkfz.roddy.execution.jobs.JobResult;
+import de.dkfz.roddy.tools.LoggerWrapper;
 
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -23,6 +24,7 @@ import java.util.Map;
  */
 public class DirectSynchronousExecutionJobManager extends JobManager<DirectCommand> {
 
+    public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName());
 
     public DirectSynchronousExecutionJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms);
@@ -140,17 +142,20 @@ public class DirectSynchronousExecutionJobManager extends JobManager<DirectComma
 
     @Override
     public String getSpecificJobIDIdentifier() {
-        return null;
+        logger.severe("Job id for " + getClass().getName() + " should be configurable");
+        return "\"$$\"";
     }
 
     @Override
     public String getSpecificJobArrayIndexIdentifier() {
-        return null;
+        logger.severe("Job arrays are not supported in " + getClass().getName());
+        return "0";
     }
 
     @Override
     public String getSpecificJobScratchIdentifier() {
-        return null;
+        logger.severe("Job scratch for " + getClass().getName() + " should be configurable");
+        return "/data/roddyScratch/$$";
     }
 
     @Override

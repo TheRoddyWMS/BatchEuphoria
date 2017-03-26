@@ -76,13 +76,22 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     PBSCommand createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+//        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
+//        return pbsCommand
         throw new NotImplementedException()
+    }
+
+    PBSCommand createCommand(Job job) {
+        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool.getAbsolutePath(), job.getLoggingDirectory())
     }
 
     @Override
     JobResult runJob(Job job) {
-        if(job.runResult != null)
-            throw new RuntimeException(Constants.ERR_MSG_ONLY_ONE_JOB_ALLOWED)
+        def command = createCommand(job)
+        def result = executionService.execute(command)
+//        if(job.runResult != null)
+//            throw new RuntimeException(Constants.ERR_MSG_ONLY_ONE_JOB_ALLOWED)
+        return job.runResult
     }
 
     @Override
@@ -90,6 +99,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        createCommand(job, job.jobName, null, job.tool, job.parameters, job.dependencyIDs, )
 //        executionService.execute()
         throw new NotImplementedException()
+    }
+
+    @Override
+    void startHeldJobs(List<Job> heldJobs) {
+        if (!heldJobs) return
+        String qrls = "qrls ${heldJobs.collect { it.runResult?.jobID?.shortID }.findAll { it}.join(" ")}"
+        executionService.execute(qrls)
     }
 
     @Override
@@ -632,5 +648,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return PBSCommand.QSUB
     }
 
-
+    @Override
+    boolean isHoldJobsEnabled() {
+        return true
+    }
 }

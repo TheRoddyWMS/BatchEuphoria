@@ -6,6 +6,9 @@
 
 package de.dkfz.eilslabs.batcheuphoria.jobs
 
+import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
+
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -16,12 +19,9 @@ import java.util.concurrent.atomic.AtomicLong
 @groovy.transform.CompileStatic
 class Job<J extends Job> {
 
-
-
-
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(Job.class.getSimpleName())
 
-    private JobType jobType = JobType.STANDARD
+    protected JobType jobType = JobType.STANDARD
 
     private final List<Job> arrayChildJobs = new LinkedList<>()
 
@@ -48,6 +48,12 @@ class Job<J extends Job> {
     protected String toolMD5
 
     /**
+     * The set of resources for this tool / Job
+     * Contains values for e.g. memory, walltime and so on.
+     */
+    protected ResourceSet resourceSet
+
+    /**
      * Parameters for the tool you want to call
      */
     protected final Map<String, String> parameters
@@ -63,7 +69,7 @@ class Job<J extends Job> {
      * You should provide i.e. job ids of qsub jobs to automatically create job
      * dependencies.
      */
-    public final List<JobDependencyID> dependencyIDs = new LinkedList<JobDependencyID>()
+    protected final List<de.dkfz.roddy.execution.jobs.JobDependencyID> listOfCustomDependencyIDs = new LinkedList<>()
 
     /**
      * Temporary value which defines the jobs jobState.
@@ -75,30 +81,47 @@ class Job<J extends Job> {
     /**
      * Command object of last execution.
      */
-    private transient Command lastCommand
+    protected transient Command lastCommand
 
     /**
      * Stores the result when the job was executed.
      */
     private de.dkfz.roddy.execution.jobs.JobResult runResult
 
-    Job(String jobName, File tool, String toolMD5, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs) {
+    JobManager jobManager
+
+    Job(String jobName, File tool, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNKNOWN
         this.tool = tool
         this.toolMD5 = toolMD5
+        this.resourceSet = resourceSet
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-//        this.dependencyIDs = parentJobs.collect { Job job -> job.jobID ?: null }.findAll { String it -> it }
+        this.listOfCustomDependencyIDs.addAll((dependencyIDs ?: parentJobs ? parentJobs.collect { Job job -> job.jobID ?: null }.findAll { String it -> it } : []) as List<JobDependencyID>)
+        this.jobManager = jobManager
     }
 
-    private void setJobType(JobType jobType) {
+    protected void setJobType(JobType jobType) {
         this.jobType = jobType
     }
 
     //TODO Create a runArray method which returns several job results with proper array ids.
-//    JobResult run() {
+    de.dkfz.roddy.execution.jobs.JobResult run() {
+
+    }
+
+    boolean isFakeJob() {
+        if (this instanceof FakeJob)
+            return true
+        if (jobName != null && jobName.equals("Fakejob"))
+            return true
+        String jobID = getJobID()
+        if (jobID == null)
+            return false
+        return FakeJobID.isFakeJobID(jobID)
+    }
 //        null
 //        if (runResult != null)
 //            throw new RuntimeException(Constants.ERR_MSG_ONLY_ONE_JOB_ALLOWED)
@@ -170,16 +193,17 @@ class Job<J extends Job> {
 //        return runResult
 //    }
 
-//    private void postProcessArrayJob(JobResult runResult) {
-//        Map<String, Object> prmsAsStringMap = new LinkedHashMap<>()
-//        for (String k : parameters.keySet()) {
-//            prmsAsStringMap.put(k, parameters.get(k))
-//        }
-//        jobType = JobType.ARRAY_HEAD
-//        //TODO Think of proper array index handling!
-//        int i = 1
+    protected void postProcessArrayJob(JobResult runResult) {
+        throw new NotImplementedException()
+        Map<String, Object> prmsAsStringMap = new LinkedHashMap<>()
+        for (String k : parameters.keySet()) {
+            prmsAsStringMap.put(k, parameters.get(k))
+        }
+        jobType = JobType.ARRAY_HEAD
+        //TODO Think of proper array index handling!
+        int i = 1
 //        for (String arrayIndex : arrayIndices) {
-//            JobResult jr = JobManager.getInstance().convertToArrayResult(this, runResult, i++)
+//            JobResult jr = jobManager.convertToArrayResult(this, runResult, i++)
 //
 //            Job childJob = new Job(context, jobName + "[" + arrayIndex + "]", toolID, prmsAsStringMap, parentJobs, filesToVerify)
 //            childJob.setJobType(JobType.ARRAY_CHILD)
@@ -188,7 +212,7 @@ class Job<J extends Job> {
 //            JobManager.getInstance().addJobStatusChangeListener(childJob)
 //            this.context.addExecutedJob(childJob)
 //        }
-//    }
+    }
 
 //    /**
 //     * Finally execute a job.
@@ -223,12 +247,32 @@ class Job<J extends Job> {
         return parameters
     }
 
+    List<String> finalParameters() {
+        return parameters.collect { String k, String v -> return "${k}=${v}".toString() }
+    }
+
     List<ProcessingCommands> getListOfProcessingCommand() {
-        return processingCommand
+        return [jobManager.convertResourceSet(resourceSet)] + processingCommand
     }
 
     List<J> getParentJobs() {
         return parentJobs
+    }
+
+    List<de.dkfz.roddy.execution.jobs.JobDependencyID> getDependencyIDs() {
+        if (listOfCustomDependencyIDs)
+            return listOfCustomDependencyIDs
+
+        def res = getParentJobs()?.collect { ((Job) it).runResult?.jobID }.findAll { it }.unique()
+        if (!res) return []
+    }
+
+    List<String> getDependencyIDsAsString() {
+        getDependencyIDs().collect { it -> it.id }
+    }
+
+    File getLoggingDirectory() {
+
     }
 
     void setRunResult(de.dkfz.roddy.execution.jobs.JobResult result) {
@@ -266,10 +310,38 @@ class Job<J extends Job> {
         return toolMD5
     }
 
-    private File _logFile = null
+    ResourceSet getResourceSet() {
+        return resourceSet
+    }
+
+    protected File _logFile = null
+    /**
+     * Returns the path to an existing log file.
+     * If no logfile exists this returns null.
+     *
+     * @return
+     */
+    public synchronized File getLogFile() {
+//        if (_logFile == null)
+//            _logFile = this.getExecutionContext().getRuntimeService().getLogFileForJob(this);
+//        return _logFile;
+    }
+
+    public boolean hasLogFile() {
+//        if (getJobState().isPlannedOrRunning())
+//            return false;
+//        if (_logFile == null)
+//            return this.getExecutionContext().getRuntimeService().hasLogFileForJob(this);
+//        return true;
+        return false
+    }
 
     String getJobName() {
         return jobName
+    }
+
+    File getParameterFile() {
+        return null
     }
 
     void setJobState(JobState js) {
@@ -306,6 +378,4 @@ class Job<J extends Job> {
     Command getLastCommand() {
         return lastCommand
     }
-
-
 }

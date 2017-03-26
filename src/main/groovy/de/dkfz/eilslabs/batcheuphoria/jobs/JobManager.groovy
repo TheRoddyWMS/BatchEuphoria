@@ -155,6 +155,10 @@ public abstract class JobManager<C extends Command> {
 
     public abstract JobResult runJob(Job job, boolean runDummy);
 
+    void startHeldJobs(List<Job> jobs) {}
+
+    boolean isHoldJobsEnabled() { return false }
+
     public abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(Job job, String jobResult);
 
     public abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet);
@@ -346,5 +350,4 @@ public abstract class JobManager<C extends Command> {
     public abstract String parseJobID(String commandOutput);
 
     public abstract String getSubmissionCommand();
-
 }
