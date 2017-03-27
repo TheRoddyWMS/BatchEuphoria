@@ -64,6 +64,8 @@ public abstract class JobManager<C extends Command> {
 
     private boolean isParameterFileEnabled;
 
+    private Boolean isHoldJobsEnabled = null;
+
     public JobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         this.executionService = executionService;
 
@@ -157,7 +159,9 @@ public abstract class JobManager<C extends Command> {
 
     void startHeldJobs(List<Job> jobs) {}
 
-    boolean isHoldJobsEnabled() { return false }
+    boolean getDefaultForHoldJobsEnabled() { return false }
+
+    boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
     public abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(Job job, String jobResult);
 

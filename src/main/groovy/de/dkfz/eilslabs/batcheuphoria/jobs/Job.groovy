@@ -263,8 +263,9 @@ class Job<J extends Job> {
         if (listOfCustomDependencyIDs)
             return listOfCustomDependencyIDs
 
-        def res = getParentJobs()?.collect { ((Job) it).runResult?.jobID }.findAll { it }.unique()
+        def res = getParentJobs()?.collect { ((Job) it).runResult?.jobID }?.findAll { it }?.unique()
         if (!res) return []
+        return res
     }
 
     List<String> getDependencyIDsAsString() {
