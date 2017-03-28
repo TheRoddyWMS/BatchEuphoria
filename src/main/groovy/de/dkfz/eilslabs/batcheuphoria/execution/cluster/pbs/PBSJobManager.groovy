@@ -6,24 +6,17 @@
 
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs
 
-import de.dkfz.eilslabs.batcheuphoria.Constants
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
 import de.dkfz.eilslabs.batcheuphoria.execution.cluster.ClusterJobManager
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSCommand
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobDependencyID
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSResourceProcessingCommand
-import de.dkfz.eilslabs.batcheuphoria.jobs.GenericJobInfo
-import de.dkfz.eilslabs.batcheuphoria.jobs.Job
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobState
-import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
+import de.dkfz.eilslabs.batcheuphoria.jobs.*
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.JobResult
-import de.dkfz.roddy.tools.*
+import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.LoggerWrapper
+import de.dkfz.roddy.tools.RoddyConversionHelperMethods
+import de.dkfz.roddy.tools.RoddyIOHelperMethods
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.concurrent.locks.ReentrantLock
@@ -76,13 +69,22 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     PBSCommand createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+//        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
+//        return pbsCommand
         throw new NotImplementedException()
+    }
+
+    PBSCommand createCommand(Job job) {
+        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool.getAbsolutePath(), job.getLoggingDirectory())
     }
 
     @Override
     JobResult runJob(Job job) {
-        if(job.runResult != null)
-            throw new RuntimeException(Constants.ERR_MSG_ONLY_ONE_JOB_ALLOWED)
+        def command = createCommand(job)
+        executionService.execute(command)
+        // job.runResult is set within executionService.execute
+        logger.severe("Set the job runResult in a better way from runJob itself or so.")
+        return job.runResult
     }
 
     @Override
@@ -90,6 +92,23 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        createCommand(job, job.jobName, null, job.tool, job.parameters, job.dependencyIDs, )
 //        executionService.execute()
         throw new NotImplementedException()
+    }
+
+    /**
+     * For BPS, we enable hold jobs by default.
+     * If it is not enabled, we might run into the problem, that job dependencies cannot be
+     * ressolved early enough due to timing problems.
+     * @return
+     */
+    @Override
+    boolean getDefaultForHoldJobsEnabled() { return true; }
+
+    @Override
+    void startHeldJobs(List<Job> heldJobs) {
+        if (!isHoldJobsEnabled()) return
+        if (!heldJobs) return
+        String qrls = "qrls ${heldJobs.collect { it.runResult?.jobID?.shortID }.findAll { it}.join(" ")}"
+        executionService.execute(qrls)
     }
 
     @Override
@@ -118,10 +137,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
         StringBuilder sb = new StringBuilder()
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            sb.append(" -l mem=").append(memo)
-        }
+
+        if (resourceSet.isMemSet()) sb << " -l mem=" << resourceSet.getMem().toString(BufferUnit.M)
+        if (resourceSet.isWalltimeSet()) sb.append(" -l walltime=").append(resourceSet.getWalltime())
+        if (resourceSet.isQueueSet()) sb.append(" -q ").append(resourceSet.getQueue())
+
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
             int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
@@ -140,15 +160,12 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 }
             }
         }
-        if (resourceSet.isWalltimeSet()) {
-            sb.append(" -l walltime=").append(resourceSet.getWalltime())
-        }
+
+        logger.severe("Allow enabling and disabling of options for resource arbitration for defective job managers.")
         if (resourceSet.isStorageSet()) {
 //            sb.append(" -l mem=").append(resourceSet.getMem()).append("g");
         }
-        if (resourceSet.isQueueSet()) {
-            sb.append(" -q ").append(resourceSet.getQueue())
-        }
+
         return new PBSResourceProcessingCommand(sb.toString())
     }
 
@@ -160,6 +177,20 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return new PBSResourceProcessingCommand(processingString)
     }
 
+    /**
+     * #PBS -l walltime=8:00:00
+     * #PBS -l nodes=1:ppn=12:lsdf
+     * #PBS -S /bin/bash
+     * #PBS -l mem=3600m
+     * #PBS -m a
+     *
+     * #PBS -l walltime=50:00:00
+     * #PBS -l nodes=1:ppn=6:lsdf
+     * #PBS -l mem=52g
+     * #PBS -m a
+     * @param file
+     * @return
+     */
     @Override
     ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
         String[] text = RoddyIOHelperMethods.loadTextFile(file)
@@ -175,16 +206,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             lines.add(line)
         }
 
-//        #PBS -l walltime=8:00:00
-//        #PBS -l nodes=1:ppn=12:lsdf
-//        #PBS -S /bin/bash
-//        #PBS -l mem=3600m
-//        #PBS -m a
-
-//        #PBS -l walltime=50:00:00
-//        #PBS -l nodes=1:ppn=6:lsdf
-//        #PBS -l mem=52g
-//        #PBS -m a
         StringBuilder processingOptionsStr = new StringBuilder()
         for (String line : lines) {
             processingOptionsStr.append(" ").append(line.substring(5))
@@ -196,7 +217,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     Job parseToJob(String commandString) {
         throw new NotImplementedException()
     }
-//
+
 //    @Override
 //    Job parseToJob(ExecutionContext executionContext, String commandString) {
 //
@@ -220,6 +241,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
         return null
     }
+
 //        commandString = commandString.trim()
 //        String[] split = commandString.split(", ")
 //        String id = split[0]
@@ -631,6 +653,5 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     String getSubmissionCommand() {
         return PBSCommand.QSUB
     }
-
 
 }

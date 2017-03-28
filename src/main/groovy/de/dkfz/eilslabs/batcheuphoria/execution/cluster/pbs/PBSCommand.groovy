@@ -54,11 +54,6 @@ class PBSCommand extends Command {
     protected String command
 
     /**
-     * The job id for the qsub system
-     */
-    protected String id
-
-    /**
      * Provide a lower and upper array index to make this qsub job an array job
      */
     protected List<String> arrayIndices
@@ -149,10 +144,13 @@ class PBSCommand extends Command {
         String groupList = parentJobManager.getUserGroup()
         String accountName = parentJobManager.getUserAccount()
         boolean useParameterFile = parentJobManager.isParameterFileEnabled()
+        boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
         qsubCall << QSUB << PARM_JOBNAME << id
+
+        if (holdJobsOnStart) qsubCall << " -h "
 
         if (accountName) qsubCall << PARM_ACCOUNT << accountName << " "
 
@@ -162,29 +160,44 @@ class PBSCommand extends Command {
 
         qsubCall << getJoinLogParameter()
 
-        if (isArray) {
-            qsubCall << " -t "
-            StringBuilder sbArrayIndices = new StringBuilder("")
-            //TODO Make a second list of array indices, which is valid for job submission. The current translation with the help of counting is not optimal!
-            int i = 1 //TODO Think if pbs arrays should always start with one?
-            for (String ai in arrayIndices) {
-                if (ai.isNumber())
-                    sbArrayIndices << ai.toInteger()
-                else
-                    sbArrayIndices << i
-                sbArrayIndices << StringConstants.COMMA
-                i++
-            }
-            qsubCall << sbArrayIndices.toString()[0..-2]
-        }
+        if (isArray) qsubCall << assembleArraySettings()
+
         if (email) qsubCall << getEmailParameter(email)
 
+        if (groupList && groupList != "UNDEFINED") qsubCall << getGroupListString(groupList)
 
-        if (groupList != EMPTY && groupList != "UNDEFINED") {
-            qsubCall << getGroupListString(groupList)
+        if (umask) qsubCall << getUmaskString(umask)
+
+        qsubCall << assembleProcessingCommands()
+
+        qsubCall << assembleDependencyString()
+
+        qsubCall << assembleVariableExportString()
+
+        qsubCall << " " << job.getTool().getAbsolutePath()
+        println(qsubCall)
+        return qsubCall
+    }
+
+    StringBuilder assembleArraySettings() {
+        StringBuilder qsubCall = new StringBuilder(" -t ")
+        StringBuilder sbArrayIndices = new StringBuilder("")
+        //TODO Make a second list of array indices, which is valid for job submission. The current translation with the help of counting is not optimal!
+        int i = 1 //TODO Think if pbs arrays should always start with one?
+        for (String ai in arrayIndices) {
+            if (ai.isNumber())
+                sbArrayIndices << ai.toInteger()
+            else
+                sbArrayIndices << i
+            sbArrayIndices << StringConstants.COMMA
+            i++
         }
-        qsubCall << getUmaskString(umask)
+        qsubCall << sbArrayIndices.toString()[0..-2]
+        return qsubCall
+    }
 
+    StringBuilder assembleProcessingCommands() {
+        StringBuilder qsubCall = new StringBuilder()
         for (ProcessingCommands pcmd in job.getListOfProcessingCommand()) {
             if (!(pcmd instanceof PBSResourceProcessingCommand)) continue
             PBSResourceProcessingCommand command = (PBSResourceProcessingCommand) pcmd
@@ -192,24 +205,18 @@ class PBSCommand extends Command {
                 continue
             qsubCall << StringConstants.WHITESPACE << command.getProcessingString()
         }
-
-        qsubCall << assembleDependencyString()
-
-        qsubCall << assembleVariableExportString()
-
-        qsubCall << " " << job.getTool().getAbsolutePath()
         return qsubCall
     }
 
-    protected String assembleVariableExportString() {
+    String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
         //TODO Properly support parameter files.
 //        qsubCall << getVariablesParameter() + PARM_WRAPPED_SCRIPT << command
-//        qsubCall << ",PARAMETER_FILE=" << parameterFile
+        qsubCall << getVariablesParameter() << "PARAMETER_FILE=" << job.getParameterFile()
         return qsubCall
     }
 
-    protected String assembleDependencyString() {
+    String assembleDependencyString() {
         StringBuilder qsubCall = new StringBuilder("")
         LinkedList<String> tempDependencies = new LinkedList<String>()
         LinkedList<String> tempDependenciesArrays = new LinkedList<String>()

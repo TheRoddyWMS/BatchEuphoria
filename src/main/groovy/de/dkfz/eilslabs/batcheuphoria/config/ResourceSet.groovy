@@ -1,8 +1,11 @@
 package de.dkfz.eilslabs.batcheuphoria.config
 
 import de.dkfz.roddy.tools.BufferValue
+import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.CompileStatic
 
+@CompileStatic
 class ResourceSet {
     private final String queue
     private ResourceSetSize size
@@ -85,7 +88,7 @@ class ResourceSet {
     }
 
     boolean isQueueSet() {
-        return !ConversionHelperMethods.isNullOrEmpty(queue)
+        return !RoddyConversionHelperMethods.isNullOrEmpty(queue)
     }
 
     String getQueue() {
@@ -93,7 +96,7 @@ class ResourceSet {
     }
 
     boolean isAdditionalNodeFlagSet() {
-        return !ConversionHelperMethods.isNullOrEmpty(additionalNodeFlag)
+        return !RoddyConversionHelperMethods.isNullOrEmpty(additionalNodeFlag)
     }
 
     String getAdditionalNodeFlag() {

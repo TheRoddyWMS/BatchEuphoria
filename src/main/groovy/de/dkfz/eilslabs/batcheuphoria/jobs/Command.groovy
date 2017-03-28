@@ -23,7 +23,7 @@ abstract class Command {
     /**
      * The id of this command.
      */
-    private final String id
+    protected final String id
     /**
      * The id which was created upon execution by the job system.
      */
@@ -93,22 +93,6 @@ abstract class Command {
     Map<String, Object> getTags() {
         return commandTags
     }
-
-
-//    public List<ConfigurationValue> getParametersForParameterFile() {
-//        List<ConfigurationValue> allParametersForFile = new LinkedList<>();
-//        if (parameters.size() > 0) {
-//            for (String parm : parameters.keySet()) {
-//                String val = parameters.get(parm);
-//                if (val.contains(DOLLAR_LEFTBRACE) && val.contains(BRACE_RIGHT)) {
-//                    val = val.replace(DOLLAR_LEFTBRACE, "#{"); // Replace variable names so they can be passed to qsub.
-//                }
-//                String key = parm;
-//                allParametersForFile.add(new ConfigurationValue(key, val));
-//            }
-//        }
-//        return allParametersForFile;
-//    }
 
     /**
      * Local commands are i.e. blocking, whereas PBSCommands are not.
