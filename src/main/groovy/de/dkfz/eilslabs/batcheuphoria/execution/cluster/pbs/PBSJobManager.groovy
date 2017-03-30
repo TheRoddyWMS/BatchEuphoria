@@ -36,6 +36,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     public static final String PBS_JOBSTATE_RUNNING = "R"
     public static final String PBS_JOBSTATE_HOLD = "H"
     public static final String PBS_JOBSTATE_QUEUED = "Q"
+    public static final String PBS_JOBSTATE_COMPLETED_UNKNOWN = "C"
+    public static final String PBS_JOBSTATE_EXITING = "E"
     public static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
     public static final String PBS_COMMAND_DELETE_JOBS = "qdel"
     public static final String PBS_LOGFILE_WILDCARD = "*.o"
@@ -47,6 +49,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     PBSJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
+        logger.severe("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
+        logger.severe("Set logfile location, parameter file and job state log file on job creation (or override a method).")
     }
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
@@ -62,7 +66,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
 //    @Override
-    PBSCommand createCommand(Job job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters,  Map<String, Object> tags, List<String> dependencies, List<String> arraySettings, File logDirectory) {
+    PBSCommand createCommand(Job job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, List<String> arraySettings, File logDirectory) {
         PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
         return pbsCommand
     }
@@ -84,6 +88,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         executionService.execute(command)
         // job.runResult is set within executionService.execute
         logger.severe("Set the job runResult in a better way from runJob itself or so.")
+        cacheLock.lock()
+        if (job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
+            allStates[job.jobID] = JobState.HOLD
+        } else if (job.runResult.wasExecuted) {
+            allStates[job.jobID] = JobState.QUEUED
+        } else {
+            allStates[job.jobID] = JobState.FAILED
+        }
         return job.runResult
     }
 
@@ -103,11 +115,15 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true; }
 
+    List<String> collectJobIDsFromJobs(List<Job> jobs) {
+        jobs.collect { it.runResult?.jobID?.shortID }.findAll { it }
+    }
+
     @Override
     void startHeldJobs(List<Job> heldJobs) {
         if (!isHoldJobsEnabled()) return
         if (!heldJobs) return
-        String qrls = "qrls ${heldJobs.collect { it.runResult?.jobID?.shortID }.findAll { it}.join(" ")}"
+        String qrls = "qrls ${collectJobIDsFromJobs(heldJobs).join(" ")}"
         executionService.execute(qrls)
     }
 
@@ -139,8 +155,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         StringBuilder sb = new StringBuilder()
 
         if (resourceSet.isMemSet()) sb << " -l mem=" << resourceSet.getMem().toString(BufferUnit.M)
-        if (resourceSet.isWalltimeSet()) sb.append(" -l walltime=").append(resourceSet.getWalltime())
-        if (resourceSet.isQueueSet()) sb.append(" -q ").append(resourceSet.getQueue())
+        if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << resourceSet.getWalltime()
+        if (resourceSet.isQueueSet()) sb << " -q " << resourceSet.getQueue()
 
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
@@ -148,22 +164,22 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             // Currently not active
             String enforceSubmissionNodes = "" // configuration.getConfigurationValues().getString(CVALUE_ENFORCE_SUBMISSION_TO_NODES, null)
             if (!enforceSubmissionNodes) {
-                sb.append(" -l nodes=").append(nodes).append(":ppn=").append(cores)
+                sb << " -l nodes=" << nodes << ":ppn=" << cores
                 if (resourceSet.isAdditionalNodeFlagSet()) {
-                    sb.append(":").append(resourceSet.getAdditionalNodeFlag())
+                    sb << ":" << resourceSet.getAdditionalNodeFlag()
                 }
             } else {
                 String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
                 nodesArr.each {
                     String node ->
-                        sb.append(" -l nodes=").append(node).append(":ppn=").append(resourceSet.getCores())
+                        sb << " -l nodes=" << node << ":ppn=" << resourceSet.getCores()
                 }
             }
         }
 
         logger.severe("Allow enabling and disabling of options for resource arbitration for defective job managers.")
         if (resourceSet.isStorageSet()) {
-//            sb.append(" -l mem=").append(resourceSet.getMem()).append("g");
+//            sb << " -l mem=" << resourceSet.getMem() << "g");
         }
 
         return new PBSResourceProcessingCommand(sb.toString())
@@ -208,7 +224,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         StringBuilder processingOptionsStr = new StringBuilder()
         for (String line : lines) {
-            processingOptionsStr.append(" ").append(line.substring(5))
+            processingOptionsStr << " " << line.substring(5)
         }
         return convertPBSResourceOptionsString(processingOptionsStr.toString())
     }
@@ -242,130 +258,20 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return null
     }
 
-//        commandString = commandString.trim()
-//        String[] split = commandString.split(", ")
-//        String id = split[0]
-//        commandString = split[1].trim()
-//
-//        if (!commandString.startsWith("qsub")) return null
-//        int skriptIndex = -1
-//        final String DBL_QUOTE = "\""
-//        if (commandString.endsWith(DBL_QUOTE)) {
-//            skriptIndex = commandString[0..-2].lastIndexOf(DBL_QUOTE)
-//        } else {
-//            skriptIndex = commandString.lastIndexOf(" ")
-//        }
-//
-//        String script = commandString[skriptIndex..-1].trim()
-//        commandString = commandString[5..skriptIndex].trim()
-//        String[] options = (" " + commandString).split(" [-]")   //Put " " in front of the string so that every command can be recognized properly beginning with the first one.
-//        String jobName = "not readable"
-//        String toolID = ""
-//        String walltime
-//        String memory
-//        BufferUnit bufferUnit = BufferUnit.G
-//        String cores
-//        String nodes
-//        String queue
-//        String otherSettings
-//        List<String> dependencies = new LinkedList<>()
-//
-//        Map<String, String> parameters = new LinkedHashMap<>()
-//        for (String option : options) {
-//            if (option.trim().length() == 0) continue //Sometimes empty options occur.
-//            String var = option.substring(0, 1)
-//            String parms = option.substring(1).trim()
-//            if (var.equals("N")) {
-//                jobName = parms
-//                try {
-//                    toolID = jobName.substring(jobName.lastIndexOf("_") + 1)
-//                } catch (Exception e) {
-//                    //TODO Jobnames not read out properly in some cases
-//                    e.printStackTrace()
-//                }
-//            } else if (var.equals("v")) {
-//                String[] variables = parms.split(SPLIT_COMMA)
-//                for (String variable : variables) {
-//                    String[] varSplit = variable.split(SPLIT_EQUALS)
-//                    String header = varSplit[0]
-//                    String value = Constants.UNKNOWN
-//                    if (varSplit.length > 1)
-//                        value = varSplit[1]
-//                    parameters.put(header, value)
-//                }
-//            } else if (var.equals("l")) { //others
-//                def splitParms = parms.split("[,]")
-//                splitParms.each {
-//                    String parm ->
-//                        String parmID = parm.split(StringConstants.SPLIT_EQUALS)[0]
-//                        String parmVal = parm.split(StringConstants.SPLIT_EQUALS)[1]
-//                        if (parmID == "mem") {
-//                            bufferUnit = BufferUnit.valueOf(parmVal[-1])
-//                            memory = parmVal[0..-2]
-//                        } else if (parmID == "walltime") {
-//                            String[] splitParm = parmVal.split(StringConstants.SPLIT_COLON)
-//                            //TODO Increase overall granularity for walltime and mem in config.
-//                        } else if (parmID == "nodes") {
-//                            String[] splitParm = parmVal.split(StringConstants.SPLIT_COLON)
-//                            nodes = splitParm[0]
-//                            cores = splitParm[1]
-//                        }
-//                }
-//            } else if (var.equals("W")) {
-//                if (parms.startsWith("depend")) {
-//                    def deps = parms[7..-1].split("[:]")
-////                    println deps;
-//                    if (deps[0] != "afterok")
-//                        println "Not supported: " + deps[0]
-////                    println deps[1 .. -1]
-//                    try {
-//                        dependencies.addAll(deps[1..-1])
-//                    } catch (Exception ex) {
-//                        println(parms)
-//                        println(ex)
-//                    }
-//                }
-//            }
-//        }
-//
-//        GenericJobInfo jInfo = new GenericJobInfo(executionContext, jobName, toolID, id, parameters, dependencies)
-//        jInfo.setCpus(cores)
-//        jInfo.setNodes(nodes)
-//        jInfo.setMemory(memory)
-//        jInfo.setMemoryBufferUnit(bufferUnit)
-//        jInfo.setWalltime(walltime)
-////        jInfo.set
-//        return jInfo
-//    }
-
-//    @Override
-//    JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
-//        String newID
-//        if (parentJobsResult.getJobID() instanceof JobDependencyID.FakeJobID) {
-//            newID = parentJobsResult.getJobID().getId() + "[" + arrayIndex + "]"
-//        } else {
-//            String parentID = (parentJobsResult.getJobID()).getId()
-//            String[] split = parentID.split("\\[")
-//            newID = split[0] + "[" + arrayIndex + split[1]
-//        }
-//        PBSJobDependencyID pjid = new PBSJobDependencyID(arrayChildJob, newID)
-//        return new JobResult(parentJobsResult.getRun(), parentJobsResult.getCommand(), pjid, parentJobsResult.isWasExecuted(), false, parentJobsResult.getToolID(), parentJobsResult.getJobParameters(), parentJobsResult.getParentJobs())
-//    }
-
     private static final ReentrantLock cacheLock = new ReentrantLock()
 
     private static ExecutionResult cachedExecutionResult
 
-    protected Map<String, JobState> allStates = new LinkedHashMap<String, JobState>()
+    protected Map<String, JobState> allStates = [:]
 
-    protected Map<String, Job> jobStatusListeners = new LinkedHashMap<>()
+    protected Map<String, Job> jobStatusListeners = [:]
 
     /**
      * Queries the jobs states.
      *
      * @return
      */
-    public void updateJobStatus() {
+    void updateJobStatus() {
         updateJobStatus(false)
     }
 
@@ -390,7 +296,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             queryCommand += " -u $userIDForQueries "
 
 
-        Map<String, JobState> allStatesTemp = new LinkedHashMap<String, JobState>()
+        Map<String, JobState> allStatesTemp = [:]
         ExecutionResult er
         List<String> resultLines = new LinkedList<String>()
         cacheLock.lock()
@@ -429,12 +335,15 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     //(idSplit.length <= 1) continue;
                     String id = idSplit[0]
                     JobState js = JobState.UNKNOWN
-                    if (split[JOBSTATE].equals(getStringForRunningJob()))
+                    if (split[JOBSTATE] == getStringForRunningJob())
                         js = JobState.RUNNING
-                    if (split[JOBSTATE].equals(getStringForJobOnHold()))
+                    if (split[JOBSTATE] == getStringForJobOnHold())
                         js = JobState.HOLD
-                    if (split[JOBSTATE].equals(getStringForQueuedJob()))
+                    if (split[JOBSTATE] == getStringForQueuedJob())
                         js = JobState.QUEUED
+                    if (split[JOBSTATE] == getStringForCompletedJob()) {
+                        js = JobState.COMPLETED_UNKNOWN
+                    }
 
                     allStatesTemp.put(id, js)
                     if (logger.isVerbosityHigh())
@@ -442,62 +351,66 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 }
             }
 
-            logger.severe("Reading out job states from job state logfiles is not possible yet!")
+//            logger.severe("Reading out job states from job state logfiles is not possible yet!")
 
             // I don't currently know, if the jslisteners are used.
-//            //Create a local cache of jobstate logfile entries.
-//            Map<ExecutionContext, Map<String, JobState>> map = new LinkedHashMap<>()
-//            List<Job> removejobs = new LinkedList<>()
-//            synchronized (jobStatusListeners) {
-//                for (String id : jobStatusListeners.keySet()) {
-//                    JobState js = allStatesTemp.get(id)
-//                    Job job = jobStatusListeners.get(id)
-//
-//                    if (js == JobState.UNKNOWN_SUBMITTED) {
-//                        // If the jobState is unknown and the job is not running anymore it is counted as failed.
-//                        job.setJobState(JobState.FAILED)
-//                        removejobs.add(job)
-//                        continue
-//                    }
-//
-//                    if (JobState._isPlannedOrRunning(js)) {
-//                        job.setJobState(js)
-//                        continue
-//                    }
-//
-//                    if (job.getJobState() == JobState.OK || job.getJobState() == JobState.FAILED)
-//                        continue //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
-//
-//                    if (js == null || js == JobState.UNKNOWN) {
-//                        //Read from jobstate logfile.
-//                        try {
+            //Create a local cache of jobstate logfile entries.
+            Map<String, JobState> map = [:]
+            List<Job> removejobs = new LinkedList<>()
+            synchronized (jobStatusListeners) {
+                for (String id : jobStatusListeners.keySet()) {
+                    JobState js = allStatesTemp.get(id)
+                    Job job = jobStatusListeners.get(id)
+
+                    if (js == JobState.UNKNOWN_SUBMITTED) {
+                        // If the jobState is unknown and the job is not running anymore it is counted as failed.
+                        job.setJobState(JobState.FAILED)
+                        removejobs.add(job)
+                        continue
+                    }
+
+                    if (JobState._isPlannedOrRunning(js)) {
+                        job.setJobState(js)
+                        continue
+                    }
+
+                    if (job.getJobState() == JobState.OK || job.getJobState() == JobState.FAILED)
+                        continue //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
+
+                    if (js == null || js == JobState.UNKNOWN) {
+                        //Read from jobstate logfile.
+                        try {
 //                            ExecutionContext executionContext = job.getExecutionContext()
 //                            if (!map.containsKey(executionContext))
 //                                map.put(executionContext, executionContext.readJobStateLogFile())
-//
-//                            JobState jobsCurrentState = null
-//                            Map<String, JobState> statesMap = map.get(executionContext)
-//                            if (job.getRunResult() != null) {
-//                                jobsCurrentState = statesMap.get(job.getRunResult().getJobID().getId())
-//                            } else { //Search within entries.
-//                                for (String s : statesMap.keySet()) {
-//                                    if (s.startsWith(id)) {
-//                                        jobsCurrentState = statesMap.get(s)
-//                                        break
-//                                    }
-//                                }
-//                            }
-//                            js = jobsCurrentState
-//                        } catch (Exception ex) {
-//                            //Could not read out job jobState from file
-//                        }
-//                    }
-//                    job.setJobState(js)
-//                }
-//            }
+
+                            JobState jobsCurrentState = null
+                            if (job.getRunResult() != null) {
+                                jobsCurrentState = map.get(job.getRunResult().getJobID().getId())
+                            } else { //Search within entries.
+                                map.each { String s, JobState v ->
+                                    if (s.startsWith(id)) {
+                                        jobsCurrentState = v
+                                        return
+                                    }
+                                }
+                            }
+                            js = jobsCurrentState
+                        } catch (Exception ex) {
+                            //Could not read out job jobState from file
+                        }
+                    }
+                    job.setJobState(js)
+                }
+            }
         }
         cacheLock.lock()
         allStates.clear()
+//        allStatesTemp.each { String id, JobState status ->
+        // The list is empty. We need to store the states for all found jobs by id again.
+        // Queries will then use the id.
+//            allStates[allStates.find { Job job, JobState state -> job.jobID == id }?.key] = status
+//        }
         allStates.putAll(allStatesTemp)
         cacheLock.unlock()
     }
@@ -515,6 +428,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     String getStringForRunningJob() {
         return PBS_JOBSTATE_RUNNING
+    }
+
+//    @Override
+    String getStringForCompletedJob() {
+        return PBS_JOBSTATE_COMPLETED_UNKNOWN
     }
 
     @Override
@@ -547,35 +465,44 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return 4
     }
 
-    Map<String, JobState> queryJobStatus(List<String> jobIDs) {
-        return queryJobStatus(jobIDs, false)
-    }
-
-    Map<String, JobState> queryJobStatus(List<String> jobIDs, boolean forceUpdate) {
+    @Override
+    Map<Job, JobState> queryJobStatus(List<Job> jobs, boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<String, JobState> queriedStates = new LinkedHashMap<String, JobState>()
+        Map<Job, JobState> queriedStates = [:]
 
-        for (String id : jobIDs) {
-            cacheLock.lock()
-            JobState state = allStates.get(id)
-            cacheLock.unlock()
-            queriedStates.put(id, state)
+        for (Job job in jobs) {
+            // Aborted somewhat supercedes everything.
+            JobState state
+            if (job.jobState == JobState.ABORTED)
+                state = JobState.ABORTED
+            else {
+                cacheLock.lock()
+                state = allStates[job.jobID]
+                cacheLock.unlock()
+            }
+            queriedStates[job] = state
         }
 
         return queriedStates
     }
 
     @Override
+    Map<Job, GenericJobInfo> queryExtendedJobState(List<Job> jobs, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
     void queryJobAbortion(List<Job> executedJobs) {
-        StringBuilder queryCommand = new StringBuilder(PBS_COMMAND_DELETE_JOBS)
-
-        for (Job job : executedJobs)
-            queryCommand.append(" ").append(job.getJobID())
-
-        executionService.execute(queryCommand.toString(), false)
+        def executionResult = executionService.execute("${PBS_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
+        if (executionResult.successful) {
+            executedJobs.each { Job job -> job.jobState = JobState.ABORTED }
+        } else {
+            logger.always("Need to create a proper fail message for abortion.")
+            throw new RuntimeException("Abortion of job states failed.")
+        }
     }
 
     @Override
@@ -627,7 +554,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
     }
 
-
     @Override
     String[] peekLogFile(Job job) {
         String user = userIDForQueries
@@ -653,5 +579,4 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     String getSubmissionCommand() {
         return PBSCommand.QSUB
     }
-
 }

@@ -108,8 +108,4 @@ public abstract class ClusterJobManager<C extends Command> extends JobManager<C>
         return errnousJobs
     }
 
-    @Override
-    boolean isHoldJobsEnabled() {
-        return false
-    }
 }

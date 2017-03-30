@@ -212,4 +212,14 @@ public class DirectSynchronousExecutionJobManager extends JobManager<DirectComma
     public String getSubmissionCommand() {
         return null;
     }
+
+    @Override
+    public Map<Job, JobState> queryJobStatus(List<Job> jobs, boolean forceUpdate) {
+        return null;
+    }
+
+    @Override
+    public Map<Job, GenericJobInfo> queryExtendedJobState(List<Job> jobs, boolean forceUpdate) {
+        return null;
+    }
 }
