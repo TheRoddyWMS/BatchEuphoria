@@ -390,4 +390,9 @@ class Job<J extends Job> {
     Command getLastCommand() {
         return lastCommand
     }
+
+    @Override
+    String toString() {
+        return "Job: ${jobName} calling tool ${tool.getAbsolutePath()}"
+    }
 }

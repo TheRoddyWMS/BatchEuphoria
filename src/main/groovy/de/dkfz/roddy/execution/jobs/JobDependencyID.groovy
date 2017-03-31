@@ -15,6 +15,11 @@ import groovy.transform.CompileStatic
 /**
  * Compatibility interface for Roddy and Roddy plugins.
  * Without it, all plugins depending on 2.3 would need to be adapted and recompiled!
+ *
+ * When you dissolve this class, move the fields and methods to the new class
+ *
+ * @see de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID
+ *
  * Created by heinold on 01.03.17.
  */
 @Deprecated

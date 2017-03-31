@@ -6,6 +6,9 @@
 
 package de.dkfz.eilslabs.batcheuphoria
 
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobManager
+import de.dkfz.eilslabs.batcheuphoria.execution.direct.synchronousexecution.DirectSynchronousExecutionJobManager
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import groovy.transform.CompileStatic
 
 /**
@@ -15,5 +18,19 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 enum AvailableClusterSystems {
-    direct, pbs, sge, slurm, lsf
+    direct(DirectSynchronousExecutionJobManager.class), pbs(PBSJobManager.class), sge("de.dkfz.eilslabs.batcheuphoria.execution.cluster.sge.SGEJobManager"), slurm("de.dkfz.eilslabs.batcheuphoria.execution.cluster.slurm.SlurmJobManager"), lsf("de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.LSFJobManager")
+
+    final String className
+
+    AvailableClusterSystems(String className) {
+        this.className = className
+    }
+
+    AvailableClusterSystems(Class cls) {
+        this.className = cls.name
+    }
+
+    Class<JobManager> loadClass() {
+        return getClass().getClassLoader().loadClass(className) as Class<JobManager>
+    }
 }

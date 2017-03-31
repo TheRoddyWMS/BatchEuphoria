@@ -25,6 +25,12 @@ public enum JobState implements Serializable {
      */
     OK,
     /**
+     * A job where we don't know, whether it is ok or failed.
+     * Has to be read out from a jobstate logfile or retrieved from the job system.
+     * E.g. PBS only shows C
+     */
+    COMPLETED_UNKNOWN,
+    /**
      * Job jobState is unknown
      */
     UNKNOWN,

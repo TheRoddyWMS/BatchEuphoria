@@ -4,10 +4,11 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.eilslabs.batcheuphoria.jobs;
+package de.dkfz.eilslabs.batcheuphoria.jobs
 
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.JobResult as JobResult
-import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet;
+import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
@@ -19,12 +20,12 @@ import groovy.transform.CompileStatic
  * @author michael
  */
 @CompileStatic
-public abstract class JobManager<C extends Command> {
+abstract class JobManager<C extends Command> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(JobManager.class.getSimpleName());
+    private static final LoggerWrapper logger = LoggerWrapper.getLogger(JobManager.class.getSimpleName())
 
     public static final int JOBMANAGER_DEFAULT_UPDATEINTERVAL = 300
-    public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true;
+    public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true
     public static final boolean JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY = false
     public static final boolean JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY = false
 
@@ -34,40 +35,40 @@ public abstract class JobManager<C extends Command> {
 
     public static final String BE_DEFAULT_JOBSCRATCH = "BE JOBSCRATCH"
 
-    protected String jobIDIdentifier = BE_DEFAULT_JOBID;
+    protected String jobIDIdentifier = BE_DEFAULT_JOBID
 
-    protected String jobArrayIndexIdentifier = BE_DEFAULT_JOBARRAYINDEX;
+    protected String jobArrayIndexIdentifier = BE_DEFAULT_JOBARRAYINDEX
 
-    protected String jobScratchIdentifier = BE_DEFAULT_JOBSCRATCH;
+    protected String jobScratchIdentifier = BE_DEFAULT_JOBSCRATCH
 
-    protected final ExecutionService executionService;
+    protected final ExecutionService executionService
 
-    protected Thread updateDaemonThread;
+    protected Thread updateDaemonThread
 
-    protected boolean closeThread;
+    protected boolean closeThread
 
-    protected List<C> listOfCreatedCommands = new LinkedList<>();
+    protected List<C> listOfCreatedCommands = new LinkedList<>()
 
-    protected boolean isTrackingOfUserJobsEnabled;
+    protected boolean isTrackingOfUserJobsEnabled
 
-    protected boolean queryOnlyStartedJobs;
+    protected boolean queryOnlyStartedJobs
 
-    protected String userIDForQueries;
+    protected String userIDForQueries
 
-    private String userEmail;
+    private String userEmail
 
-    private String userMask;
+    private String userMask
 
-    private String userGroup;
+    private String userGroup
 
-    private String userAccount;
+    private String userAccount
 
-    private boolean isParameterFileEnabled;
+    private boolean isParameterFileEnabled
 
-    private Boolean isHoldJobsEnabled = null;
+    private Boolean isHoldJobsEnabled = null
 
-    public JobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
-        this.executionService = executionService;
+    JobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+        this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
         this.queryOnlyStartedJobs = parms.trackOnlyStartedJobs
@@ -87,62 +88,58 @@ public abstract class JobManager<C extends Command> {
                 createUpdateDaemonThread(interval)
             }
         } catch (Exception ex) {
-            logger.severe("Creating the command factory daemon failed for some reason. Roddy will not be able to query the job system.", ex);
+            logger.severe("Creating the command factory daemon failed for some reason. Roddy will not be able to query the job system.", ex)
         }
     }
 
-    public void createUpdateDaemonThread(int interval) {
+    void createUpdateDaemonThread(int interval) {
 
         if (updateDaemonThread != null) {
-            closeThread = true;
+            closeThread = true
             try {
-                updateDaemonThread.join();
+                updateDaemonThread.join()
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                e.printStackTrace()
             }
-            updateDaemonThread = null;
+            updateDaemonThread = null
         }
 
         updateDaemonThread = Thread.startDaemon("Command factory update daemon.", {
             while (!closeThread) {
                 try {
-                    updateJobStatus();
+                    updateJobStatus()
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    e.printStackTrace()
                 }
                 try {
-                    Thread.sleep(interval * 1000);
+                    Thread.sleep(interval * 1000)
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    e.printStackTrace()
                 }
             }
         })
     }
 
-    public abstract C createCommand(GenericJobInfo jobInfo);
+    abstract C createCommand(GenericJobInfo jobInfo)
 
-    public abstract C createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings);
+    abstract C createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings)
 
-    public C createCommand(Job job, File tool, List<String> dependencies) {
-        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies, job.arrayIndices);
-        c.setJob(job);
-        return c;
-    }
-//
-//    public Command.DummyCommand createDummyCommand(Job job, ExecutionContext run, String jobName, List<String> arraySettings) {
-//        return new Command.DummyCommand(job, run, jobName, arraySettings != null && arraySettings.size() > 0);
-//    }
-
-    public void setTrackingOfUserJobsEnabled(boolean trackingOfUserJobsEnabled) {
-        isTrackingOfUserJobsEnabled = trackingOfUserJobsEnabled;
+    C createCommand(Job job, File tool, List<String> dependencies) {
+        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies, job.arrayIndices)
+        c.setJob(job)
+        return c
     }
 
-    public void setQueryOnlyStartedJobs(boolean queryOnlyStartedJobs) {
-        this.queryOnlyStartedJobs = queryOnlyStartedJobs;
+    void setTrackingOfUserJobsEnabled(boolean trackingOfUserJobsEnabled) {
+        isTrackingOfUserJobsEnabled = trackingOfUserJobsEnabled
     }
 
-    public void setUserIDForQueries(String userIDForQueries) {
-        this.userIDForQueries = userIDForQueries;
+    void setQueryOnlyStartedJobs(boolean queryOnlyStartedJobs) {
+        this.queryOnlyStartedJobs = queryOnlyStartedJobs
+    }
+
+    void setUserIDForQueries(String userIDForQueries) {
+        this.userIDForQueries = userIDForQueries
     }
 
     /**
@@ -151,11 +148,27 @@ public abstract class JobManager<C extends Command> {
      * @param job
      * @return
      */
-    public JobResult runJob(Job job) {
-        return runJob(job, false);
+    JobResult runJob(Job job) {
+        return runJob(job, false)
     }
 
-    public abstract JobResult runJob(Job job, boolean runDummy);
+    abstract JobResult runJob(Job job, boolean runDummy)
+
+    /**
+     * Called by the execution service after a command was executed.
+     */
+    JobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+        JobResult jobResult
+        if (res.successful) {
+            String exID = parseJobID(res.resultLines[0]);
+            def job = command.getJob()
+            def jobDependencyID = createJobDependencyID(job, exID)
+            command.setExecutionID(jobDependencyID);
+            jobResult = new de.dkfz.eilslabs.batcheuphoria.jobs.JobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<de.dkfz.eilslabs.batcheuphoria.jobs.Job>)
+            job.setRunResult(jobResult)
+        }
+        return jobResult
+    }
 
     void startHeldJobs(List<Job> jobs) {}
 
@@ -163,22 +176,22 @@ public abstract class JobManager<C extends Command> {
 
     boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
-    public abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(Job job, String jobResult);
+    abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(Job job, String jobResult)
 
-    public abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet);
+    abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet)
 
-    public abstract ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions);
+    abstract ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions)
 
-//    public abstract ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID);
+//    public abstract ProcessingCommands getProcessingCommanldsFromConfiguration(Configuration configuration, String toolID);
 
-    public abstract ProcessingCommands extractProcessingCommandsFromToolScript(File file);
+    abstract ProcessingCommands extractProcessingCommandsFromToolScript(File file)
 
-    public List<C> getListOfCreatedCommands() {
-        List<C> newList = new LinkedList<>();
+    List<C> getListOfCreatedCommands() {
+        List<C> newList = new LinkedList<>()
         synchronized (listOfCreatedCommands) {
-            newList.addAll(listOfCreatedCommands);
+            newList.addAll(listOfCreatedCommands)
         }
-        return newList;
+        return newList
     }
 
     /**
@@ -188,13 +201,13 @@ public abstract class JobManager<C extends Command> {
      * @param commandString
      * @return
      */
-    public abstract Job parseToJob(String commandString);
+    abstract Job parseToJob(String commandString)
 
-    public abstract GenericJobInfo parseGenericJobInfo(String command);
+    abstract GenericJobInfo parseGenericJobInfo(String command)
 
-    public abstract JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex);
+    abstract JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex)
 
-    public abstract void updateJobStatus();
+    abstract void updateJobStatus()
 
     /**
      * Queries the status of all jobs in the list.
@@ -202,108 +215,114 @@ public abstract class JobManager<C extends Command> {
      * @param jobIDs
      * @return
      */
-    public abstract Map<String, JobState> queryJobStatus(List<String> jobIDs);
+    abstract Map<Job, JobState> queryJobStatus(List<Job> jobs, boolean forceUpdate = false)
 
-    public abstract void queryJobAbortion(List<Job> executedJobs);
+    abstract Map<Job, GenericJobInfo> queryExtendedJobState(List<Job> jobs, boolean forceUpdate)
 
-    public abstract void addJobStatusChangeListener(Job job);
+    /**
+     * Try to abort a range of jobs
+     * @param executedJobs
+     */
+    abstract void queryJobAbortion(List<Job> executedJobs)
 
-    public abstract String getLogFileWildcard(Job job);
+    abstract void addJobStatusChangeListener(Job job)
 
-    public abstract boolean compareJobIDs(String jobID, String id);
+    abstract String getLogFileWildcard(Job job)
 
-    public void addCommandToList(C pbsCommand) {
+    abstract boolean compareJobIDs(String jobID, String id)
+
+    void addCommandToList(C pbsCommand) {
         synchronized (listOfCreatedCommands) {
-            listOfCreatedCommands.add(pbsCommand);
+            listOfCreatedCommands.add(pbsCommand)
         }
     }
 
-    public int waitForJobsToFinish() {
-        return 0;
+    int waitForJobsToFinish() {
+        return 0
     }
 
-    public abstract String getStringForQueuedJob();
+    abstract String getStringForQueuedJob()
 
-    public abstract String getStringForJobOnHold();
+    abstract String getStringForJobOnHold()
 
-    public abstract String getStringForRunningJob();
+    abstract String getStringForRunningJob()
 
-    public String getJobIDIdentifier() {
-        return jobIDIdentifier;
+    String getJobIDIdentifier() {
+        return jobIDIdentifier
     }
 
-    public void setJobIDIdentifier(String jobIDIdentifier) {
-        this.jobIDIdentifier = jobIDIdentifier;
+    void setJobIDIdentifier(String jobIDIdentifier) {
+        this.jobIDIdentifier = jobIDIdentifier
     }
 
-    public String getJobArrayIndexIdentifier() {
-        return jobArrayIndexIdentifier;
+    String getJobArrayIndexIdentifier() {
+        return jobArrayIndexIdentifier
     }
 
-    public void setJobArrayIndexIdentifier(String jobArrayIndexIdentifier) {
-        this.jobArrayIndexIdentifier = jobArrayIndexIdentifier;
+    void setJobArrayIndexIdentifier(String jobArrayIndexIdentifier) {
+        this.jobArrayIndexIdentifier = jobArrayIndexIdentifier
     }
 
-    public String getJobScratchIdentifier() {
-        return jobScratchIdentifier;
+    String getJobScratchIdentifier() {
+        return jobScratchIdentifier
     }
 
-    public void setJobScratchIdentifier(String jobScratchIdentifier) {
-        this.jobScratchIdentifier = jobScratchIdentifier;
+    void setJobScratchIdentifier(String jobScratchIdentifier) {
+        this.jobScratchIdentifier = jobScratchIdentifier
     }
 
-    public abstract String getSpecificJobIDIdentifier();
+    abstract String getSpecificJobIDIdentifier()
 
-    public abstract String getSpecificJobArrayIndexIdentifier();
+    abstract String getSpecificJobArrayIndexIdentifier()
 
-    public abstract String getSpecificJobScratchIdentifier();
+    abstract String getSpecificJobScratchIdentifier()
 
-    public Map<String, String> getSpecificEnvironmentSettings() {
-        Map<String, String> map = new LinkedHashMap<>();
-        map.put(jobIDIdentifier, getSpecificJobIDIdentifier());
-        map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier());
-        map.put(jobScratchIdentifier, getSpecificJobScratchIdentifier());
-        return map;
+    Map<String, String> getSpecificEnvironmentSettings() {
+        Map<String, String> map = new LinkedHashMap<>()
+        map.put(jobIDIdentifier, getSpecificJobIDIdentifier())
+        map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier())
+        map.put(jobScratchIdentifier, getSpecificJobScratchIdentifier())
+        return map
     }
 
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
+    void setUserEmail(String userEmail) {
+        this.userEmail = userEmail
     }
 
-    public String getUserEmail() {
-        return userEmail;
+    String getUserEmail() {
+        return userEmail
     }
 
-    public void setUserMask(String userMask) {
-        this.userMask = userMask;
+    void setUserMask(String userMask) {
+        this.userMask = userMask
     }
 
-    public String getUserMask() {
-        return userMask;
+    String getUserMask() {
+        return userMask
     }
 
-    public void setUserGroup(String userGroup) {
-        this.userGroup = userGroup;
+    void setUserGroup(String userGroup) {
+        this.userGroup = userGroup
     }
 
-    public String getUserGroup() {
-        return userGroup;
+    String getUserGroup() {
+        return userGroup
     }
 
-    public void setUserAccount(String userAccount) {
-        this.userAccount = userAccount;
+    void setUserAccount(String userAccount) {
+        this.userAccount = userAccount
     }
 
-    public String getUserAccount() {
-        return userAccount;
+    String getUserAccount() {
+        return userAccount
     }
 
-    public void setParameterFileEnabled(boolean parameterFileEnabled) {
-        isParameterFileEnabled = parameterFileEnabled;
+    void setParameterFileEnabled(boolean parameterFileEnabled) {
+        isParameterFileEnabled = parameterFileEnabled
     }
 
-    public boolean isParameterFileEnabled() {
-        return isParameterFileEnabled;
+    boolean isParameterFileEnabled() {
+        return isParameterFileEnabled
     }
 
     /**
@@ -313,45 +332,45 @@ public abstract class JobManager<C extends Command> {
      * @param job
      * @return
      */
-    public abstract String[] peekLogFile(Job job);
+    abstract String[] peekLogFile(Job job)
 
     /**
      * Stores a new job jobState info to an execution contexts job jobState log file.
      *
      * @param job
      */
-    public String getJobStateInfoLine(Job job) {
-        String millis = "" + System.currentTimeMillis();
-        millis = millis.substring(0, millis.length() - 3);
-        String code = "255";
+    String getJobStateInfoLine(Job job) {
+        String millis = "" + System.currentTimeMillis()
+        millis = millis.substring(0, millis.length() - 3)
+        String code = "255"
         if (job.getJobState() == JobState.UNSTARTED)
-            code = "N";
+            code = "N"
         else if (job.getJobState() == JobState.ABORTED)
-            code = "A";
+            code = "A"
         else if (job.getJobState() == JobState.OK)
-            code = "C";
+            code = "C"
         else if (job.getJobState() == JobState.FAILED)
-            code = "E";
+            code = "E"
         if (null != job.getJobID())
-            return String.format("%s:%s:%s", job.getJobID(), code, millis);
+            return String.format("%s:%s:%s", job.getJobID(), code, millis)
 
-        logger.postSometimesInfo("Did not store info for job " + job.getJobName() + ", job id was null.");
-        return null;
+        logger.postSometimesInfo("Did not store info for job " + job.getJobName() + ", job id was null.")
+        return null
     }
 
-    public String getLogFileName(Job p) {
-        return p.getJobName() + ".o" + p.getJobID();
+    String getLogFileName(Job p) {
+        return p.getJobName() + ".o" + p.getJobID()
     }
 
-    public String getLogFileName(Command command) {
-        return command.getJob().getJobName() + ".o" + command.getExecutionID().getId();
+    String getLogFileName(Command command) {
+        return command.getJob().getJobName() + ".o" + command.getExecutionID().getId()
     }
 
-    public boolean executesWithoutJobSystem() {
-        return false;
+    boolean executesWithoutJobSystem() {
+        return false
     }
 
-    public abstract String parseJobID(String commandOutput);
+    abstract String parseJobID(String commandOutput)
 
-    public abstract String getSubmissionCommand();
+    abstract String getSubmissionCommand()
 }

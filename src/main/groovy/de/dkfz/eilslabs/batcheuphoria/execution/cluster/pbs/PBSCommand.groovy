@@ -175,7 +175,7 @@ class PBSCommand extends Command {
         qsubCall << assembleVariableExportString()
 
         qsubCall << " " << job.getTool().getAbsolutePath()
-        println(qsubCall)
+
         return qsubCall
     }
 
