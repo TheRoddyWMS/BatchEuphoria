@@ -49,8 +49,12 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     PBSJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
+        /**
+         * General or specific todos for JobManager and PBSJobManager
+         */
         logger.severe("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
         logger.severe("Set logfile location, parameter file and job state log file on job creation (or override a method).")
+        logger.severe("Allow enabling and disabling of options for resource arbitration for defective job managers.")
     }
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
@@ -85,9 +89,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     JobResult runJob(Job job) {
         def command = createCommand(job)
-        executionService.execute(command)
+        def executionResult = executionService.execute(command)
+        extractAndSetJobResultFromExecutionResult(command, executionResult)
+        executionService.handleServiceBasedJobExitStatus(command, executionResult, null)
         // job.runResult is set within executionService.execute
-        logger.severe("Set the job runResult in a better way from runJob itself or so.")
+//        logger.severe("Set the job runResult in a better way from runJob itself or so.")
         cacheLock.lock()
         if (job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
             allStates[job.jobID] = JobState.HOLD
@@ -177,7 +183,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             }
         }
 
-        logger.severe("Allow enabling and disabling of options for resource arbitration for defective job managers.")
         if (resourceSet.isStorageSet()) {
 //            sb << " -l mem=" << resourceSet.getMem() << "g");
         }

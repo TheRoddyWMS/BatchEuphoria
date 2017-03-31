@@ -35,9 +35,9 @@ class TestExecutionService implements ExecutionService {
             // Find the one entry in a range of line which starts with a number.
             // In my case, several additional error lines with Bash error messages appeared in changing order and
             // this solution guaranteed that I always get the right line.
-            command.job.runResult = new JobResult(command, new PBSJobDependencyID(command.job, er.resultLines.find { it.split("[.]")[0].isNumber() }), true, command.job.tool, command.job.parameters, command.job.parentJobs as List)
+//            command.job.runResult = new JobResult(command, new PBSJobDependencyID(command.job, er.resultLines.find { it.split("[.]")[0].isNumber() }), true, command.job.tool, command.job.parameters, command.job.parentJobs as List)
         } else {
-            command.job.runResult = new JobResult(command, new PBSJobDependencyID(command.job, "-1"), false, command.job.tool, command.job.parameters, command.job.parentJobs as List)
+//            command.job.runResult = new JobResult(command, new PBSJobDependencyID(command.job, "-1"), false, command.job.tool, command.job.parameters, command.job.parentJobs as List)
         }
         return er
     }
@@ -66,5 +66,10 @@ class TestExecutionService implements ExecutionService {
     @Override
     boolean isAvailable() {
         return true
+    }
+
+    @Override
+    String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
+        return null
     }
 }

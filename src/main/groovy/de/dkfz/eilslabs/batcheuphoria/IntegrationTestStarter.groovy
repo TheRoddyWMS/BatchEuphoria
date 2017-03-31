@@ -52,21 +52,23 @@ class IntegrationTestStarter {
     private static void runTestsFor(AvailableClusterSystems option) {
         JobManager jobManager
         int maxSleep = 5
+        log.always("Creating job manager instance for ${option}")
 
         try {
-            log.always("Creating job manager instance for ${option}")
-            try {
-                jobManager = option.loadClass().getDeclaredConstructor(ExecutionService, JobManagerCreationParameters)
-                        .newInstance(executionService,
-                        new JobManagerCreationParametersBuilder()
-                                .setCreateDaemon(false)
-                                .setTrackUserJobsOnly(true)
-                                .build()
-                ) as JobManager
-            } catch (Exception ex) {
-                log.severe("Could not load and instantiate job manager class ${option.className}.")
-                return
-            }
+            jobManager = option.loadClass().getDeclaredConstructor(ExecutionService, JobManagerCreationParameters)
+                    .newInstance(executionService,
+                    new JobManagerCreationParametersBuilder()
+                            .setCreateDaemon(false)
+                            .setTrackUserJobsOnly(true)
+                            .build()
+            ) as JobManager
+        } catch (Exception ex) {
+            log.severe("Could not load and instantiate job manager class ${option.className}.")
+            return
+        }
+
+        try {
+
 
             log.always("Starting tests for single jobs.")
             Job testJob = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
@@ -110,20 +112,18 @@ class IntegrationTestStarter {
             Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
             Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
 
-            // startHeldJobs
+            log.always("Submit jobs.")
             def allJobs = [testParent, testJobChild1, testJobChild2]
             allJobs.each { def jr = jobManager.runJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
             ensureProperJobStates(maxSleep, allJobs, [jobManager.isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED], jobManager)
 
+            log.always("Start held jobs.")
             jobManager.startHeldJobs(allJobs)
             ensureProperJobStates(maxSleep, allJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
 
-            // abortJobs
+            log.always("Abort jobs.")
             jobManager.queryJobAbortion(allJobs)
             ensureProperJobStates(maxSleep, allJobs, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
-
-            log.severe("Did not test jobManager.queryExtendedJobState")
-            log.severe("Did not test jobManager.waitForJobsToFinish")
 
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.
@@ -133,6 +133,9 @@ class IntegrationTestStarter {
         } finally {
 
         }
+
+        log.severe("Did not test jobManager.queryExtendedJobState")
+        log.severe("Did not test jobManager.waitForJobsToFinish")
     }
 
     private static void ensureProperJobStates(int maxSleep, List<Job> jobList, List<JobState> listOfStatesToCheck, JobManager jobManager) {
@@ -140,9 +143,7 @@ class IntegrationTestStarter {
         int sleep = maxSleep * increments  // 125ms increments, count from 5s to 0 seconds.
         boolean allJobsInCorrectState = false
         List<JobState> lastStates = []
-//        Thread.sleep(500)
         while (sleep > 0 && !allJobsInCorrectState) {
-            // Force an
             lastStates.clear()
             def status = jobManager.queryJobStatus(jobList, true)
             allJobsInCorrectState = true
@@ -154,9 +155,7 @@ class IntegrationTestStarter {
                 sleep--
                 log.severe("Found job states ${status.values().join(" ")}")
             }
-//            Thread.sleep((int) (1000 / increments))
         }
-        println()
 
         if (!allJobsInCorrectState)
             log.severe("Not all jobs ${jobList.collect { it.jobID }.join(" ")} were in the proper state: [${listOfStatesToCheck.join(" ")}], got last states [${lastStates.join(" ")}]. Make sure, that your job system is working properly.")

@@ -6,6 +6,7 @@
 
 package de.dkfz.eilslabs.batcheuphoria.jobs
 
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.JobResult as JobResult
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
@@ -152,6 +153,22 @@ abstract class JobManager<C extends Command> {
     }
 
     abstract JobResult runJob(Job job, boolean runDummy)
+
+    /**
+     * Called by the execution service after a command was executed.
+     */
+    JobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+        JobResult jobResult
+        if (res.successful) {
+            String exID = parseJobID(res.resultLines[0]);
+            def job = command.getJob()
+            def jobDependencyID = createJobDependencyID(job, exID)
+            command.setExecutionID(jobDependencyID);
+            jobResult = new de.dkfz.eilslabs.batcheuphoria.jobs.JobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<de.dkfz.eilslabs.batcheuphoria.jobs.Job>)
+            job.setRunResult(jobResult)
+        }
+        return jobResult
+    }
 
     void startHeldJobs(List<Job> jobs) {}
 

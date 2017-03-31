@@ -30,4 +30,6 @@ interface ExecutionService {
      * Query this to find out, if the service is still active
       */
     boolean isAvailable()
+
+    String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream)
 }
