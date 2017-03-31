@@ -88,6 +88,8 @@ class Job<J extends Job> {
      */
     private de.dkfz.roddy.execution.jobs.JobResult runResult
 
+    private GenericJobInfo jobInfo
+
     JobManager jobManager
 
     Job(String jobName, File tool, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
@@ -282,6 +284,15 @@ class Job<J extends Job> {
 
     de.dkfz.roddy.execution.jobs.JobResult getRunResult() {
         return runResult
+    }
+
+
+    GenericJobInfo getJobInfo() {
+        return jobInfo
+    }
+
+    void setJobInfo(GenericJobInfo jobInfo) {
+        this.jobInfo = jobInfo
     }
 
     /**
