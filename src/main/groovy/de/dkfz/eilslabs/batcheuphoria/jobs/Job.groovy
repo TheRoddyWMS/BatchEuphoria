@@ -269,7 +269,7 @@ class Job<J extends Job> {
     }
 
     List<String> getDependencyIDsAsString() {
-        getDependencyIDs().collect { it -> it.id }
+        getDependencyIDs().collect { de.dkfz.roddy.execution.jobs.JobDependencyID jid -> jid.id }
     }
 
     File getLoggingDirectory() {
