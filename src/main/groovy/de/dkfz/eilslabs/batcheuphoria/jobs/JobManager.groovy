@@ -160,10 +160,10 @@ abstract class JobManager<C extends Command> {
     JobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
         JobResult jobResult
         if (res.successful) {
-            String exID = parseJobID(res.resultLines[0]);
+            String exID = parseJobID(res.resultLines[0])
             def job = command.getJob()
             def jobDependencyID = createJobDependencyID(job, exID)
-            command.setExecutionID(jobDependencyID);
+            command.setExecutionID(jobDependencyID)
             jobResult = new de.dkfz.eilslabs.batcheuphoria.jobs.JobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<de.dkfz.eilslabs.batcheuphoria.jobs.Job>)
             job.setRunResult(jobResult)
         }

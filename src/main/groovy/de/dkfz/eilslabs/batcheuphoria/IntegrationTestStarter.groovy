@@ -157,6 +157,7 @@ class IntegrationTestStarter {
             }
         }
 
+
         if (!allJobsInCorrectState)
             log.severe("Not all jobs ${jobList.collect { it.jobID }.join(" ")} were in the proper state: [${listOfStatesToCheck.join(" ")}], got last states [${lastStates.join(" ")}]. Make sure, that your job system is working properly.")
     }

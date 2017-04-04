@@ -55,6 +55,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         logger.severe("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
         logger.severe("Set logfile location, parameter file and job state log file on job creation (or override a method).")
         logger.severe("Allow enabling and disabling of options for resource arbitration for defective job managers.")
+        logger.severe("parseToJob() is not implemented and will return null.")
     }
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
@@ -236,14 +237,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     Job parseToJob(String commandString) {
-        throw new NotImplementedException()
-    }
-
-//    @Override
-//    Job parseToJob(ExecutionContext executionContext, String commandString) {
-//
-//        GenericJobInfo jInfo = parseGenericJobInfo(executionContext, commandString)
-//        Job job = new ReadOutJob(executionContext, jInfo.getJobName(), jInfo.getToolID(), jInfo.getID(), jInfo.getParameters(), jInfo.getParentJobIDs())
+        return null
+//        GenericJobInfo jInfo = parseGenericJobInfo(commandString)
+//        Job job = new Job(jInfo.getJobName(), jInfo.getToolID(), jInfo.getID(), jInfo.getParameters(), jInfo.getParentJobIDs())
 //
 //        //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
@@ -251,7 +247,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        if (job.getJobState().isPlannedOrRunning()) addJobStatusChangeListener(job)
 //
 //        return job
-//    }
+    }
 
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
