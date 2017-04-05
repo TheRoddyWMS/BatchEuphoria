@@ -143,7 +143,7 @@ public class DirectSynchronousExecutionJobManager extends JobManager<DirectComma
     @Override
     public String getSpecificJobIDIdentifier() {
         logger.severe("Job id for " + getClass().getName() + " should be configurable");
-        return "\"$$\"";
+        return '"$$"'
     }
 
     @Override
@@ -155,7 +155,7 @@ public class DirectSynchronousExecutionJobManager extends JobManager<DirectComma
     @Override
     public String getSpecificJobScratchIdentifier() {
         logger.severe("Job scratch for " + getClass().getName() + " should be configurable");
-        return "/data/roddyScratch/$$";
+        return '/data/roddyScratch/$$'
     }
 
     @Override
@@ -175,8 +175,8 @@ public class DirectSynchronousExecutionJobManager extends JobManager<DirectComma
 //    }
 
     @Override
-    public Map<String, JobState> queryJobStatus(List jobIDs) {
-        return new LinkedHashMap<>();
+    public Map<Job, JobState> queryJobStatus(List<Job> jobs) {
+        jobs?.collectEntries { Job job -> [job, JobState.UNKNOWN] } ?: []
     }
 
     @Override
