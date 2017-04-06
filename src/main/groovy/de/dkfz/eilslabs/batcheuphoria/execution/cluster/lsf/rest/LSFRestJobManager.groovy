@@ -6,6 +6,7 @@
 
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest
 
+import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
 import de.dkfz.eilslabs.batcheuphoria.execution.RestExecutionService
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
 
@@ -104,7 +105,7 @@ class LSFRestJobManager extends RestJobManager
 
 
 
-     public LSFRestJobManager(RestExecutionService restExecutionService, JobManagerCreationParameters parms){
+     public LSFRestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
         super(restExecutionService, parms)
      }
 

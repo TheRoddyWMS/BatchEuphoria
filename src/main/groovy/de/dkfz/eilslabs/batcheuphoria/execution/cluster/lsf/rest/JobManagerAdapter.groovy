@@ -74,6 +74,11 @@ class JobManagerAdapter extends ClusterJobManager{
     }
 
     @Override
+    Map<Job, GenericJobInfo> queryExtendedJobState(List list, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
     void addJobStatusChangeListener(Job job) {
 
     }
@@ -149,5 +154,10 @@ class JobManagerAdapter extends ClusterJobManager{
     @Override
     Command createCommand(Job job, String jobName, List processingCommands, File tool, Map parameters, List dependencies, List arraySettings) {
         throw new NotImplementedException()
+    }
+
+    @Override
+    Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
+        return null
     }
 }

@@ -31,7 +31,7 @@ import org.apache.http.protocol.HTTP
  */
 class RestJobManager extends JobManagerAdapter
  {
-     protected final RestExecutionService restExecutionService
+     protected final ExecutionService restExecutionService
      private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestJobManager.class.name);
 
      /*REST RESOURCES*/
@@ -67,12 +67,16 @@ class RestJobManager extends JobManagerAdapter
 
 
 
-     public RestJobManager(RestExecutionService restExecutionService, JobManagerCreationParameters parms){
-         super((ExecutionService)restExecutionService, parms)
+     RestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
+         super(restExecutionService, parms)
          this.restExecutionService = restExecutionService
      }
 
-
+     @Override
+     de.dkfz.roddy.execution.jobs.JobResult runJob(Job job) {
+         submitJob(job)
+         return job.runResult
+     }
 
      @Override
      de.dkfz.roddy.execution.jobs.JobResult runJob(Job job, boolean runDummy) {
@@ -125,12 +129,23 @@ class RestJobManager extends JobManagerAdapter
      }
 
      @Override
+     Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
+         getJobdetails(list)
+         Map<Job, JobState> jobStates = [:]
+         list.each {Job job -> jobStates.put(job,job.getJobState())}
+         return queryJobStatus(list)
+     }
+
+     @Override
      Map<String, JobState> queryJobStatus(List jobIDs) {
          getJobdetails(jobIDs)
+         Map<String, JobState> jobStates = [:]
+         jobIDs.each {Job job -> jobStates.put(job.getJobID(),job.getJobState())}
+         return  jobStates
      }
 
      /**
-      * Submit job to cluster
+      * Submit job
       *
       body = "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB\r\n" +
       "Content-Disposition: form-data; name=\"AppName\"\r\n" +
@@ -290,7 +305,10 @@ class RestJobManager extends JobManagerAdapter
          }
          return jobIds
      }
-
+     /**
+      * Generic method to submit any LSF valid command e.g. bstop <job id>
+      * @param cmd LSF command
+      */
      public void submitCommand(String cmd){
          String resource = URI_USER_COMMAND
          List<Header> headers = []
@@ -303,16 +321,14 @@ class RestJobManager extends JobManagerAdapter
          if(result.statusCode == 200){
              // successful
              logger.info("status code: "+result.statusCode+" result: "+result.body)
-
          }else{
              //error
              logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
-
          }
      }
 
      /**
-      *
+      * Updates job information for given jobs
       * @param jobList
       */
      void getJobdetails(List<Job> jobList){

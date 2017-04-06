@@ -7,6 +7,8 @@
 package de.dkfz.eilslabs.batcheuphoria
 
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest.RestCommand
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest.RestResult
 import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobDependencyID
 import de.dkfz.eilslabs.batcheuphoria.jobs.Command
 import de.dkfz.roddy.execution.io.ExecutionHelper
@@ -51,6 +53,11 @@ class TestExecutionService implements ExecutionService {
 
     @Override
     ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream) {
+        return null
+    }
+
+    @Override
+    RestResult execute(RestCommand restCommand) {
         return null
     }
 

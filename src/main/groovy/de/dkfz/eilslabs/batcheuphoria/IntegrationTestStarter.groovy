@@ -9,6 +9,7 @@ package de.dkfz.eilslabs.batcheuphoria
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSetSize
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
+import de.dkfz.eilslabs.batcheuphoria.execution.RestExecutionService
 import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
@@ -33,37 +34,49 @@ class IntegrationTestStarter {
 
     static LoggerWrapper log = LoggerWrapper.getLogger(IntegrationTestStarter)
     static TestExecutionService executionService
+    static RestExecutionService restExecutionService
+
     static File batchEuphoriaTestScript
 
     static void main(String[] args) {
         checkStartup(args)
 
-        initializeTests(args)
-
-        getOptionsFromArgs(args).each { runTestsFor(it) }
+        getOptionsFromArgs(args).each { AvailableClusterSystems cs ->
+            if(cs == AvailableClusterSystems.lsf){
+                initializeTests(args[0],args[1])
+                initializeLSFTest(args[2],args[3])
+                runTestsFor(cs, restExecutionService)
+            }else{
+                initializeTests(args[0],args[1])
+                runTestsFor(cs, executionService)
+            }
+        }
 
         finalizeTests()
     }
 
     private static List<AvailableClusterSystems> getOptionsFromArgs(String[] args) {
-        args[2..-1].collect { String it -> it.toLowerCase() as AvailableClusterSystems }
+        if(args.length > 4)
+            args[4..-1].collect { String it -> it.toLowerCase() as AvailableClusterSystems }
+        else
+            args[2..-1].collect { String it -> it.toLowerCase() as AvailableClusterSystems }
     }
 
-    private static void runTestsFor(AvailableClusterSystems option) {
+    private static void runTestsFor(AvailableClusterSystems option, ExecutionService es) {
         JobManager jobManager
         int maxSleep = 5
         log.always("Creating job manager instance for ${option}")
 
         try {
             jobManager = option.loadClass().getDeclaredConstructor(ExecutionService, JobManagerCreationParameters)
-                    .newInstance(executionService,
+                    .newInstance(es,
                     new JobManagerCreationParametersBuilder()
                             .setCreateDaemon(false)
                             .setTrackUserJobsOnly(true)
                             .build()
             ) as JobManager
         } catch (Exception ex) {
-            log.severe("Could not load and instantiate job manager class ${option.className}.")
+            log.severe("Could not load and instantiate job manager class ${option.className}. Exception: ${ex.printStackTrace()}")
             return
         }
 
@@ -179,14 +192,27 @@ class IntegrationTestStarter {
         }
     }
 
-    private static void initializeTests(String[] args) {
+    private static void initializeTests(String user, String server) {
         try {
-            executionService = new TestExecutionService(args[0], args[1])
+            executionService = new TestExecutionService(user, server)
             batchEuphoriaTestScript = File.createTempFile("batchEuphoriaTestScript_", ".sh")
             batchEuphoriaTestScript << "#!/bin/bash\nsleep 15\n"
             executionService.copyFileToRemote(batchEuphoriaTestScript, batchEuphoriaTestScript)
         } catch (Exception ex) {
             log.severe("Could not setup execution service and copy test script.")
+        }
+    }
+
+    private static void initializeLSFTest(String server, String user) {
+        Console cnsl = System.console();
+        char[] pwd = null
+        if (cnsl != null)
+            pwd = cnsl.readPassword("LSF Password: ");
+
+        try {
+            restExecutionService = new RestExecutionService(server,user,pwd.toString())
+        } catch (Exception ex) {
+            log.severe("Could not setup LSF execution service")
         }
     }
 

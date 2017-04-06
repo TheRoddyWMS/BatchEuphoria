@@ -35,7 +35,7 @@ import java.security.KeyStore
 /**
  * Created by kaercher on 12.01.17.
  */
-public class RestExecutionService implements ExecutionService{
+class RestExecutionService implements ExecutionService{
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestExecutionService.class.name);
 
@@ -52,7 +52,7 @@ public class RestExecutionService implements ExecutionService{
     public static final String RESOURCE_LOGON = "/logon"
     public static final String RESOURCE_LOGOUT = "/logout"
 
-    public RestExecutionService(String baseURL, String username, String password) throws AuthenticationException{
+    RestExecutionService(String baseURL, String username, String password) throws AuthenticationException{
         this.BASE_URL = baseURL
         RestResult result = logon(username,password)
         if(result.statusCode == 200){
@@ -64,7 +64,7 @@ public class RestExecutionService implements ExecutionService{
     }
 
 
-    public RestExecutionService(File keystoreLocation, String keyStorePassword){
+    RestExecutionService(File keystoreLocation, String keyStorePassword){
         this.keyStoreLocation = keystoreLocation
         this.keyStorePassword = keyStorePassword
 
@@ -198,5 +198,10 @@ public class RestExecutionService implements ExecutionService{
     @Override
     boolean isAvailable() {
         return false
+    }
+
+    @Override
+    String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
+        return null
     }
 }

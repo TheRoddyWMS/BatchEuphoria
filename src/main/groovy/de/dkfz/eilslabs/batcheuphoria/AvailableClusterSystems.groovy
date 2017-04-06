@@ -18,7 +18,7 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 enum AvailableClusterSystems {
-    direct(DirectSynchronousExecutionJobManager.class), pbs(PBSJobManager.class), sge("de.dkfz.eilslabs.batcheuphoria.execution.cluster.sge.SGEJobManager"), slurm("de.dkfz.eilslabs.batcheuphoria.execution.cluster.slurm.SlurmJobManager"), lsf("de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.LSFJobManager")
+    direct(DirectSynchronousExecutionJobManager.class), pbs(PBSJobManager.class), sge("de.dkfz.eilslabs.batcheuphoria.execution.cluster.sge.SGEJobManager"), slurm("de.dkfz.eilslabs.batcheuphoria.execution.cluster.slurm.SlurmJobManager"), lsf("de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest.LSFRestJobManager")
 
     final String className
 
