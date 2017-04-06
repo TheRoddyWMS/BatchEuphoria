@@ -4,12 +4,16 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.cluster.pbs;
+package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobManager
+import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParametersBuilder
+import groovy.transform.CompileStatic;
 import org.junit.Test;
 
 /**
  */
+@CompileStatic
 public class PBSJobManagerTest {
 
     @Test

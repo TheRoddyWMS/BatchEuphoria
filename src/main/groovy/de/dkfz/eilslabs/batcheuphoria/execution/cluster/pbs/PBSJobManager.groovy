@@ -60,8 +60,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
 //    public PBSCommand createCommand(GenericJobInfo jobInfo) {
-//        Job job = new Job(jobInfo.getExecutionContext(), jobInfo.getJobName(), jobInfo.getToolID(), new LinkedHashMap<String, Object>(jobInfo.getParameters()));
-//        PBSCommand pbsCommand = new PBSCommand(job, jobInfo.getExecutionContext(), ExecutionService.getInstance(), job.getJobName(), null, job.getParameters(), null, jobInfo.getParentJobIDs(), jobInfo.getExecutionContext().getConfiguration().getProcessingToolPath(jobInfo.getExecutionContext(), jobInfo.getToolID()).getAbsolutePath());
+//        Job job = new Job(jobInfo.getExecutionContext(), jobInfo.getJobName(), jobInfo.getTool(), new LinkedHashMap<String, Object>(jobInfo.getParameters()));
+//        PBSCommand pbsCommand = new PBSCommand(job, jobInfo.getExecutionContext(), ExecutionService.getInstance(), job.getJobName(), null, job.getParameters(), null, jobInfo.getParentJobIDs(), jobInfo.getExecutionContext().getConfiguration().getProcessingToolPath(jobInfo.getExecutionContext(), jobInfo.getTool()).getAbsolutePath());
 //        return pbsCommand;
 //    }
 
@@ -106,13 +106,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return job.runResult
     }
 
-    @Override
-    JobResult runJob(Job job, boolean runDummy) {
-//        createCommand(job, job.jobName, null, job.tool, job.parameters, job.dependencyIDs, )
-//        executionService.execute()
-        throw new NotImplementedException()
-    }
-
     /**
      * For BPS, we enable hold jobs by default.
      * If it is not enabled, we might run into the problem, that job dependencies cannot be
@@ -120,7 +113,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      * @return
      */
     @Override
-    boolean getDefaultForHoldJobsEnabled() { return true; }
+    boolean getDefaultForHoldJobsEnabled() { return true }
 
     List<String> collectJobIDsFromJobs(List<Job> jobs) {
         jobs.collect { it.runResult?.jobID?.shortID }.findAll { it }
@@ -235,23 +228,32 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return convertPBSResourceOptionsString(processingOptionsStr.toString())
     }
 
+    /**
+     * 120016, qsub -N r170402_171935425_A100_indelCalling -h
+     *              -o /data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling
+     *              -j oe  -l mem=16384M -l walltime=02:02:00:00 -l nodes=1:ppn=8
+     *              -v PARAMETER_FILE=/data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/r170402_171935425_A100_indelCalling_1.parameters
+     *                 /data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/analysisTools/indelCallingWorkflow/indelCalling.sh
+     * @param commandString
+     * @return
+     */
     @Override
     Job parseToJob(String commandString) {
-        return null
-//        GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-//        Job job = new Job(jInfo.getJobName(), jInfo.getToolID(), jInfo.getID(), jInfo.getParameters(), jInfo.getParentJobIDs())
-//
-//        //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
+//        return null
+        GenericJobInfo jInfo = parseGenericJobInfo(commandString)
+        Job job = new Job(jInfo.getJobName(), jInfo.getTool(), "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect { new PBSJobDependencyID(null, it) } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
+
+        //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
 //        job.setJobState(queryJobStatus(Arrays.asList(shortID)).get(shortID))
 //        if (job.getJobState().isPlannedOrRunning()) addJobStatusChangeListener(job)
-//
-//        return job
+
+        return job
     }
 
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
-        throw new NotImplementedException();
+        return new PBSCommandParser(commandString).toGenericJobInfo();
     }
 
     @Override
@@ -472,7 +474,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<Job, JobState> queriedStates = [:]
+        Map<Job, JobState> queriedStates = jobs.collectEntries { Job job -> [job, JobState.UNKNOWN] }
 
         for (Job job in jobs) {
             // Aborted somewhat supercedes everything.
@@ -484,7 +486,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 state = allStates[job.jobID]
                 cacheLock.unlock()
             }
-            queriedStates[job] = state
+            if (state) queriedStates[job] = state
         }
 
         return queriedStates

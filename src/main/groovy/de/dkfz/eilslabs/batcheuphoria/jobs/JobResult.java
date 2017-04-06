@@ -102,7 +102,7 @@ public class JobResult extends de.dkfz.roddy.execution.jobs.JobResult implements
 //        return wasArray;
 //    }
 //
-//    public File getToolID() {
+//    public File getTool() {
 //        return toolID;
 //    }
 //

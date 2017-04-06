@@ -148,11 +148,7 @@ abstract class JobManager<C extends Command> {
      * @param job
      * @return
      */
-    JobResult runJob(Job job) {
-        return runJob(job, false)
-    }
-
-    abstract JobResult runJob(Job job, boolean runDummy)
+    abstract JobResult runJob(Job job)
 
     /**
      * Called by the execution service after a command was executed.
@@ -212,11 +208,25 @@ abstract class JobManager<C extends Command> {
     /**
      * Queries the status of all jobs in the list.
      *
+     * Every job in the list is supposed to have an entry in the result map. If
+     * the manager cannot retrieve info about the job, the result will be UNKNOWN
+     * for this particular job.
+     *
      * @param jobIDs
      * @return
      */
     abstract Map<Job, JobState> queryJobStatus(List<Job> jobs, boolean forceUpdate = false)
 
+    /**
+     * Will be used to gather extended information about a job like:
+     * - The used memory
+     * - The used cores
+     * - The used walltime
+     *
+     * @param jobs
+     * @param forceUpdate
+     * @return
+     */
     abstract Map<Job, GenericJobInfo> queryExtendedJobState(List<Job> jobs, boolean forceUpdate)
 
     /**

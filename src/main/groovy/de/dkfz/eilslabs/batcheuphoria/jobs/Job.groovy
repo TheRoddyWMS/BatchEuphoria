@@ -101,7 +101,7 @@ class Job<J extends Job> {
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll((dependencyIDs ?: parentJobs ? parentJobs.collect { Job job -> job.jobID ?: null }.findAll { String it -> it } : []) as List<JobDependencyID>)
+        this.listOfCustomDependencyIDs.addAll((dependencyIDs ?: parentJobs ? parentJobs.collect { Job job -> job.runResult?.jobID ?: null }.findAll { de.dkfz.roddy.execution.jobs.JobDependencyID it -> it } : []) as List<JobDependencyID>)
         this.jobManager = jobManager
     }
 
@@ -124,76 +124,6 @@ class Job<J extends Job> {
             return false
         return FakeJobID.isFakeJobID(jobID)
     }
-//        null
-//        if (runResult != null)
-//            throw new RuntimeException(Constants.ERR_MSG_ONLY_ONE_JOB_ALLOWED)
-//
-//        ExecutionContextLevel contextLevel = context.getExecutionContextLevel()
-//        Configuration configuration = context.getConfiguration()
-//        File tool = configuration.getProcessingToolPath(context, toolID)
-//
-//        StringBuilder dbgMessage = new StringBuilder()
-//        StringBuilder jobDetailsLine = new StringBuilder()
-//        Command cmd
-//        boolean isArrayJob = arrayIndices// (arrayIndices != null && arrayIndices.size() > 0);
-//        boolean runJob
-//
-//        //Remove duplicate job ids as qsub cannot handle duplicate keys => job will hold forever as it releases the dependency queue linearly
-//        List<String> dependencies = dependencyIDs.collect { JobDependencyID jobDependencyID -> return jobDependencyID.getId() }.unique() as List<String>
-//        this.parameters.putAll(convertParameterObject(Constants.RODDY_PARENT_JOBS, dependencies))
-//
-//        appendProcessingCommands(configuration)
-//
-//        //See if the job should be executed
-//        if (contextLevel == ExecutionContextLevel.RUN || contextLevel == ExecutionContextLevel.CLEANUP) {
-//            runJob = true //The job is always executed if run is selected
-//            jobDetailsLine << "  Running job " + jobName
-//        } else if (contextLevel == ExecutionContextLevel.RERUN || contextLevel == ExecutionContextLevel.TESTRERUN) {
-//            runJob = checkIfJobShouldRerun(dbgMessage)
-//            jobDetailsLine << "  Rerun job " + jobName
-//        } else {
-//            return handleDifferentJobRun(dbgMessage)
-//        }
-//
-//        //Execute the job or create a dummy command.
-//        if (runJob) {
-//            cmd = executeJob(dependencies, dbgMessage)
-//            jobDetailsLine << " => " + cmd.getExecutionID()
-//            System.out.println(jobDetailsLine.toString())
-//            if (cmd.getExecutionID() == null) {
-//                context.addErrorEntry(ExecutionContextError.EXECUTION_SUBMISSION_FAILURE.expand("Please check your submission command manually.\n\t  Is your access group set properly? [${context.getAnalysis().getUsergroup()}]\n\t  Can the submission binary handle your binary?\n\t  Is your submission system offline?"))
-//                if (Roddy.getFeatureToggleValue(AvailableFeatureToggles.BreakSubmissionOnError)) {
-//                    context.abortJobSubmission()
-//                }
-//            }
-//        } else {
-//            cmd = JobManager.getInstance().createDummyCommand(this, context, jobName, arrayIndices)
-//            this.setJobState(JobState.DUMMY)
-//        }
-//
-//        runResult = new JobResult(context, cmd, cmd.getExecutionID(), runJob, isArrayJob, tool, parameters, parentJobs)
-//        //For auto filenames. Get the job id and push propagate it to all filenames.
-//
-//        if (runResult?.jobID?.shortID) {
-//            allRawInputParameters.each { String k, Object o ->
-//                BaseFile bf = o instanceof BaseFile ? (BaseFile) o : null
-//                if (!bf) return
-//
-//                String absolutePath = bf.getPath().getAbsolutePath()
-//                if (absolutePath.contains('${RODDY_JOBID}')) {
-//                    bf.setPath(new File(absolutePath.replace('${RODDY_JOBID}', runResult.jobID.shortID)))
-//                }
-//            }
-//        }
-//
-//        if (isArrayJob) {
-//            postProcessArrayJob(runResult)
-//        } else {
-//            JobManager.getInstance().addJobStatusChangeListener(this)
-//        }
-//        lastCommand = cmd
-//        return runResult
-//    }
 
     protected void postProcessArrayJob(JobResult runResult) {
         throw new NotImplementedException()
@@ -204,37 +134,7 @@ class Job<J extends Job> {
         jobType = JobType.ARRAY_HEAD
         //TODO Think of proper array index handling!
         int i = 1
-//        for (String arrayIndex : arrayIndices) {
-//            JobResult jr = jobManager.convertToArrayResult(this, runResult, i++)
-//
-//            Job childJob = new Job(context, jobName + "[" + arrayIndex + "]", toolID, prmsAsStringMap, parentJobs, filesToVerify)
-//            childJob.setJobType(JobType.ARRAY_CHILD)
-//            childJob.setRunResult(jr)
-//            arrayChildJobs.add(childJob)
-//            JobManager.getInstance().addJobStatusChangeListener(childJob)
-//            this.context.addExecutedJob(childJob)
-//        }
     }
-
-//    /**
-//     * Finally execute a job.
-//     * @param dependencies
-//     * @param dbgMessage
-//     * @param cmd
-//     * @return
-//     */
-//    private Command executeJob(List<String> dependencies, StringBuilder dbgMessage) {
-//        String sep = Constants.ENV_LINESEPARATOR
-//        File tool = context.getConfiguration().getProcessingToolPath(context, toolID)
-//        setJobState(JobState.UNSTARTED)
-//        Command cmd = JobManager.getInstance().createCommand(this, tool, dependencies)
-//        ExecutionService.getInstance().execute(cmd)
-//        if (LoggerWrapper.isVerbosityMedium()) {
-//            dbgMessage << sep << "\tcommand was created and executed for job. ID is " + cmd.getExecutionID() << sep
-//        }
-//        if (LoggerWrapper.isVerbosityHigh()) logger.info(dbgMessage.toString())
-//        return cmd
-//    }
 
     void addProcessingCommand(ProcessingCommands processingCommand) {
         if (processingCommand == null) return
@@ -271,7 +171,9 @@ class Job<J extends Job> {
     }
 
     List<String> getDependencyIDsAsString() {
-        getDependencyIDs().collect { de.dkfz.roddy.execution.jobs.JobDependencyID jid -> jid.id }
+        def depIDs = getDependencyIDs()
+        def res = depIDs.collect { de.dkfz.roddy.execution.jobs.JobDependencyID jid -> jid.id }
+        return res as List<String>
     }
 
     File getLoggingDirectory() {
@@ -310,9 +212,9 @@ class Job<J extends Job> {
             return null
     }
 
-    String getToolID() {
-        return toolID
-    }
+//    String getToolID() {
+//        return toolID
+//    }
 
     File getTool() {
         return tool
