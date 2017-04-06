@@ -220,7 +220,7 @@ class PBSCommand extends Command {
         StringBuilder qsubCall = new StringBuilder("")
         LinkedList<String> tempDependencies = new LinkedList<String>()
         LinkedList<String> tempDependenciesArrays = new LinkedList<String>()
-        for (String d in dependencyIDs) {
+        for (String d in (creatingJob.parentJobs as List<Job>)?.findAll { Job job -> !job.isFakeJob() }.collect { Job job -> job.jobID }) {
             if (d != "" && d != NONE && d != "-1") {
                 if (d.contains("[].")) {
                     tempDependenciesArrays << d.toString()
