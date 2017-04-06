@@ -106,13 +106,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return job.runResult
     }
 
-    @Override
-    JobResult runJob(Job job, boolean runDummy) {
-//        createCommand(job, job.jobName, null, job.tool, job.parameters, job.dependencyIDs, )
-//        executionService.execute()
-        throw new NotImplementedException()
-    }
-
     /**
      * For BPS, we enable hold jobs by default.
      * If it is not enabled, we might run into the problem, that job dependencies cannot be

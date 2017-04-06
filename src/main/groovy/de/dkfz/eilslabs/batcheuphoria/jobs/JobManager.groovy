@@ -148,11 +148,7 @@ abstract class JobManager<C extends Command> {
      * @param job
      * @return
      */
-    JobResult runJob(Job job) {
-        return runJob(job, false)
-    }
-
-    abstract JobResult runJob(Job job, boolean runDummy)
+    abstract JobResult runJob(Job job)
 
     /**
      * Called by the execution service after a command was executed.

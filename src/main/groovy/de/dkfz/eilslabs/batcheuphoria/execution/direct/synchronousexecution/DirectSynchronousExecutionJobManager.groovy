@@ -185,7 +185,7 @@ public class DirectSynchronousExecutionJobManager extends JobManager<DirectComma
     }
 
     @Override
-    public JobResult runJob(Job job, boolean runDummy) {
+    public JobResult runJob(Job job) {
         return null;
     }
 
