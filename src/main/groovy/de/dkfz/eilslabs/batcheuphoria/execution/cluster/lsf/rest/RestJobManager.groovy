@@ -79,13 +79,6 @@ class RestJobManager extends JobManagerAdapter
      }
 
      @Override
-     de.dkfz.roddy.execution.jobs.JobResult runJob(Job job, boolean runDummy) {
-         submitJob(job)
-         return job.runResult
-     }
-
-
-     @Override
      ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
          StringBuilder resourceList = new StringBuilder()
          if (resourceSet.isQueueSet()) {

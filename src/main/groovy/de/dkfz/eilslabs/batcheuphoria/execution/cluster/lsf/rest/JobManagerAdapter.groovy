@@ -26,10 +26,9 @@ class JobManagerAdapter extends ClusterJobManager{
         throw new NotImplementedException()
     }
 
-    // needed
     @Override
-    JobResult runJob(Job job, boolean runDummy) {
-        throw new NotImplementedException()
+    JobResult runJob(Job job) {
+        return null
     }
 
     @Override

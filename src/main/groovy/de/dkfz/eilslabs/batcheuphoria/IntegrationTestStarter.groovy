@@ -35,7 +35,7 @@ class IntegrationTestStarter {
     static LoggerWrapper log = LoggerWrapper.getLogger(IntegrationTestStarter)
     static TestExecutionService executionService
     static RestExecutionService restExecutionService
-
+    static String toolScript = "\"#!/bin/bash\\nsleep 15\\n\""
     static File batchEuphoriaTestScript
 
     static void main(String[] args) {
@@ -84,21 +84,26 @@ class IntegrationTestStarter {
 
 
             log.always("Starting tests for single jobs.")
-            Job testJob = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
+            Job testJob = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
+                def jobList = [testJob]
 
             // run single job and check status
-            JobResult jr = jobManager.runJob(testJob)
-            log.postAlwaysInfo("Started ${jr.jobID.id}")
-            def jobList = [testJob]
-            ensureProperJobStates(maxSleep, jobList, [jobManager.isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED], jobManager)
+            if(jobManager.isHoldJobsEnabled()) {
+                JobResult jr = jobManager.runJob(testJob)
+                log.postAlwaysInfo("Started ${jr.jobID.id}")
+                ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
 
-            log.always("Start and check status")
-            jobManager.startHeldJobs(jobList)
-            // Wait for some seconds and see, if the status changes from HOLD to queued or running and from queued to running
-            // The queued to running check can take a lot more time. Also the default update time for queries to the job system
-            // is too long for tests. We force updates everytime we run queryJobStatus
-            ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.RUNNING], jobManager)
-
+                log.always("Start and check status")
+                jobManager.startHeldJobs(jobList)
+                // Wait for some seconds and see, if the status changes from HOLD to queued or running and from queued to running
+                // The queued to running check can take a lot more time. Also the default update time for queries to the job system
+                // is too long for tests. We force updates everytime we run queryJobStatus
+                ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.RUNNING], jobManager)
+            } else {
+                JobResult jr = jobManager.runJob(testJob)
+                log.postAlwaysInfo("Started ${jr.jobID.id}")
+                ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.RUNNING], jobManager)
+            }
             log.always("Abort and check again")
             jobManager.queryJobAbortion(jobList)
             // The job abortion might be a valid command but the cluster system might still try to keep the jobs.
@@ -121,9 +126,9 @@ class IntegrationTestStarter {
             log.always("Starting tests for multiple jobs.")
 
             // run jobs with dependencies
-            Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
-            Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
-            Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
+            Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
+            Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
+            Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
 
             log.always("Submit jobs.")
             def allJobs = [testParent, testJobChild1, testJobChild2]
@@ -196,7 +201,7 @@ class IntegrationTestStarter {
         try {
             executionService = new TestExecutionService(user, server)
             batchEuphoriaTestScript = File.createTempFile("batchEuphoriaTestScript_", ".sh")
-            batchEuphoriaTestScript << "#!/bin/bash\nsleep 15\n"
+            batchEuphoriaTestScript << toolScript
             executionService.copyFileToRemote(batchEuphoriaTestScript, batchEuphoriaTestScript)
         } catch (Exception ex) {
             log.severe("Could not setup execution service and copy test script.")

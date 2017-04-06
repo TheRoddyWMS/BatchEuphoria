@@ -48,6 +48,11 @@ class Job<J extends Job> {
     protected String toolMD5
 
     /**
+     * A tool script which will be piped (or whatever...) to the job manager submission command / method
+     * It is either toolScript OR tool
+     */
+    String toolScript
+    /**
      * The set of resources for this tool / Job
      * Contains values for e.g. memory, walltime and so on.
      */
@@ -92,10 +97,12 @@ class Job<J extends Job> {
 
     JobManager jobManager
 
-    Job(String jobName, File tool, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
+    Job(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNKNOWN
         this.tool = tool
+        this.toolScript = toolScript
+        if( tool && toolScript ) throw new RuntimeException("A job must only have an input script or a callable file.")
         this.toolMD5 = toolMD5
         this.resourceSet = resourceSet
         this.parameters = parameters

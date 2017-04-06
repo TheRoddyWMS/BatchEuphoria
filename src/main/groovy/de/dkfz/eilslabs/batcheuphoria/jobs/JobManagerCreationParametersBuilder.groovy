@@ -23,6 +23,10 @@ class JobManagerCreationParametersBuilder {
     String jobIDIdentifier = JobManager.BE_DEFAULT_JOBID
     String jobArrayIDIdentifier = JobManager.BE_DEFAULT_JOBARRAYINDEX
     String jobScratchIdentifier = JobManager.BE_DEFAULT_JOBSCRATCH
+    String userGroup = null
+    String userAccount = null
+    String userEmail = null
+    String userMask = null
 
     JobManagerCreationParametersBuilder setCreateDaemon(boolean createDaemon) {
         this.createDaemon = createDaemon
@@ -64,7 +68,27 @@ class JobManagerCreationParametersBuilder {
         return this;
     }
 
+    JobManagerCreationParametersBuilder setUserGroup(String userGroup) {
+        this.userGroup = userGroup
+        return this
+    }
+
+    JobManagerCreationParametersBuilder setUserAccount(String userAccount) {
+        this.userAccount = userAccount
+        return this
+    }
+
+    JobManagerCreationParametersBuilder setUserEmail(String userEmail) {
+        this.userEmail = userEmail
+        return this
+    }
+
+    JobManagerCreationParametersBuilder setUserMask(String userMask) {
+        this.userMask = userMask
+        return this
+    }
+
     JobManagerCreationParameters build() {
-        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier)
+        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier, userAccount, userEmail, userMask, userGroup)
     }
 }
