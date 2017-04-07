@@ -31,18 +31,18 @@ import org.apache.http.protocol.HTTP
  */
 class RestJobManager extends JobManagerAdapter
  {
-     protected final ExecutionService restExecutionService
-     private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestJobManager.class.name);
+    protected final ExecutionService restExecutionService
+    private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestJobManager.class.name);
 
      /*REST RESOURCES*/
-     public static String URI_JOB_SUBMIT = "jobs/submit"
-     public static String URI_JOB_KILL = "jobs/kill"
-     public static String URI_JOB_SUSPEND = "jobs/suspend"
-     public static String URI_JOB_RESUME = "jobs/resume"
-     public static String URI_JOB_REQUEUE = "jobs/requeue"
-     public static String URI_JOB_DETAILS = "jobs/"
-     public static String URI_JOB_HISTORY = "jobhistory"
-     public static String URI_USER_COMMAND = "userCmd"
+    public static String URI_JOB_SUBMIT = "jobs/submit"
+    public static String URI_JOB_KILL = "jobs/kill"
+    public static String URI_JOB_SUSPEND = "jobs/suspend"
+    public static String URI_JOB_RESUME = "jobs/resume"
+    public static String URI_JOB_REQUEUE = "jobs/requeue"
+    public static String URI_JOB_DETAILS = "jobs/"
+    public static String URI_JOB_HISTORY = "jobhistory"
+    public static String URI_USER_COMMAND = "userCmd"
 
 
 
@@ -67,19 +67,19 @@ class RestJobManager extends JobManagerAdapter
 
 
 
-     RestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
+    RestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
          super(restExecutionService, parms)
          this.restExecutionService = restExecutionService
-     }
+    }
 
-     @Override
-     de.dkfz.roddy.execution.jobs.JobResult runJob(Job job) {
+    @Override
+    de.dkfz.roddy.execution.jobs.JobResult runJob(Job job) {
          submitJob(job)
          return job.runResult
-     }
+    }
 
-     @Override
-     ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+    @Override
+    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
          StringBuilder resourceList = new StringBuilder()
          if (resourceSet.isQueueSet()) {
              resourceList.append(" -q ").append(resourceSet.getQueue())
@@ -97,15 +97,15 @@ class RestJobManager extends JobManagerAdapter
              resourceList.append(" -n ").append(nodes*cores)
          }
          return new PBSResourceProcessingCommand(resourceList.toString())
-     }
+    }
 
 
-     @Override
-     void updateJobStatus() {
+    @Override
+    void updateJobStatus() {
 
-     }
+    }
 
-     boolean compareJobIDs(String jobID, String id) {
+    boolean compareJobIDs(String jobID, String id) {
          if (jobID.length() == id.length()) {
              return jobID == id
          } else {
@@ -113,29 +113,29 @@ class RestJobManager extends JobManagerAdapter
              String id1 = id.split("[.]")[0]
              return id0 == id1
          }
-     }
+    }
 
-     @Override
-     void queryJobAbortion(List executedJobs) {
+    @Override
+    void queryJobAbortion(List executedJobs) {
          abortJob(executedJobs)
 
-     }
+    }
 
-     @Override
-     Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
+    @Override
+    Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
          getJobdetails(list)
          Map<Job, JobState> jobStates = [:]
          list.each {Job job -> jobStates.put(job,job.getJobState())}
          return queryJobStatus(list)
-     }
+    }
 
-     @Override
-     Map<String, JobState> queryJobStatus(List jobIDs) {
+    @Override
+    Map<String, JobState> queryJobStatus(List jobIDs) {
          getJobdetails(jobIDs)
          Map<String, JobState> jobStates = [:]
          jobIDs.each {Job job -> jobStates.put(job.getJobID(),job.getJobState())}
          return  jobStates
-     }
+    }
 
      /**
       * Submit job
@@ -169,27 +169,29 @@ class RestJobManager extends JobManagerAdapter
       "\r\n" +
       "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
       */
-     private void submitJob(Job job){
-         String resource = URI_JOB_SUBMIT
-         String boundary='bqJky99mlBWa-ZuqjC53mG6EzbmlxB'
-         List<Header> headers = []
-         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${boundary}"))
-         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+    private void submitJob(Job job){
+        String resource = URI_JOB_SUBMIT
+        String boundary='bqJky99mlBWa-ZuqjC53mG6EzbmlxB'
 
-         String appName = "generic"
-         String body
+        List<Header> headers = []
+        headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${boundary}"))
+        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-         // --- Application Name Area  ----
-         String appNameArea = "--${boundary}\r\n" +
+        String appName = "generic"
+        String body
+
+        // --- Application Name Area  ----
+        String appNameArea = "--${boundary}\r\n" +
                  "Content-Disposition: form-data; name=\"AppName\"\r\n" +
                  "Content-ID: <AppName>\r\n" +
                  "\r\n" +
                  "${appName}\r\n"
 
-         body = appNameArea
+
+        body = appNameArea
 
          // --- Parameters Area ---
-         if(job.parameters.size() != 0){
+        if(job.parameters.size() != 0){
 
             String newBoundary = '_Part_1_701508.1145579811786'
             String paramArea = "--${boundary}\r\n" +
@@ -200,24 +202,27 @@ class RestJobManager extends JobManagerAdapter
                     "\r\n"
 
             String envParams = ""
+
             job.parameters.eachWithIndex { key, value, index ->
-                if (index == 0) {
+                if (index == 0)
                     envParams = "${key}='${value}'"
-                } else {
+                else
                     envParams = envParams + "," + "${key}='${value}'"
-                }
             }
+
             if(envParams.length() > 0)
-                 envParams="-env \""+envParams+"\""
+                envParams="-env \""+envParams+"\""
 
+                if(job.getToolScript() != null && job.getToolScript().length() > 0) {
+                    paramArea = paramArea + prepareToolScript(job.getToolScript(),newBoundary)
+                }else{
+                    paramArea = paramArea + prepareToolScript(job.getTool().getAbsolutePath(),newBoundary)
+                }
 
-                paramArea =paramArea+"--${newBoundary}\r\n" +
-                        "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
-                        "Content-Type: application/xml; charset=UTF-8\r\n" +
-                        "Content-Transfer-Encoding: 8bit\r\n" +
-                        "Accept-Language:de-de\r\n" +
-                        "\r\n" +
-                        "<AppParam><id>COMMANDTORUN</id><value>${"sleep 60"}</value><type></type></AppParam>\r\n"
+                String parentJobs
+                if(job.getParentJobs() != null && job.getParentJobs()?.size()){
+                    parentJobs = prepareParentJobs(job.getParentJobs())
+                }
 
                 paramArea =paramArea+"--${newBoundary}\r\n" +
                         "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"\r\n" +
@@ -225,7 +230,7 @@ class RestJobManager extends JobManagerAdapter
                         "Content-Transfer-Encoding: 8bit\r\n" +
                         "Accept-Language:de-de\r\n" +
                         "\r\n" +
-                        "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' "+envParams+((PBSResourceProcessingCommand)convertResourceSet(job.resourceSet)).processingString}</value><type></type></AppParam>\r\n"
+                        "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' "+envParams+((PBSResourceProcessingCommand)convertResourceSet(job.resourceSet)).processingString+parentJobs}</value><type></type></AppParam>\r\n"
 
             paramArea=paramArea+"--${newBoundary}--\r\n" +
                      "\r\n"
@@ -256,75 +261,97 @@ class RestJobManager extends JobManagerAdapter
          }else{
              logger.warning("status code: "+result.statusCode+" result: "+result.body)
          }
-     }
-
-     /**
-      *
-      */
-     void abortJob(Job job){
-         submitCommand("bkill ${job.getJobID()}")
-     }
+    }
 
 
-     void suspendJob(Job job){
-         submitCommand("bstop ${job.getJobID()}")
-     }
-
-     /**
-      *
-      * @param jobList
-      */
-     void resumeJob(Job job){
-         submitCommand("bresume ${job.getJobID()}")
-     }
-
-     /**
-      *
-      * @param jobList
-      */
-     void requeueJob(Job job){
-         submitCommand("brequeue ${job.getJobID()}")
-     }
-
-
-     private String prepareURLWithParam(List<Job>jobListParameter){
-         String jobIds=""
-         jobListParameter.eachWithIndex {job, index ->
-             if (index == 0){
-                 jobIds= job.getJobID()
-             }else{
-                 jobIds= jobIds+","+job.getJobID()
-             }
+     private String prepareParentJobs(List<Job> jobs){
+         String parentJobs
+         jobs.eachWithIndex {Job jobTemp, index ->
+             if(index == 0)
+                 parentJobs="-w ended(${jobTemp.getJobID()})"
+             else
+                 parentJobs=parentJobs+" && ended(${jobTemp.getJobID()})"
          }
-         return jobIds
+         return parentJobs
      }
+
+     private String prepareToolScript(String toolScript, String boundary){
+         return  "--${boundary}\r\n" +
+                 "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
+                 "Content-Type: application/xml; charset=UTF-8\r\n" +
+                 "Content-Transfer-Encoding: 8bit\r\n" +
+                 "Accept-Language:de-de\r\n" +
+                 "\r\n" +
+                 "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"
+     }
+
+     /**
+      *
+      */
+    void abortJob(Job job){
+         submitCommand("bkill ${job.getJobID()}")
+    }
+
+
+    void suspendJob(Job job){
+         submitCommand("bstop ${job.getJobID()}")
+    }
+
+     /**
+      *
+      * @param jobList
+      */
+    void resumeJob(Job job){
+         submitCommand("bresume ${job.getJobID()}")
+    }
+
+     /**
+      *
+      * @param jobList
+      */
+    void requeueJob(Job job){
+         submitCommand("brequeue ${job.getJobID()}")
+    }
+
+
+    private String prepareURLWithParam(List<Job>jobListParameter){
+        String jobIds=""
+        jobListParameter.eachWithIndex {job, index ->
+            if (index == 0){
+                jobIds= job.getJobID()
+            }else{
+                jobIds= jobIds+","+job.getJobID()
+            }
+        }
+        return jobIds
+    }
      /**
       * Generic method to submit any LSF valid command e.g. bstop <job id>
       * @param cmd LSF command
       */
-     public void submitCommand(String cmd){
-         String resource = URI_USER_COMMAND
-         List<Header> headers = []
-         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
-         headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
-         String body = "<UserCmd>" +
+    public void submitCommand(String cmd){
+        String resource = URI_USER_COMMAND
+        List<Header> headers = []
+        headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
+        headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
+        String body = "<UserCmd>" +
                  "<cmd>${cmd}</cmd>" +
                  "</UserCmd>"
-         def result =restExecutionService.execute(new RestCommand(resource,body,headers,RestCommand.HttpMethod.HTTPPOST))
-         if(result.statusCode == 200){
-             // successful
-             logger.info("status code: "+result.statusCode+" result: "+result.body)
-         }else{
-             //error
-             logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
-         }
-     }
+        def result =restExecutionService.execute(new RestCommand(resource,body,headers,RestCommand.HttpMethod.HTTPPOST))
+        if(result.statusCode == 200){
+            // successful
+            logger.info("status code: "+result.statusCode+" result: "+result.body)
+        }else{
+            //error
+            logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
+        }
+    }
 
      /**
       * Updates job information for given jobs
       * @param jobList
       */
-     void getJobdetails(List<Job> jobList){
+    void getJobdetails(List<Job> jobList){
          String resource = URI_JOB_DETAILS
          List<Header> headers = []
          headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
@@ -393,20 +420,20 @@ class RestJobManager extends JobManagerAdapter
          }else{
              logger.warning("status code: " + result.statusCode + " result: " + result.body)
          }
-     }
+    }
 
 
      /**
       *
       * @param jobList
       */
-     void getJobhistory(List<Job> jobList){
-         String resource = URI_JOB_HISTORY
-         List<Header> headers = []
-         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+    void getJobhistory(List<Job> jobList){
+        String resource = URI_JOB_HISTORY
+        List<Header> headers = []
+        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-         def result =restExecutionService.execute(new RestCommand(resource+"?ids="+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
-         if(result.statusCode == 200){
+        def result =restExecutionService.execute(new RestCommand(resource+"?ids="+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
+        if(result.statusCode == 200){
              GPathResult res = new XmlSlurper().parseText(result.body)
              logger.info("status code: "+result.statusCode+" result:"+result.body)
 
@@ -431,12 +458,10 @@ class RestJobManager extends JobManagerAdapter
                  job.setJobInfo(jobInfo)
              }
 
-         }else{
-             logger.warning("status code: " + result.statusCode + " result: " + result.body)
-         }
-     }
-
-
+        }else{
+            logger.warning("status code: " + result.statusCode + " result: " + result.body)
+        }
+    }
 
 
 }
