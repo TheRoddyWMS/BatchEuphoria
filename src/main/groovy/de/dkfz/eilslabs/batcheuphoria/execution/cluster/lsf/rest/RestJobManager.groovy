@@ -6,6 +6,7 @@
 
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest
 
+import com.sun.org.apache.xerces.internal.dom.ChildNode
 import de.dkfz.eilslabs.batcheuphoria.execution.RestExecutionService
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
@@ -20,6 +21,7 @@ import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.util.slurpersupport.GPathResult
+import groovy.util.slurpersupport.NodeChild
 import org.apache.http.Header
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
@@ -31,55 +33,58 @@ import org.apache.http.protocol.HTTP
  */
 class RestJobManager extends JobManagerAdapter
  {
-    protected final ExecutionService restExecutionService
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestJobManager.class.name);
+
+     protected final ExecutionService restExecutionService
+     private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestJobManager.class.name);
+
 
      /*REST RESOURCES*/
-    public static String URI_JOB_SUBMIT = "jobs/submit"
-    public static String URI_JOB_KILL = "jobs/kill"
-    public static String URI_JOB_SUSPEND = "jobs/suspend"
-    public static String URI_JOB_RESUME = "jobs/resume"
-    public static String URI_JOB_REQUEUE = "jobs/requeue"
-    public static String URI_JOB_DETAILS = "jobs/"
-    public static String URI_JOB_HISTORY = "jobhistory"
-    public static String URI_USER_COMMAND = "userCmd"
+     public static String URI_JOB_SUBMIT = "jobs/submit"
+     public static String URI_JOB_KILL = "jobs/kill"
+     public static String URI_JOB_SUSPEND = "jobs/suspend"
+     public static String URI_JOB_RESUME = "jobs/resume"
+     public static String URI_JOB_REQUEUE = "jobs/requeue"
+     public static String URI_JOB_DETAILS = "jobs/"
+     public static String URI_JOB_HISTORY = "jobhistory"
+     public static String URI_USER_COMMAND = "userCmd"
+
+/*
+     public static final String COMMANDTORUN = "Command to run"
+     public static final String EXTRA_PARAMS ="Other bsub op-tions"
+     public static final String MAX_MEM ="Maximum memory size per pro-cess"
+     public static final String MAX_NUM_CPU = ""
+     public static final String MIN_NUM_CPU = ""
+     public static final String PROC_PRE_HOST = ""
+     public static final String EXTRA_RES = ""
+     public static final String RUNLIMITMINUTE = ""
+     public static final String RERUNABLE = ""
+     public static final String JOB_NAME = ""
+     public static final String APP_PROFILE = ""
+     public static final String PRJ_NAME = ""
+     public static final String RES_ID = ""
+     public static final String LOGIN_SHELL = ""
+     public static final String QUEUE = ""
+     public static final String INPUT_FILE = ""
+     public static final String OUTPUT_FILE = ""
+     public static final String ERROR_FILE = ""
+*/
 
 
-
-    public static final String COMMANDTORUN = "Command to run"
-    public static final String EXTRA_PARAMS ="Other bsub op-tions"
-    public static final String MAX_MEM ="Maximum memory size per pro-cess"
-    public static final String MAX_NUM_CPU = ""
-    public static final String MIN_NUM_CPU = ""
-    public static final String PROC_PRE_HOST = ""
-    public static final String EXTRA_RES = ""
-    public static final String RUNLIMITMINUTE = ""
-    public static final String RERUNABLE = ""
-    public static final String JOB_NAME = ""
-    public static final String APP_PROFILE = ""
-    public static final String PRJ_NAME = ""
-    public static final String RES_ID = ""
-    public static final String LOGIN_SHELL = ""
-    public static final String QUEUE = ""
-    public static final String INPUT_FILE = ""
-    public static final String OUTPUT_FILE = ""
-    public static final String ERROR_FILE = ""
-
-
-
-    RestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
+     RestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
          super(restExecutionService, parms)
          this.restExecutionService = restExecutionService
-    }
+     }
 
-    @Override
-    de.dkfz.roddy.execution.jobs.JobResult runJob(Job job) {
+
+     @Override
+     de.dkfz.roddy.execution.jobs.JobResult runJob(Job job) {
          submitJob(job)
          return job.runResult
-    }
+     }
 
-    @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+
+     @Override
+     ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
          StringBuilder resourceList = new StringBuilder()
          if (resourceSet.isQueueSet()) {
              resourceList.append(" -q ").append(resourceSet.getQueue())
@@ -97,45 +102,38 @@ class RestJobManager extends JobManagerAdapter
              resourceList.append(" -n ").append(nodes*cores)
          }
          return new PBSResourceProcessingCommand(resourceList.toString())
-    }
+     }
 
 
-    @Override
-    void updateJobStatus() {
 
-    }
+     @Override
+     void updateJobStatus() {
 
-    boolean compareJobIDs(String jobID, String id) {
-         if (jobID.length() == id.length()) {
-             return jobID == id
-         } else {
-             String id0 = jobID.split("[.]")[0]
-             String id1 = id.split("[.]")[0]
-             return id0 == id1
-         }
-    }
+     }
 
-    @Override
-    void queryJobAbortion(List executedJobs) {
-         abortJob(executedJobs)
 
-    }
+     @Override
+     void queryJobAbortion(List executedJobs) {
+         executedJobs.each {Job job -> abortJob(job)}
+     }
 
-    @Override
-    Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
+
+     @Override
+     Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
          getJobdetails(list)
          Map<Job, JobState> jobStates = [:]
          list.each {Job job -> jobStates.put(job,job.getJobState())}
          return queryJobStatus(list)
-    }
+     }
 
-    @Override
-    Map<String, JobState> queryJobStatus(List jobIDs) {
+
+     @Override
+     Map<String, JobState> queryJobStatus(List jobIDs) {
          getJobdetails(jobIDs)
          Map<String, JobState> jobStates = [:]
          jobIDs.each {Job job -> jobStates.put(job.getJobID(),job.getJobState())}
          return  jobStates
-    }
+     }
 
      /**
       * Submit job
@@ -169,189 +167,266 @@ class RestJobManager extends JobManagerAdapter
       "\r\n" +
       "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
       */
-    private void submitJob(Job job){
-        String resource = URI_JOB_SUBMIT
-        String boundary='bqJky99mlBWa-ZuqjC53mG6EzbmlxB'
+     private void submitJob(Job job){
+         String resource = URI_JOB_SUBMIT
+         String headBoundary='bqJky99mlBWa-ZuqjC53mG6EzbmlxB'
 
-        List<Header> headers = []
-        headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${boundary}"))
-        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+         List<Header> headers = []
+         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${headBoundary}"))
+         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-        String appName = "generic"
-        String body
+         String appName = "generic"
+         StringBuilder body = new StringBuilder()
 
-        // --- Application Name Area  ----
-        String appNameArea = "--${boundary}\r\n" +
+         // --- Application Name Area  ----
+         String appNameArea = "--${headBoundary}\r\n" +
                  "Content-Disposition: form-data; name=\"AppName\"\r\n" +
                  "Content-ID: <AppName>\r\n" +
                  "\r\n" +
                  "${appName}\r\n"
 
-
-        body = appNameArea
+         body << appNameArea
 
          // --- Parameters Area ---
-        if(job.parameters.size() != 0){
+         StringBuilder paramArea = new StringBuilder()
+         String bodyBoundary = '_Part_1_701508.1145579811786'
+         paramArea << prepareToolScript(job,bodyBoundary)
 
-            String newBoundary = '_Part_1_701508.1145579811786'
-            String paramArea = "--${boundary}\r\n" +
+         paramArea << prepareJobName(job,bodyBoundary)
+
+         paramArea << prepareExtraParams(job,bodyBoundary)
+
+         if(paramArea.length() > 0) {
+             paramArea.insert(0,"--${headBoundary}\r\n" +
                     "Content-Disposition: form-data; name=\"data\"\r\n" +
-                    "Content-Type: multipart/mixed; boundary=${newBoundary}\r\n" +
+                    "Content-Type: multipart/mixed; boundary=${bodyBoundary}\r\n" +
                     "Accept-Language:de-de\r\n" +
                     "Content-ID: <data>\r\n" +
+                    "\r\n")
+
+             paramArea << "--${bodyBoundary}--\r\n" +
                     "\r\n"
-
-            String envParams = ""
-
-            job.parameters.eachWithIndex { key, value, index ->
-                if (index == 0)
-                    envParams = "${key}='${value}'"
-                else
-                    envParams = envParams + "," + "${key}='${value}'"
-            }
-
-            if(envParams.length() > 0)
-                envParams="-env \""+envParams+"\""
-
-                if(job.getToolScript() != null && job.getToolScript().length() > 0) {
-                    paramArea = paramArea + prepareToolScript(job.getToolScript(),newBoundary)
-                }else{
-                    paramArea = paramArea + prepareToolScript(job.getTool().getAbsolutePath(),newBoundary)
-                }
-
-                String parentJobs
-                if(job.getParentJobs() != null && job.getParentJobs()?.size()){
-                    parentJobs = prepareParentJobs(job.getParentJobs())
-                }
-
-                paramArea =paramArea+"--${newBoundary}\r\n" +
-                        "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"\r\n" +
-                        "Content-Type: application/xml; charset=UTF-8\r\n" +
-                        "Content-Transfer-Encoding: 8bit\r\n" +
-                        "Accept-Language:de-de\r\n" +
-                        "\r\n" +
-                        "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' "+envParams+((PBSResourceProcessingCommand)convertResourceSet(job.resourceSet)).processingString+parentJobs}</value><type></type></AppParam>\r\n"
-
-            paramArea=paramArea+"--${newBoundary}--\r\n" +
-                     "\r\n"
-            body = body + paramArea
          }
 
-         // --- File Attachment ---
-         /*
-         if(job.file.size() != 0) {
-             String dataArea="--${boundary}"
-             job.parameters.eachWithIndex { key, value, pos ->
-                 String dataAreaElement = "--${newBoundary} \nContent-Disposition: form-data; name='f1'  \n" +
-                         " Content-Type: application/octet-stream\n" +
-                         "Content-Transfer-Encoding: UTF-8\n" +
-                         "Content-ID: ${filename} \r\n" +
-                         "${file}"
-             }
-             body = body + dataArea
-         }*/
+         body << paramArea
 
-         body = body + "--${boundary}--\r\n"
-         logger.info("request body:\n"+body)
+         body << "--${headBoundary}--\r\n"
 
-         RestResult result = restExecutionService.execute(new RestCommand(resource, body, headers, RestCommand.HttpMethod.HTTPPOST))
+         logger.postAlwaysInfo("request body:\n"+body)
+
+         RestResult result = restExecutionService.execute(new RestCommand(resource, body.toString(), headers, RestCommand.HttpMethod.HTTPPOST))
          if(result.statusCode == 200){
-             logger.info("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
+             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
              job.setRunResult(new JobResult(job.lastCommand, new PBSJobDependencyID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs))
          }else{
-             logger.warning("status code: "+result.statusCode+" result: "+result.body)
+             logger.postAlwaysInfo("status code: "+result.statusCode+" result: "+result.body)
          }
-    }
+     }
 
 
+     /**
+      * Prepare parent jobs is part of @prepareExtraParams
+      * @param jobs
+      * @return part of parameter area
+      */
      private String prepareParentJobs(List<Job> jobs){
-         String parentJobs
+         StringBuilder parentJobs = new StringBuilder()
          jobs.eachWithIndex {Job jobTemp, index ->
              if(index == 0)
-                 parentJobs="-w ended(${jobTemp.getJobID()})"
+                 parentJobs << " -w \"ended(${jobTemp.getJobID()})"
              else
-                 parentJobs=parentJobs+" && ended(${jobTemp.getJobID()})"
+                 parentJobs << " &amp;&amp; ended(${jobTemp.getJobID()})"
          }
+         if(parentJobs.length() > 0)
+             parentJobs << "\""
+
          return parentJobs
      }
 
-     private String prepareToolScript(String toolScript, String boundary){
+
+     /**
+      * Prepare script is part of @prepareExtraParams
+      * @param job
+      * @param boundary
+      * @return part of parameter area
+      */
+     private String prepareToolScript(Job job, String boundary){
+         String toolScript
+         if(job.getToolScript() != null && job.getToolScript().length() > 0) {
+             toolScript = job.getToolScript()
+         }else{
+             if(job.getTool() != null) toolScript = job.getTool().getAbsolutePath()
+         }
+         if(toolScript){
+             return  "--${boundary}\r\n" +
+                     "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
+                     "Content-Type: application/xml; charset=UTF-8\r\n" +
+                     "Content-Transfer-Encoding: 8bit\r\n" +
+                     "Accept-Language:de-de\r\n" +
+                     "\r\n" +
+                     "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"
+         }else{
+             return ""
+         }
+     }
+
+
+     /**
+      * Prepare job name is part of @prepareExtraParams
+      * @param job
+      * @param boundary
+      * @return part of parameter area
+      */
+     private String prepareJobName(Job job, String boundary){
+         if(job.getJobName()){
+             return  "--${boundary}\r\n" +
+                     "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
+                     "Content-Type: application/xml; charset=UTF-8\r\n" +
+                     "Content-Transfer-Encoding: 8bit\r\n" +
+                     "Accept-Language:de-de\r\n" +
+                     "\r\n" +
+                     "<AppParam><id>JOB_NAME</id><value>${job.getJobName()}</value><type></type></AppParam>\r\n"
+         }else{
+             return ""
+         }
+     }
+
+
+     /**
+      * Prepare extra parameters like environment variables, resources and parent jobs
+      * @param job
+      * @param boundary
+      * @return body for parameter area
+      */
+     private String prepareExtraParams(Job job, String boundary){
+         StringBuilder envParams = new StringBuilder()
+         //if (this.getUserGroup()) envParams << "-G ${this.getUserGroup()}"
+
+         job.parameters.eachWithIndex { key, value, index ->
+             if (index == 0)
+                 envParams << "-env \" ${key}='${value}'"
+             else
+                 envParams << "," + "${key}='${value}'"
+         }
+
+         if(envParams.length() > 0)
+             envParams << "\""
+
+         if (this.getUserEmail()) envParams << "-u ${this.getUserEmail()}"
+
+
+         String parentJobs =""
+         if(job.getParentJobs() != null && job.getParentJobs()?.size()){
+             parentJobs = prepareParentJobs(job.getParentJobs())
+         }
          return  "--${boundary}\r\n" +
-                 "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
+                 "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"\r\n" +
                  "Content-Type: application/xml; charset=UTF-8\r\n" +
                  "Content-Transfer-Encoding: 8bit\r\n" +
                  "Accept-Language:de-de\r\n" +
                  "\r\n" +
-                 "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"
+                 "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' "+envParams+((PBSResourceProcessingCommand)convertResourceSet(job.resourceSet)).processingString+parentJobs}" +
+                 "</value><type></type></AppParam>\r\n"
      }
 
+
+     // --- File Attachment ---
+     /*
+     if(job.file.size() != 0) {
+         String dataArea="--${boundary}"
+         job.parameters.eachWithIndex { key, value, pos ->
+             String dataAreaElement = "--${newBoundary} \nContent-Disposition: form-data; name='f1'  \n" +
+                     " Content-Type: application/octet-stream\n" +
+                     "Content-Transfer-Encoding: UTF-8\n" +
+                     "Content-ID: ${filename} \r\n" +
+                     "${file}"
+         }
+         body = body + dataArea
+     }*/
+
+
      /**
-      *
+      * Abort given job
+      * @param job
       */
-    void abortJob(Job job){
+     void abortJob(Job job){
          submitCommand("bkill ${job.getJobID()}")
-    }
+     }
 
 
-    void suspendJob(Job job){
+     /**
+      * Suspend given job
+      * @param job
+      */
+     void suspendJob(Job job){
          submitCommand("bstop ${job.getJobID()}")
-    }
+     }
+
 
      /**
-      *
-      * @param jobList
+      * Resume given job
+      * @param job
       */
-    void resumeJob(Job job){
+     void resumeJob(Job job){
          submitCommand("bresume ${job.getJobID()}")
-    }
+     }
+
 
      /**
-      *
-      * @param jobList
+      * Requeue given job
+      * @param job
       */
-    void requeueJob(Job job){
+     void requeueJob(Job job){
          submitCommand("brequeue ${job.getJobID()}")
+     }
+
+
+     /**
+      * Creates a comma separated list of job ids for given jobs
+      * @param jobs
+      * @return comma separated list of job ids
+      */
+     private String prepareURLWithParam(List<Job> jobs){
+         String jobIds=""
+         jobs.eachWithIndex {job, index ->
+             if (index == 0){
+                 jobIds= job.getJobID()
+             }else{
+                 jobIds << ","+job.getJobID()
+             }
+         }
+         return jobIds
     }
 
 
-    private String prepareURLWithParam(List<Job>jobListParameter){
-        String jobIds=""
-        jobListParameter.eachWithIndex {job, index ->
-            if (index == 0){
-                jobIds= job.getJobID()
-            }else{
-                jobIds= jobIds+","+job.getJobID()
-            }
-        }
-        return jobIds
-    }
      /**
       * Generic method to submit any LSF valid command e.g. bstop <job id>
       * @param cmd LSF command
       */
-    public void submitCommand(String cmd){
-        String resource = URI_USER_COMMAND
-        List<Header> headers = []
-        headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
-        headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
-        String body = "<UserCmd>" +
+     public void submitCommand(String cmd){
+         String resource = URI_USER_COMMAND
+         List<Header> headers = []
+         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
+         headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
+         String body = "<UserCmd>" +
                  "<cmd>${cmd}</cmd>" +
                  "</UserCmd>"
-        def result =restExecutionService.execute(new RestCommand(resource,body,headers,RestCommand.HttpMethod.HTTPPOST))
-        if(result.statusCode == 200){
-            // successful
-            logger.info("status code: "+result.statusCode+" result: "+result.body)
-        }else{
-            //error
-            logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
-        }
+         def result =restExecutionService.execute(new RestCommand(resource,body,headers,RestCommand.HttpMethod.HTTPPOST))
+         if(result.statusCode == 200){
+             // successful
+             logger.info("status code: "+result.statusCode+" result: "+result.body)
+         }else{
+             //error
+             logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
+         }
     }
+
 
      /**
       * Updates job information for given jobs
       * @param jobList
       */
-    void getJobdetails(List<Job> jobList){
+     void getJobdetails(List<Job> jobList){
          String resource = URI_JOB_DETAILS
          List<Header> headers = []
          headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
@@ -360,50 +435,11 @@ class RestJobManager extends JobManagerAdapter
          if(result.statusCode == 200){
              GPathResult res = new XmlSlurper().parseText(result.body)
              logger.info("status code: " + result.statusCode + " result:" + result.body)
-             res.job.each {element ->
+
+             res.job.each {NodeChild element ->
                  Job job = jobList.find {it.getJobID().equalsIgnoreCase(element.jobId.text()) }
-                 GenericJobInfo jobInfo
 
-                 if(job.getJobInfo() != null)
-                     jobInfo = job.getJobInfo()
-                 else
-                     jobInfo = new GenericJobInfo((String)element.jobName, null,(String)element.jobId, null, null)
-
-                 jobInfo.setUser(element.user.text())
-                 jobInfo.setCpuTime(element.cpuTime.text())
-                 jobInfo.setSystemTime(element.getSystemTime.text())
-                 jobInfo.setUserTime(element.getUserTime.text())
-                 jobInfo.setStartTimeGMT(element.startTime.text())
-                 jobInfo.setSubTimeGMT(element.submitTime.text())
-                 jobInfo.setEndTimeGMT(element.endTime.text())
-                 jobInfo.setQueue(element.queue.text())
-                 jobInfo.setExHosts(element.exHosts.text())
-                 jobInfo.setSubHost(element.fromHost.text())
-                 jobInfo.setJobGroup(element.jobGroup.text())
-                 jobInfo.setSwap(element.swap.text())
-                 jobInfo.setDescription(element.description.text())
-                 jobInfo.setUserGroup(element.userGroup.text())
-                 jobInfo.setMemory(element.mem.text())
-                 jobInfo.setRunTime(element.runTime.text())
-                 jobInfo.setRunLimit(element.runLimit.text())
-                 jobInfo.setNumProcessors(element.numProcessors.text())
-                 jobInfo.setNthreads(element.nthreads.text())
-                 jobInfo.setProjectName(element.projectName.text())
-                 jobInfo.setExitStatus(element.exitStatus.text())
-                 jobInfo.setPidStr(element.pidStr.text())
-                 jobInfo.setPgidStr(element.pgidStr.text())
-                 jobInfo.setCwd(element.cwd.text())
-                 jobInfo.setPendReason(element.pendReason.text())
-                 jobInfo.setExecCwd(element.execCwd.text())
-                 jobInfo.setPriority(element.priority.text())
-                 jobInfo.setOutfile(element.outfile.text())
-                 jobInfo.setInfile(element.infile.text())
-                 jobInfo.setResReq(element.resReq.text())
-                 jobInfo.setExecHome(element.execHome.text())
-                 jobInfo.setExecUserName(element.execUserName.text())
-                 jobInfo.setAskedHostsStr(element.askedHostsStr.text())
-
-                 job.setJobInfo(jobInfo)
+                 setJobInfoForJobDetails(job,element)
 
                  if(element.jobStatus.text() == "PENDING")
                      job.setJobState(JobState.QUEUED)
@@ -420,48 +456,108 @@ class RestJobManager extends JobManagerAdapter
          }else{
              logger.warning("status code: " + result.statusCode + " result: " + result.body)
          }
-    }
+     }
 
 
      /**
-      *
+      * Used by @getJobdetails to set JobInfo
+      * @param job
+      * @param jobDetails - XML job details
+      */
+     void setJobInfoForJobDetails(Job job, NodeChild jobDetails){
+         GenericJobInfo jobInfo
+
+         if(job.getJobInfo() != null)
+             jobInfo = job.getJobInfo()
+         else
+             jobInfo = new GenericJobInfo(jobDetails.jobName.text(),job.getTool(),jobDetails.jobId.text(),job.getParameters(),job.getParentJobs())
+
+         jobInfo.setUser(jobDetails.user.text())
+         jobInfo.setCpuTime(jobDetails.cpuTime.text())
+         jobInfo.setSystemTime(jobDetails.getSystemTime.text())
+         jobInfo.setUserTime(jobDetails.getUserTime.text())
+         jobInfo.setStartTimeGMT(jobDetails.startTime.text())
+         jobInfo.setSubTimeGMT(jobDetails.submitTime.text())
+         jobInfo.setEndTimeGMT(jobDetails.endTime.text())
+         jobInfo.setQueue(jobDetails.queue.text())
+         jobInfo.setExHosts(jobDetails.exHosts.text())
+         jobInfo.setSubHost(jobDetails.fromHost.text())
+         jobInfo.setJobGroup(jobDetails.jobGroup.text())
+         jobInfo.setSwap(jobDetails.swap.text())
+         jobInfo.setDescription(jobDetails.description.text())
+         jobInfo.setUserGroup(jobDetails.userGroup.text())
+         jobInfo.setMemory(jobDetails.mem.text().toInteger())
+         jobInfo.setRunTime(jobDetails.runTime.text())
+         jobInfo.setRunLimit(jobDetails.runLimit.text())
+         jobInfo.setNumProcessors(jobDetails.numProcessors.text())
+         jobInfo.setNthreads(jobDetails.nthreads.text())
+         jobInfo.setProjectName(jobDetails.projectName.text())
+         jobInfo.setExitStatus(jobDetails.exitStatus.text())
+         jobInfo.setPidStr(jobDetails.pidStr.text())
+         jobInfo.setPgidStr(jobDetails.pgidStr.text())
+         jobInfo.setCwd(jobDetails.cwd.text())
+         jobInfo.setPendReason(jobDetails.pendReason.text())
+         jobInfo.setExecCwd(jobDetails.execCwd.text())
+         jobInfo.setPriority(jobDetails.priority.text())
+         jobInfo.setOutfile(jobDetails.outfile.text())
+         jobInfo.setInfile(jobDetails.infile.text())
+         jobInfo.setResReq(jobDetails.resReq.text())
+         jobInfo.setExecHome(jobDetails.execHome.text())
+         jobInfo.setExecUserName(jobDetails.execUserName.text())
+         jobInfo.setAskedHostsStr(jobDetails.askedHostsStr.text())
+         job.setJobInfo(jobInfo)
+     }
+
+
+     /**
+      * Get the time history for each given job
       * @param jobList
       */
-    void getJobhistory(List<Job> jobList){
-        String resource = URI_JOB_HISTORY
-        List<Header> headers = []
-        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+     void getJobhistory(List<Job> jobList){
+         String resource = URI_JOB_HISTORY
+         List<Header> headers = []
+         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-        def result =restExecutionService.execute(new RestCommand(resource+"?ids="+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
-        if(result.statusCode == 200){
+         def result =restExecutionService.execute(new RestCommand(resource+"?ids="+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
+         if(result.statusCode == 200){
              GPathResult res = new XmlSlurper().parseText(result.body)
              logger.info("status code: "+result.statusCode+" result:"+result.body)
 
-             res.history.each {element ->
+             res.history.each {NodeChild jobHistory ->
 
-                 Job job = jobList.find {it.getJobID().equalsIgnoreCase(element.jobSummary.id.text()) }
-                 GenericJobInfo jobInfo
+                 Job job = jobList.find {it.getJobID().equalsIgnoreCase(jobHistory.jobSummary.id.text()) }
 
-                 if(job.getJobInfo() != null)
-                     jobInfo = job.getJobInfo()
-                 else
-                     jobInfo = new GenericJobInfo(element.jobSummary.jobName.text(), null,element.jobSummary.id.text(), null, null)
-
-                 jobInfo.setTimeOfCalculation(element.timeSummary.timeOfCalculation.text())
-                 jobInfo.setTimeUserSuspState(element.timeSummary.ususpTime.text())
-                 jobInfo.setTimePendState(element.timeSummary.pendTime.text())
-                 jobInfo.setTimePendSuspState(element.timeSummary.psuspTime.text())
-                 jobInfo.setTimeUnknownState(element.timeSummary.unknownTime.text())
-                 jobInfo.setTimeSystemSuspState(element.timeSummary.ssuspTime.text())
-                 jobInfo.setRunTime(element.timeSummary.runTime.text())
-
-                 job.setJobInfo(jobInfo)
+                 setJobInfoForJobHistory(job,jobHistory)
              }
 
         }else{
             logger.warning("status code: " + result.statusCode + " result: " + result.body)
         }
-    }
+     }
+
+
+     /**
+      * Used by @getJobhistory to set JobInfo
+      * @param job
+      * @param jobHistory - xml job history
+      */
+     void setJobInfoForJobHistory(Job job, NodeChild jobHistory){
+         GenericJobInfo jobInfo
+
+         if(job.getJobInfo() != null)
+             jobInfo = job.getJobInfo()
+         else
+             jobInfo = new GenericJobInfo(jobHistory.jobSummary.jobName.text(),job.getTool(),jobHistory.jobSummary.id.text(),job.getParameters(), job.getParentJobs())
+
+         jobInfo.setTimeOfCalculation(jobHistory.timeSummary.timeOfCalculation.text())
+         jobInfo.setTimeUserSuspState(jobHistory.timeSummary.ususpTime.text())
+         jobInfo.setTimePendState(jobHistory.timeSummary.pendTime.text())
+         jobInfo.setTimePendSuspState(jobHistory.timeSummary.psuspTime.text())
+         jobInfo.setTimeUnknownState(jobHistory.timeSummary.unknownTime.text())
+         jobInfo.setTimeSystemSuspState(jobHistory.timeSummary.ssuspTime.text())
+         jobInfo.setRunTime(jobHistory.timeSummary.runTime.text())
+         job.setJobInfo(jobInfo)
+     }
 
 
 }

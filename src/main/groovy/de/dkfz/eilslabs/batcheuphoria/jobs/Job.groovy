@@ -227,6 +227,10 @@ class Job<J extends Job> {
         return tool
     }
 
+    String getToolScript() {
+        return toolScript
+    }
+
     String getToolMD5() {
         return toolMD5
     }

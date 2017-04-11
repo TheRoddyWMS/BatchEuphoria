@@ -22,14 +22,13 @@ import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
-import groovy.transform.CompileStatic
 
 /**
  * Starter class for BE integration tests.
  *
  * Created by heinold on 27.03.17.
  */
-@CompileStatic
+//@CompileStatic
 class IntegrationTestStarter {
 
     static LoggerWrapper log = LoggerWrapper.getLogger(IntegrationTestStarter)
@@ -39,28 +38,21 @@ class IntegrationTestStarter {
     static File batchEuphoriaTestScript
 
     static void main(String[] args) {
-        checkStartup(args)
+        IntegrationTestInput testInput= new IntegrationTestInput()
+        checkStartup(args,testInput)
 
-        getOptionsFromArgs(args).each { AvailableClusterSystems cs ->
-            if(cs == AvailableClusterSystems.lsf){
-                initializeTests(args[0],args[1])
-                initializeLSFTest(args[2],args[3])
-                runTestsFor(cs, restExecutionService)
-            }else{
-                initializeTests(args[0],args[1])
-                runTestsFor(cs, executionService)
-            }
+        if(testInput.clusterSystem == AvailableClusterSystems.lsf){
+            // initializeTests(args[0],args[1])
+            initializeLSFTest(testInput.restServer, testInput.restAccount)
+            runTestsFor(testInput.clusterSystem, restExecutionService)
+        }else{
+            initializeTests(testInput.server,testInput.account)
+            runTestsFor(testInput.clusterSystem, executionService)
         }
 
         finalizeTests()
     }
 
-    private static List<AvailableClusterSystems> getOptionsFromArgs(String[] args) {
-        if(args.length > 4)
-            args[4..-1].collect { String it -> it.toLowerCase() as AvailableClusterSystems }
-        else
-            args[2..-1].collect { String it -> it.toLowerCase() as AvailableClusterSystems }
-    }
 
     private static void runTestsFor(AvailableClusterSystems option, ExecutionService es) {
         JobManager jobManager
@@ -84,8 +76,9 @@ class IntegrationTestStarter {
 
 
             log.always("Starting tests for single jobs.")
-            Job testJob = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
-                def jobList = [testJob]
+            Job testJob = new Job("batchEuphoriaTestJob", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 2, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+
+            def jobList = [testJob]
 
             // run single job and check status
             if(jobManager.isHoldJobsEnabled()) {
@@ -126,9 +119,9 @@ class IntegrationTestStarter {
             log.always("Starting tests for multiple jobs.")
 
             // run jobs with dependencies
-            Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], null, null, jobManager)
-            Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
-            Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("20s"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
+            Job testParent = new Job("batchEuphoriaTestJob_Parent", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+            Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
+            Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
 
             log.always("Submit jobs.")
             def allJobs = [testParent, testJobChild1, testJobChild2]
@@ -180,20 +173,57 @@ class IntegrationTestStarter {
             log.severe("Not all jobs ${jobList.collect { it.jobID }.join(" ")} were in the proper state: [${listOfStatesToCheck.join(" ")}], got last states [${lastStates.join(" ")}]. Make sure, that your job system is working properly.")
     }
 
-    private static void checkStartup(String[] args) {
-        if (!args || args.size() < 2) {
-            println([
-                    "Call the integration test starter with a range of optione like",
-                    "java ... ${IntegrationTestStarter.class.name} PBS SGE SLURM LSF",
-                    "where the cluster system names are optional but at least one has to be set.",
-                    "Available options are (lower case is accepted):",
-                    " direct",
-                    " pbs",
-                    " sge",
-                    " slurm",
-                    " lsf",
-            ].join("\n"))
+    private static void checkStartup(String[] args, IntegrationTestInput testInput) {
+        def cli = new CliBuilder(usage: '-s "server" -a "account" -rs "rest_server" -ra "rest_account" -c [lsf,pbs] ')
+        cli.h(longOpt: 'help'  , 'usage information'   , required: false           )
+        cli.c(longOpt: 'cluster', 'cluster system (lsf, pbs)', required: true , args: 1 )
+        cli.s(longOpt: 'server', 'server to connect to', required: false  , args: 1 )
+        cli.a(longOpt: 'account', 'user account', required: false  , args: 1 )
+        cli.ra(longOpt: 'restaccount', 'rest account (for lsf required)', required: false  , args: 1 )
+        cli.rs(longOpt: 'restserver', 'rest server (for lsf required)', required: false  , args: 1 )
+        //cli.d(longOpt: 'debug' , 'enable debugging'    , required: false )
+
+
+        OptionAccessor opt = cli.parse(args)
+
+        if(!opt) {
             System.exit(0)
+        }
+        // print usage if -h, --help, or no argument is given
+        if(opt.h || opt.arguments().isEmpty()) {
+            cli.usage()
+        }
+
+        if( opt.c ) {
+            testInput.setClusterSystem(opt.c.toLowerCase() as AvailableClusterSystems)
+        }
+
+        if( opt.s && opt.a) {
+            testInput.setServer(opt.s)
+            testInput.setAccount(opt.a)
+        }else{
+            if(!opt.a && opt.s) {
+                cli.usage()
+                System.exit(0)
+            }
+            if(opt.a && !opt.s) {
+                cli.usage()
+                System.exit(0)
+            }
+        }
+
+        if( opt.ra && opt.rs ) {
+            testInput.setRestAccount(opt.ra)
+            testInput.setRestServer(opt.rs)
+        }else{
+            if(!opt.ra && opt.rs) {
+                cli.usage()
+                System.exit(0)
+            }
+            if(opt.ra && !opt.rs) {
+                cli.usage()
+                System.exit(0)
+            }
         }
     }
 
