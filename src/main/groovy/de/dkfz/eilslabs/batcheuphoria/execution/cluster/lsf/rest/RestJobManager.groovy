@@ -6,8 +6,6 @@
 
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest
 
-import com.sun.org.apache.xerces.internal.dom.ChildNode
-import de.dkfz.eilslabs.batcheuphoria.execution.RestExecutionService
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
 import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobDependencyID
@@ -27,9 +25,9 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 /**
- * Factory for the management of LSF cluster systems.
+ * REST job manager for cluster systems.
  *
- *
+ * Created by kaercher on 22.03.17.
  */
 class RestJobManager extends JobManagerAdapter
  {
@@ -47,27 +45,6 @@ class RestJobManager extends JobManagerAdapter
      public static String URI_JOB_DETAILS = "jobs/"
      public static String URI_JOB_HISTORY = "jobhistory"
      public static String URI_USER_COMMAND = "userCmd"
-
-/*
-     public static final String COMMANDTORUN = "Command to run"
-     public static final String EXTRA_PARAMS ="Other bsub op-tions"
-     public static final String MAX_MEM ="Maximum memory size per pro-cess"
-     public static final String MAX_NUM_CPU = ""
-     public static final String MIN_NUM_CPU = ""
-     public static final String PROC_PRE_HOST = ""
-     public static final String EXTRA_RES = ""
-     public static final String RUNLIMITMINUTE = ""
-     public static final String RERUNABLE = ""
-     public static final String JOB_NAME = ""
-     public static final String APP_PROFILE = ""
-     public static final String PRJ_NAME = ""
-     public static final String RES_ID = ""
-     public static final String LOGIN_SHELL = ""
-     public static final String QUEUE = ""
-     public static final String INPUT_FILE = ""
-     public static final String OUTPUT_FILE = ""
-     public static final String ERROR_FILE = ""
-*/
 
 
      RestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms){
@@ -120,7 +97,7 @@ class RestJobManager extends JobManagerAdapter
 
      @Override
      Map<Job, JobState> queryJobStatus(List list, boolean forceUpdate) {
-         getJobdetails(list)
+         getJobDetails(list)
          Map<Job, JobState> jobStates = [:]
          list.each {Job job -> jobStates.put(job,job.getJobState())}
          return queryJobStatus(list)
@@ -129,7 +106,7 @@ class RestJobManager extends JobManagerAdapter
 
      @Override
      Map<String, JobState> queryJobStatus(List jobIDs) {
-         getJobdetails(jobIDs)
+         getJobDetails(jobIDs)
          Map<String, JobState> jobStates = [:]
          jobIDs.each {Job job -> jobStates.put(job.getJobID(),job.getJobState())}
          return  jobStates
@@ -168,59 +145,71 @@ class RestJobManager extends JobManagerAdapter
       "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
       */
      private void submitJob(Job job){
-         String resource = URI_JOB_SUBMIT
-         String headBoundary='bqJky99mlBWa-ZuqjC53mG6EzbmlxB'
+         String headBoundary= UUID.randomUUID().toString()
 
          List<Header> headers = []
          headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${headBoundary}"))
          headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-         String appName = "generic"
-         StringBuilder body = new StringBuilder()
-
-         // --- Application Name Area  ----
-         String appNameArea = "--${headBoundary}\r\n" +
-                 "Content-Disposition: form-data; name=\"AppName\"\r\n" +
-                 "Content-ID: <AppName>\r\n" +
-                 "\r\n" +
-                 "${appName}\r\n"
-
-         body << appNameArea
+         StringBuilder requestBody = new StringBuilder()
+         requestBody << getAppNameArea("generic", headBoundary)
 
          // --- Parameters Area ---
          StringBuilder paramArea = new StringBuilder()
-         String bodyBoundary = '_Part_1_701508.1145579811786'
+         String bodyBoundary = UUID.randomUUID().toString()
+
          paramArea << prepareToolScript(job,bodyBoundary)
-
          paramArea << prepareJobName(job,bodyBoundary)
-
          paramArea << prepareExtraParams(job,bodyBoundary)
 
          if(paramArea.length() > 0) {
-             paramArea.insert(0,"--${headBoundary}\r\n" +
-                    "Content-Disposition: form-data; name=\"data\"\r\n" +
-                    "Content-Type: multipart/mixed; boundary=${bodyBoundary}\r\n" +
-                    "Accept-Language:de-de\r\n" +
-                    "Content-ID: <data>\r\n" +
-                    "\r\n")
-
-             paramArea << "--${bodyBoundary}--\r\n" +
-                    "\r\n"
+             paramArea.insert(0,getParamAreaHeader(headBoundary,bodyBoundary)) //header
+             paramArea << "--${bodyBoundary}--\r\n\r\n" //footer
          }
 
-         body << paramArea
+         requestBody << paramArea
+         requestBody << "--${headBoundary}--\r\n"
 
-         body << "--${headBoundary}--\r\n"
+         logger.postAlwaysInfo("request body:\n"+requestBody)
 
-         logger.postAlwaysInfo("request body:\n"+body)
-
-         RestResult result = restExecutionService.execute(new RestCommand(resource, body.toString(), headers, RestCommand.HttpMethod.HTTPPOST))
+         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST))
          if(result.statusCode == 200){
              logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
              job.setRunResult(new JobResult(job.lastCommand, new PBSJobDependencyID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs))
          }else{
              logger.postAlwaysInfo("status code: "+result.statusCode+" result: "+result.body)
          }
+     }
+
+
+     /**
+      * Get app name area for job submission
+      * @param appName - usually it is "generic" which exits in all LSF environments
+      * @param headBoundary - a random string
+      * @return app name area string for job submission
+      */
+     private String getAppNameArea(String appName, String headBoundary){
+         return "--${headBoundary}\r\n" +
+                 "Content-Disposition: form-data; name=\"AppName\"\r\n" +
+                 "Content-ID: <AppName>\r\n" +
+                 "\r\n" +
+                 "${appName}\r\n"
+     }
+
+
+     /**
+      * Get param area header for job submission
+      * @param headBoundary - a random string
+      * @param bodyBoundary - a random string
+      * @return param area header string for job submission
+      */
+     private String getParamAreaHeader(String headBoundary, String bodyBoundary){
+         return "--${headBoundary}\r\n" +
+                 "Content-Disposition: form-data; name=\"data\"\r\n" +
+                 "Content-Type: multipart/mixed; boundary=${bodyBoundary}\r\n" +
+                 "Accept-Language:de-de\r\n" +
+                 "Content-ID: <data>\r\n" +
+                 "\r\n"
      }
 
 
@@ -280,7 +269,7 @@ class RestJobManager extends JobManagerAdapter
      private String prepareJobName(Job job, String boundary){
          if(job.getJobName()){
              return  "--${boundary}\r\n" +
-                     "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
+                     "Content-Disposition: form-data; name=\"JOB_NAME\"\r\n" +
                      "Content-Type: application/xml; charset=UTF-8\r\n" +
                      "Content-Transfer-Encoding: 8bit\r\n" +
                      "Accept-Language:de-de\r\n" +
@@ -328,21 +317,6 @@ class RestJobManager extends JobManagerAdapter
                  "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' "+envParams+((PBSResourceProcessingCommand)convertResourceSet(job.resourceSet)).processingString+parentJobs}" +
                  "</value><type></type></AppParam>\r\n"
      }
-
-
-     // --- File Attachment ---
-     /*
-     if(job.file.size() != 0) {
-         String dataArea="--${boundary}"
-         job.parameters.eachWithIndex { key, value, pos ->
-             String dataAreaElement = "--${newBoundary} \nContent-Disposition: form-data; name='f1'  \n" +
-                     " Content-Type: application/octet-stream\n" +
-                     "Content-Transfer-Encoding: UTF-8\n" +
-                     "Content-ID: ${filename} \r\n" +
-                     "${file}"
-         }
-         body = body + dataArea
-     }*/
 
 
      /**
@@ -404,14 +378,13 @@ class RestJobManager extends JobManagerAdapter
       * @param cmd LSF command
       */
      public void submitCommand(String cmd){
-         String resource = URI_USER_COMMAND
          List<Header> headers = []
          headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
          headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
          String body = "<UserCmd>" +
                  "<cmd>${cmd}</cmd>" +
                  "</UserCmd>"
-         def result =restExecutionService.execute(new RestCommand(resource,body,headers,RestCommand.HttpMethod.HTTPPOST))
+         def result =restExecutionService.execute(new RestCommand(URI_USER_COMMAND,body,headers,RestCommand.HttpMethod.HTTPPOST))
          if(result.statusCode == 200){
              // successful
              logger.info("status code: "+result.statusCode+" result: "+result.body)
@@ -426,12 +399,11 @@ class RestJobManager extends JobManagerAdapter
       * Updates job information for given jobs
       * @param jobList
       */
-     void getJobdetails(List<Job> jobList){
-         String resource = URI_JOB_DETAILS
+     void getJobDetails(List<Job> jobList){
          List<Header> headers = []
          headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-         def result =restExecutionService.execute(new RestCommand(resource+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
+         def result =restExecutionService.execute(new RestCommand(URI_JOB_DETAILS+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
          if(result.statusCode == 200){
              GPathResult res = new XmlSlurper().parseText(result.body)
              logger.info("status code: " + result.statusCode + " result:" + result.body)
@@ -460,7 +432,7 @@ class RestJobManager extends JobManagerAdapter
 
 
      /**
-      * Used by @getJobdetails to set JobInfo
+      * Used by @getJobDetails to set JobInfo
       * @param job
       * @param jobDetails - XML job details
       */
@@ -513,12 +485,11 @@ class RestJobManager extends JobManagerAdapter
       * Get the time history for each given job
       * @param jobList
       */
-     void getJobhistory(List<Job> jobList){
-         String resource = URI_JOB_HISTORY
+     void getJobHistory(List<Job> jobList){
          List<Header> headers = []
          headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-         def result =restExecutionService.execute(new RestCommand(resource+"?ids="+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
+         def result =restExecutionService.execute(new RestCommand(URI_JOB_HISTORY+"?ids="+prepareURLWithParam(jobList),null,headers,RestCommand.HttpMethod.HTTPGET))
          if(result.statusCode == 200){
              GPathResult res = new XmlSlurper().parseText(result.body)
              logger.info("status code: "+result.statusCode+" result:"+result.body)
@@ -537,7 +508,7 @@ class RestJobManager extends JobManagerAdapter
 
 
      /**
-      * Used by @getJobhistory to set JobInfo
+      * Used by @getJobHistory to set JobInfo
       * @param job
       * @param jobHistory - xml job history
       */

@@ -1,11 +1,10 @@
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest
 
 import de.dkfz.eilslabs.batcheuphoria.jobs.Command
-import de.dkfz.eilslabs.batcheuphoria.jobs.Job
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import org.apache.http.Header
 
 /**
+ * This class is used to create REST commands
  * Created by kaercher on 02.03.17.
  */
 class RestCommand extends Command{
@@ -20,8 +19,7 @@ class RestCommand extends Command{
         HTTPGET
     }
 
-
-    public RestCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod){
+    RestCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod){
         super(null,null,null,null,null)
         this.resource = resource
         this.requestBody = requestBody

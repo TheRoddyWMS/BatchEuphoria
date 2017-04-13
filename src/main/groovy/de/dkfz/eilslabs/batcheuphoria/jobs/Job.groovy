@@ -49,7 +49,7 @@ class Job<J extends Job> {
 
     /**
      * A tool script which will be piped (or whatever...) to the job manager submission command / method
-     * It is either toolScript OR tool
+     * It is either testScript OR tool
      */
     String toolScript
     /**
