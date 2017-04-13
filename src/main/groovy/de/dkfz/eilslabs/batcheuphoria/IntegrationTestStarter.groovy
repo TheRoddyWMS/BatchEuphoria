@@ -34,7 +34,7 @@ class IntegrationTestStarter {
     static LoggerWrapper log = LoggerWrapper.getLogger(IntegrationTestStarter)
     static TestExecutionService executionService
     static RestExecutionService restExecutionService
-    static String toolScript = "\"#!/bin/bash\\nsleep 15\\n\""
+    static String testScript = "\"#!/bin/bash\\nsleep 15\\n\""
     static File batchEuphoriaTestScript
 
     static void main(String[] args) {
@@ -42,11 +42,11 @@ class IntegrationTestStarter {
         checkStartup(args,testInput)
 
         if(testInput.clusterSystem == AvailableClusterSystems.lsf){
-            // initializeTests(args[0],args[1])
+            initializeTests(testInput.account,testInput.server)
             initializeLSFTest(testInput.restServer, testInput.restAccount)
             runTestsFor(testInput.clusterSystem, restExecutionService)
         }else{
-            initializeTests(testInput.server,testInput.account)
+            initializeTests(testInput.account,testInput.server)
             runTestsFor(testInput.clusterSystem, executionService)
         }
 
@@ -56,7 +56,6 @@ class IntegrationTestStarter {
 
     private static void runTestsFor(AvailableClusterSystems option, ExecutionService es) {
         JobManager jobManager
-        int maxSleep = 5
         log.always("Creating job manager instance for ${option}")
 
         try {
@@ -72,11 +71,26 @@ class IntegrationTestStarter {
             return
         }
 
+        Job testJobwithScript = new Job("batchEuphoriaTestJob", null, testScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+        singleJobTest(jobManager, testJobwithScript)
+
+        Job testJobwithFile = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+        singleJobTest(jobManager, testJobwithFile)
+
+        Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+        Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
+        Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
+        multipleJobsTest(jobManager,[testParent,testJobChild1,testJobChild2])
+
+        log.severe("Did not test jobManager.queryExtendedJobState")
+        log.severe("Did not test jobManager.waitForJobsToFinish")
+    }
+
+
+    private static void singleJobTest(JobManager jobManager, Job testJob){
+        int maxSleep = 5
         try {
-
-
             log.always("Starting tests for single jobs.")
-            Job testJob = new Job("batchEuphoriaTestJob", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 2, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
 
             def jobList = [testJob]
 
@@ -108,46 +122,42 @@ class IntegrationTestStarter {
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${option}")
+            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass().toString()}")
             log.severe(RoddyIOHelperMethods.getStackTraceAsString(ex))
         } finally {
 
         }
+    }
 
+    private static void multipleJobsTest(JobManager jobManager, List<Job> testJobs){
+        int maxSleep = 5
         try {
 
             log.always("Starting tests for multiple jobs.")
 
             // run jobs with dependencies
-            Job testParent = new Job("batchEuphoriaTestJob_Parent", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
-            Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
-            Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", null, toolScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
-
             log.always("Submit jobs.")
-            def allJobs = [testParent, testJobChild1, testJobChild2]
-            allJobs.each { def jr = jobManager.runJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
-            ensureProperJobStates(maxSleep, allJobs, [jobManager.isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED], jobManager)
+            testJobs.each { def jr = jobManager.runJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
+            ensureProperJobStates(maxSleep, testJobs, [jobManager.isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED], jobManager)
 
             log.always("Start held jobs.")
-            jobManager.startHeldJobs(allJobs)
-            ensureProperJobStates(maxSleep, allJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
+            jobManager.startHeldJobs(testJobs)
+            ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
 
             log.always("Abort jobs.")
-            jobManager.queryJobAbortion(allJobs)
-            ensureProperJobStates(maxSleep, allJobs, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
+            jobManager.queryJobAbortion(testJobs)
+            ensureProperJobStates(maxSleep, testJobs, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
 
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${option}")
+            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass().toString()}")
             log.severe(RoddyIOHelperMethods.getStackTraceAsString(ex))
         } finally {
 
         }
-
-        log.severe("Did not test jobManager.queryExtendedJobState")
-        log.severe("Did not test jobManager.waitForJobsToFinish")
     }
+
 
     private static void ensureProperJobStates(int maxSleep, List<Job> jobList, List<JobState> listOfStatesToCheck, JobManager jobManager) {
         int increments = 8
@@ -231,7 +241,7 @@ class IntegrationTestStarter {
         try {
             executionService = new TestExecutionService(user, server)
             batchEuphoriaTestScript = File.createTempFile("batchEuphoriaTestScript_", ".sh")
-            batchEuphoriaTestScript << toolScript
+            batchEuphoriaTestScript << testScript
             executionService.copyFileToRemote(batchEuphoriaTestScript, batchEuphoriaTestScript)
         } catch (Exception ex) {
             log.severe("Could not setup execution service and copy test script.")
@@ -252,6 +262,7 @@ class IntegrationTestStarter {
     }
 
     private static ExecutionResult finalizeTests() {
+        log.always("Remove test scripts")
         executionService.execute("rm ${batchEuphoriaTestScript}")
         executionService.executeLocal("rm ${batchEuphoriaTestScript}")
     }
