@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2017 eilslabs.
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ */
+
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest
 
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
@@ -16,7 +22,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 /**
  * Created by kaercher on 22.03.17.
  */
-class JobManagerAdapter extends ClusterJobManager{
+class JobManagerAdapter extends ClusterJobManager {
     JobManagerAdapter(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }

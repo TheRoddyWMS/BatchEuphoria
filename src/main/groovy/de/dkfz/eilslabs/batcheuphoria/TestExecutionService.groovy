@@ -56,10 +56,6 @@ class TestExecutionService implements ExecutionService {
         return null
     }
 
-    @Override
-    RestResult execute(RestCommand restCommand) {
-        return null
-    }
 
     @Override
     boolean isAvailable() {

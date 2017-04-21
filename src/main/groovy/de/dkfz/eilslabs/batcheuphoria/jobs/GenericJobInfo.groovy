@@ -9,6 +9,7 @@ package de.dkfz.eilslabs.batcheuphoria.jobs
 
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.CompileStatic
 
 import java.io.File
 import java.util.List
@@ -17,6 +18,7 @@ import java.util.Map
 /**
  * Created by michael on 06.02.15.
  */
+@CompileStatic
 class GenericJobInfo {
 
     String jobName

@@ -22,13 +22,14 @@ import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.CompileStatic
 
 /**
  * Starter class for BE integration tests.
  *
  * Created by heinold on 27.03.17.
  */
-//@CompileStatic
+@CompileStatic
 class IntegrationTestStarter {
 
     static LoggerWrapper log = LoggerWrapper.getLogger(IntegrationTestStarter)
@@ -36,17 +37,18 @@ class IntegrationTestStarter {
     static RestExecutionService restExecutionService
     static String testScript = "\"#!/bin/bash\\nsleep 15\\n\""
     static File batchEuphoriaTestScript
+    static ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null)
 
     static void main(String[] args) {
         IntegrationTestInput testInput= new IntegrationTestInput()
         checkStartup(args,testInput)
 
+        initializeTests(testInput.account,testInput.server)
+
         if(testInput.clusterSystem == AvailableClusterSystems.lsf){
-            initializeTests(testInput.account,testInput.server)
             initializeLSFTest(testInput.restServer, testInput.restAccount)
             runTestsFor(testInput.clusterSystem, restExecutionService)
         }else{
-            initializeTests(testInput.account,testInput.server)
             runTestsFor(testInput.clusterSystem, executionService)
         }
 
@@ -67,19 +69,19 @@ class IntegrationTestStarter {
                             .build()
             ) as JobManager
         } catch (Exception ex) {
-            log.severe("Could not load and instantiate job manager class ${option.className}. Exception: ${ex.printStackTrace()}")
+            log.severe("Could not load and instantiate job manager class ${option.className}.",ex)
             return
         }
 
-        Job testJobwithScript = new Job("batchEuphoriaTestJob", null, testScript, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+        Job testJobwithScript = new Job("batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], null, null, jobManager)
         singleJobTest(jobManager, testJobwithScript)
 
-        Job testJobwithFile = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
+        Job testJobwithFile = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
         singleJobTest(jobManager, testJobwithFile)
 
-        Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], null, null, jobManager)
-        Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent], null, jobManager)
-        Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null), null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
+        Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
+        Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent], null, jobManager)
+        Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
         multipleJobsTest(jobManager,[testParent,testJobChild1,testJobChild2])
 
         log.severe("Did not test jobManager.queryExtendedJobState")
@@ -95,8 +97,8 @@ class IntegrationTestStarter {
             def jobList = [testJob]
 
             // run single job and check status
+            JobResult jr = jobManager.runJob(testJob)
             if(jobManager.isHoldJobsEnabled()) {
-                JobResult jr = jobManager.runJob(testJob)
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
 
@@ -107,9 +109,8 @@ class IntegrationTestStarter {
                 // is too long for tests. We force updates everytime we run queryJobStatus
                 ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.RUNNING], jobManager)
             } else {
-                JobResult jr = jobManager.runJob(testJob)
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
-                ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.RUNNING], jobManager)
+                ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.HOLD, JobState.RUNNING], jobManager)
             }
             log.always("Abort and check again")
             jobManager.queryJobAbortion(jobList)
@@ -122,7 +123,7 @@ class IntegrationTestStarter {
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass().toString()}")
+            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass()}")
             log.severe(RoddyIOHelperMethods.getStackTraceAsString(ex))
         } finally {
 
@@ -185,13 +186,13 @@ class IntegrationTestStarter {
 
     private static void checkStartup(String[] args, IntegrationTestInput testInput) {
         def cli = new CliBuilder(usage: '-s "server" -a "account" -rs "rest_server" -ra "rest_account" -c [lsf,pbs] ')
-        cli.h(longOpt: 'help'  , 'usage information'   , required: false           )
-        cli.c(longOpt: 'cluster', 'cluster system (lsf, pbs)', required: true , args: 1 )
-        cli.s(longOpt: 'server', 'server to connect to', required: false  , args: 1 )
-        cli.a(longOpt: 'account', 'user account', required: false  , args: 1 )
-        cli.ra(longOpt: 'restaccount', 'rest account (for lsf required)', required: false  , args: 1 )
-        cli.rs(longOpt: 'restserver', 'rest server (for lsf required)', required: false  , args: 1 )
-        //cli.d(longOpt: 'debug' , 'enable debugging'    , required: false )
+        cli.options.addOption("h","help",false, "Show usage information")
+        cli.options.addOption("c","cluster",true, "Set the used cluster system e.g. -c pbs. Currently only lsf or pbs")
+        cli.options.addOption("s","server",true, "Head node of the set cluster system")
+        cli.options.addOption("a","account",true, "User account which has access to the set cluster system")
+        cli.options.addOption("ra","restaccount",true, "REST serivce account (only for LSF REST required)")
+        cli.options.addOption("rs","restserver",true, "REST service URL e.g. http(s)://localhost:8080/platform/ws (only for LSF REST required)")
+        //cli.options.addOption(longOpt: 'debug' ,false, 'enable debugging')
 
 
         OptionAccessor opt = cli.parse(args)
@@ -200,37 +201,37 @@ class IntegrationTestStarter {
             System.exit(0)
         }
         // print usage if -h, --help, or no argument is given
-        if(opt.h || opt.arguments().isEmpty()) {
+        if(opt.getProperty("h") || opt.arguments().isEmpty()) {
             cli.usage()
         }
 
-        if( opt.c ) {
-            testInput.setClusterSystem(opt.c.toLowerCase() as AvailableClusterSystems)
+        if( opt.getProperty("c") ) {
+            testInput.setClusterSystem((opt.getProperty("c") as String).toLowerCase() as AvailableClusterSystems)
         }
 
-        if( opt.s && opt.a) {
-            testInput.setServer(opt.s)
-            testInput.setAccount(opt.a)
+        if( opt.getProperty("s") && opt.getProperty("a")) {
+            testInput.setServer(opt.getProperty("s") as String)
+            testInput.setAccount(opt.getProperty("a") as String)
         }else{
-            if(!opt.a && opt.s) {
+            if(!opt.getProperty("a") && opt.getProperty("s")) {
                 cli.usage()
                 System.exit(0)
             }
-            if(opt.a && !opt.s) {
+            if(opt.getProperty("a") && !opt.getProperty("s")) {
                 cli.usage()
                 System.exit(0)
             }
         }
 
-        if( opt.ra && opt.rs ) {
-            testInput.setRestAccount(opt.ra)
-            testInput.setRestServer(opt.rs)
+        if( opt.getProperty("ra") && opt.getProperty("rs") ) {
+            testInput.setRestAccount(opt.getProperty("ra") as String)
+            testInput.setRestServer(opt.getProperty("rs") as String)
         }else{
-            if(!opt.ra && opt.rs) {
+            if(!opt.getProperty("ra") && opt.getProperty("rs")) {
                 cli.usage()
                 System.exit(0)
             }
-            if(opt.ra && !opt.rs) {
+            if(opt.getProperty("ra") && !opt.getProperty("rs")) {
                 cli.usage()
                 System.exit(0)
             }

@@ -19,7 +19,8 @@ import java.util.concurrent.atomic.AtomicLong
 @groovy.transform.CompileStatic
 class Job<J extends Job> {
 
-    private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(Job.class.getSimpleName())
+    private static
+    final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(Job.class.getSimpleName())
 
     protected JobType jobType = JobType.STANDARD
 
@@ -91,9 +92,12 @@ class Job<J extends Job> {
     /**
      * Stores the result when the job was executed.
      */
-    private de.dkfz.roddy.execution.jobs.JobResult runResult
+    de.dkfz.roddy.execution.jobs.JobResult runResult
 
-    private GenericJobInfo jobInfo
+    /**
+     * Stores information from the cluster about the job e.g. used resources
+     */
+    GenericJobInfo jobInfo
 
     JobManager jobManager
 
@@ -102,7 +106,7 @@ class Job<J extends Job> {
         this.currentJobState = JobState.UNKNOWN
         this.tool = tool
         this.toolScript = toolScript
-        if( tool && toolScript ) throw new RuntimeException("A job must only have an input script or a callable file.")
+        if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")
         this.toolMD5 = toolMD5
         this.resourceSet = resourceSet
         this.parameters = parameters
@@ -184,24 +188,7 @@ class Job<J extends Job> {
     }
 
     File getLoggingDirectory() {
-
-    }
-
-    void setRunResult(de.dkfz.roddy.execution.jobs.JobResult result) {
-        this.runResult = result
-    }
-
-    de.dkfz.roddy.execution.jobs.JobResult getRunResult() {
-        return runResult
-    }
-
-
-    GenericJobInfo getJobInfo() {
-        return jobInfo
-    }
-
-    void setJobInfo(GenericJobInfo jobInfo) {
-        this.jobInfo = jobInfo
+        return loggingDirectory
     }
 
     /**

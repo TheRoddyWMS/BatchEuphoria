@@ -28,7 +28,6 @@ interface ExecutionService {
 
     ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream)
 
-    RestResult execute(RestCommand restCommand)
 
     /**
      * Query this to find out, if the service is still active
