@@ -7,6 +7,7 @@ targetCompatibility = '1.7'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -18,7 +19,7 @@ dependencies {
     compile group: 'commons-codec', name: 'commons-codec', version: '1.9'
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
-    compile files('lib/ToolLib.jar')
+    compile 'com.github.eilslabs:RoddyToolLib:0.0.1'
 }
 
 task listJars << {
