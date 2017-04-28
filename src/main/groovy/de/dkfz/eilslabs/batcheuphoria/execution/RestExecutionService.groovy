@@ -186,18 +186,6 @@ class RestExecutionService implements ExecutionService {
         }
     }
 
-    @NotYetImplemented
-    @Override
-    ExecutionResult execute(Command command, boolean waitFor = false) {
-        return null
-    }
-
-    @NotYetImplemented
-    @Override
-    ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError = false, OutputStream outputStream = null) {
-        return null
-    }
-
     @Override
     boolean isAvailable() {
         List<Header> headers = []
@@ -211,7 +199,16 @@ class RestExecutionService implements ExecutionService {
         return true
     }
 
-    @NotYetImplemented
+    @Override
+    ExecutionResult execute(Command command, boolean waitFor = null) {
+        return null
+    }
+
+    @Override
+    ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError = null, OutputStream outputStream = null) {
+        return null
+    }
+
     @Override
     String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
         return null

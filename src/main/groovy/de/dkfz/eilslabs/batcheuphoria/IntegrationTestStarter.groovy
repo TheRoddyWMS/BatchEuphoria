@@ -10,6 +10,7 @@ import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
 import de.dkfz.eilslabs.batcheuphoria.config.ResourceSetSize
 import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
 import de.dkfz.eilslabs.batcheuphoria.execution.RestExecutionService
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManager
 import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
@@ -120,6 +121,10 @@ class IntegrationTestStarter {
             ensureProperJobStates(maxSleep, jobList, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
 
             // What, if abort was succesful but the jobs are still running? PBS sometimes screws up...
+            if(jobManager.getClass().name == LSFRestJobManager.name)
+                (jobManager as LSFRestJobManager).getJobHistory(jobList)
+
+            log.always(testJob.getJobInfo().toString())
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
@@ -144,6 +149,11 @@ class IntegrationTestStarter {
             log.always("Start held jobs.")
             jobManager.startHeldJobs(testJobs)
             ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
+
+            if(jobManager.getClass().name == LSFRestJobManager.name)
+                (jobManager as LSFRestJobManager).getJobHistory(testJobs)
+
+            testJobs.each { if(it.getJobInfo() != null) log.always(it.getJobInfo().toString())}
 
             log.always("Abort jobs.")
             jobManager.queryJobAbortion(testJobs)
