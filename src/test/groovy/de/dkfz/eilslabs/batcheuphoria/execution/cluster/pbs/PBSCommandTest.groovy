@@ -32,16 +32,16 @@ class PBSCommandTest {
     @Test
     void testAssembleVariableExportString() throws Exception {
         def mapOfParameters = ["a": "a", "b": "b"]
-        Job job = new Job("Test", new File("/tmp/test.sh"), null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
+        Job job = new Job("Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
         PBSCommand cmd = new PBSCommand(null, job, "id", null, mapOfParameters, null, null, null, "/tmp/test.sh", null)
         String result = cmd.assembleVariableExportString()
-        assert result == "-v PARAMETER_FILE=" + job.parameterFile
+        assert result == " -v PARAMETER_FILE=" + job.parameterFile
     }
 
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
         def mapOfParameters = ["a": "a", "b": "b"]
-        Job job = new Job("Test", new File("/tmp/test.sh"), null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
+        Job job = new Job("Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
         PBSCommand cmd = new PBSCommand(null, job, "id", null, mapOfParameters, null, null, null, "/tmp/test.sh", null)
         String result = cmd.assembleDependencyString()
         assert result == ""
