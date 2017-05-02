@@ -22,8 +22,10 @@ dependencies {
     compile 'com.github.eilslabs:RoddyToolLib:0.0.1'
 }
 
-task listJars << {
-    configurations.compile.each { File file -> println file.name }
+task listJars {
+    doLast {
+        configurations.compile.each { File file -> println file.name }
+    }
 }
 
 
