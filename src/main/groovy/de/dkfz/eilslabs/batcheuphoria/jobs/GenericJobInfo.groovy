@@ -11,10 +11,6 @@ import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
-import java.io.File
-import java.util.List
-import java.util.Map
-
 /**
  * Created by michael on 06.02.15.
  */
@@ -27,9 +23,9 @@ class GenericJobInfo {
     Map<String, String> parameters
     List<String> parentJobIDs
     TimeUnit walltime
-    int cpus
-    int nodes
-    int memory
+    int maxCpus
+    int maxNodes
+    int maxMemory //Total resident maxMemory usage of all processes in a job
     BufferUnit memoryBufferUnit
     String queue
     String otherSettings
@@ -41,7 +37,7 @@ class GenericJobInfo {
     String startTimeGMT;
     String endTimeGMT;
     String numProcessors;
-    String cpuTime;
+    String cpuTime; //Cumulative total CPU time in seconds of all processes in a job
     String userTime; //user time used
     String systemTime; //system time used
     String runLimit;
@@ -53,8 +49,8 @@ class GenericJobInfo {
     String execUserName;
     String pidStr;
     String pgidStr;
-    String nthreads; //The number of threads per core configured on a host
-    String swap; //vmem
+    String nthreads; //Number of currently active threads of a job
+    String swap; //Total virtual maxMemory (swap) usage of all processes in a job
     String exitStatus; // UNIX exit status of the job
     String jobGroup;
     String description;
@@ -88,25 +84,25 @@ class GenericJobInfo {
                 ", id='" + id + '\'' +
                 ", parameters=" + parameters +
                 ", parentJobIDs=" + parentJobIDs +
-                ", memory=" + memory  +
-                ", cpus=" + cpus +
-                ", nodes=" + nodes  +
+                ", maxMemory=" + maxMemory +
+                ", maxCpus=" + maxCpus +
+                ", maxNodes=" + maxNodes +
                 ", queue=" + queue +
                 ", otherSettings=" + otherSettings +
-                ", user=" + user  +
+                ", user=" + user +
                 ", subHost=" + subHost +
                 ", exHosts=" + exHosts +
                 ", runTime=" + runTime +
                 ", subTimeGMT=" + subTimeGMT +
                 ", startTimeGMT=" + startTimeGMT +
-                ", endTimeGMT=" + endTimeGMT  +
-                ", numProcessors=" + numProcessors   +
-                ", cpuTime=" + cpuTime  +
+                ", endTimeGMT=" + endTimeGMT +
+                ", numProcessors=" + numProcessors +
+                ", cpuTime=" + cpuTime +
                 ", userTime=" + userTime +
-                ", systemTime=" + systemTime  +
+                ", systemTime=" + systemTime +
                 ", runLimit=" + runLimit +
                 ", pendReason=" + pendReason +
-                ", priority=" + priority  +
+                ", priority=" + priority +
                 ", userGroup=" + userGroup +
                 ", resReq=" + resReq +
                 ", execHome=" + execHome +
@@ -115,21 +111,21 @@ class GenericJobInfo {
                 ", pgidStr=" + pgidStr +
                 ", nthreads=" + nthreads +
                 ", swap=" + swap +
-                ", exitStatus=" + exitStatus  +
-                ", jobGroup=" + jobGroup  +
+                ", exitStatus=" + exitStatus +
+                ", jobGroup=" + jobGroup +
                 ", description=" + description +
-                ", execCwd=" + execCwd  +
+                ", execCwd=" + execCwd +
                 ", askedHostsStr=" + askedHostsStr +
                 ", cwd=" + cwd +
-                ", projectName=" + projectName  +
+                ", projectName=" + projectName +
                 ", outfile=" + outfile +
-                ", infile=" + infile  +
-                ", timeUserSuspState=" + timeUserSuspState  +
+                ", infile=" + infile +
+                ", timeUserSuspState=" + timeUserSuspState +
                 ", timePendState=" + timePendState +
                 ", timePendSuspState=" + timePendSuspState +
-                ", timeSystemSuspState=" + timeSystemSuspState  +
-                ", timeUnknownState=" + timeUnknownState  +
-                ", timeOfCalculation=" + timeOfCalculation  +
+                ", timeSystemSuspState=" + timeSystemSuspState +
+                ", timeUnknownState=" + timeUnknownState +
+                ", timeOfCalculation=" + timeOfCalculation +
                 '}';
     }
 }

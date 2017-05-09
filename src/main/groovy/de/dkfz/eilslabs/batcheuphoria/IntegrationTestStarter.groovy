@@ -41,15 +41,14 @@ class IntegrationTestStarter {
     static ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null)
 
     static void main(String[] args) {
-        IntegrationTestInput testInput= new IntegrationTestInput()
-        checkStartup(args,testInput)
+        IntegrationTestInput testInput = checkStartup(args)
 
-        initializeTests(testInput.account,testInput.server)
+        initializeTests(testInput)
 
-        if(testInput.clusterSystem == AvailableClusterSystems.lsf){
+        if (testInput.clusterSystem == AvailableClusterSystems.lsf) {
             initializeLSFTest(testInput.restServer, testInput.restAccount)
             runTestsFor(testInput.clusterSystem, restExecutionService)
-        }else{
+        } else {
             runTestsFor(testInput.clusterSystem, executionService)
         }
 
@@ -57,40 +56,52 @@ class IntegrationTestStarter {
     }
 
 
-    private static void runTestsFor(AvailableClusterSystems option, ExecutionService es) {
+    private static void runTestsFor(AvailableClusterSystems option, ExecutionService executionService) {
         JobManager jobManager
         log.always("Creating job manager instance for ${option}")
 
         try {
             jobManager = option.loadClass().getDeclaredConstructor(ExecutionService, JobManagerCreationParameters)
-                    .newInstance(es,
+                    .newInstance(executionService,
                     new JobManagerCreationParametersBuilder()
                             .setCreateDaemon(false)
                             .setTrackUserJobsOnly(true)
                             .build()
             ) as JobManager
         } catch (Exception ex) {
-            log.severe("Could not load and instantiate job manager class ${option.className}.",ex)
+            log.severe("Could not load and instantiate job manager class ${option.className}.", ex)
             return
         }
 
-        Job testJobwithScript = new Job("batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], null, null, jobManager)
-        singleJobTest(jobManager, testJobwithScript)
+        testJobWithPipedScript(jobManager)
 
-        Job testJobwithFile = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
-        singleJobTest(jobManager, testJobwithFile)
+        testJobWithFile(jobManager)
 
-        Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
-        Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent], null, jobManager)
-        Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
-        multipleJobsTest(jobManager,[testParent,testJobChild1,testJobChild2])
+        testMultipleJobsWithFile(jobManager)
 
         log.severe("Did not test jobManager.queryExtendedJobState")
         log.severe("Did not test jobManager.waitForJobsToFinish")
     }
 
 
-    private static void singleJobTest(JobManager jobManager, Job testJob){
+    private static void testJobWithPipedScript(JobManager jobManager) {
+        Job testJobWithPipedScript = new Job("batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], null, null, jobManager)
+        singleJobTest(jobManager, testJobWithPipedScript)
+    }
+
+    private static void testJobWithFile(JobManager jobManager) {
+        Job testJobWithFile = new Job("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
+        singleJobTest(jobManager, testJobWithFile)
+    }
+
+    private static void testMultipleJobsWithFile(JobManager jobManager) {
+        Job testParent = new Job("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
+        Job testJobChild1 = new Job("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent], null, jobManager)
+        Job testJobChild2 = new Job("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
+        multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
+    }
+
+    private static void singleJobTest(JobManager jobManager, Job testJob) {
         int maxSleep = 5
         try {
             log.always("Starting tests for single jobs.")
@@ -99,7 +110,7 @@ class IntegrationTestStarter {
 
             // run single job and check status
             JobResult jr = jobManager.runJob(testJob)
-            if(jobManager.isHoldJobsEnabled()) {
+            if (jobManager.isHoldJobsEnabled()) {
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
 
@@ -120,22 +131,22 @@ class IntegrationTestStarter {
             // ends within some seconds.
             ensureProperJobStates(maxSleep, jobList, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
 
-            // What, if abort was succesful but the jobs are still running? PBS sometimes screws up...
-            if(jobManager.getClass().name == LSFRestJobManager.name)
-                (jobManager as LSFRestJobManager).getJobHistory(jobList)
+            //update time statistics for each job status for given job. At the moment only for LSF
+            def jm = jobManager as LSFRestJobManager
+            if (jm)
+                jm.updateJobStatistics(jobList)
 
             log.always(testJob.getJobInfo().toString())
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass()}")
-            log.severe(RoddyIOHelperMethods.getStackTraceAsString(ex))
+            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass()}",ex)
         } finally {
 
         }
     }
 
-    private static void multipleJobsTest(JobManager jobManager, List<Job> testJobs){
+    private static void multipleJobsTest(JobManager jobManager, List<Job> testJobs) {
         int maxSleep = 5
         try {
 
@@ -150,10 +161,10 @@ class IntegrationTestStarter {
             jobManager.startHeldJobs(testJobs)
             ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
 
-            if(jobManager.getClass().name == LSFRestJobManager.name)
-                (jobManager as LSFRestJobManager).getJobHistory(testJobs)
+            if (jobManager.getClass().name == LSFRestJobManager.name)
+                (jobManager as LSFRestJobManager).updateJobStatistics(testJobs)
 
-            testJobs.each { if(it.getJobInfo() != null) log.always(it.getJobInfo().toString())}
+            testJobs.each { if (it.getJobInfo() != null) log.always(it.getJobInfo().toString()) }
 
             log.always("Abort jobs.")
             jobManager.queryJobAbortion(testJobs)
@@ -162,15 +173,15 @@ class IntegrationTestStarter {
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass().toString()}")
-            log.severe(RoddyIOHelperMethods.getStackTraceAsString(ex))
+            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass().toString()}",ex)
         } finally {
 
         }
     }
 
 
-    private static void ensureProperJobStates(int maxSleep, List<Job> jobList, List<JobState> listOfStatesToCheck, JobManager jobManager) {
+    private
+    static void ensureProperJobStates(int maxSleep, List<Job> jobList, List<JobState> listOfStatesToCheck, JobManager jobManager) {
         int increments = 8
         int sleep = maxSleep * increments  // 125ms increments, count from 5s to 0 seconds.
         boolean allJobsInCorrectState = false
@@ -194,68 +205,70 @@ class IntegrationTestStarter {
             log.severe("Not all jobs ${jobList.collect { it.jobID }.join(" ")} were in the proper state: [${listOfStatesToCheck.join(" ")}], got last states [${lastStates.join(" ")}]. Make sure, that your job system is working properly.")
     }
 
-    private static void checkStartup(String[] args, IntegrationTestInput testInput) {
+    private static IntegrationTestInput checkStartup(String[] args) {
+        IntegrationTestInput testInput = new IntegrationTestInput()
         def cli = new CliBuilder(usage: '-s "server" -a "account" -rs "rest_server" -ra "rest_account" -c [lsf,pbs] ')
-        cli.options.addOption("h","help",false, "Show usage information")
-        cli.options.addOption("c","cluster",true, "Set the used cluster system e.g. -c pbs. Currently only lsf or pbs")
-        cli.options.addOption("s","server",true, "Head node of the set cluster system")
-        cli.options.addOption("a","account",true, "User account which has access to the set cluster system")
-        cli.options.addOption("ra","restaccount",true, "REST serivce account (only for LSF REST required)")
-        cli.options.addOption("rs","restserver",true, "REST service URL e.g. http(s)://localhost:8080/platform/ws (only for LSF REST required)")
+        cli.options.addOption("h", "help", false, "Show usage information")
+        cli.options.addOption("c", "cluster", true, "Set the used cluster system e.g. -c pbs. Currently only lsf or pbs")
+        cli.options.addOption("s", "server", true, "Head node of the set cluster system")
+        cli.options.addOption("a", "account", true, "User account which has access to the set cluster system")
+        cli.options.addOption("ra", "restaccount", true, "REST serivce account (only for LSF REST required)")
+        cli.options.addOption("rs", "restserver", true, "REST service URL e.g. http(s)://localhost:8080/platform/ws (only for LSF REST required)")
         //cli.options.addOption(longOpt: 'debug' ,false, 'enable debugging')
 
 
         OptionAccessor opt = cli.parse(args)
 
-        if(!opt) {
+        if (!opt) {
             System.exit(0)
         }
         // print usage if -h, --help, or no argument is given
-        if(opt.getProperty("h") || opt.arguments().isEmpty()) {
+        if (opt.getProperty("h") || opt.arguments().isEmpty()) {
             cli.usage()
         }
 
-        if( opt.getProperty("c") ) {
+        if (opt.getProperty("c")) {
             testInput.setClusterSystem((opt.getProperty("c") as String).toLowerCase() as AvailableClusterSystems)
         }
 
-        if( opt.getProperty("s") && opt.getProperty("a")) {
+        if (opt.getProperty("s") && opt.getProperty("a")) {
             testInput.setServer(opt.getProperty("s") as String)
             testInput.setAccount(opt.getProperty("a") as String)
-        }else{
-            if(!opt.getProperty("a") && opt.getProperty("s")) {
+        } else {
+            if (!opt.getProperty("a") && opt.getProperty("s")) {
                 cli.usage()
                 System.exit(0)
             }
-            if(opt.getProperty("a") && !opt.getProperty("s")) {
+            if (opt.getProperty("a") && !opt.getProperty("s")) {
                 cli.usage()
                 System.exit(0)
             }
         }
 
-        if( opt.getProperty("ra") && opt.getProperty("rs") ) {
+        if (opt.getProperty("ra") && opt.getProperty("rs")) {
             testInput.setRestAccount(opt.getProperty("ra") as String)
             testInput.setRestServer(opt.getProperty("rs") as String)
-        }else{
-            if(!opt.getProperty("ra") && opt.getProperty("rs")) {
+        } else {
+            if (!opt.getProperty("ra") && opt.getProperty("rs")) {
                 cli.usage()
                 System.exit(0)
             }
-            if(opt.getProperty("ra") && !opt.getProperty("rs")) {
+            if (opt.getProperty("ra") && !opt.getProperty("rs")) {
                 cli.usage()
                 System.exit(0)
             }
         }
+        return testInput
     }
 
-    private static void initializeTests(String user, String server) {
+    private static void initializeTests(IntegrationTestInput testInput) {
         try {
-            executionService = new TestExecutionService(user, server)
+            executionService = new TestExecutionService(testInput.account, testInput.server)
             batchEuphoriaTestScript = File.createTempFile("batchEuphoriaTestScript_", ".sh")
             batchEuphoriaTestScript << testScript
             executionService.copyFileToRemote(batchEuphoriaTestScript, batchEuphoriaTestScript)
         } catch (Exception ex) {
-            log.severe("Could not setup execution service and copy test script.")
+            log.severe("Could not setup execution service and copy test script.", ex)
         }
     }
 
@@ -266,9 +279,9 @@ class IntegrationTestStarter {
             pwd = cnsl.readPassword("LSF Password: ");
 
         try {
-            restExecutionService = new RestExecutionService(server,user,pwd.toString())
+            restExecutionService = new RestExecutionService(server, user, pwd.toString())
         } catch (Exception ex) {
-            log.severe("Could not setup LSF execution service")
+            log.severe("Could not setup LSF execution service", ex)
         }
     }
 

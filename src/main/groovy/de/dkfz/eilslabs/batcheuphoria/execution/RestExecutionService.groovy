@@ -35,6 +35,7 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 import org.apache.http.ssl.SSLContexts
 import org.apache.http.util.EntityUtils
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import javax.net.ssl.SSLContext
 import java.security.KeyStore
@@ -201,16 +202,16 @@ class RestExecutionService implements ExecutionService {
 
     @Override
     ExecutionResult execute(Command command, boolean waitFor = null) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError = null, OutputStream outputStream = null) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
-        return null
+        throw new NotImplementedException()
     }
 }

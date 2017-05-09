@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.AtomicLong
 @groovy.transform.CompileStatic
 class Job<J extends Job> {
 
-    private static
-    final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(Job.class.getSimpleName())
+    private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(Job.class.getSimpleName())
 
     protected JobType jobType = JobType.STANDARD
 
@@ -55,7 +54,7 @@ class Job<J extends Job> {
     String toolScript
     /**
      * The set of resources for this tool / Job
-     * Contains values for e.g. memory, walltime and so on.
+     * Contains values for e.g. maxMemory, walltime and so on.
      */
     protected ResourceSet resourceSet
 

@@ -188,11 +188,8 @@ class LSFRestJobManager extends JobManagerAdapter {
      * @return app name area string for job submission
      */
     private String getAppNameArea(String appName, String headBoundary) {
-        return "--${headBoundary}\r\n" +
-                "Content-Disposition: form-data; name=\"AppName\"\r\n" +
-                "Content-ID: <AppName>\r\n" +
-                "\r\n" +
-                "${appName}\r\n"
+        return ["--${headBoundary}", "Content-Disposition: form-data; name=\"AppName\"",
+                "Content-ID: <AppName>\r\n", "${appName}\r\n"].join("\r\n")
     }
 
     /**
@@ -202,12 +199,9 @@ class LSFRestJobManager extends JobManagerAdapter {
      * @return param area header string for job submission
      */
     private String getParamAreaHeader(String headBoundary, String bodyBoundary) {
-        return "--${headBoundary}\r\n" +
-                "Content-Disposition: form-data; name=\"data\"\r\n" +
-                "Content-Type: multipart/mixed; boundary=${bodyBoundary}\r\n" +
-                "Accept-Language:de-de\r\n" +
-                "Content-ID: <data>\r\n" +
-                "\r\n"
+        return ["--${headBoundary}", "Content-Disposition: form-data; name=\"data\"",
+                "Content-Type: multipart/mixed; boundary=${bodyBoundary}",
+                "Accept-Language:de-de", "Content-ID: <data>", "\r\n"].join("\r\n")
     }
 
     /**
@@ -216,17 +210,11 @@ class LSFRestJobManager extends JobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<Job> jobs) {
-        StringBuilder parentJobs = new StringBuilder()
-        jobs.eachWithIndex { Job jobTemp, index ->
-            if (index == 0)
-                parentJobs << " -w \"ended(${jobTemp.getJobID()})"
-            else
-                parentJobs << " &amp;&amp; ended(${jobTemp.getJobID()})"
-        }
-        if (parentJobs.length() > 0)
-            parentJobs << "\""
+        String joinedParentJobs = jobs.collect { "done(${it.getJobID()})" }.join(" &amp;&amp; ")
+        if (joinedParentJobs.length() > 0)
+            return "-w \"${joinedParentJobs} \""
 
-        return parentJobs
+        return ""
     }
 
     /**
@@ -243,13 +231,12 @@ class LSFRestJobManager extends JobManagerAdapter {
             if (job.getTool() != null) toolScript = job.getTool().getAbsolutePath()
         }
         if (toolScript) {
-            return "--${boundary}\r\n" +
-                    "Content-Disposition: form-data; name=\"COMMAND\"\r\n" +
-                    "Content-Type: application/xml; charset=UTF-8\r\n" +
-                    "Content-Transfer-Encoding: 8bit\r\n" +
-                    "Accept-Language:de-de\r\n" +
-                    "\r\n" +
-                    "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"
+            return ["--${boundary}",
+                    "Content-Disposition: form-data; name=\"COMMAND\"",
+                    "Content-Type: application/xml; charset=UTF-8",
+                    "Content-Transfer-Encoding: 8bit",
+                    "Accept-Language:en-en",
+                    "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"].join("\r\n")
         } else {
             return ""
         }
@@ -263,13 +250,12 @@ class LSFRestJobManager extends JobManagerAdapter {
      */
     private String prepareJobName(Job job, String boundary) {
         if (job.getJobName()) {
-            return "--${boundary}\r\n" +
-                    "Content-Disposition: form-data; name=\"JOB_NAME\"\r\n" +
-                    "Content-Type: application/xml; charset=UTF-8\r\n" +
-                    "Content-Transfer-Encoding: 8bit\r\n" +
-                    "Accept-Language:de-de\r\n" +
-                    "\r\n" +
-                    "<AppParam><id>JOB_NAME</id><value>${job.getJobName()}</value><type></type></AppParam>\r\n"
+            return ["--${boundary}",
+                    "Content-Disposition: form-data; name=\"JOB_NAME\"",
+                    "Content-Type: application/xml; charset=UTF-8",
+                    "Content-Transfer-Encoding: 8bit",
+                    "Accept-Language:en-en\r\n",
+                    "<AppParam><id>JOB_NAME</id><value>${job.getJobName()}</value><type></type></AppParam>\r\n"].join("\r\n")
         } else {
             return ""
         }
@@ -283,17 +269,11 @@ class LSFRestJobManager extends JobManagerAdapter {
      */
     private String prepareExtraParams(Job job, String boundary) {
         StringBuilder envParams = new StringBuilder()
-        //if (this.getUserGroup()) envParams << "-G ${this.getUserGroup()}"
 
-        job.parameters.eachWithIndex { key, value, index ->
-            if (index == 0)
-                envParams << "-env \" ${key}='${value}'"
-            else
-                envParams << "," + "${key}='${value}'"
-        }
+        String jointExraParams = job.parameters.collect { key, value -> "${key}='${value}'" }.join(", ")
 
-        if (envParams.length() > 0)
-            envParams << "\""
+        if (jointExraParams.length() > 0)
+            envParams << "-env \" ${jointExraParams} \""
 
         if (this.getUserEmail()) envParams << "-u ${this.getUserEmail()}"
 
@@ -302,14 +282,13 @@ class LSFRestJobManager extends JobManagerAdapter {
         if (job.getParentJobs() != null && job.getParentJobs()?.size()) {
             parentJobs = prepareParentJobs(job.getParentJobs() as List<Job>)
         }
-        return "--${boundary}\r\n" +
-                "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"\r\n" +
-                "Content-Type: application/xml; charset=UTF-8\r\n" +
-                "Content-Transfer-Encoding: 8bit\r\n" +
-                "Accept-Language:de-de\r\n" +
-                "\r\n" +
+        return ["--${boundary}",
+                "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"",
+                "Content-Type: application/xml; charset=UTF-8",
+                "Content-Transfer-Encoding: 8bit",
+                "Accept-Language:en-en\r\n",
                 "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' " + envParams + ((PBSResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
-                "</value><type></type></AppParam>\r\n"
+                        "</value><type></type></AppParam>\r\n"].join("\r\n")
     }
 
     /**
@@ -350,15 +329,7 @@ class LSFRestJobManager extends JobManagerAdapter {
      * @return comma separated list of job ids
      */
     private String prepareURLWithParam(List<Job> jobs) {
-        String jobIds = ""
-        jobs.eachWithIndex { job, index ->
-            if (index == 0) {
-                jobIds = job.getJobID()
-            } else {
-                jobIds << "," + job.getJobID()
-            }
-        }
-        return jobIds
+        return jobs.collect { it.getJobID() }.join(",")
     }
 
     /**
@@ -427,43 +398,49 @@ class LSFRestJobManager extends JobManagerAdapter {
 
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
-        }else {
+        } else {
             jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getDependencyIDsAsString())
         }
 
-        jobInfo.setUser(jobDetails.getProperty("user").toString())
-        jobInfo.setCpuTime(jobDetails.getProperty("cpuTime").toString())
-        jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
-        jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTimeGMT(jobDetails.getProperty("startTime").toString())
-        jobInfo.setSubTimeGMT(jobDetails.getProperty("submitTime").toString())
-        jobInfo.setEndTimeGMT(jobDetails.getProperty("endTime").toString())
-        jobInfo.setQueue(jobDetails.getProperty("queue").toString())
-        jobInfo.setExHosts(jobDetails.getProperty("exHosts").toString())
-        jobInfo.setSubHost(jobDetails.getProperty("fromHost").toString())
-        jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
-        jobInfo.setSwap(jobDetails.getProperty("swap").toString())
-        jobInfo.setDescription(jobDetails.getProperty("description").toString())
-        jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
-        jobInfo.setMemory(jobDetails.getProperty("mem").toString().toInteger())
-        jobInfo.setRunTime(jobDetails.getProperty("runTime").toString())
-        jobInfo.setRunLimit(jobDetails.getProperty("runLimit").toString())
-        jobInfo.setNumProcessors(jobDetails.getProperty("numProcessors").toString())
-        jobInfo.setNthreads(jobDetails.getProperty("nthreads").toString())
-        jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
-        jobInfo.setExitStatus(jobDetails.getProperty("exitStatus").toString())
-        jobInfo.setPidStr(jobDetails.getProperty("pidStr").toString())
-        jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
-        jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
-        jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
-        jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
-        jobInfo.setPriority(jobDetails.getProperty("priority").toString())
-        jobInfo.setOutfile(jobDetails.getProperty("outfile").toString())
-        jobInfo.setInfile(jobDetails.getProperty("infile").toString())
-        jobInfo.setResReq(jobDetails.getProperty("resReq").toString())
-        jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
-        jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())
-        jobInfo.setAskedHostsStr(jobDetails.getProperty("askedHostsStr").toString())
+        Map<String, String> jobInfoProperties = [:]
+        Map<String, String> jobDetailsAttributes = jobDetails.attributes()
+        jobDetailsAttributes.each { String key, value ->
+            jobInfoProperties.put(key, jobDetails.getProperty(key).toString())
+        }
+
+        jobInfo.setUser(jobInfoProperties.get("user"))
+        jobInfo.setCpuTime(jobInfoProperties.get("cpuTime"))
+        jobInfo.setSystemTime(jobInfoProperties.get("getSystemTime"))
+        jobInfo.setUserTime(jobInfoProperties.get("getUserTime"))
+        jobInfo.setStartTimeGMT(jobInfoProperties.get("startTime"))
+        jobInfo.setSubTimeGMT(jobInfoProperties.get("submitTime"))
+        jobInfo.setEndTimeGMT(jobInfoProperties.get("endTime"))
+        jobInfo.setQueue(jobInfoProperties.get("queue"))
+        jobInfo.setExHosts(jobInfoProperties.get("exHosts"))
+        jobInfo.setSubHost(jobInfoProperties.get("fromHost"))
+        jobInfo.setJobGroup(jobInfoProperties.get("jobGroup"))
+        jobInfo.setSwap(jobInfoProperties.get("swap"))
+        jobInfo.setDescription(jobInfoProperties.get("description"))
+        jobInfo.setUserGroup(jobInfoProperties.get("userGroup"))
+        jobInfo.setMaxMemory(jobInfoProperties.get("mem").toInteger())
+        jobInfo.setRunTime(jobInfoProperties.get("runTime"))
+        jobInfo.setRunLimit(jobInfoProperties.get("runLimit"))
+        jobInfo.setNumProcessors(jobInfoProperties.get("numProcessors"))
+        jobInfo.setNthreads(jobInfoProperties.get("nthreads"))
+        jobInfo.setProjectName(jobInfoProperties.get("projectName"))
+        jobInfo.setExitStatus(jobInfoProperties.get("exitStatus"))
+        jobInfo.setPidStr(jobInfoProperties.get("pidStr"))
+        jobInfo.setPgidStr(jobInfoProperties.get("pgidStr"))
+        jobInfo.setCwd(jobInfoProperties.get("cwd"))
+        jobInfo.setPendReason(jobInfoProperties.get("pendReason"))
+        jobInfo.setExecCwd(jobInfoProperties.get("execCwd"))
+        jobInfo.setPriority(jobInfoProperties.get("priority"))
+        jobInfo.setOutfile(jobInfoProperties.get("outfile"))
+        jobInfo.setInfile(jobInfoProperties.get("infile"))
+        jobInfo.setResReq(jobInfoProperties.get("resReq"))
+        jobInfo.setExecHome(jobInfoProperties.get("execHome"))
+        jobInfo.setExecUserName(jobInfoProperties.get("execUserName"))
+        jobInfo.setAskedHostsStr(jobInfoProperties.get("askedHostsStr"))
         job.setJobInfo(jobInfo)
     }
 
@@ -471,7 +448,7 @@ class LSFRestJobManager extends JobManagerAdapter {
      * Get the time history for each given job
      * @param jobList
      */
-    void getJobHistory(List<Job> jobList) {
+    void updateJobStatistics(List<Job> jobList) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
@@ -495,7 +472,7 @@ class LSFRestJobManager extends JobManagerAdapter {
     }
 
     /**
-     * Used by @getJobHistory to set JobInfo
+     * Used by @updateJobStatistics to set JobInfo
      * @param job
      * @param jobHistory - xml job history
      */
@@ -505,7 +482,7 @@ class LSFRestJobManager extends JobManagerAdapter {
         if (job.getJobInfo() != null)
             jobInfo = job.getJobInfo()
         else
-            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(),job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getDependencyIDsAsString())
 
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation").toString())
