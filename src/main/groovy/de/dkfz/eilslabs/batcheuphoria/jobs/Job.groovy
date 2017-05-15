@@ -48,8 +48,13 @@ class Job<J extends Job> {
     protected String toolMD5
 
     /**
+     * A tool script which will be piped (or whatever...) to the job manager submission command / method
+     * It is either testScript OR tool
+     */
+    String toolScript
+    /**
      * The set of resources for this tool / Job
-     * Contains values for e.g. memory, walltime and so on.
+     * Contains values for e.g. maxMemory, walltime and so on.
      */
     protected ResourceSet resourceSet
 
@@ -86,14 +91,21 @@ class Job<J extends Job> {
     /**
      * Stores the result when the job was executed.
      */
-    private de.dkfz.roddy.execution.jobs.JobResult runResult
+    de.dkfz.roddy.execution.jobs.JobResult runResult
+
+    /**
+     * Stores information from the cluster about the job e.g. used resources
+     */
+    GenericJobInfo jobInfo
 
     JobManager jobManager
 
-    Job(String jobName, File tool, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
+    Job(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<Job> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNKNOWN
         this.tool = tool
+        this.toolScript = toolScript
+        if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")
         this.toolMD5 = toolMD5
         this.resourceSet = resourceSet
         this.parameters = parameters
@@ -175,15 +187,7 @@ class Job<J extends Job> {
     }
 
     File getLoggingDirectory() {
-
-    }
-
-    void setRunResult(de.dkfz.roddy.execution.jobs.JobResult result) {
-        this.runResult = result
-    }
-
-    de.dkfz.roddy.execution.jobs.JobResult getRunResult() {
-        return runResult
+        return loggingDirectory
     }
 
     /**
@@ -207,6 +211,10 @@ class Job<J extends Job> {
 
     File getTool() {
         return tool
+    }
+
+    String getToolScript() {
+        return toolScript
     }
 
     String getToolMD5() {

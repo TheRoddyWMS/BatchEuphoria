@@ -27,11 +27,15 @@ class JobManagerCreationParameters {
     String jobIDIdentifier = JobManager.BE_DEFAULT_JOBID
     String jobArrayIDIdentifier = JobManager.BE_DEFAULT_JOBARRAYINDEX
     String jobScratchIdentifier = JobManager.BE_DEFAULT_JOBSCRATCH
+    String userGroup
+    String userAccount
+    String userEmail
+    String userMask
 
     JobManagerCreationParameters() {
     }
 
-    JobManagerCreationParameters(boolean createDaemon, int updateInterval, String userIdForJobQueries, boolean trackUserJobsOnly, boolean trackOnlyStartedJobs, String jobIDIdentifier, String jobArrayIDIdentifier, String jobScratchIdentifier) {
+    JobManagerCreationParameters(boolean createDaemon, int updateInterval, String userIdForJobQueries, boolean trackUserJobsOnly, boolean trackOnlyStartedJobs, String jobIDIdentifier, String jobArrayIDIdentifier, String jobScratchIdentifier, String userAccount, String userEmail, String userMask, String userGroup) {
         this.createDaemon = createDaemon
         this.updateInterval = updateInterval
         this.userIdForJobQueries = userIdForJobQueries
@@ -40,5 +44,9 @@ class JobManagerCreationParameters {
         this.jobIDIdentifier = jobIDIdentifier
         this.jobArrayIDIdentifier = jobArrayIDIdentifier
         this.jobScratchIdentifier = jobScratchIdentifier
+        this.userMask = userMask
+        this.userGroup = userGroup
+        this.userEmail = userEmail
+        this.userAccount = userAccount
     }
 }

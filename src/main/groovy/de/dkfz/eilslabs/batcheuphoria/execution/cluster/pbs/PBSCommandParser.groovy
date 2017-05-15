@@ -7,11 +7,8 @@
 package de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs
 
 import de.dkfz.eilslabs.batcheuphoria.jobs.GenericJobInfo
-import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.ComplexLine
-import de.dkfz.roddy.tools.RoddyConversionHelperMethods
-import de.dkfz.roddy.tools.RoddyIOHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
@@ -103,11 +100,11 @@ class PBSCommandParser {
                     memory = parmVal[0..-2]
                 } else if (parmID == "walltime") {
                     walltime = parameters.split("[=]")[1]
-                } else if (parmID == "nodes") {
+                } else if (parmID == "maxNodes") {
                     String[] splitParm = parm.split(SPLIT_COLON)
                     for (String resource : splitParm) {
                         String[] splitResource = resource.split(SPLIT_EQUALS)
-                        if (splitResource[0] == "nodes") {
+                        if (splitResource[0] == "maxNodes") {
                             nodes = splitResource[1]
                         } else if (splitResource[0] == "ppn") {
                             cores = splitResource[1]
@@ -136,9 +133,9 @@ class PBSCommandParser {
 
     GenericJobInfo toGenericJobInfo() {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
-        jInfo.setCpus(cores as Integer)
-        jInfo.setNodes(nodes as Integer)
-        jInfo.setMemory(memory as Integer)
+        jInfo.setMaxCpus(cores as Integer)
+        jInfo.setMaxNodes(nodes as Integer)
+        jInfo.setMaxMemory(memory as Integer)
         jInfo.setMemoryBufferUnit(bufferUnit)
         jInfo.setWalltime(new TimeUnit(walltime))
         return jInfo
