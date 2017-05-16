@@ -1,10 +1,29 @@
 apply plugin: 'groovy'
 apply plugin: 'idea'
 apply plugin:'application'
-group = 'de.dkfz.eilslabs'
+
+group = "de.dkfz.eilslabs"
+
 mainClassName = 'de.dkfz.eilslabs.batcheuphoria.IntegrationTestStarter'
-sourceCompatibility = '1.7'
-targetCompatibility = '1.7'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+
+/*
+ * Gets the version name from the current Git tag. If the current commit is not tagged,
+ * this returned string will indicate that. Also if the repository is dirty.
+ */
+def getVersionName() {
+    String[] command = ["/usr/bin/env", "git", "-C", "${project.rootDir}", "describe", "--tags", "--dirty"]
+    def process = new ProcessBuilder(command).redirectErrorStream(true).start()
+    def output = process.inputStream.readLines().join("")
+    if (process.waitFor() != 0) {
+        throw new RuntimeException("Command failed with code ${process.exitValue()}: '${command.join(" ")}'\nError output: '${output}'")
+    } else {
+        return output.trim()
+    }
+}
+
 
 repositories {
     mavenCentral()
@@ -34,8 +53,11 @@ task uberjar(type: Jar,dependsOn:[':compileJava',':compileGroovy']) {
     from files(sourceSets.main.output.classesDir)
     from configurations.runtime.asFileTree.files.collect { zipTree(it) }
 
+    version = getVersionName()
+
     manifest {
         attributes 'Main-Class': mainClassName
+        attributes 'Implementation-Version': version
     }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
