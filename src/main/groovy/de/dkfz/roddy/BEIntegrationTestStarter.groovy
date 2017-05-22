@@ -143,7 +143,7 @@ class BEIntegrationTestStarter {
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass()}",ex)
+            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass()}", ex)
         } finally {
 
         }
@@ -176,7 +176,7 @@ class BEIntegrationTestStarter {
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass().toString()}",ex)
+            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass().toString()}", ex)
         } finally {
 
         }
