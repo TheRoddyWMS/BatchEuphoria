@@ -80,6 +80,10 @@ abstract class JobManager<C extends Command> {
         this.jobIDIdentifier = parms.jobIDIdentifier
         this.jobScratchIdentifier = parms.jobScratchIdentifier
         this.jobArrayIndexIdentifier = parms.jobArrayIDIdentifier
+        this.userEmail = parms.userEmail
+        this.userGroup = parms.userGroup
+        this.userAccount = parms.userAccount
+        this.userMask = parms.userMask
 
         //Create a daemon thread which automatically calls queryJobStatus from time to time...
         try {

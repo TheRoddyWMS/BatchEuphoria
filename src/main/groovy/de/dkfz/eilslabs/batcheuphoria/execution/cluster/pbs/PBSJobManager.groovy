@@ -241,7 +241,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     Job parseToJob(String commandString) {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        Job job = new Job(jInfo.getJobName(), jInfo.getTool(), "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect { new PBSJobDependencyID(null, it) } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
+        Job job = new Job(jInfo.getJobName(), jInfo.getTool(),null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect { new PBSJobDependencyID(null, it) } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()

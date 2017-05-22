@@ -1,0 +1,21 @@
+language: groovy
+sudo: required
+before_cache:
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+cache:
+  directories:
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+jdk:
+- oraclejdk8
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: 8ztW55rZnSpLqENkwV+LTIofS3wjzzZMPFd6l3HxTTyBXYxd64YLPNBqlSD9HI894TMEUgGOKZ0+tbIa7601UVYW5uczj9O3De5pnugyoA1xtpYXhDQqFr/shQJVGklxnxNowLJiiTuKsB6UZJiqv0XnPdADQZeyZZ8pC66Fr1lqk1d3gZzPYwlS9iQ0E7FckK+xZLJaqvK58vp7yK1bidMpjR2SbRT5yz2NeS9RaQGchYBOY6Cof7hSwdFBXwSdnxNZuao9XQ/S4UNwcq0uxHvW3JV1JW0J8KlcnSQ+GwYkwzuRdCXZqxBsrs6rWoFQuZdTIgNOMMxy2pV4+zX3twD3dtCKhj+oK7qd6znn3S5QaunnTcVrWjuTWnTQ6izb4ixYremaudRCKEDZ+6cphQnY/DQstfnIH+7ITBOQdvCm9liQeDwhViJF2OtEB9xmZCCf0Xdj108+IOZI3MqjIfEe1taqC2It71q6dhQocdvnMBIr9oh/JCPuH0IJwCRaOisjkviQuUZNNsV4RW0WKfGblmI68Gi6e3JGAcZkHGfugyIo2LIzzFOf1plmlu0593YPilyYCLEAFJJkcpqklTam/tA/2ZR79MhPZj/ofHBG/lAUZa+iyDAJ3CA0rXHoAd0Ad/jCNU5IxRBEqtkXgYh6od7Ap5oxYKQa42xg6mA=
+  file: build/libs/BatchEuphoria-*.jar
+  file_glob: true
+  on:
+    repo: eilslabs/BatchEuphoria
+    tags: true
+  overwrite: true

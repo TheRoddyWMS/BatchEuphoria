@@ -6,6 +6,8 @@
 
 package de.dkfz.eilslabs.batcheuphoria.execution
 
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest.RestCommand
+import de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.rest.RestResult
 import de.dkfz.eilslabs.batcheuphoria.jobs.Command
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
@@ -25,6 +27,7 @@ interface ExecutionService {
     ExecutionResult execute(String command, boolean waitFor)
 
     ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream)
+
 
     /**
      * Query this to find out, if the service is still active
