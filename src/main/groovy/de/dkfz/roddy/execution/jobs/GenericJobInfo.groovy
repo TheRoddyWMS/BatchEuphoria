@@ -67,7 +67,7 @@ class GenericJobInfo {
     String execHome;
     String execUserName;
     String pidStr;
-    String pgidStr;
+    String pgidStr; // Currently active process group ID in a job.
     String nthreads; //Number of currently active threads of a job
     BufferValue swap; //Total virtual maxMemory (swap) usage of all processes in a job
     Integer exitCode; // UNIX exit status of the job
