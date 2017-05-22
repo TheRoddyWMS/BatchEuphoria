@@ -59,8 +59,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
-//    public PBSCommand createCommand(GenericJobInfo jobInfo) {
-//        Job job = new Job(jobInfo.getExecutionContext(), jobInfo.getJobName(), jobInfo.getTool(), new LinkedHashMap<String, Object>(jobInfo.getParameters()));
+//    PBSCommand createCommand(GenericJobInfo jobInfo) {
+//        Job job = new Job(jobInfo.getJobName(), jobInfo.getTool(), new LinkedHashMap<String, Object>(jobInfo.getParameters()));
 //        PBSCommand pbsCommand = new PBSCommand(job, jobInfo.getExecutionContext(), ExecutionService.getInstance(), job.getJobName(), null, job.getParameters(), null, jobInfo.getParentJobIDs(), jobInfo.getExecutionContext().getConfiguration().getProcessingToolPath(jobInfo.getExecutionContext(), jobInfo.getTool()).getAbsolutePath());
 //        return pbsCommand;
 //    }

@@ -64,7 +64,7 @@ public class DirectCommand extends Command {
                 parameterBuilder << " ${pName}=${val}";
         }
 
-        parameterBuilder << StringConstants.WHITESPACE << PARM_WRAPPED_SCRIPT << command;
+//        parameterBuilder << StringConstants.WHITESPACE << PARM_WRAPPED_SCRIPT << command;
 
         //TODO Log handling
 
@@ -82,7 +82,7 @@ public class DirectCommand extends Command {
 
         //TODO Command assembly should be part of the file system provider? Maybe there is a need for a local file system provider?
         //This is very linux specific...
-//        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << configuration.getProcessingToolPath(executionContext, "wrapinScript").getAbsolutePath();
+        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command; // << job.configuration.getProcessingToolPath(executionContext, "wrapinScript").getAbsolutePath();
 
         return commandString.toString();
     }

@@ -99,7 +99,7 @@ class PBSCommandParser {
                     bufferUnit = BufferUnit.valueOf(parmVal[-1])
                     memory = parmVal[0..-2]
                 } else if (parmID == "walltime") {
-                    walltime = parameters.split("[=]")[1]
+                    walltime = parm.split("[=]")[1]
                 } else if (parmID == "maxNodes") {
                     String[] splitParm = parm.split(SPLIT_COLON)
                     for (String resource : splitParm) {
@@ -133,11 +133,11 @@ class PBSCommandParser {
 
     GenericJobInfo toGenericJobInfo() {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
-        jInfo.setMaxCpus(cores as Integer)
-        jInfo.setMaxNodes(nodes as Integer)
-        jInfo.setMaxMemory(memory as Integer)
-        jInfo.setMemoryBufferUnit(bufferUnit)
-        jInfo.setWalltime(new TimeUnit(walltime))
+        if (cores) jInfo.setCpus(cores as Integer)
+        if (nodes) jInfo.setNodes(nodes as Integer)
+        if (memory) jInfo.setMemory(memory as Integer)
+        if (bufferUnit) jInfo.setMemoryBufferUnit(bufferUnit)
+        if (walltime) jInfo.setWalltime(new TimeUnit(walltime))
         return jInfo
     }
 }
