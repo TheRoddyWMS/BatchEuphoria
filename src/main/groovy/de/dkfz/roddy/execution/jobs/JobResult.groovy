@@ -4,24 +4,23 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs
+package de.dkfz.roddy.execution.jobs;
 
-import de.dkfz.eilslabs.batcheuphoria.jobs.Command
-import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.roddy.core.InfoObject
-import groovy.transform.CompileStatic
 
 /**
- * Compatibility interface for Roddy and Roddy plugins.
- * Without it, all plugins depending on 2.3 would need to be adapted and recompiled!
- * Created by heinold on 01.03.17.
+ * Result of a job run.
+ * <p/>
+ * Stores different information related to a job run. i.e. if the job was
+ * executed.
+ *
+ * @author michael
  */
-@Deprecated
-@CompileStatic
-class JobResult {
-/**
- * The command which was used to create this result.
- */
+public class JobResult implements Serializable {
+
+    /**
+     * The command which was used to create this result.
+     */
     protected final Command command;
     /**
      * The current job's id, i.e. qsub id.
@@ -47,22 +46,22 @@ class JobResult {
     /**
      * Parent jobs.
      */
-    public transient final List<Job> parentJobs;
+    public transient final List<BEJob> parentJobs;
 
     // Compatibility constructor. Does nothing, leaves responsibility in sub class.
     protected JobResult() {
 
     }
 
-    public JobResult(InfoObject object, Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
+    public JobResult(InfoObject object, Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
+    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<Job> parentJobs) {
+    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.command = command;
         this.jobID = jobID;
         this.wasExecuted = wasExecuted;
@@ -92,7 +91,7 @@ class JobResult {
         return toolID;
     }
 
-    public Job getJob() {
+    public BEJob getJob() {
         return jobID.job;
     }
 
@@ -100,7 +99,8 @@ class JobResult {
         return jobParameters;
     }
 
-    public List<Job> getParentJobs() {
+    public List<BEJob> getParentJobs() {
         return parentJobs;
     }
+
 }

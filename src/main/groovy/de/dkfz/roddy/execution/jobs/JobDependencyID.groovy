@@ -6,29 +6,18 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.eilslabs.batcheuphoria.jobs.FakeJob
-import de.dkfz.eilslabs.batcheuphoria.jobs.FakeJobID
-import de.dkfz.eilslabs.batcheuphoria.jobs.Job
 import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
 
 /**
- * Compatibility interface for Roddy and Roddy plugins.
- * Without it, all plugins depending on 2.3 would need to be adapted and recompiled!
- *
- * When you dissolve this class, move the fields and methods to the new class
- *
- * @see de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID
- *
  * Created by heinold on 01.03.17.
  */
-@Deprecated
 @CompileStatic
 abstract class JobDependencyID {
 
-    abstract boolean isValidID()
+    public final BEJob job;
 
-    abstract Job getJob()
+    abstract boolean isValidID()
 
     abstract String getId()
 
@@ -36,25 +25,29 @@ abstract class JobDependencyID {
 
     abstract boolean isArrayJob()
 
-    static FakeJobID getNotExecutedFakeJob(Job job) {
-        return FakeJob.getNotExecutedFakeJob(job, false)
+    static FakeJobID getNotExecutedFakeJob(BEJob job) {
+        return FakeBEJob.getNotExecutedFakeJob(job, false)
     }
 
-    static FakeJobID getNotExecutedFakeJob(Job job, boolean array) {
-        return FakeJob.getNotExecutedFakeJob(job, array)
+    static FakeJobID getNotExecutedFakeJob(BEJob job, boolean array) {
+        return FakeBEJob.getNotExecutedFakeJob(job, array)
     }
 
-    static FakeJobID getFileExistedFakeJob(Job job, boolean array) {
-        return FakeJob.getFileExistedFakeJob(job, array)
+    static FakeJobID getFileExistedFakeJob(BEJob job, boolean array) {
+        return FakeBEJob.getFileExistedFakeJob(job, array)
     }
 
     static FakeJobID getFileExistedFakeJob(InfoObject infoObject) {
-        return FakeJob.getFileExistedFakeJob(new FakeJob(infoObject), false)
+        return FakeBEJob.getFileExistedFakeJob(new FakeBEJob(infoObject), false)
+    }
+
+    JobDependencyID(BEJob job) {
+        this.job = job
     }
 
     @Deprecated
-    static abstract class FakeJobID extends de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID {
-        FakeJobID(Job job) {
+    static abstract class FakeJobID extends JobDependencyID {
+        FakeJobID(BEJob job) {
             super(job)
         }
     }

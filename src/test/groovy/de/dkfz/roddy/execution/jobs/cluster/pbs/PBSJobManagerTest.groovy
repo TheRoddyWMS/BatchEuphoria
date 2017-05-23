@@ -6,8 +6,6 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobManager
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParametersBuilder
 import groovy.transform.CompileStatic;
 import org.junit.Test;
 
