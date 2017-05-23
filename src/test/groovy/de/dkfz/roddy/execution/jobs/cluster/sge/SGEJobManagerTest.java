@@ -21,7 +21,7 @@ public class SGEJobManagerTest {
 //
 //        Configuration cfg = new Configuration(new InformationalConfigurationContent(null, Configuration.ConfigurationType.OTHER, "test", "", "", null, "", ResourceSetSize.l, null, null, null, null));
 //
-//        JobManager cFactory = new SGEJobManager(false);
+//        BatchEuphoriaJobManager cFactory = new SGEJobManager(false);
 //        PBSResourceProcessingCommand test = (PBSResourceProcessingCommand) cFactory.convertResourceSet(cfg, rset1);
 //        assert test.getProcessingString().trim().equals("-V -l s_data=1024M");
 //

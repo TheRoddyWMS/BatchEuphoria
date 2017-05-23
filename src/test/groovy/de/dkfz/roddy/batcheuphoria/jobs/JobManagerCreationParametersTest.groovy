@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy.batcheuphoria.jobs
 
-import de.dkfz.roddy.execution.jobs.JobManager
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import groovy.transform.CompileStatic
 import org.junit.Test
@@ -20,12 +20,12 @@ class JobManagerCreationParametersTest {
     @Test
     void testDefaults() {
         def parms = new JobManagerCreationParameters();
-        assert parms.jobScratchIdentifier == JobManager.BE_DEFAULT_JOBSCRATCH
-        assert parms.jobIDIdentifier == JobManager.BE_DEFAULT_JOBID
-        assert parms.jobArrayIDIdentifier == JobManager.BE_DEFAULT_JOBARRAYINDEX
-        assert parms.trackOnlyStartedJobs == JobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
-        assert parms.trackUserJobsOnly == JobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
+        assert parms.jobScratchIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBSCRATCH
+        assert parms.jobIDIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBID
+        assert parms.jobArrayIDIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBARRAYINDEX
+        assert parms.trackOnlyStartedJobs == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
+        assert parms.trackUserJobsOnly == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
         assert parms.userIdForJobQueries == ""
-        assert parms.updateInterval == JobManager.JOBMANAGER_DEFAULT_UPDATEINTERVAL
+        assert parms.updateInterval == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_UPDATEINTERVAL
     }
 }

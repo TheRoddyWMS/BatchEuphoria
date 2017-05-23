@@ -55,7 +55,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     PBSJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
         /**
-         * General or specific todos for JobManager and PBSJobManager
+         * General or specific todos for BatchEuphoriaJobManager and PBSJobManager
          */
         logger.severe("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
         logger.severe("Set logfile location, parameter file and job state log file on job creation (or override a method).")

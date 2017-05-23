@@ -10,7 +10,7 @@ package de.dkfz.roddy
  * A collection of messages, errors and other constant strings.
  * Created by heinold on 24.02.17.
  */
-class Constants {
+class BEConstants {
 
     /////////////////////////
     // Error messages

@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy.execution.cluster.pbs
 
-import de.dkfz.roddy.execution.jobs.JobManager
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
@@ -20,7 +20,7 @@ import org.junit.Test
 @CompileStatic
 class PBSCommandParserTest {
 
-    static JobManager testJobManager
+    static BatchEuphoriaJobManager testJobManager
 
     @BeforeClass
     static void setup() {

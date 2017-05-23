@@ -12,7 +12,7 @@ import de.dkfz.roddy.execution.ExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobManager
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
 import de.dkfz.roddy.execution.jobs.JobState
@@ -56,7 +56,7 @@ class BEIntegrationTestStarter {
 
 
     private static void runTestsFor(AvailableClusterSystems option, ExecutionService executionService) {
-        JobManager jobManager
+        BatchEuphoriaJobManager jobManager
         log.always("Creating job manager instance for ${option}")
 
         try {
@@ -66,7 +66,7 @@ class BEIntegrationTestStarter {
                             .setCreateDaemon(false)
                             .setTrackUserJobsOnly(true)
                             .build()
-            ) as JobManager
+            ) as BatchEuphoriaJobManager
         } catch (Exception ex) {
             log.severe("Could not load and instantiate job manager class ${option.className}.", ex)
             return
@@ -83,24 +83,24 @@ class BEIntegrationTestStarter {
     }
 
 
-    private static void testJobWithPipedScript(JobManager jobManager) {
+    private static void testJobWithPipedScript(BatchEuphoriaJobManager jobManager) {
         BEJob testJobWithPipedScript = new BEJob("batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], null, null, jobManager)
         singleJobTest(jobManager, testJobWithPipedScript)
     }
 
-    private static void testJobWithFile(JobManager jobManager) {
+    private static void testJobWithFile(BatchEuphoriaJobManager jobManager) {
         BEJob testJobWithFile = new BEJob("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
         singleJobTest(jobManager, testJobWithFile)
     }
 
-    private static void testMultipleJobsWithFile(JobManager jobManager) {
+    private static void testMultipleJobsWithFile(BatchEuphoriaJobManager jobManager) {
         BEJob testParent = new BEJob("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], null, null, jobManager)
         BEJob testJobChild1 = new BEJob("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent], null, jobManager)
         BEJob testJobChild2 = new BEJob("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], [testParent, testJobChild1], null, jobManager)
         multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
-    private static void singleJobTest(JobManager jobManager, BEJob testJob) {
+    private static void singleJobTest(BatchEuphoriaJobManager jobManager, BEJob testJob) {
         int maxSleep = 5
         try {
             log.always("Starting tests for single jobs.")
@@ -139,13 +139,13 @@ class BEIntegrationTestStarter {
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass()}",ex)
+            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass()}",ex)
         } finally {
 
         }
     }
 
-    private static void multipleJobsTest(JobManager jobManager, List<BEJob> testJobs) {
+    private static void multipleJobsTest(BatchEuphoriaJobManager jobManager, List<BEJob> testJobs) {
         int maxSleep = 5
         try {
 
@@ -172,7 +172,7 @@ class BEIntegrationTestStarter {
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for JobManager type ${jobManager.getClass().toString()}",ex)
+            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass().toString()}",ex)
         } finally {
 
         }
@@ -180,7 +180,7 @@ class BEIntegrationTestStarter {
 
 
     private
-    static void ensureProperJobStates(int maxSleep, List<BEJob> jobList, List<JobState> listOfStatesToCheck, JobManager jobManager) {
+    static void ensureProperJobStates(int maxSleep, List<BEJob> jobList, List<JobState> listOfStatesToCheck, BatchEuphoriaJobManager jobManager) {
         int increments = 8
         int sleep = maxSleep * increments  // 125ms increments, count from 5s to 0 seconds.
         boolean allJobsInCorrectState = false

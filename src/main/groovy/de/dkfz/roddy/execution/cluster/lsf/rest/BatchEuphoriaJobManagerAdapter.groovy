@@ -22,8 +22,8 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 /**
  * Created by kaercher on 22.03.17.
  */
-class JobManagerAdapter extends ClusterJobManager {
-    JobManagerAdapter(ExecutionService executionService, JobManagerCreationParameters parms) {
+class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
+    BatchEuphoriaJobManagerAdapter(ExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
 

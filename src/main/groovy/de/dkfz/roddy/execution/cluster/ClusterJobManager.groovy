@@ -7,10 +7,10 @@
 package de.dkfz.roddy.execution.cluster;
 
 import de.dkfz.roddy.execution.ExecutionService;
-import de.dkfz.roddy.execution.cluster.pbs.PBSCommand;
+import de.dkfz.roddy.execution.cluster.pbs.PBSCommand
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.FakeBEJob
-import de.dkfz.roddy.execution.jobs.JobManager
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters;
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -19,8 +19,8 @@ import de.dkfz.roddy.tools.LoggerWrapper
  * A class for processing backends running on a cluster.
  * This mainly defines variables and constants which can be set via the config.
  */
-public abstract class ClusterJobManager<C extends Command> extends JobManager<C> {
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(JobManager.class.getSimpleName());
+public abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
+    private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
 
     public static final String CVALUE_ENFORCE_SUBMISSION_TO_NODES="enforceSubmissionToNodes";
 

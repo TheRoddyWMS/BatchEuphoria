@@ -44,9 +44,9 @@ abstract class Command {
      */
     private final Map<String, Object> commandTags = [:]
 
-    protected final JobManager parentJobManager
+    protected final BatchEuphoriaJobManager parentJobManager
 
-    protected Command(JobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
+    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
         this.parentJobManager = parentJobManager
         this.commandTags.putAll(commandTags ?: [:])
         this.parameters.putAll(parameters ?: [:])

@@ -16,7 +16,7 @@ import de.dkfz.roddy.tools.LoggerWrapper
 
 /**
  */
-public class DirectSynchronousExecutionJobManager extends JobManager<DirectCommand> {
+public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
     public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName());
 

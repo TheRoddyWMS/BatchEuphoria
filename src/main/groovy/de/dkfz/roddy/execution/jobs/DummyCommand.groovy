@@ -25,7 +25,7 @@ class DummyCommand extends Command {
 
     private String jobName;
 
-    DummyCommand(JobManager parentJobManager, BEJob job, String jobName, boolean isArray) {
+    DummyCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, boolean isArray) {
         super(parentJobManager, job, "dummy_" + getNextIDCountValue(), null, null);
         this.jobName = jobName;
         if (isArray) {

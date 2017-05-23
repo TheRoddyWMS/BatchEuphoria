@@ -98,9 +98,9 @@ class BEJob<J extends BEJob> {
      */
     GenericJobInfo jobInfo
 
-    JobManager jobManager
+    BatchEuphoriaJobManager jobManager
 
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, JobManager jobManager) {
+    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNKNOWN
         this.tool = tool

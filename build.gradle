@@ -2,9 +2,9 @@ apply plugin: 'groovy'
 apply plugin: 'idea'
 apply plugin:'application'
 
-group = "de.dkfz.eilslabs"
+group = "de.dkfz.roddy"
 
-mainClassName = 'de.dkfz.eilslabs.batcheuphoria.IntegrationTestStarter'
+mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 

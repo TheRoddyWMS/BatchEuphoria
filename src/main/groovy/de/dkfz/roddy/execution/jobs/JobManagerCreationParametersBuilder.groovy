@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import static JobManager.*
+import static BatchEuphoriaJobManager.*
 import groovy.transform.CompileStatic
 
 /**
@@ -20,9 +20,9 @@ class JobManagerCreationParametersBuilder {
     String userIdForJobQueries = ""
     boolean trackUserJobsOnly = JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
     boolean trackOnlyStartedJobs = JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
-    String jobIDIdentifier = JobManager.BE_DEFAULT_JOBID
-    String jobArrayIDIdentifier = JobManager.BE_DEFAULT_JOBARRAYINDEX
-    String jobScratchIdentifier = JobManager.BE_DEFAULT_JOBSCRATCH
+    String jobIDIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBID
+    String jobArrayIDIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBARRAYINDEX
+    String jobScratchIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBSCRATCH
     String userGroup = null
     String userAccount = null
     String userEmail = null

@@ -32,7 +32,7 @@ import org.apache.http.protocol.HTTP
  * Created by kaercher on 22.03.17.
  */
 @CompileStatic
-class LSFRestJobManager extends JobManagerAdapter {
+class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
     protected final RestExecutionService restExecutionService
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFRestJobManager.class.name);

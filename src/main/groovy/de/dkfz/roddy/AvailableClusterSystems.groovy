@@ -9,7 +9,7 @@ package de.dkfz.roddy
 import de.dkfz.roddy.execution.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.cluster.pbs.PBSJobManager
 import de.dkfz.roddy.execution.direct.synchronousexecution.DirectSynchronousExecutionJobManager
-import de.dkfz.roddy.execution.jobs.JobManager
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import groovy.transform.CompileStatic
 
 /**
@@ -31,7 +31,7 @@ enum AvailableClusterSystems {
         this.className = cls.name
     }
 
-    Class<JobManager> loadClass() {
-        return getClass().getClassLoader().loadClass(className) as Class<JobManager>
+    Class<BatchEuphoriaJobManager> loadClass() {
+        return getClass().getClassLoader().loadClass(className) as Class<BatchEuphoriaJobManager>
     }
 }

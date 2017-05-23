@@ -20,9 +20,9 @@ import groovy.transform.CompileStatic
  * @author michael
  */
 @CompileStatic
-abstract class JobManager<C extends Command> {
+abstract class BatchEuphoriaJobManager<C extends Command> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(JobManager.class.getSimpleName())
+    private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName())
 
     public static final int JOBMANAGER_DEFAULT_UPDATEINTERVAL = 300
     public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true
@@ -67,7 +67,7 @@ abstract class JobManager<C extends Command> {
 
     private Boolean isHoldJobsEnabled = null
 
-    JobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    BatchEuphoriaJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
