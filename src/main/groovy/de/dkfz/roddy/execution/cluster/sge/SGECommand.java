@@ -6,7 +6,7 @@
 //
 //package de.dkfz.roddy.execution.cluster.sge;
 //
-//import de.dkfz.roddy.execution.ExecutionService;
+//import de.dkfz.roddy.execution.BEExecutionService;
 //import de.dkfz.roddy.execution.cluster.pbs.PBSCommand;
 //import de.dkfz.roddy.execution.jobs.BEJob;
 //import de.dkfz.roddy.execution.jobs.ProcessingCommands;
@@ -28,7 +28,7 @@
 //     * @param dependencyIDs
 //     * @param command
 //     */
-//    public SGECommand(BEJob job, ExecutionService executionService, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, List<String> arrayIndices, List<String> dependencyIDs, String command) {
+//    public SGECommand(BEJob job, BEExecutionService executionService, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, List<String> arrayIndices, List<String> dependencyIDs, String command) {
 //        super(job, id, processingCommands, parameters, arrayIndices, dependencyIDs, command,null, null);
 //    }
 //

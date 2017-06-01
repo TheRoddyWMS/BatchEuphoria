@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.cluster.lsf.rest
 
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.cluster.pbs.PBSJobDependencyID
 import de.dkfz.roddy.execution.cluster.pbs.PBSResourceProcessingCommand
@@ -48,7 +48,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     public static String URI_USER_COMMAND = "/userCmd"
 
 
-    LSFRestJobManager(ExecutionService restExecutionService, JobManagerCreationParameters parms) {
+    LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
         super(restExecutionService, parms)
         this.restExecutionService = restExecutionService as RestExecutionService
     }

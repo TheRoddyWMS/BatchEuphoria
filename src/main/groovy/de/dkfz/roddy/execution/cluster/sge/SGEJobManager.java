@@ -11,7 +11,7 @@
 //import de.dkfz.roddy.config.ConfigurationValue;
 //import de.dkfz.roddy.config.ResourceSet;
 //import de.dkfz.roddy.core.ExecutionContext;
-//import de.dkfz.roddy.execution.io.ExecutionService;
+//import de.dkfz.roddy.execution.io.BEExecutionService;
 //import de.dkfz.roddy.execution.jobs.BEJob;
 //import de.dkfz.roddy.execution.jobs.ProcessingCommands;
 //import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager;
@@ -39,7 +39,7 @@
 //
 //    @Override
 //    public SGECommand createCommand(BEJob job, ExecutionContext run, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
-//        SGECommand command = new SGECommand(job, run, ExecutionService.getInstance(), jobName, processingCommands, parameters, arraySettings, dependencies, tool.getAbsolutePath());
+//        SGECommand command = new SGECommand(job, run, BEExecutionService.getInstance(), jobName, processingCommands, parameters, arraySettings, dependencies, tool.getAbsolutePath());
 //        addCommandToList(command);
 //        return command;
 //    }

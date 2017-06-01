@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.cluster.lsf.rest
 
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.cluster.ClusterJobManager
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -23,7 +23,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
  * Created by kaercher on 22.03.17.
  */
 class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
-    BatchEuphoriaJobManagerAdapter(ExecutionService executionService, JobManagerCreationParameters parms) {
+    BatchEuphoriaJobManagerAdapter(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
 

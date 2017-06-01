@@ -8,7 +8,7 @@ package de.dkfz.roddy
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.BEJob
@@ -55,12 +55,12 @@ class BEIntegrationTestStarter {
     }
 
 
-    private static void runTestsFor(AvailableClusterSystems option, ExecutionService executionService) {
+    private static void runTestsFor(AvailableClusterSystems option, BEExecutionService executionService) {
         BatchEuphoriaJobManager jobManager
         log.always("Creating job manager instance for ${option}")
 
         try {
-            jobManager = option.loadClass().getDeclaredConstructor(ExecutionService, JobManagerCreationParameters)
+            jobManager = option.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerCreationParameters)
                     .newInstance(executionService,
                     new JobManagerCreationParametersBuilder()
                             .setCreateDaemon(false)

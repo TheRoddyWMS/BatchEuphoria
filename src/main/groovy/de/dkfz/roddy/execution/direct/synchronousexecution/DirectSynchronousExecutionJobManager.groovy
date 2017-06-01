@@ -7,8 +7,8 @@
 package de.dkfz.roddy.execution.direct.synchronousexecution;
 
 
-import de.dkfz.roddy.config.ResourceSet;
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*;
 import de.dkfz.roddy.execution.jobs.JobDependencyID;
 import de.dkfz.roddy.execution.jobs.JobResult;
@@ -20,7 +20,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
 
     public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName());
 
-    public DirectSynchronousExecutionJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    public DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms);
     }
 
@@ -164,7 +164,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
 //    @Override
-//    public void queryJobAbortion(List executedJobs,ExecutionService executionService) {
+//    public void queryJobAbortion(List executedJobs,BEExecutionService executionService) {
 //        TODO something with kill
 //    }
 

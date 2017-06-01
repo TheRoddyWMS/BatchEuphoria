@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy
 
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.io.ExecutionHelper
 import de.dkfz.roddy.execution.io.ExecutionResult
@@ -16,7 +16,7 @@ import groovy.transform.CompileStatic
  * Created by heinold on 27.03.17.
  */
 @CompileStatic
-class TestExecutionService implements ExecutionService {
+class TestExecutionService implements BEExecutionService {
 
     String user
     String server

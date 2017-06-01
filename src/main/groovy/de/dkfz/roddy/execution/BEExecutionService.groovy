@@ -14,7 +14,7 @@ import groovy.transform.CompileStatic
  * Created by kaercher on 12.01.17.
  */
 @CompileStatic
-interface ExecutionService {
+interface BEExecutionService {
 
     ExecutionResult execute(Command command)
 

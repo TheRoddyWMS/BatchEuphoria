@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.cluster.pbs
 
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.cluster.ClusterJobManager
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
@@ -52,7 +52,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     private Map<String, Boolean> mapOfInitialQueries = new LinkedHashMap<>()
 
-    PBSJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    PBSJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
         /**
          * General or specific todos for BatchEuphoriaJobManager and PBSJobManager
@@ -66,7 +66,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //    @Override
 //    PBSCommand createCommand(GenericJobInfo jobInfo) {
 //        BEJob job = new BEJob(jobInfo.getJobName(), jobInfo.getTool(), new LinkedHashMap<String, Object>(jobInfo.getParameters()));
-//        PBSCommand pbsCommand = new PBSCommand(job, jobInfo.getExecutionContext(), ExecutionService.getInstance(), job.getJobName(), null, job.getParameters(), null, jobInfo.getParentJobIDs(), jobInfo.getExecutionContext().getConfiguration().getProcessingToolPath(jobInfo.getExecutionContext(), jobInfo.getTool()).getAbsolutePath());
+//        PBSCommand pbsCommand = new PBSCommand(job, jobInfo.getExecutionContext(), BEExecutionService.getInstance(), job.getJobName(), null, job.getParameters(), null, jobInfo.getParentJobIDs(), jobInfo.getExecutionContext().getConfiguration().getProcessingToolPath(jobInfo.getExecutionContext(), jobInfo.getTool()).getAbsolutePath());
 //        return pbsCommand;
 //    }
 

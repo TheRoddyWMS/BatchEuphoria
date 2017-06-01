@@ -23,9 +23,9 @@ class GenericJobInfo {
     Map<String, String> parameters
     List<String> parentJobIDs
     TimeUnit walltime
-    int maxCpus
-    int maxNodes
-    int maxMemory //Total resident maxMemory usage of all processes in a job
+    Integer maxCpus
+    Integer maxNodes
+    Integer maxMemory //Total resident maxMemory usage of all processes in a job
     BufferUnit memoryBufferUnit
     String queue
     String otherSettings

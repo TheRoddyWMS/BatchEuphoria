@@ -44,7 +44,7 @@ import java.security.KeyStore
  * Created by kaercher on 12.01.17.
  */
 @CompileStatic
-class RestExecutionService implements ExecutionService {
+class RestExecutionService implements BEExecutionService {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestExecutionService.class.name);
 

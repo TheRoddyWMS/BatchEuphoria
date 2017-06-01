@@ -4,9 +4,9 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.cluster;
+package de.dkfz.roddy.execution.cluster
 
-import de.dkfz.roddy.execution.ExecutionService;
+import de.dkfz.roddy.execution.BEExecutionService;
 import de.dkfz.roddy.execution.cluster.pbs.PBSCommand
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.FakeBEJob
@@ -24,7 +24,7 @@ public abstract class ClusterJobManager<C extends Command> extends BatchEuphoria
 
     public static final String CVALUE_ENFORCE_SUBMISSION_TO_NODES="enforceSubmissionToNodes";
 
-    ClusterJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    ClusterJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
 

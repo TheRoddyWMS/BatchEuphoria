@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.JobResult as JobResult
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.ExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
@@ -41,7 +41,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected String jobScratchIdentifier = BE_DEFAULT_JOBSCRATCH
 
-    protected final ExecutionService executionService
+    protected final BEExecutionService executionService
 
     protected Thread updateDaemonThread
 
@@ -67,7 +67,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private Boolean isHoldJobsEnabled = null
 
-    BatchEuphoriaJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly

@@ -100,11 +100,11 @@ class PBSCommandParser {
                     memory = parmVal[0..-2]
                 } else if (parmID == "walltime") {
                     walltime = parm.split("[=]")[1]
-                } else if (parmID == "maxNodes") {
+                } else if (parmID == "nodes") {
                     String[] splitParm = parm.split(SPLIT_COLON)
                     for (String resource : splitParm) {
                         String[] splitResource = resource.split(SPLIT_EQUALS)
-                        if (splitResource[0] == "maxNodes") {
+                        if (splitResource[0] == "nodes") {
                             nodes = splitResource[1]
                         } else if (splitResource[0] == "ppn") {
                             cores = splitResource[1]
@@ -120,7 +120,7 @@ class PBSCommandParser {
     private void parseDependencies(String parameters) {
         if (parameters.startsWith("depend")) {
             def deps = parameters[7..-1].split("[:]")
-            if (deps[0] != "afterok")
+            if (!deps[0].endsWith("afterok"))
                 println "Not supported: " + deps[0]
             try {
                 dependencies.addAll(deps[1..-1])
