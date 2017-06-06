@@ -1,5 +1,8 @@
 # BatchEuphoria
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
+Currently this library supports the following job schedulers:
+* PBS
+* LSF (REST)
 
 ### Dependencies
 * [RoddyToolLib](https://github.com/eilslabs/RoddyToolLib)
@@ -7,37 +10,48 @@ A library for cluster / batch system developers to create batch jobs from Java w
 ## How to use it
 Use `gradle build` to create the jar file.
 
-Currently the library only supports PBS and LSF REST.
-
-First you need to create an execution service depending on the kind of cluster you have.
+First you need to create an execution service depending on the kind of job scheduler you have.
 
 For LSF REST you need to use the RestExecutionService:
 
-`RestExecutionService executionService = new RestExecutionService("http://yourServer:8080/platform/ws","account","password")`
+```groovy
+RestExecutionService executionService = new RestExecutionService("http://yourServer:8080/platform/ws","account","password")
+```
 
 For PBS you need to implement your own execution service with the `ExecutionService interface`
-
-`JobManagerCreationParameters parameters = new JobManagerCreationParametersBuilder().build()`
 
 Currently there are two job managers which are `LSFRestJobManager` and `PBSJobManager`.
 For example for LSF you would initialize the job manager like this:
 
-`LSFRestJobManager jobManager = new LSFRestJobManager(executionService,parameters)`
+```groovy
+JobManagerCreationParameters parameters = new JobManagerCreationParametersBuilder().build()
+LSFRestJobManager jobManager = new LSFRestJobManager(executionService,parameters)
+```
+For PBS it looks like this:
+```groovy
+JobManagerCreationParameters parameters = new JobManagerCreationParametersBuilder().build()
+PBSJobManager jobManager = new PBSJobManager(executionService,parameters)
+```
 
 You need a resource set to define your requirements like how many cores and how much memory and the time limit you need for your job. 
 
-`ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null)`
+```groovy
+ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null)
+```
 
 Then you create the Job with job name, submission script, resource set, environment variables etc.
 
-`Job testJobwithScript = new Job("batchEuphoriaTestJob", null, "\"#!/bin/bash\\nsleep 15\\n\"", null, resourceSet, null, ["a": "value"], null, null, jobManager)`
+```groovy
+BEJob testJobwithScript = new BEJob("batchEuphoriaTestJob", null, "\"#!/bin/bash\\nsleep 15\\n\"", null, resourceSet, null, ["a": "value"], null, null, jobManager)
+```
 
 All job managers support the following functions:
 
-- Submit job: `jobManager.runJob(job)`
+- Submit job: `jobManager.runJob(testJobwithScript)` For PBS the submitted jobs are set on hold by default. To release the jobs use `jobManager.startHeldJobs([testJobwithScript])`
 
-- Abort job: `jobManager.queryJobAbortion(jobList)`
+- Abort job: `jobManager.queryJobAbortion([testJobwithScript])`
 
+You can find [here](https://github.com/eilslabs/BatchEuphoria/blob/develop/src/main/groovy/de/dkfz/roddy/BEIntegrationTestStarter.groovy) the integration tests with full example code for PBS and LSF.
 
 
 ## Integration Tests
