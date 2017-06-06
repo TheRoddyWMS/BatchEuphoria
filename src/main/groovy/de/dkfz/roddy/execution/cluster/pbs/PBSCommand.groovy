@@ -147,6 +147,10 @@ class PBSCommand extends Command {
 
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
+        if (job.getToolScript()) {
+            qsubCall << "echo '" << job.getToolScript() << "' | "
+        }
+
         qsubCall << QSUB << PARM_JOBNAME << id
 
         if (holdJobsOnStart) qsubCall << " -h "
@@ -173,7 +177,9 @@ class PBSCommand extends Command {
 
         qsubCall << assembleVariableExportString()
 
-        qsubCall << " " << job.getTool().getAbsolutePath()
+        if (job.getTool()) {
+            qsubCall << " " << job.getTool().getAbsolutePath()
+        }
 
         return qsubCall
     }
