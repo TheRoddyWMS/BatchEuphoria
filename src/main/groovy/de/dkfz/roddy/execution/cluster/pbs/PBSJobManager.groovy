@@ -98,17 +98,24 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         def executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         executionService.handleServiceBasedJobExitStatus(command, executionResult, null)
+
         // job.runResult is set within executionService.execute
-//        logger.severe("Set the job runResult in a better way from runJob itself or so.")
+        // logger.severe("Set the job runResult in a better way from runJob itself or so.")
         cacheLock.lock()
-        if (executionResult.successful && job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
-            allStates[job.jobID] = JobState.HOLD
-        } else if (executionResult.successful && job.runResult.wasExecuted) {
-            allStates[job.jobID] = JobState.QUEUED
-        } else {
-            allStates[job.jobID] = JobState.FAILED
-            logger.severe("PBS call failed with error code ${executionResult.exitCode} and error message:\n\t" + executionResult?.resultLines?.join("\n\t"))
+
+        try {
+            if (executionResult.successful && job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
+                allStates[job.jobID] = JobState.HOLD
+            } else if (executionResult.successful && job.runResult.wasExecuted) {
+                allStates[job.jobID] = JobState.QUEUED
+            } else {
+                allStates[job.jobID] = JobState.FAILED
+                logger.severe("PBS call failed with error code ${executionResult.exitCode} and error message:\n\t" + executionResult?.resultLines?.join("\n\t"))
+            }
+        } finally {
+            cacheLock.unlock()
         }
+
         return job.runResult
     }
 
@@ -247,7 +254,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     BEJob parseToJob(String commandString) {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(),null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect { new PBSJobDependencyID(null, it) } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
+        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
+            new PBSJobDependencyID(null, it)
+        } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
@@ -314,11 +323,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 cachedExecutionResult = executionService.execute(queryCommand.toString())
             }
         } finally {
-        }
-        er = cachedExecutionResult
-        resultLines.addAll(er.resultLines)
+            er = cachedExecutionResult
+            resultLines.addAll(er.resultLines)
 
-        cacheLock.unlock()
+            cacheLock.unlock()
+        }
 
         if (er.successful) {
             if (resultLines.size() > 2) {
