@@ -387,4 +387,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract String parseJobID(String commandOutput)
 
     abstract String getSubmissionCommand()
+
+    abstract File getLoggingDirectoryForJob(BEJob job)
 }

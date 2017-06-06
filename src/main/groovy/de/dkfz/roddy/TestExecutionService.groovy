@@ -62,4 +62,9 @@ class TestExecutionService implements BEExecutionService {
     String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
         return null
     }
+
+    @Override
+    File queryWorkingDirectory() {
+        return null
+    }
 }

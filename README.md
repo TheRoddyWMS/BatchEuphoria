@@ -7,7 +7,7 @@ A library for cluster / batch system developers to create batch jobs from Java w
 ## How to use it
 Use `gradle build` to create the jar file.
 
-Currently the library only supports PBS and LSF REST.
+Currently the library only supports PBS, LSF REST and direct execution.
 
 First you need to create an execution service depending on the kind of cluster you have.
 
@@ -30,13 +30,22 @@ You need a resource set to define your requirements like how many cores and how 
 
 Then you create the Job with job name, submission script, resource set, environment variables etc.
 
-`Job testJobwithScript = new Job("batchEuphoriaTestJob", null, "\"#!/bin/bash\\nsleep 15\\n\"", null, resourceSet, null, ["a": "value"], null, null, jobManager)`
+```
+String script=[ "#!/bin/bash", "sleep 15" ].join("\n")`
+BEJob testJobwithScript = new BEJob("batchEuphoriaTestJob", null, script, null, resourceSet, null, ["a": "value"], null, null, jobManager)`
+```
+
+**NOTE** Submitted jobs are in HOLD state by default! You need to call startHeldJobs on your job manager instance at the end. Or, if you need it, cancel them e.g. on an error.
+
 
 All job managers support the following functions:
 
 - Submit job: `jobManager.runJob(job)`
 
 - Abort job: `jobManager.queryJobAbortion(jobList)`
+
+- Start held jobs: `jobManager.startHeldJobs(jobList)`
+
 
 
 

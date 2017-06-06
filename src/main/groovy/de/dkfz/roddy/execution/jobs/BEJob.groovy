@@ -93,6 +93,8 @@ class BEJob<J extends BEJob> {
      */
     de.dkfz.roddy.execution.jobs.JobResult runResult
 
+    protected File loggingDirectory
+
     /**
      * Stores information from the cluster about the job e.g. used resources
      */
@@ -186,8 +188,15 @@ class BEJob<J extends BEJob> {
         return res as List<String>
     }
 
+    void setLoggingDirectory(File loggingDirectory) {
+        this.loggingDirectory = loggingDirectory
+    }
+
     File getLoggingDirectory() {
-        return loggingDirectory
+        if(this.loggingDirectory)
+            return this.loggingDirectory
+        else
+            return jobManager.getLoggingDirectoryForJob(this)
     }
 
     /**

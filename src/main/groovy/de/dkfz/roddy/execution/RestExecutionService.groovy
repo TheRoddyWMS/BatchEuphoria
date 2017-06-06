@@ -213,4 +213,9 @@ class RestExecutionService implements BEExecutionService {
     String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
         throw new NotImplementedException()
     }
+
+    @Override
+    File queryWorkingDirectory() {
+        throw new NotImplementedException()
+    }
 }
