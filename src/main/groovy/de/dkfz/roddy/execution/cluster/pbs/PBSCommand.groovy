@@ -13,6 +13,7 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.logging.Level
+import java.util.regex.Matcher
 
 import static de.dkfz.roddy.StringConstants.*
 
@@ -148,7 +149,7 @@ class PBSCommand extends Command {
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
-            qsubCall << "echo '" << job.getToolScript() << "' | "
+            qsubCall << "echo '" << job.getToolScript().replaceAll("'", Matcher.quoteReplacement("'\\''")) << "' | "
         }
 
         qsubCall << QSUB << PARM_JOBNAME << id

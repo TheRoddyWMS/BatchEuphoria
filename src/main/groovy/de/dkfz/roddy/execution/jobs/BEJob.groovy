@@ -292,6 +292,10 @@ class BEJob<J extends BEJob> {
 
     @Override
     String toString() {
-        return "BEJob: ${jobName} calling tool ${tool?.getAbsolutePath() ?: getToolScript()}"
+        if (getToolScript()) {
+            return "BEJob: ${jobName} with piped script:\n\t" + getToolScript().readLines().join("\n\t")
+        } else {
+            return "BEJob: ${jobName} calling tool ${tool.getAbsolutePath()}"
+        }
     }
 }
