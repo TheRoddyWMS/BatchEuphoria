@@ -105,7 +105,7 @@ class BEJob<J extends BEJob> {
     /**
      * Set this, to have use a custom account for the job. (If supported by the target job manager)
      */
-    String customJobAccount
+    String customUserAccount
 
     /**
      * Set this to use a custom queue for the job. (If supported by the target job manager)
