@@ -33,4 +33,6 @@ interface BEExecutionService {
     boolean isAvailable()
 
     String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream)
+
+    File queryWorkingDirectory()
 }

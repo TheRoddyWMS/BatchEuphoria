@@ -3,6 +3,7 @@ A library for cluster / batch system developers to create batch jobs from Java w
 Currently this library supports the following job schedulers:
 * PBS
 * LSF (REST)
+* direct execution
 
 ### Dependencies
 * [RoddyToolLib](https://github.com/eilslabs/RoddyToolLib)
@@ -42,14 +43,20 @@ ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10,
 Then you create the Job with job name, submission script, resource set, environment variables etc.
 
 ```groovy
-BEJob testJobwithScript = new BEJob("batchEuphoriaTestJob", null, "\"#!/bin/bash\\nsleep 15\\n\"", null, resourceSet, null, ["a": "value"], null, null, jobManager)
+String script=[ "#!/bin/bash", "sleep 15" ].join("\n")`
+BEJob testJobwithScript = new BEJob("batchEuphoriaTestJob", null, script, null, resourceSet, null, ["a": "value"], null, null, jobManager)`
 ```
+
+**NOTE** Submitted jobs are in HOLD state by default! You need to call startHeldJobs on your job manager instance at the end. Or, if you need it, cancel them e.g. on an error.
+
 
 All job managers support the following functions:
 
-- Submit job: `jobManager.runJob(testJobwithScript)` For PBS the submitted jobs are set on hold by default. To release the jobs use `jobManager.startHeldJobs([testJobwithScript])`
+- Submit job: `jobManager.runJob(testJobwithScript)` For PBS the submitted jobs are set on hold by default.
 
 - Abort job: `jobManager.queryJobAbortion([testJobwithScript])`
+
+- Start held jobs: `jobManager.startHeldJobs([testJobwithScript])`
 
 You can find [here](https://github.com/eilslabs/BatchEuphoria/blob/develop/src/main/groovy/de/dkfz/roddy/BEIntegrationTestStarter.groovy) the integration tests with full example code for PBS and LSF.
 
