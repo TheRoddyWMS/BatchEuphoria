@@ -209,9 +209,13 @@ class PBSCommand extends Command {
 
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
-        //TODO Properly support parameter files.
-//        qsubCall << getVariablesParameter() + PARM_WRAPPED_SCRIPT << command
-        qsubCall << getVariablesParameter() << "PARAMETER_FILE=" << job.getParameterFile()
+
+        if (job.getParameterFile()) {
+            qsubCall << getVariablesParameter() << "PARAMETER_FILE=" << job.getParameterFile()
+        } else {
+            qsubCall << getVariablesParameter() << job.finalParameters().join(",")
+        }
+
         return qsubCall
     }
 
