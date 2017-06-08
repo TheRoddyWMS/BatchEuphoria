@@ -1,4 +1,6 @@
 # BatchEuphoria
+[![Build Status - Travis](https://travis-ci.org/eilslabs/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/eilslabs/BatchEuphoria)
+
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
 Currently this library supports the following job schedulers:
 * PBS
