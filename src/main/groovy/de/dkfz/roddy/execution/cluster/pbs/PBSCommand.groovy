@@ -141,7 +141,7 @@ class PBSCommand extends Command {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
-        String accountName = parentJobManager.getUserAccount()
+        String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean useParameterFile = parentJobManager.isParameterFileEnabled()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 

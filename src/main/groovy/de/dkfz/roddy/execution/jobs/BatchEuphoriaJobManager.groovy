@@ -178,6 +178,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(BEJob job, String jobResult)
 
+    ProcessingCommands convertResourceSet(BEJob job) {
+        return convertResourceSet(job.resourceSet)
+    }
+
     abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet)
 
     abstract ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions)

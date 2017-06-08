@@ -164,12 +164,24 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //    }
 
     @Override
+    ProcessingCommands convertResourceSet(BEJob job) {
+        return convertResourceSet(job, job.resourceSet)
+    }
+
+    @Override
     ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+        return convertResourceSet(null, resourceSet)
+    }
+
+    ProcessingCommands convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        assert resourceSet
+
         StringBuilder sb = new StringBuilder()
 
         if (resourceSet.isMemSet()) sb << " -l mem=" << resourceSet.getMem().toString(BufferUnit.M)
         if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << resourceSet.getWalltime()
-        if (resourceSet.isQueueSet()) sb << " -q " << resourceSet.getQueue()
+        if (job?.customQueue) sb << " -q " << job.customQueue
+        else if (resourceSet.isQueueSet()) sb << " -q " << resourceSet.getQueue()
 
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1

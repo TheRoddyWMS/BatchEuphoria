@@ -93,7 +93,24 @@ class BEJob<J extends BEJob> {
      */
     de.dkfz.roddy.execution.jobs.JobResult runResult
 
+    //////////////////////////////////////////////////////////////
+    // Now come some job / command specific settings
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * The custom job log directory. If it is not set, the job manager default will be used (if supported)
+     */
     protected File loggingDirectory
+
+    /**
+     * Set this, to have use a custom account for the job. (If supported by the target job manager)
+     */
+    String customUserAccount
+
+    /**
+     * Set this to use a custom queue for the job. (If supported by the target job manager)
+     */
+    String customQueue
 
     /**
      * Stores information from the cluster about the job e.g. used resources
@@ -166,7 +183,7 @@ class BEJob<J extends BEJob> {
     }
 
     List<ProcessingCommands> getListOfProcessingCommand() {
-        return [jobManager.convertResourceSet(resourceSet)] + processingCommand
+        return [jobManager.convertResourceSet(this)] + processingCommand
     }
 
     List<J> getParentJobs() {
