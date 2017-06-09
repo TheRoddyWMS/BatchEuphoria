@@ -89,7 +89,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     PBSCommand createCommand(BEJob job) {
-        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool.getAbsolutePath(), job.getLoggingDirectory())
+        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
     }
 
     @Override
