@@ -213,7 +213,9 @@ class PBSCommand extends Command {
         if (job.getParameterFile()) {
             qsubCall << getVariablesParameter() << "PARAMETER_FILE=" << job.getParameterFile()
         } else {
-            qsubCall << getVariablesParameter() << job.finalParameters().join(",")
+            def finalParameters = job.finalParameters()
+            if (finalParameters)
+                qsubCall << getVariablesParameter() << finalParameters.join(",")
         }
 
         return qsubCall
