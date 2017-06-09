@@ -4,7 +4,7 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.cluster.lsf.rest
+package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import de.dkfz.roddy.execution.jobs.Command
 import groovy.transform.CompileStatic

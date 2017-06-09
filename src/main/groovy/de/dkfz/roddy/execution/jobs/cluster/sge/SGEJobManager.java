@@ -4,7 +4,7 @@
 // * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
 // */
 //
-//package de.dkfz.roddy.execution.cluster.sge;
+//package de.dkfz.roddy.execution.jobs.cluster.sge;
 //
 //import de.dkfz.roddy.StringConstants;
 //import de.dkfz.roddy.config.Configuration;

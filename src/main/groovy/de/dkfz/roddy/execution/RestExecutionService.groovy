@@ -7,8 +7,8 @@
 package de.dkfz.roddy.execution
 
 import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.cluster.lsf.rest.RestCommand
-import de.dkfz.roddy.execution.cluster.lsf.rest.RestResult
+import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestCommand
+import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic

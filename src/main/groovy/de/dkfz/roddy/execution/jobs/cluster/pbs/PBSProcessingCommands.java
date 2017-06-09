@@ -4,7 +4,7 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.cluster.pbs;
+package de.dkfz.roddy.execution.jobs.cluster.pbs;
 
 import de.dkfz.roddy.execution.jobs.ProcessingCommands;
 
