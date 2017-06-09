@@ -31,7 +31,7 @@ class PBSCommandTest {
         BEJob job = new BEJob("Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
         PBSCommand cmd = new PBSCommand(null, job, "id", null, mapOfParameters, null, null, null, "/tmp/test.sh", null)
         String result = cmd.assembleVariableExportString()
-        assert result == " -v PARAMETER_FILE=" + job.parameterFile
+        assert result.trim() == "-v a=a,b=b"
     }
 
     @Test
