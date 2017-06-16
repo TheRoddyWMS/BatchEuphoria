@@ -8,13 +8,13 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs;
 
 
 import de.dkfz.roddy.execution.jobs.BEJob;
-import de.dkfz.roddy.execution.jobs.JobDependencyID;
+import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
 
 import java.io.Serializable;
 
 /**
  */
-public class PBSJobDependencyID extends JobDependencyID implements Serializable {
+public class PBSJobDependencyID extends BEJobDependencyID implements Serializable {
     private String id;
 
     public PBSJobDependencyID(BEJob job, String id) {

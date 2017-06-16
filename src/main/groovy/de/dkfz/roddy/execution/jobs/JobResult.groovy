@@ -26,7 +26,7 @@ public class JobResult implements Serializable {
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
      */
-    protected final JobDependencyID jobID;
+    protected final BEJobDependencyID jobID;
     /**
      * Was the job executed?
      */
@@ -53,15 +53,15 @@ public class JobResult implements Serializable {
 
     }
 
-    public JobResult(InfoObject object, Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public JobResult(InfoObject object, Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public JobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public JobResult(Command command, JobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public JobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.command = command;
         this.jobID = jobID;
         this.wasExecuted = wasExecuted;
@@ -75,7 +75,7 @@ public class JobResult implements Serializable {
         return command;
     }
 
-    public JobDependencyID getJobID() {
+    public BEJobDependencyID getJobID() {
         return jobID;
     }
 

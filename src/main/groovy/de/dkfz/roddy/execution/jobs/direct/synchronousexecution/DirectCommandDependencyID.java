@@ -4,14 +4,14 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.synchronousexecution;
+package de.dkfz.roddy.execution.jobs.direct.synchronousexecution;
 
-import de.dkfz.roddy.execution.jobs.JobDependencyID;
+import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
 import de.dkfz.roddy.execution.jobs.BEJob;
 
 /**
  */
-public class DirectCommandDependencyID extends JobDependencyID {
+public class DirectCommandDependencyID extends BEJobDependencyID {
     private final String id;
 
     protected DirectCommandDependencyID(String id, BEJob job) {

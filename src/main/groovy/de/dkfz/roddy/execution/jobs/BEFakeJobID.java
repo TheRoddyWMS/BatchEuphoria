@@ -9,8 +9,8 @@ package de.dkfz.roddy.execution.jobs;
 /**
  * Created by heinold on 23.02.17.
  */
-//public class FakeJobID extends JobDependencyID {
-public class FakeJobID extends JobDependencyID.FakeJobID {
+//public class BEFakeJobID extends BEJobDependencyID {
+public class BEFakeJobID extends BEJobDependencyID.FakeJobID {
     /**
      * Various reasons why a job was not executed and is a fake job.
      */
@@ -24,22 +24,22 @@ public class FakeJobID extends JobDependencyID.FakeJobID {
     private long nanotime;
     private boolean isArray;
 
-    public FakeJobID(BEJob job, FakeJobReason fakeJobReason, boolean isArray) {
+    public BEFakeJobID(BEJob job, FakeJobReason fakeJobReason, boolean isArray) {
         super(job);
         this.fakeJobReason = fakeJobReason;
         this.isArray = isArray;
         nanotime = System.nanoTime();
     }
 
-    public FakeJobID(BEJob job, boolean isArray) {
+    public BEFakeJobID(BEJob job, boolean isArray) {
         this(job, FakeJobReason.UNDEFINED, isArray);
     }
 
-    public FakeJobID(BEJob job, FakeJobReason fakeJobReason) {
+    public BEFakeJobID(BEJob job, FakeJobReason fakeJobReason) {
         this(job, fakeJobReason, false);
     }
 
-    public FakeJobID(BEJob job) {
+    public BEFakeJobID(BEJob job) {
         this(job, FakeJobReason.UNDEFINED, false);
     }
 

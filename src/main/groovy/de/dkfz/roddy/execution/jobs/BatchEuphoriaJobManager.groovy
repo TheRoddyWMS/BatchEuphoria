@@ -176,7 +176,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
-    abstract de.dkfz.roddy.execution.jobs.JobDependencyID createJobDependencyID(BEJob job, String jobResult)
+    abstract BEJobDependencyID createJobDependencyID(BEJob job, String jobResult)
 
     ProcessingCommands convertResourceSet(BEJob job) {
         return convertResourceSet(job.resourceSet)

@@ -15,7 +15,7 @@ import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
-import de.dkfz.roddy.execution.jobs.JobDependencyID
+import de.dkfz.roddy.execution.jobs.BEJobDependencyID
 import de.dkfz.roddy.execution.jobs.JobResult
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
@@ -38,7 +38,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    JobDependencyID createJobDependencyID(BEJob job, String jobResult) {
+    BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
         throw new NotImplementedException()
     }
 

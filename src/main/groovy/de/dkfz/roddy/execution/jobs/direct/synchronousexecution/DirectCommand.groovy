@@ -4,7 +4,7 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.synchronousexecution
+package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.BEJob
