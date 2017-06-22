@@ -520,7 +520,47 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+
+        if (allStates == null || forceUpdate)
+            updateJobStatus(forceUpdate)
+
+        Map<String, JobState> queriedStates = jobIds.collectEntries { String jobId -> [jobId, JobState.UNKNOWN] }
+
+        for (String jobId in jobIds) {
+            // Aborted somewhat supercedes everything.
+            JobState state
+
+            cacheLock.lock()
+            state = allStates[jobId]
+            cacheLock.unlock()
+            if (state) queriedStates[jobId] = state
+        }
+
+        return queriedStates
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+
+        if (allStates == null || forceUpdate)
+            updateJobStatus(forceUpdate)
+
+        Map<String, JobState> queriedStates = [:]
+        cacheLock.lock()
+        queriedStates.putAll(allStates)
+        cacheLock.unlock()
+
+        return queriedStates
+    }
+
+    @Override
+    List<BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    List<BEJob> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
         return null
     }
 

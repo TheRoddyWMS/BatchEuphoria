@@ -220,10 +220,29 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * the manager cannot retrieve info about the job, the result will be UNKNOWN
      * for this particular job.
      *
-     * @param jobIDs
+     * @param jobs
      * @return
      */
     abstract Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false)
+
+    /**
+     * Queries the status of all jobs in the list.
+     *
+     * Every job ID in the list is supposed to have an entry in the result map. If
+     * the manager cannot retrieve info about the job, the result will be UNKNOWN
+     * for this particular job.
+     *
+     * @param jobIds
+     * @return
+     */
+    abstract Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false)
+
+    /**
+     * Queries the status of all jobs.
+     *
+     * @return
+     */
+    abstract Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false)
 
     /**
      * Will be used to gather extended information about a job like:
@@ -235,7 +254,19 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param forceUpdate
      * @return
      */
-    abstract Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
+    abstract List<BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
+
+    /**
+     * Will be used to gather extended information about a job like:
+     * - The used memory
+     * - The used cores
+     * - The used walltime
+     *
+     * @param jobIds
+     * @param forceUpdate
+     * @return
+     */
+    abstract List<BEJob> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate)
 
     /**
      * Try to abort a range of jobs
