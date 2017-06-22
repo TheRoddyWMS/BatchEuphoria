@@ -79,7 +79,12 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List list, boolean forceUpdate) {
+    List<BEJob> queryExtendedJobState(List list, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    List<BEJob> queryExtendedJobStateById(List list, boolean forceUpdate) {
         return null
     }
 
@@ -167,6 +172,16 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
 
     @Override
     Map<BEJob, JobState> queryJobStatus(List list, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusById(List jobIds, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
         return null
     }
 }
