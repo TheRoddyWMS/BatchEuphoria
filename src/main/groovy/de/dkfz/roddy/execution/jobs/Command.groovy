@@ -27,7 +27,7 @@ abstract class Command {
     /**
      * The id which was created upon execution by the job system.
      */
-    protected de.dkfz.roddy.execution.jobs.JobDependencyID executionID
+    protected BEJobDependencyID executionID
 
     /**
      * The job which created this command. Can be null!
@@ -54,7 +54,7 @@ abstract class Command {
         this.id = id
     }
 
-    final void setExecutionID(de.dkfz.roddy.execution.jobs.JobDependencyID id) {
+    final void setExecutionID(BEJobDependencyID id) {
         this.executionID = id
     }
 
@@ -62,7 +62,7 @@ abstract class Command {
         return executionID.isValidID()
     }
 
-    final de.dkfz.roddy.execution.jobs.JobDependencyID getExecutionID() {
+    final BEJobDependencyID getExecutionID() {
         return executionID
     }
 

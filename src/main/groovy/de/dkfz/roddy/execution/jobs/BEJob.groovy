@@ -74,7 +74,7 @@ class BEJob<J extends BEJob> {
      * You should provide i.e. job ids of qsub jobs to automatically create job
      * dependencies.
      */
-    protected final List<de.dkfz.roddy.execution.jobs.JobDependencyID> listOfCustomDependencyIDs = new LinkedList<>()
+    protected final List<BEJobDependencyID> listOfCustomDependencyIDs = new LinkedList<>()
 
     /**
      * Temporary value which defines the jobs jobState.
@@ -119,7 +119,7 @@ class BEJob<J extends BEJob> {
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<de.dkfz.roddy.execution.jobs.JobDependencyID> dependencyIDs, BatchEuphoriaJobManager jobManager) {
+    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobDependencyID> dependencyIDs, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNKNOWN
         this.tool = tool
@@ -130,7 +130,7 @@ class BEJob<J extends BEJob> {
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll((dependencyIDs ?: parentJobs ? parentJobs.collect { BEJob job -> job.runResult?.jobID ?: null }.findAll { de.dkfz.roddy.execution.jobs.JobDependencyID it -> it } : []) as List<JobDependencyID>)
+        this.listOfCustomDependencyIDs.addAll((dependencyIDs ?: parentJobs ? parentJobs.collect { BEJob job -> job.runResult?.jobID ?: null }.findAll { BEJobDependencyID it -> it } : []) as List<BEJobDependencyID>)
         this.jobManager = jobManager
     }
 
@@ -151,7 +151,7 @@ class BEJob<J extends BEJob> {
         String jobID = getJobID()
         if (jobID == null)
             return false
-        return FakeJobID.isFakeJobID(jobID)
+        return BEFakeJobID.isFakeJobID(jobID)
     }
 
     protected void postProcessArrayJob(JobResult runResult) {
@@ -190,7 +190,7 @@ class BEJob<J extends BEJob> {
         return parentJobs
     }
 
-    List<de.dkfz.roddy.execution.jobs.JobDependencyID> getDependencyIDs() {
+    List<BEJobDependencyID> getDependencyIDs() {
         if (listOfCustomDependencyIDs)
             return listOfCustomDependencyIDs
 
@@ -201,7 +201,7 @@ class BEJob<J extends BEJob> {
 
     List<String> getDependencyIDsAsString() {
         def depIDs = getDependencyIDs()
-        def res = depIDs.collect { de.dkfz.roddy.execution.jobs.JobDependencyID jid -> jid.id }
+        def res = depIDs.collect { BEJobDependencyID jid -> jid.id }
         return res as List<String>
     }
 

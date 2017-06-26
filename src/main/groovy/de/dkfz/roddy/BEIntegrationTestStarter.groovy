@@ -10,7 +10,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
-import de.dkfz.roddy.execution.cluster.lsf.rest.LSFRestJobManager
+import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters

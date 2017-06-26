@@ -23,19 +23,19 @@ class FakeBEJob extends BEJob {
     }
 
 
-    static FakeJobID getNotExecutedFakeJob(BEJob job) {
+    static BEFakeJobID getNotExecutedFakeJob(BEJob job) {
         return getNotExecutedFakeJob(job, false)
     }
 
-    static FakeJobID getNotExecutedFakeJob(BEJob job, boolean array) {
-        return new FakeJobID(job, FakeJobID.FakeJobReason.NOT_EXECUTED, array)
+    static BEFakeJobID getNotExecutedFakeJob(BEJob job, boolean array) {
+        return new BEFakeJobID(job, BEFakeJobID.FakeJobReason.NOT_EXECUTED, array)
     }
 
-    static FakeJobID getFileExistedFakeJob(InfoObject infoObject) {
+    static BEFakeJobID getFileExistedFakeJob(InfoObject infoObject) {
         return getFileExistedFakeJob(new FakeBEJob(infoObject), false)
     }
 
-    static FakeJobID getFileExistedFakeJob(BEJob job, boolean array) {
-        return new FakeJobID(job, FakeJobID.FakeJobReason.FILE_EXISTED, array)
+    static BEFakeJobID getFileExistedFakeJob(BEJob job, boolean array) {
+        return new BEFakeJobID(job, BEFakeJobID.FakeJobReason.FILE_EXISTED, array)
     }
 }

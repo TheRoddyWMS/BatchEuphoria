@@ -13,7 +13,7 @@ import groovy.transform.CompileStatic
  * Created by heinold on 01.03.17.
  */
 @CompileStatic
-abstract class JobDependencyID {
+abstract class BEJobDependencyID {
 
     public final BEJob job;
 
@@ -41,12 +41,12 @@ abstract class JobDependencyID {
         return FakeBEJob.getFileExistedFakeJob(new FakeBEJob(infoObject), false)
     }
 
-    JobDependencyID(BEJob job) {
+    BEJobDependencyID(BEJob job) {
         this.job = job
     }
 
     @Deprecated
-    static abstract class FakeJobID extends JobDependencyID {
+    static abstract class FakeJobID extends BEJobDependencyID {
         FakeJobID(BEJob job) {
             super(job)
         }

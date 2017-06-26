@@ -4,10 +4,10 @@
 // * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
 // */
 //
-//package de.dkfz.roddy.execution.cluster.sge;
+//package de.dkfz.roddy.execution.jobs.cluster.sge;
 //
 //import de.dkfz.roddy.execution.BEExecutionService;
-//import de.dkfz.roddy.execution.cluster.pbs.PBSCommand;
+//import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand;
 //import de.dkfz.roddy.execution.jobs.BEJob;
 //import de.dkfz.roddy.execution.jobs.ProcessingCommands;
 //

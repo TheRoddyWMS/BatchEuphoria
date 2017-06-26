@@ -4,13 +4,13 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.cluster.lsf.rest
+package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
-import de.dkfz.roddy.execution.cluster.pbs.PBSJobDependencyID
-import de.dkfz.roddy.execution.cluster.pbs.PBSResourceProcessingCommand
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobDependencyID
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters

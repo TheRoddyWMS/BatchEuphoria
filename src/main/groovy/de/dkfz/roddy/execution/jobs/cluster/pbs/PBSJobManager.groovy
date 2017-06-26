@@ -4,16 +4,16 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.cluster.pbs
+package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobDependencyID
+import de.dkfz.roddy.execution.jobs.BEJobDependencyID
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.JobResult
 import de.dkfz.roddy.execution.jobs.JobState
@@ -141,7 +141,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    JobDependencyID createJobDependencyID(BEJob job, String jobResult) {
+    BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
         return new PBSJobDependencyID(job, jobResult)
     }
 
@@ -268,7 +268,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
         BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
             new PBSJobDependencyID(null, it)
-        } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
+        } as List<BEJobDependencyID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
