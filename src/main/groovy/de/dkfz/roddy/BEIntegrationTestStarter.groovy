@@ -17,7 +17,7 @@ import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.JobResult
+import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -108,7 +108,7 @@ class BEIntegrationTestStarter {
             def jobList = [testJob]
 
             // run single job and check status
-            JobResult jr = jobManager.runJob(testJob)
+            BEJobResult jr = jobManager.runJob(testJob)
             if (jobManager.isHoldJobsEnabled()) {
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)

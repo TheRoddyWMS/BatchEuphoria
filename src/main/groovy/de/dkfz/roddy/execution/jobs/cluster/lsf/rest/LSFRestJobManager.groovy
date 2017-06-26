@@ -14,7 +14,7 @@ import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobResult
+import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
@@ -55,7 +55,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
 
     @Override
-    de.dkfz.roddy.execution.jobs.JobResult runJob(BEJob job) {
+    BEJobResult runJob(BEJob job) {
         submitJob(job)
         return job.runResult
     }
@@ -175,7 +175,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
         if (result.statusCode == 200) {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
-            job.setRunResult(new JobResult(job.lastCommand, new PBSJobDependencyID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setRunResult(new BEJobResult(job.lastCommand, new PBSJobDependencyID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
         } else {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
         }

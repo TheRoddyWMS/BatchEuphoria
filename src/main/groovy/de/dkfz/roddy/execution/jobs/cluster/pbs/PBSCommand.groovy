@@ -217,10 +217,11 @@ class PBSCommand extends Command {
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
 
+
         if (job.getParameterFile()) {
-            qsubCall << getVariablesParameter() << "PARAMETER_FILE=" << job.getParameterFile()
+            qsubCall << getVariablesParameter() << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.getParameterFile()
         } else {
-            def finalParameters = job.finalParameters()
+            List<String> finalParameters = job.finalParameters()
             if (finalParameters)
                 qsubCall << getVariablesParameter() << finalParameters.join(",")
         }

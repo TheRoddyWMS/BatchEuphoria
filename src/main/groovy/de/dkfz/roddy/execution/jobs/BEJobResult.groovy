@@ -16,7 +16,7 @@ import de.dkfz.roddy.core.InfoObject
  *
  * @author michael
  */
-public class JobResult implements Serializable {
+public class BEJobResult implements Serializable {
 
     /**
      * The command which was used to create this result.
@@ -49,19 +49,19 @@ public class JobResult implements Serializable {
     public transient final List<BEJob> parentJobs;
 
     // Compatibility constructor. Does nothing, leaves responsibility in sub class.
-    protected JobResult() {
+    protected BEJobResult() {
 
     }
 
-    public JobResult(InfoObject object, Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Object object, Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public JobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public JobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.command = command;
         this.jobID = jobID;
         this.wasExecuted = wasExecuted;

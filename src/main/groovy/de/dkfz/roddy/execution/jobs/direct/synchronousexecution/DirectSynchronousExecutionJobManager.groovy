@@ -11,7 +11,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*;
 import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
-import de.dkfz.roddy.execution.jobs.JobResult;
+import de.dkfz.roddy.execution.jobs.BEJobResult;
 import de.dkfz.roddy.tools.LoggerWrapper
 
 /**
@@ -75,7 +75,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public JobResult convertToArrayResult(BEJob arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
+    public BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
         throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()");
     }
 
@@ -90,7 +90,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
 //    }
 
 //    @Override
-//    public JobResult convertToArrayResult(BEJob arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
+//    public BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
 //        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()");
 //    }
 
@@ -179,7 +179,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public JobResult runJob(BEJob job) {
+    public BEJobResult runJob(BEJob job) {
         return null;
     }
 

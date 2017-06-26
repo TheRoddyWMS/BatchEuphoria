@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -16,7 +17,7 @@ import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.execution.jobs.BEJobDependencyID
-import de.dkfz.roddy.execution.jobs.JobResult
+import de.dkfz.roddy.execution.jobs.BEJobResult
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
@@ -33,7 +34,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    JobResult runJob(BEJob job) {
+    BEJobResult runJob(BEJob job) {
         return null
     }
 
@@ -69,7 +70,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    JobResult convertToArrayResult(BEJob arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
+    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
         throw new NotImplementedException()
     }
     // needed
