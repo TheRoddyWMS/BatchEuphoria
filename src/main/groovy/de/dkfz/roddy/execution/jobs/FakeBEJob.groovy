@@ -18,6 +18,10 @@ class FakeBEJob extends BEJob {
         super("Fakejob", null,null, "", null, [], [:], [], [], null)
     }
 
+    public FakeBEJob(Object context) {
+        this()
+    }
+
     public FakeBEJob(InfoObject context) {
         this()
     }

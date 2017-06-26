@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.JobResult as JobResult
+import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -152,19 +152,19 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param job
      * @return
      */
-    abstract JobResult runJob(BEJob job)
+    abstract BEJobResult runJob(BEJob job)
 
     /**
      * Called by the execution service after a command was executed.
      */
-    JobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
-        JobResult jobResult
+    BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+        BEJobResult jobResult
         if (res.successful) {
             String exID = parseJobID(res.resultLines[0])
             def job = command.getJob()
             def jobDependencyID = createJobDependencyID(job, exID)
             command.setExecutionID(jobDependencyID)
-            jobResult = new JobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
         }
         return jobResult
@@ -209,7 +209,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract GenericJobInfo parseGenericJobInfo(String command)
 
-    abstract JobResult convertToArrayResult(BEJob arrayChildJob, JobResult parentJobsResult, int arrayIndex)
+    abstract BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex)
 
     abstract void updateJobStatus()
 

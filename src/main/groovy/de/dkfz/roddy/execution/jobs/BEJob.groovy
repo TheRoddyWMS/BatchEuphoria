@@ -13,11 +13,11 @@ import java.util.concurrent.atomic.AtomicLong
 
 /**
  * The job class represents a generic and abstract form of cluster job which can be run using a job manager.
- * When a job is executed with the JM, the used Command and a JobResult object will be created and added to this
+ * When a job is executed with the JM, the used Command and a BEJobResult object will be created and added to this
  * object.
  */
 @groovy.transform.CompileStatic
-class BEJob<J extends BEJob> {
+class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
 
@@ -91,7 +91,7 @@ class BEJob<J extends BEJob> {
     /**
      * Stores the result when the job was executed.
      */
-    de.dkfz.roddy.execution.jobs.JobResult runResult
+    JR runResult
 
     //////////////////////////////////////////////////////////////
     // Now come some job / command specific settings
@@ -139,7 +139,7 @@ class BEJob<J extends BEJob> {
     }
 
     //TODO Create a runArray method which returns several job results with proper array ids.
-    de.dkfz.roddy.execution.jobs.JobResult run() {
+    JR run() {
 
     }
 
@@ -154,7 +154,7 @@ class BEJob<J extends BEJob> {
         return BEFakeJobID.isFakeJobID(jobID)
     }
 
-    protected void postProcessArrayJob(JobResult runResult) {
+    protected void postProcessArrayJob(JR runResult) {
         throw new NotImplementedException()
         Map<String, Object> prmsAsStringMap = new LinkedHashMap<>()
         for (String k : parameters.keySet()) {
