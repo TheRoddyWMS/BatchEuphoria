@@ -26,11 +26,12 @@ class JobManagerCreationParameters {
     String userAccount
     String userEmail
     String userMask
+    boolean strictMode
 
     JobManagerCreationParameters() {
     }
 
-    JobManagerCreationParameters(boolean createDaemon, int updateInterval, String userIdForJobQueries, boolean trackUserJobsOnly, boolean trackOnlyStartedJobs, String jobIDIdentifier, String jobArrayIDIdentifier, String jobScratchIdentifier, String userAccount, String userEmail, String userMask, String userGroup) {
+    JobManagerCreationParameters(boolean createDaemon, int updateInterval, String userIdForJobQueries, boolean trackUserJobsOnly, boolean trackOnlyStartedJobs, String jobIDIdentifier, String jobArrayIDIdentifier, String jobScratchIdentifier, String userAccount, String userEmail, String userMask, String userGroup, boolean strictMode) {
         this.createDaemon = createDaemon
         this.updateInterval = updateInterval
         this.userIdForJobQueries = userIdForJobQueries
@@ -43,5 +44,6 @@ class JobManagerCreationParameters {
         this.userGroup = userGroup
         this.userEmail = userEmail
         this.userAccount = userAccount
+        this.strictMode = strictMode
     }
 }
