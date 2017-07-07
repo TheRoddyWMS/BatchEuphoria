@@ -228,12 +228,12 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public List<BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+    public Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
         return null;
     }
 
     @Override
-    public List<BEJob> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+    public Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
         return null;
     }
 }

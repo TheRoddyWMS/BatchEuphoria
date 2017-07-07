@@ -254,7 +254,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param forceUpdate
      * @return
      */
-    abstract List<BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
+    abstract Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
 
     /**
      * Will be used to gather extended information about a job like:
@@ -266,7 +266,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param forceUpdate
      * @return
      */
-    abstract List<BEJob> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate)
+    abstract Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate)
 
     /**
      * Try to abort a range of jobs

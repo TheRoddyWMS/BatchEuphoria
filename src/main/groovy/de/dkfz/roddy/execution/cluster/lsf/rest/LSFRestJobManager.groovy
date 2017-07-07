@@ -26,6 +26,10 @@ import org.apache.http.Header
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 /**
  * REST job manager for cluster systems.
  *
@@ -407,14 +411,15 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobDetailsAttributes.each { String key, value ->
             jobInfoProperties.put(key, jobDetails.getProperty(key).toString())
         }
+        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM dd hh:mm:ss yyyy")
 
         jobInfo.setUser(jobInfoProperties.get("user"))
-        jobInfo.setCpuTime(jobInfoProperties.get("cpuTime"))
+        jobInfo.setCpuTime(Duration.parse(jobInfoProperties.get("cpuTime")))
         jobInfo.setSystemTime(jobInfoProperties.get("getSystemTime"))
         jobInfo.setUserTime(jobInfoProperties.get("getUserTime"))
-        jobInfo.setStartTimeGMT(jobInfoProperties.get("startTime"))
-        jobInfo.setSubTimeGMT(jobInfoProperties.get("submitTime"))
-        jobInfo.setEndTimeGMT(jobInfoProperties.get("endTime"))
+        jobInfo.setStartTime(LocalDateTime.parse(jobInfoProperties.get("startTime"), lsfDatePattern))
+        jobInfo.setSubTime(LocalDateTime.parse(jobInfoProperties.get("submitTime"), lsfDatePattern))
+        jobInfo.setEndTime(LocalDateTime.parse(jobInfoProperties.get("endTime"), lsfDatePattern))
         jobInfo.setQueue(jobInfoProperties.get("queue"))
         jobInfo.setExHosts(jobInfoProperties.get("exHosts"))
         jobInfo.setSubHost(jobInfoProperties.get("fromHost"))
@@ -423,7 +428,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setDescription(jobInfoProperties.get("description"))
         jobInfo.setUserGroup(jobInfoProperties.get("userGroup"))
         jobInfo.setMaxMemory(jobInfoProperties.get("mem").toInteger())
-        jobInfo.setRunTime(jobInfoProperties.get("runTime"))
+        jobInfo.setRunTime(Duration.parse(jobInfoProperties.get("runTime")))
         jobInfo.setRunLimit(jobInfoProperties.get("runLimit"))
         jobInfo.setNumProcessors(jobInfoProperties.get("numProcessors"))
         jobInfo.setNthreads(jobInfoProperties.get("nthreads"))
@@ -435,8 +440,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setPendReason(jobInfoProperties.get("pendReason"))
         jobInfo.setExecCwd(jobInfoProperties.get("execCwd"))
         jobInfo.setPriority(jobInfoProperties.get("priority"))
-        jobInfo.setOutfile(jobInfoProperties.get("outfile"))
-        jobInfo.setInfile(jobInfoProperties.get("infile"))
+        jobInfo.setOutFile(jobInfoProperties.get("outFile"))
+        jobInfo.setInFile(jobInfoProperties.get("inFile"))
         jobInfo.setResReq(jobInfoProperties.get("resReq"))
         jobInfo.setExecHome(jobInfoProperties.get("execHome"))
         jobInfo.setExecUserName(jobInfoProperties.get("execUserName"))
@@ -491,7 +496,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setTimePendSuspState(timeSummary.getProperty("psuspTime").toString())
         jobInfo.setTimeUnknownState(timeSummary.getProperty("unknownTime").toString())
         jobInfo.setTimeSystemSuspState(timeSummary.getProperty("ssuspTime").toString())
-        jobInfo.setRunTime(timeSummary.getProperty("runTime").toString())
+        jobInfo.setRunTime(Duration.parse(timeSummary.getProperty("runTime").toString()))
         job.setJobInfo(jobInfo)
     }
 

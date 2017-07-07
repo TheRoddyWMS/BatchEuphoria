@@ -6,10 +6,13 @@
 
 package de.dkfz.roddy.execution.jobs
 
-
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
+
+import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * Created by michael on 06.02.15.
@@ -17,9 +20,33 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class GenericJobInfo {
 
+    ResourceSet askedResources
+    ResourceSet usedResources
     String jobName
     File tool
     String id
+
+    LocalDateTime subTime;
+    LocalDateTime startTime;
+    LocalDateTime endTime;
+
+    String exHosts; // execution hosts
+    String subHost; //submission host
+    String priority;
+
+    String outFile;
+    String inFile;
+    String errorFile
+
+    String user;
+    String userGroup;
+    String resReq; // resource requirements
+    Duration cpuTime; //Cumulative total CPU time in seconds of all processes in a job
+    Duration runTime; //Time in seconds that the job has been in the run state
+
+    String server
+    String umask
+
     Map<String, String> parameters
     List<String> parentJobIDs
     TimeUnit walltime
@@ -29,22 +56,12 @@ class GenericJobInfo {
     BufferUnit memoryBufferUnit
     String queue
     String otherSettings
-    String user;
-    String subHost; //submission host
-    String exHosts; // execution hosts
-    String runTime; //Time in seconds that the job has been in the run state
-    String subTimeGMT;
-    String startTimeGMT;
-    String endTimeGMT;
+
     String numProcessors;
-    String cpuTime; //Cumulative total CPU time in seconds of all processes in a job
     String userTime; //user time used
     String systemTime; //system time used
     String runLimit;
     String pendReason;
-    String priority;
-    String userGroup;
-    String resReq; // resource requirements
     String execHome;
     String execUserName;
     String pidStr;
@@ -58,8 +75,7 @@ class GenericJobInfo {
     String askedHostsStr;
     String cwd; //Current working directory
     String projectName;
-    String outfile;
-    String infile;
+
     String timeUserSuspState; //Suspended by its owner or the LSF administrator after being dispatched
     String timePendState; //Waiting in a queue for scheduling and dispatch
     String timePendSuspState; // Suspended by its owner or the LSF administrator while in PEND state
@@ -93,9 +109,9 @@ class GenericJobInfo {
                 ", subHost=" + subHost +
                 ", exHosts=" + exHosts +
                 ", runTime=" + runTime +
-                ", subTimeGMT=" + subTimeGMT +
-                ", startTimeGMT=" + startTimeGMT +
-                ", endTimeGMT=" + endTimeGMT +
+                ", subTime=" + subTime +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
                 ", numProcessors=" + numProcessors +
                 ", cpuTime=" + cpuTime +
                 ", userTime=" + userTime +
@@ -118,8 +134,8 @@ class GenericJobInfo {
                 ", askedHostsStr=" + askedHostsStr +
                 ", cwd=" + cwd +
                 ", projectName=" + projectName +
-                ", outfile=" + outfile +
-                ", infile=" + infile +
+                ", outFile=" + outFile +
+                ", inFile=" + inFile +
                 ", timeUserSuspState=" + timeUserSuspState +
                 ", timePendState=" + timePendState +
                 ", timePendSuspState=" + timePendSuspState +
