@@ -56,7 +56,7 @@ class GenericJobInfo {
     BufferUnit memoryBufferUnit
     String queue
     String otherSettings
-
+    JobState jobState
     String numProcessors;
     String userTime; //user time used
     String systemTime; //system time used
@@ -68,7 +68,7 @@ class GenericJobInfo {
     String pgidStr;
     String nthreads; //Number of currently active threads of a job
     String swap; //Total virtual maxMemory (swap) usage of all processes in a job
-    String exitStatus; // UNIX exit status of the job
+    String exitCode; // UNIX exit status of the job
     String jobGroup;
     String description;
     String execCwd; //Executed current working directory
@@ -127,7 +127,7 @@ class GenericJobInfo {
                 ", pgidStr=" + pgidStr +
                 ", nthreads=" + nthreads +
                 ", swap=" + swap +
-                ", exitStatus=" + exitStatus +
+                ", exitCode=" + exitCode +
                 ", jobGroup=" + jobGroup +
                 ", description=" + description +
                 ", execCwd=" + execCwd +

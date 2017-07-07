@@ -600,7 +600,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     Map<String, GenericJobInfo> queryJobState(List<String> resultLines) {
         Map<String, GenericJobInfo> queriedExtendedStates = [:]
 
-        Map<String, Map<String, String>> qstatReaderResult = PBSQstatReader.conv(resultLines.toString())
+        Map<String, Map<String, String>> qstatReaderResult = PBSQstatReader.conv(resultLines.join("\n"))
         qstatReaderResult.each { it ->
 
             Map<String, String> jobResult = it.getValue()
@@ -610,12 +610,16 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             int cores
             int nodes
             TimeUnit walltime = null
+            String additionalNodeFlag
+
             if (jobResult.get("Resource_List.mem"))
                 mem = new BufferValue(Integer.valueOf(jobResult.get("Resource_List.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("Resource_List.mem")[-2]))
             if (jobResult.get("Resource_List.nodect"))
-                cores = Integer.valueOf(jobResult.get("Resource_List.nodect"))
+                nodes = Integer.valueOf(jobResult.get("Resource_List.nodect"))
             if (jobResult.get("Resource_List.nodes"))
-                nodes = Integer.valueOf(jobResult.get("Resource_List.nodes").find(/(\d+)/))
+                cores = Integer.valueOf(jobResult.get("Resource_List.nodes").find("ppn=.*").find(/(\d+)/))
+            if (jobResult.get("Resource_List.nodes"))
+                additionalNodeFlag = jobResult.get("Resource_List.nodes").find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature }
             if (jobResult.get("Resource_List.walltime"))
                 walltime = new TimeUnit(jobResult.get("Resource_List.walltime"))
 
@@ -626,7 +630,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             if (jobResult.get("resources_used.walltime"))
                 usedWalltime = new TimeUnit(jobResult.get("resources_used.walltime"))
 
-            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), null))
+            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
 
             gj.setOutFile(jobResult.get("Output_Path"))
@@ -642,7 +646,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.setServer(jobResult.get("server"))
             gj.setUmask(jobResult.get("umask"))
 
-            DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
+            DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
             if (jobResult.get("qtime"))
                 gj.setSubTime(LocalDateTime.parse(jobResult.get("qtime"), pbsDatePattern))
             if (jobResult.get("start_time"))

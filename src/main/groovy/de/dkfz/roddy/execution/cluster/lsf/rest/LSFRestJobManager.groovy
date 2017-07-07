@@ -433,7 +433,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setNumProcessors(jobInfoProperties.get("numProcessors"))
         jobInfo.setNthreads(jobInfoProperties.get("nthreads"))
         jobInfo.setProjectName(jobInfoProperties.get("projectName"))
-        jobInfo.setExitStatus(jobInfoProperties.get("exitStatus"))
+        jobInfo.setExitCode(jobInfoProperties.get("exitCode"))
         jobInfo.setPidStr(jobInfoProperties.get("pidStr"))
         jobInfo.setPgidStr(jobInfoProperties.get("pgidStr"))
         jobInfo.setCwd(jobInfoProperties.get("cwd"))
