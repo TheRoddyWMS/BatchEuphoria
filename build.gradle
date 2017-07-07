@@ -51,7 +51,7 @@ task writePom {
                 licenses {
                     license {
                         name 'MIT License'
-                        url 'https://www.github.com/eilslabs/Roddy/LICENSE.txt'
+                        url 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/develop/LICENSE'
                         distribution 'repo'
                     }
                 }
