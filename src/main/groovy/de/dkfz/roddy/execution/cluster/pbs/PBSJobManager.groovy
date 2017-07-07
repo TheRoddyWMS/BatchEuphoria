@@ -592,74 +592,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         if (er != null && er.successful) {
-            queriedExtendedStates = queryJobState(er.resultLines)
+            queriedExtendedStates = PBSQstatReader.processQstatOutput(er.resultLines)
         }
         return queriedExtendedStates
     }
 
-    Map<String, GenericJobInfo> queryJobState(List<String> resultLines) {
-        Map<String, GenericJobInfo> queriedExtendedStates = [:]
-
-        Map<String, Map<String, String>> qstatReaderResult = PBSQstatReader.conv(resultLines.join("\n"))
-        qstatReaderResult.each { it ->
-
-            Map<String, String> jobResult = it.getValue()
-            GenericJobInfo gj = new GenericJobInfo(jobResult.get("Job_Name"), null, it.getKey(), null, jobResult.get("depend") ? jobResult.get("depend").find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
-
-            BufferValue mem = null
-            int cores
-            int nodes
-            TimeUnit walltime = null
-            String additionalNodeFlag
-
-            if (jobResult.get("Resource_List.mem"))
-                mem = new BufferValue(Integer.valueOf(jobResult.get("Resource_List.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("Resource_List.mem")[-2]))
-            if (jobResult.get("Resource_List.nodect"))
-                nodes = Integer.valueOf(jobResult.get("Resource_List.nodect"))
-            if (jobResult.get("Resource_List.nodes"))
-                cores = Integer.valueOf(jobResult.get("Resource_List.nodes").find("ppn=.*").find(/(\d+)/))
-            if (jobResult.get("Resource_List.nodes"))
-                additionalNodeFlag = jobResult.get("Resource_List.nodes").find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature }
-            if (jobResult.get("Resource_List.walltime"))
-                walltime = new TimeUnit(jobResult.get("Resource_List.walltime"))
-
-            BufferValue usedMem = null
-            TimeUnit usedWalltime = null
-            if (jobResult.get("resources_used.mem"))
-                usedMem = new BufferValue(Integer.valueOf(jobResult.get("resources_used.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("resources_used.mem")[-2]))
-            if (jobResult.get("resources_used.walltime"))
-                usedWalltime = new TimeUnit(jobResult.get("resources_used.walltime"))
-
-            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
-            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
-
-            gj.setOutFile(jobResult.get("Output_Path"))
-            gj.setErrorFile(jobResult.get("Error_Path"))
-            gj.setUser(jobResult.get("euser"))
-            gj.setExHosts(jobResult.get("exec_host"))
-            gj.setSubHost(jobResult.get("submit_host"))
-            gj.setPriority(jobResult.get("Priority"))
-            gj.setUserGroup(jobResult.get("egroup"))
-            gj.setResReq(jobResult.get("submit_args"))
-            gj.setRunTime(jobResult.get("total_runtime") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult.get("total_runtime"))), 0) : null)
-            gj.setCpuTime(jobResult.get("resources_used.cput") ? Duration.parse("PT" + jobResult.get("resources_used.cput").substring(0, 2) + "H" + jobResult.get("resources_used.cput").substring(3, 5) + "M" + jobResult.get("resources_used.cput").substring(6) + "S") : null)
-            gj.setServer(jobResult.get("server"))
-            gj.setUmask(jobResult.get("umask"))
-            gj.setJobState(JobState.parseJobState(jobResult.get("job_state")))
-            gj.setExitCode(jobResult.get("exit_status"))
-
-            DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
-            if (jobResult.get("qtime"))
-                gj.setSubTime(LocalDateTime.parse(jobResult.get("qtime"), pbsDatePattern))
-            if (jobResult.get("start_time"))
-                gj.setStartTime(LocalDateTime.parse(jobResult.get("start_time"), pbsDatePattern))
-            if (jobResult.get("comp_time"))
-                gj.setEndTime(LocalDateTime.parse(jobResult.get("comp_time"), pbsDatePattern))
-
-            queriedExtendedStates.put(it.getKey(), gj)
-        }
-        return queriedExtendedStates
-    }
 
     @Override
     void queryJobAbortion(List<BEJob> executedJobs) {
