@@ -374,17 +374,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                 BEJob job = jobList.find { it.getJobID().equalsIgnoreCase(element.getProperty("jobId").toString()) }
 
                 setJobInfoForJobDetails(job, element)
-
-                if (element.getProperty("jobStatus").toString() == "PENDING")
-                    job.setJobState(JobState.QUEUED)
-                if (element.getProperty("jobStatus").toString() == "RUNNING")
-                    job.setJobState(JobState.RUNNING)
-                if (element.getProperty("jobStatus").toString() == "SUSPENDED")
-                    job.setJobState(JobState.ABORTED)
-                if (element.getProperty("jobStatus").toString() == "DONE")
-                    job.setJobState(JobState.OK)
-                if (element.getProperty("jobStatus").toString() == "EXIT")
-                    job.setJobState(JobState.OK)
+                job.setJobState(parseJobState(element.getProperty("jobStatus").toString()))
             }
 
         } else {
@@ -498,6 +488,23 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setTimeSystemSuspState(timeSummary.getProperty("ssuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ssuspTime").toString())), 0) : null)
         jobInfo.setRunTime(timeSummary.getProperty("runTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("runTime").toString())), 0) : null)
         job.setJobInfo(jobInfo)
+    }
+
+
+    private static JobState parseJobState(String stateString) {
+        JobState js = JobState.UNKNOWN
+        if (stateString == "PENDING")
+            js = JobState.QUEUED
+        if (stateString == "RUNNING")
+            js = JobState.RUNNING
+        if (stateString == "SUSPENDED")
+            js = JobState.SUSPENDED
+        if (stateString == "DONE")
+            js = JobState.COMPLETED_SUCCESSFUL
+        if (stateString == "EXIT")
+            js = JobState.FAILED
+
+        return js
     }
 
 

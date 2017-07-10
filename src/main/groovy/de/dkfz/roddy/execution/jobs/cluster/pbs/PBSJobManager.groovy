@@ -47,7 +47,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     public static final String PBS_JOBSTATE_RUNNING = "R"
     public static final String PBS_JOBSTATE_HOLD = "H"
+    public static final String PBS_JOBSTATE_SUSPENDED = "S"
     public static final String PBS_JOBSTATE_QUEUED = "Q"
+    public static final String PBS_JOBSTATE_TRANSFERED = "T"
+    public static final String PBS_JOBSTATE_WAITING = "W"
     public static final String PBS_JOBSTATE_COMPLETED_UNKNOWN = "C"
     public static final String PBS_JOBSTATE_EXITING = "E"
     public static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
@@ -376,17 +379,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     String[] idSplit = split[ID].split("[.]")
                     //(idSplit.length <= 1) continue;
                     String id = idSplit[0]
-                    JobState js = JobState.UNKNOWN
-                    if (split[JOBSTATE] == getStringForRunningJob())
-                        js = JobState.RUNNING
-                    if (split[JOBSTATE] == getStringForJobOnHold())
-                        js = JobState.HOLD
-                    if (split[JOBSTATE] == getStringForQueuedJob())
-                        js = JobState.QUEUED
-                    if (split[JOBSTATE] == getStringForCompletedJob()) {
-                        js = JobState.COMPLETED_UNKNOWN
-                    }
-
+                    JobState js = parseJobState(split[JOBSTATE])
                     allStatesTemp.put(id, js)
                     if (logger.isVerbosityHigh())
                         System.out.println("   Extracted jobState: " + js.toString())
@@ -404,19 +397,20 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     JobState js = allStatesTemp.get(id)
                     BEJob job = jobStatusListeners.get(id)
 
+                    /*
                     if (js == JobState.UNKNOWN_SUBMITTED) {
                         // If the jobState is unknown and the job is not running anymore it is counted as failed.
                         job.setJobState(JobState.FAILED)
                         removejobs.add(job)
                         continue
-                    }
+                    }*/
 
                     if (JobState._isPlannedOrRunning(js)) {
                         job.setJobState(js)
                         continue
                     }
 
-                    if (job.getJobState() == JobState.OK || job.getJobState() == JobState.FAILED)
+                    if (job.getJobState() == JobState.FAILED)
                         continue
                     //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
 
@@ -466,6 +460,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     String getStringForJobOnHold() {
         return PBS_JOBSTATE_HOLD
+    }
+
+    String getStringForJobSuspended() {
+        return PBS_JOBSTATE_SUSPENDED
     }
 
     @Override
@@ -779,7 +777,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.setCpuTime(jobResult.get("resources_used.cput") ? Duration.parse("PT" + jobResult.get("resources_used.cput").substring(0, 2) + "H" + jobResult.get("resources_used.cput").substring(3, 5) + "M" + jobResult.get("resources_used.cput").substring(6) + "S") : null)
             gj.setServer(jobResult.get("server"))
             gj.setUmask(jobResult.get("umask"))
-            gj.setJobState(JobState.parseJobState(jobResult.get("job_state")))
+            gj.setJobState(this.parseJobState(jobResult.get("job_state")))
             gj.setExitCode(jobResult.get("exit_status"))
             gj.setAccount(jobResult.get("Account_Name"))
             gj.setStartCount(jobResult.get("start_count") ? Integer.valueOf(jobResult.get("start_count")) : null)
@@ -798,6 +796,23 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             queriedExtendedStates.put(it.getKey(), gj)
         }
         return queriedExtendedStates
+    }
+
+    static JobState parseJobState(String stateString) {
+        JobState js = JobState.UNKNOWN
+        if (stateString == PBS_JOBSTATE_RUNNING)
+            js = JobState.RUNNING
+        if (stateString == PBS_JOBSTATE_HOLD)
+            js = JobState.HOLD
+        if (stateString == PBS_JOBSTATE_SUSPENDED)
+            js = JobState.SUSPENDED
+        if (stateString == PBS_JOBSTATE_QUEUED || stateString == PBS_JOBSTATE_TRANSFERED || stateString == PBS_JOBSTATE_WAITING)
+            js = JobState.QUEUED
+        if (stateString == PBS_JOBSTATE_COMPLETED_UNKNOWN || stateString == PBS_JOBSTATE_EXITING) {
+            js = JobState.COMPLETED_UNKNOWN
+        }
+
+        return js;
     }
 
 }
