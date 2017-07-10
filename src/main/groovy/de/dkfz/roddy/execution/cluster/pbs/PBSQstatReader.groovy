@@ -109,7 +109,7 @@ class PBSQstatReader {
             gj.setCpuTime(jobResult.get("resources_used.cput") ? Duration.parse("PT" + jobResult.get("resources_used.cput").substring(0, 2) + "H" + jobResult.get("resources_used.cput").substring(3, 5) + "M" + jobResult.get("resources_used.cput").substring(6) + "S") : null)
             gj.setServer(jobResult.get("server"))
             gj.setUmask(jobResult.get("umask"))
-            gj.setJobState(JobState.parseJobState(jobResult.get("job_state")))
+            gj.setJobState(PBSJobManager.parseJobState(jobResult.get("job_state")))
             gj.setExitCode(jobResult.get("exit_status"))
 
             DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
