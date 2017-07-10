@@ -196,7 +196,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
             // Currently not active
             String enforceSubmissionNodes = ""
-            // configuration.getConfigurationValues().getString(CVALUE_ENFORCE_SUBMISSION_TO_NODES, null)
             if (!enforceSubmissionNodes) {
                 sb << " -l nodes=" << nodes << ":ppn=" << cores
                 if (resourceSet.isAdditionalNodeFlagSet()) {
@@ -565,7 +564,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    //Map<BEJob, GenericJobInfo>
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
 
         Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
@@ -575,7 +573,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    //Map<String, GenericJobInfo>
     Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
         Map<String, GenericJobInfo> queriedExtendedStates = [:]
         String qStatCommand = PBS_COMMAND_QUERY_STATES_FULL
