@@ -25,6 +25,7 @@ import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 
 import static de.dkfz.roddy.StringConstants.*
@@ -342,7 +343,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             cacheLock.unlock()
         }
 
-        if (er.successful) {
+        if (!er.successful) {
+            if(strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
+                throw new ExecutionException("The execution of ${queryCommand} failed.", null)
+        } else {
             if (resultLines.size() > 2) {
 
                 for (String line : resultLines) {
@@ -532,7 +536,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             executedJobs.each { BEJob job -> job.jobState = JobState.ABORTED }
         } else {
             logger.always("Need to create a proper fail message for abortion.")
-            throw new RuntimeException("Abortion of job states failed.")
+            throw new ExecutionException("Abortion of job states failed.", null)
         }
     }
 
@@ -605,6 +609,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         ExecutionResult executionResult = executionService.execute(cmd)
         if (executionResult.successful)
             return executionResult.resultLines.toArray(new String[0])
+        else if(strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
+            throw new ExecutionException("The execution of ${queryCommand} failed.", null)
+
         return new String[0]
     }
 
