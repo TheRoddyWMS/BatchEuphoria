@@ -128,7 +128,7 @@ class BEIntegrationTestStarter {
             // The job abortion might be a valid command but the cluster system might still try to keep the jobs.
             // We cannot handle problems like a stuck cluster, so let's stick to the basic query and see, if the job
             // ends within some seconds.
-            ensureProperJobStates(maxSleep, jobList, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
+            ensureProperJobStates(maxSleep, jobList, [JobState.ABORTED, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_SUCCESSFUL], jobManager)
 
             //update time statistics for each job status for given job. At the moment only for LSF
             def jm = jobManager as LSFRestJobManager
@@ -167,7 +167,7 @@ class BEIntegrationTestStarter {
 
             log.always("Abort jobs.")
             jobManager.queryJobAbortion(testJobs)
-            ensureProperJobStates(maxSleep, testJobs, [JobState.ABORTED, JobState.OK, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_UNKNOWN], jobManager)
+            ensureProperJobStates(maxSleep, testJobs, [JobState.ABORTED, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_SUCCESSFUL], jobManager)
 
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.

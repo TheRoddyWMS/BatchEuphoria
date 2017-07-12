@@ -389,21 +389,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param job
      */
     String getJobStateInfoLine(BEJob job) {
-        String millis = "" + System.currentTimeMillis()
-        millis = millis.substring(0, millis.length() - 3)
-        String code = "255"
-        if (job.getJobState() == JobState.UNSTARTED)
-            code = "N"
-        else if (job.getJobState() == JobState.ABORTED)
-            code = "A"
-        else if (job.getJobState() == JobState.OK)
-            code = "C"
-        else if (job.getJobState() == JobState.FAILED)
-            code = "E"
-        if (null != job.getJobID())
-            return String.format("%s:%s:%s", job.getJobID(), code, millis)
-
-        logger.postSometimesInfo("Did not store info for job " + job.getJobName() + ", job id was null.")
         return null
     }
 

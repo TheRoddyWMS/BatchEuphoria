@@ -289,26 +289,6 @@ class BEJob<J extends BEJob> {
     }
 
     JobState getJobState() {
-        if (jobType == JobType.ARRAY_HEAD) {
-            int runningJobs = 0
-            int failedJobs = 0
-            int finishedJobs = 0
-            int unknownJobs = 0
-            for (BEJob job : arrayChildJobs) {
-                if (job.getJobState().isPlannedOrRunning())
-                    runningJobs++
-                else if (job.getJobState() == JobState.FAILED)
-                    failedJobs++
-                else if (job.getJobState() == JobState.OK)
-                    finishedJobs++
-                else if (job.getJobState() == JobState.UNKNOWN)
-                    unknownJobs++
-            }
-            if (failedJobs > 0) return JobState.FAILED
-            if (unknownJobs > 0) return JobState.UNKNOWN
-            if (runningJobs > 0) return JobState.RUNNING
-            return JobState.OK
-        }
         return currentJobState != null ? currentJobState : JobState.UNKNOWN
     }
 
