@@ -6,7 +6,9 @@
 
 package de.dkfz.roddy.execution.cluster.pbs
 
+import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
 import groovy.transform.CompileStatic
 import org.junit.Test
 
@@ -399,10 +401,17 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
 
     @Test
     void testReadQstatOutput() throws Exception {
+        TestExecutionService executionService = new TestExecutionService("", "")
+        PBSJobManager jm = new PBSJobManager(executionService, new JobManagerCreationParametersBuilder()
+                .setCreateDaemon(false)
+                .setTrackUserJobsOnly(true)
+                .build())
 
-        Map<String, Map<String,String>> qstatReaderResultOutput1 = PBSQstatReader.readQstatOutput(output1)
+        Method method = jm.getClass().getDeclaredMethod("readQstatOutput", String);
+        method.setAccessible(true);
 
-        Map<String, Map<String, String>> qstatReaderResultOutput2 = PBSQstatReader.readQstatOutput(output2)
+        Map<String, Map<String, String>> qstatReaderResultOutput1 = (Map<String, Map<String, String>>) method.invoke(jm, output1)
+        Map<String, Map<String, String>> qstatReaderResultOutput2 = (Map<String, Map<String, String>>) method.invoke(jm, output2)
 
         assert qstatReaderResultOutput1.size() == 4
         assert qstatReaderResultOutput2.size() == 1
@@ -410,10 +419,17 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
 
     @Test
     void testProcessQstatOutput() throws Exception {
+        TestExecutionService executionService = new TestExecutionService("", "")
+        PBSJobManager jm = new PBSJobManager(executionService, new JobManagerCreationParametersBuilder()
+                .setCreateDaemon(false)
+                .setTrackUserJobsOnly(true)
+                .build())
 
-        Map<String, GenericJobInfo> genericJobInfoOutput1 = PBSQstatReader.processQstatOutput([output1])
+        Method method = jm.getClass().getDeclaredMethod("processQstatOutput", List);
+        method.setAccessible(true);
 
-        Map<String, GenericJobInfo> genericJobInfoOutput2 = PBSQstatReader.processQstatOutput([output2])
+        Map<String, GenericJobInfo> genericJobInfoOutput1 = (Map<String, GenericJobInfo>) method.invoke(jm, [output1])
+        Map<String, GenericJobInfo> genericJobInfoOutput2 = (Map<String, GenericJobInfo>) method.invoke(jm, [output2])
 
         /*
         // print GenericJobInfo

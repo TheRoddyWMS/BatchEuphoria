@@ -26,12 +26,13 @@ class GenericJobInfo {
     File tool
     String id
 
-    LocalDateTime subTime;
+    LocalDateTime submitTime;
     LocalDateTime startTime;
     LocalDateTime endTime;
+    LocalDateTime eligibleTime; // when all conditions like job dependencies full filled, it is qu
 
-    String exHosts; // execution hosts
-    String subHost; //submission host
+    String executionHosts;
+    String submissionHost;
     String priority;
 
     String outFile;
@@ -40,10 +41,10 @@ class GenericJobInfo {
 
     String user;
     String userGroup;
-    String resReq; // resource requirements
-    Duration cpuTime; //Cumulative total CPU time in seconds of all processes in a job
-    Duration runTime; //Time in seconds that the job has been in the run state
+    String resourceReq; // resource requirements
+    Integer startCount
 
+    String account
     String server
     String umask
 
@@ -76,12 +77,14 @@ class GenericJobInfo {
     String cwd; //Current working directory
     String projectName;
 
-    String timeUserSuspState; //Suspended by its owner or the LSF administrator after being dispatched
-    String timePendState; //Waiting in a queue for scheduling and dispatch
-    String timePendSuspState; // Suspended by its owner or the LSF administrator while in PEND state
-    String timeSystemSuspState; //Suspended by the LSF system after being dispatched
-    String timeUnknownState;
-    String timeOfCalculation;
+    Duration cpuTime; //Cumulative total CPU time in seconds of all processes in a job
+    Duration runTime; //Time in seconds that the job has been in the run state
+    Duration timeUserSuspState; //Suspended by its owner or the LSF administrator after being dispatched
+    Duration timePendState; //Waiting in a queue for scheduling and dispatch
+    Duration timePendSuspState; // Suspended by its owner or the LSF administrator while in PEND state
+    Duration timeSystemSuspState; //Suspended by the LSF system after being dispatched
+    Duration timeUnknownState;
+    Duration timeOfCalculation;
 
 
     GenericJobInfo(String jobName, File tool, String id, Map<String, String> parameters, List<String> parentJobIDs) {
@@ -106,10 +109,10 @@ class GenericJobInfo {
                 ", queue=" + queue +
                 ", otherSettings=" + otherSettings +
                 ", user=" + user +
-                ", subHost=" + subHost +
-                ", exHosts=" + exHosts +
+                ", submissionHost=" + submissionHost +
+                ", executionHosts=" + executionHosts +
                 ", runTime=" + runTime +
-                ", subTime=" + subTime +
+                ", submitTime=" + submitTime +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 ", numProcessors=" + numProcessors +
@@ -120,7 +123,7 @@ class GenericJobInfo {
                 ", pendReason=" + pendReason +
                 ", priority=" + priority +
                 ", userGroup=" + userGroup +
-                ", resReq=" + resReq +
+                ", resourceReq=" + resourceReq +
                 ", execHome=" + execHome +
                 ", execUserName=" + execUserName +
                 ", pidStr=" + pidStr +
