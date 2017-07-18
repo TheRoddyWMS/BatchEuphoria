@@ -6,10 +6,13 @@
 
 package de.dkfz.roddy.execution.jobs
 
-
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
+
+import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * Created by michael on 06.02.15.
@@ -17,9 +20,34 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class GenericJobInfo {
 
+    ResourceSet askedResources
+    ResourceSet usedResources
     String jobName
     File tool
     String id
+
+    LocalDateTime submitTime;
+    LocalDateTime startTime;
+    LocalDateTime endTime;
+    LocalDateTime eligibleTime; // when all conditions like job dependencies full filled, it is qu
+
+    String executionHosts;
+    String submissionHost;
+    String priority;
+
+    String outFile;
+    String inFile;
+    String errorFile
+
+    String user;
+    String userGroup;
+    String resourceReq; // resource requirements
+    Integer startCount
+
+    String account
+    String server
+    String umask
+
     Map<String, String> parameters
     List<String> parentJobIDs
     TimeUnit walltime
@@ -29,43 +57,34 @@ class GenericJobInfo {
     BufferUnit memoryBufferUnit
     String queue
     String otherSettings
-    String user;
-    String subHost; //submission host
-    String exHosts; // execution hosts
-    String runTime; //Time in seconds that the job has been in the run state
-    String subTimeGMT;
-    String startTimeGMT;
-    String endTimeGMT;
+    JobState jobState
     String numProcessors;
-    String cpuTime; //Cumulative total CPU time in seconds of all processes in a job
     String userTime; //user time used
     String systemTime; //system time used
     String runLimit;
     String pendReason;
-    String priority;
-    String userGroup;
-    String resReq; // resource requirements
     String execHome;
     String execUserName;
     String pidStr;
     String pgidStr;
     String nthreads; //Number of currently active threads of a job
     String swap; //Total virtual maxMemory (swap) usage of all processes in a job
-    String exitStatus; // UNIX exit status of the job
+    String exitCode; // UNIX exit status of the job
     String jobGroup;
     String description;
     String execCwd; //Executed current working directory
     String askedHostsStr;
     String cwd; //Current working directory
     String projectName;
-    String outfile;
-    String infile;
-    String timeUserSuspState; //Suspended by its owner or the LSF administrator after being dispatched
-    String timePendState; //Waiting in a queue for scheduling and dispatch
-    String timePendSuspState; // Suspended by its owner or the LSF administrator while in PEND state
-    String timeSystemSuspState; //Suspended by the LSF system after being dispatched
-    String timeUnknownState;
-    String timeOfCalculation;
+
+    Duration cpuTime; //Cumulative total CPU time in seconds of all processes in a job
+    Duration runTime; //Time in seconds that the job has been in the run state
+    Duration timeUserSuspState; //Suspended by its owner or the LSF administrator after being dispatched
+    Duration timePendState; //Waiting in a queue for scheduling and dispatch
+    Duration timePendSuspState; // Suspended by its owner or the LSF administrator while in PEND state
+    Duration timeSystemSuspState; //Suspended by the LSF system after being dispatched
+    Duration timeUnknownState;
+    Duration timeOfCalculation;
 
 
     GenericJobInfo(String jobName, File tool, String id, Map<String, String> parameters, List<String> parentJobIDs) {
@@ -90,12 +109,12 @@ class GenericJobInfo {
                 ", queue=" + queue +
                 ", otherSettings=" + otherSettings +
                 ", user=" + user +
-                ", subHost=" + subHost +
-                ", exHosts=" + exHosts +
+                ", submissionHost=" + submissionHost +
+                ", executionHosts=" + executionHosts +
                 ", runTime=" + runTime +
-                ", subTimeGMT=" + subTimeGMT +
-                ", startTimeGMT=" + startTimeGMT +
-                ", endTimeGMT=" + endTimeGMT +
+                ", submitTime=" + submitTime +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
                 ", numProcessors=" + numProcessors +
                 ", cpuTime=" + cpuTime +
                 ", userTime=" + userTime +
@@ -104,22 +123,22 @@ class GenericJobInfo {
                 ", pendReason=" + pendReason +
                 ", priority=" + priority +
                 ", userGroup=" + userGroup +
-                ", resReq=" + resReq +
+                ", resourceReq=" + resourceReq +
                 ", execHome=" + execHome +
                 ", execUserName=" + execUserName +
                 ", pidStr=" + pidStr +
                 ", pgidStr=" + pgidStr +
                 ", nthreads=" + nthreads +
                 ", swap=" + swap +
-                ", exitStatus=" + exitStatus +
+                ", exitCode=" + exitCode +
                 ", jobGroup=" + jobGroup +
                 ", description=" + description +
                 ", execCwd=" + execCwd +
                 ", askedHostsStr=" + askedHostsStr +
                 ", cwd=" + cwd +
                 ", projectName=" + projectName +
-                ", outfile=" + outfile +
-                ", infile=" + infile +
+                ", outFile=" + outFile +
+                ", inFile=" + inFile +
                 ", timeUserSuspState=" + timeUserSuspState +
                 ", timePendState=" + timePendState +
                 ", timePendSuspState=" + timePendSuspState +

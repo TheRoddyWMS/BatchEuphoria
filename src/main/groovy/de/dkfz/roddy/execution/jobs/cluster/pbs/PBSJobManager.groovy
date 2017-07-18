@@ -8,7 +8,6 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
@@ -20,13 +19,19 @@ import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
+import de.dkfz.roddy.tools.TimeUnit
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
-
 import java.util.concurrent.ExecutionException
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Map.Entry
 import java.util.concurrent.locks.ReentrantLock
+import java.util.regex.Matcher
 
 import static de.dkfz.roddy.StringConstants.*
 
@@ -46,11 +51,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     public static final String PBS_JOBSTATE_COMPLETED_UNKNOWN = "C"
     public static final String PBS_JOBSTATE_EXITING = "E"
     public static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
+    public static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -f"
     public static final String PBS_COMMAND_DELETE_JOBS = "qdel"
     public static final String PBS_LOGFILE_WILDCARD = "*.o"
     public static final String PBS_JOBID = '${PBS_JOBID}'
     public static final String PBS_ARRAYID = '${PBS_ARRAYID}'
     public static final String PBS_SCRATCH = '${PBS_SCRATCH_DIR}/${PBS_JOBID}'
+    static public final String WITH_DELIMITER = '(?=(%1$s))'
 
     private Map<String, Boolean> mapOfInitialQueries = new LinkedHashMap<>()
 
@@ -189,7 +196,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
             int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
             // Currently not active
-            String enforceSubmissionNodes = "" // configuration.getConfigurationValues().getString(CVALUE_ENFORCE_SUBMISSION_TO_NODES, null)
+            String enforceSubmissionNodes = ""
             if (!enforceSubmissionNodes) {
                 sb << " -l nodes=" << nodes << ":ppn=" << cores
                 if (resourceSet.isAdditionalNodeFlagSet()) {
@@ -410,7 +417,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     }
 
                     if (job.getJobState() == JobState.OK || job.getJobState() == JobState.FAILED)
-                        continue //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
+                        continue
+                    //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
 
                     if (js == null || js == JobState.UNKNOWN) {
                         //Read from jobstate logfile.
@@ -525,9 +533,69 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-        return null
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+
+        if (allStates == null || forceUpdate)
+            updateJobStatus(forceUpdate)
+
+        Map<String, JobState> queriedStates = jobIds.collectEntries { String jobId -> [jobId, JobState.UNKNOWN] }
+
+        for (String jobId in jobIds) {
+            JobState state
+            cacheLock.lock()
+            state = allStates[jobId]
+            cacheLock.unlock()
+            if (state) queriedStates[jobId] = state
+        }
+
+        return queriedStates
     }
+
+    @Override
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+
+        if (allStates == null || forceUpdate)
+            updateJobStatus(forceUpdate)
+
+        Map<String, JobState> queriedStates = [:]
+        cacheLock.lock()
+        queriedStates.putAll(allStates)
+        cacheLock.unlock()
+
+        return queriedStates
+    }
+
+    @Override
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+
+        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
+            it.getJobID()
+        }, false)
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
+    }
+
+    @Override
+    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+        String qStatCommand = PBS_COMMAND_QUERY_STATES_FULL
+        if (isTrackingOfUserJobsEnabled)
+            qStatCommand += " -u $userIDForQueries "
+
+        qStatCommand += jobIds.collect { it }.join(" ")
+
+        ExecutionResult er
+        try {
+            er = executionService.execute(qStatCommand.toString())
+        } catch (Exception exp) {
+            logger.severe("Could not execute qStat command", exp)
+        }
+
+        if (er != null && er.successful) {
+            queriedExtendedStates = this.processQstatOutput(er.resultLines)
+        }
+        return queriedExtendedStates
+    }
+
 
     @Override
     void queryJobAbortion(List<BEJob> executedJobs) {
@@ -624,4 +692,112 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     String getSubmissionCommand() {
         return PBSCommand.QSUB
     }
+
+    /**
+     * Reads qstat output
+     * @param qstatOutput
+     * @return output of qstat in a map with jobid as key
+     */
+    private Map<String, Map<String, String>> readQstatOutput(String qstatOutput) {
+        return qstatOutput.split(String.format(WITH_DELIMITER, "\n\nJob Id: ")).collectEntries {
+            Matcher matcher = it =~ /^\s*Job Id: (?<jobId>\d+)\..*\n/
+            if (matcher) {
+                [
+                        (matcher.group("jobId")):
+                                it
+                ]
+            } else {
+                [:]
+            }
+        }.collectEntries { Object jobId, Object value ->
+            // join multi-line values
+            value = ((String) value).replaceAll("\n\t", "")
+            [(jobId): value]
+        }.collectEntries { Object jobId, Object value ->
+            Map<String, String> p = ((String) value).readLines().collectEntries { String line ->
+                if (line.startsWith("    ") && line.contains(" = ")) {
+                    String[] parts = line.split(" = ")
+                    [parts.head().replaceAll(/^ {4}/, ""), parts.tail().join(' ')]
+                } else {
+                    [:]
+                }
+            }
+            [(jobId): p]
+        } as Map<String, Map<String, String>>
+    }
+
+    /**
+     * Reads the qstat output and creates GenericJobInfo objects
+     * @param resultLines - Input of ExecutionResult object
+     * @return map with jobid as key
+     */
+    private Map<String, GenericJobInfo> processQstatOutput(List<String> resultLines) {
+        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+
+        Map<String, Map<String, String>> qstatReaderResult = this.readQstatOutput(resultLines.join("\n"))
+        qstatReaderResult.each { it ->
+
+            Map<String, String> jobResult = it.getValue()
+            GenericJobInfo gj = new GenericJobInfo(jobResult.get("Job_Name"), null, it.getKey(), null, jobResult.get("depend") ? jobResult.get("depend").find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
+
+            BufferValue mem = null
+            int cores
+            int nodes
+            TimeUnit walltime = null
+            String additionalNodeFlag
+
+            if (jobResult.get("Resource_List.mem"))
+                mem = new BufferValue(Integer.valueOf(jobResult.get("Resource_List.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("Resource_List.mem")[-2]))
+            if (jobResult.get("Resource_List.nodect"))
+                nodes = Integer.valueOf(jobResult.get("Resource_List.nodect"))
+            if (jobResult.get("Resource_List.nodes"))
+                cores = Integer.valueOf(jobResult.get("Resource_List.nodes").find("ppn=.*").find(/(\d+)/))
+            if (jobResult.get("Resource_List.nodes"))
+                additionalNodeFlag = jobResult.get("Resource_List.nodes").find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature }
+            if (jobResult.get("Resource_List.walltime"))
+                walltime = new TimeUnit(jobResult.get("Resource_List.walltime"))
+
+            BufferValue usedMem = null
+            TimeUnit usedWalltime = null
+            if (jobResult.get("resources_used.mem"))
+                usedMem = new BufferValue(Integer.valueOf(jobResult.get("resources_used.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("resources_used.mem")[-2]))
+            if (jobResult.get("resources_used.walltime"))
+                usedWalltime = new TimeUnit(jobResult.get("resources_used.walltime"))
+
+            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
+            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
+
+            gj.setOutFile(jobResult.get("Output_Path"))
+            gj.setErrorFile(jobResult.get("Error_Path"))
+            gj.setUser(jobResult.get("euser"))
+            gj.setExecutionHosts(jobResult.get("exec_host"))
+            gj.setSubmissionHost(jobResult.get("submit_host"))
+            gj.setPriority(jobResult.get("Priority"))
+            gj.setUserGroup(jobResult.get("egroup"))
+            gj.setResourceReq(jobResult.get("submit_args"))
+            gj.setRunTime(jobResult.get("total_runtime") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult.get("total_runtime"))), 0) : null)
+            gj.setCpuTime(jobResult.get("resources_used.cput") ? Duration.parse("PT" + jobResult.get("resources_used.cput").substring(0, 2) + "H" + jobResult.get("resources_used.cput").substring(3, 5) + "M" + jobResult.get("resources_used.cput").substring(6) + "S") : null)
+            gj.setServer(jobResult.get("server"))
+            gj.setUmask(jobResult.get("umask"))
+            gj.setJobState(JobState.parseJobState(jobResult.get("job_state")))
+            gj.setExitCode(jobResult.get("exit_status"))
+            gj.setAccount(jobResult.get("Account_Name"))
+            gj.setStartCount(jobResult.get("start_count") ? Integer.valueOf(jobResult.get("start_count")) : null)
+
+
+            DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
+            if (jobResult.get("qtime"))
+                gj.setSubmitTime(LocalDateTime.parse(jobResult.get("qtime"), pbsDatePattern))
+            if (jobResult.get("start_time"))
+                gj.setStartTime(LocalDateTime.parse(jobResult.get("start_time"), pbsDatePattern))
+            if (jobResult.get("comp_time"))
+                gj.setEndTime(LocalDateTime.parse(jobResult.get("comp_time"), pbsDatePattern))
+            if (jobResult.get("etime"))
+                gj.setEligibleTime(LocalDateTime.parse(jobResult.get("etime"), pbsDatePattern))
+
+            queriedExtendedStates.put(it.getKey(), gj)
+        }
+        return queriedExtendedStates
+    }
+
 }
