@@ -27,6 +27,7 @@ class JobManagerCreationParametersBuilder {
     String userAccount = null
     String userEmail = null
     String userMask = null
+    boolean strictMode = false
 
     JobManagerCreationParametersBuilder setCreateDaemon(boolean createDaemon) {
         this.createDaemon = createDaemon
@@ -87,8 +88,7 @@ class JobManagerCreationParametersBuilder {
         this.userMask = userMask
         return this
     }
-
     JobManagerCreationParameters build() {
-        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier, userAccount, userEmail, userMask, userGroup)
+        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier, userAccount, userEmail, userMask, userGroup, strictMode)
     }
 }

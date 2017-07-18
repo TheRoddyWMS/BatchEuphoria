@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.cluster.pbs
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import groovy.transform.CompileStatic
 import org.junit.Test
 
