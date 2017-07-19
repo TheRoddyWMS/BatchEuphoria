@@ -15,6 +15,9 @@ public enum JobState implements Serializable {
     HOLD,
     QUEUED,
     UNSTARTED,
+    /**
+     * It is used only in Roddy.
+     */
     STARTED,
     /**
      * BEJob is still running
@@ -41,6 +44,7 @@ public enum JobState implements Serializable {
      */
     UNKNOWN,
     /**
+     * It is used only in Roddy.
      * Dummy jobs were not executed but can contain runtime information for future runs.
      */
     DUMMY;
