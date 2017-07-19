@@ -185,4 +185,9 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
         return null
     }
+
+    @Override
+    protected JobState parseJobState(String stateString) {
+        return null
+    }
 }

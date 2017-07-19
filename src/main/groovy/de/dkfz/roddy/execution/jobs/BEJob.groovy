@@ -121,7 +121,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobDependencyID> dependencyIDs, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
-        this.currentJobState = JobState.UNKNOWN
+        this.currentJobState = JobState.UNSTARTED
         this.tool = tool
         this.toolScript = toolScript
         if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")

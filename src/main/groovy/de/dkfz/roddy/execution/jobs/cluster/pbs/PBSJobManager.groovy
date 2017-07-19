@@ -32,7 +32,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Map.Entry
 import java.util.concurrent.locks.ReentrantLock
 import java.util.regex.Matcher
-
+import java.util.Map.Entry
+import java.util.concurrent.locks.ReentrantLock
 import static de.dkfz.roddy.StringConstants.*
 
 /**
@@ -798,7 +799,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return queriedExtendedStates
     }
 
-    static JobState parseJobState(String stateString) {
+    @Override
+    protected JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == PBS_JOBSTATE_RUNNING)
             js = JobState.RUNNING
