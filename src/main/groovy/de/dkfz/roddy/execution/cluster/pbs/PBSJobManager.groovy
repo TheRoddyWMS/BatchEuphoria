@@ -19,19 +19,12 @@ import de.dkfz.roddy.execution.jobs.JobResult
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
-import de.dkfz.roddy.tools.TimeUnit
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
-
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Map.Entry
 import java.util.concurrent.locks.ReentrantLock
-import java.util.regex.Pattern
 
 import static de.dkfz.roddy.StringConstants.*
 
@@ -687,7 +680,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
 
-    static JobState parseJobState(String stateString) {
+    @Override
+    protected JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == PBS_JOBSTATE_RUNNING)
             js = JobState.RUNNING

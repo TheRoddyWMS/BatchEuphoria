@@ -14,6 +14,8 @@ import java.io.Serializable;
 public enum JobState implements Serializable {
     HOLD,
     QUEUED,
+    UNSTARTED,
+    STARTED,
     /**
      * BEJob is still running
      */

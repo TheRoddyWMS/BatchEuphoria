@@ -491,7 +491,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
 
-    private static JobState parseJobState(String stateString) {
+    protected JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == "PENDING")
             js = JobState.QUEUED
