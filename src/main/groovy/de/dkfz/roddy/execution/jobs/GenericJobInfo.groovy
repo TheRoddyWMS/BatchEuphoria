@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
@@ -68,8 +69,8 @@ class GenericJobInfo {
     String pidStr;
     String pgidStr;
     String nthreads; //Number of currently active threads of a job
-    String swap; //Total virtual maxMemory (swap) usage of all processes in a job
-    String exitCode; // UNIX exit status of the job
+    BufferValue swap; //Total virtual maxMemory (swap) usage of all processes in a job
+    Integer exitCode; // UNIX exit status of the job
     String jobGroup;
     String description;
     String execCwd; //Executed current working directory

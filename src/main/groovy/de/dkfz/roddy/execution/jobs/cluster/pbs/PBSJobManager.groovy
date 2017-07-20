@@ -779,7 +779,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.setServer(jobResult.get("server"))
             gj.setUmask(jobResult.get("umask"))
             gj.setJobState(this.parseJobState(jobResult.get("job_state")))
-            gj.setExitCode(jobResult.get("exit_status"))
+            gj.setExitCode(jobResult.get("exit_status")? Integer.valueOf(jobResult.get("exit_status")) : null)
             gj.setAccount(jobResult.get("Account_Name"))
             gj.setStartCount(jobResult.get("start_count") ? Integer.valueOf(jobResult.get("start_count")) : null)
 

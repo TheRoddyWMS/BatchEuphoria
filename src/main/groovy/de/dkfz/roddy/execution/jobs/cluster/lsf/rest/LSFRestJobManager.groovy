@@ -18,6 +18,7 @@ import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
@@ -414,7 +415,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setExecutionHosts(jobInfoProperties.get("executionHosts"))
         jobInfo.setSubmissionHost(jobInfoProperties.get("fromHost"))
         jobInfo.setJobGroup(jobInfoProperties.get("jobGroup"))
-        jobInfo.setSwap(jobInfoProperties.get("swap"))
+        jobInfo.setSwap(jobInfoProperties.get("swap")? new BufferValue(Integer.valueOf(jobInfoProperties.get("swap")),BufferUnit.m) : null)
         jobInfo.setDescription(jobInfoProperties.get("description"))
         jobInfo.setUserGroup(jobInfoProperties.get("userGroup"))
         jobInfo.setMaxMemory(jobInfoProperties.get("mem").toInteger())
@@ -423,7 +424,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setNumProcessors(jobInfoProperties.get("numProcessors"))
         jobInfo.setNthreads(jobInfoProperties.get("nthreads"))
         jobInfo.setProjectName(jobInfoProperties.get("projectName"))
-        jobInfo.setExitCode(jobInfoProperties.get("exitCode"))
+        jobInfo.setExitCode(jobInfoProperties.get("exitCode")?  Integer.valueOf(jobInfoProperties.get("exitCode")) : null)
         jobInfo.setPidStr(jobInfoProperties.get("pidStr"))
         jobInfo.setPgidStr(jobInfoProperties.get("pgidStr"))
         jobInfo.setCwd(jobInfoProperties.get("cwd"))
