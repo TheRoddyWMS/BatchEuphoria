@@ -4,21 +4,15 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.cluster.pbs
+package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.TestExecutionService
-import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
-import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
 import org.junit.Test
-
 import java.lang.reflect.Method
-import java.time.Duration
 
 /**
  * Created by heinold on 26.03.17.
