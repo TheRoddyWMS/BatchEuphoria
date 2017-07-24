@@ -24,6 +24,8 @@ import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
+import java.time.Duration
+
 /**
  * Starter class for BE integration tests.
  *
@@ -37,7 +39,7 @@ class BEIntegrationTestStarter {
     static RestExecutionService restExecutionService
     static String testScript = "\"#!/bin/bash\\nsleep 15\\n\""
     static File batchEuphoriaTestScript
-    static ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, new TimeUnit("m"), null, null, null)
+    static ResourceSet resourceSet = new ResourceSet(ResourceSetSize.s, new BufferValue(10, BufferUnit.m), 1, 1, Duration.ofMinutes(1), null, null, null)
 
     static void main(String[] args) {
         IntegrationTestInput testInput = checkStartup(args)

@@ -7,13 +7,18 @@
 package de.dkfz.roddy.execution.cluster.pbs
 
 import de.dkfz.roddy.TestExecutionService
+import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
 import org.junit.Test
 
 import java.lang.reflect.Method
+import java.time.Duration
 
 /**
  * Created by heinold on 26.03.17.
@@ -425,7 +430,6 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
                 .build())
-
         Method method = jm.getClass().getDeclaredMethod("processQstatOutput", List);
         method.setAccessible(true);
 
@@ -441,18 +445,19 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
             println "queue: "+gj.getAskedResources().getQueue()
             println "output Path: "+gj.getOutFile()
             println "resources: "+gj.getAskedResources()
-            println "exec host: " +gj.getExHosts()
-            println "sub host: " +gj.getSubHost()
-            println "resource req: " +gj.getResReq()
+            println "exec host: " +gj.getExecutionHosts()
+            println "sub host: " +gj.getSubmissionHost()
+            println "resource req: " +gj.getResourceReq()
             println "runtime: " +gj.getRunTime()
             println "cpu time: " +gj.getCpuTime()
             println "user group: " +gj.getUserGroup()
             println "user: " +gj.getUser()
             println "umask: " +gj.getUmask()
             println "server: " +gj.getServer()
+            println "resource asked - walltime: " +gj.askedResources.walltime
+            println "resource used - walltime: " +gj.usedResources.walltime
             println "priority: " +gj.getPriority() +"\n"
-        }
-        */
+        }*/
 
         assert genericJobInfoOutput1.size() == 4
         assert genericJobInfoOutput2.size() == 1
