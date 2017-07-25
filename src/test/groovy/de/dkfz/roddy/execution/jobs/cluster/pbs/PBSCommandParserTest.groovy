@@ -34,7 +34,7 @@ class PBSCommandParserTest {
                 "120016, qsub -N r170402_171935425_A100_indelCalling -h",
                 "-W depend=afterok:120015",
                 "-o /data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling",
-                "-j oe  -l mem=16384M -l walltime=02:02:00:00 -l maxNodes=1:ppn=8",
+                "-j oe  -l mem=16384M -l walltime=02:02:00:00 -l nodes=1:ppn=8",
                 "-v PARAMETER_FILE=/data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/r170402_171935425_A100_indelCalling_1.parameters",
                 "/data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/analysisTools/indelCallingWorkflow/indelCalling.sh"
         ].join(" ")

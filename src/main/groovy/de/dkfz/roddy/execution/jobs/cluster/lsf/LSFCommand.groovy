@@ -4,15 +4,14 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf
+package de.dkfz.roddy.execution.jobs.cluster.lsf
 
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSResourceProcessingCommand
-import de.dkfz.eilslabs.batcheuphoria.jobs.Command
-import de.dkfz.eilslabs.batcheuphoria.jobs.Job
-import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.ProcessingCommands
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.tools.LoggerWrapper
-
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.EMPTY
 
@@ -58,7 +57,7 @@ class LSFCommand extends Command {
      * @param command
      * @param filesToCheck
      */
-    LSFCommand(LSFJobManager parentManager, Job job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
         super(parentManager, job, id, parameters, tags)
         this.processingCommands = processingCommands
         this.command = command
@@ -136,7 +135,7 @@ class LSFCommand extends Command {
 
         bsubCall << assembleProcessingCommands()
 
-        bsubCall << prepareParentJobs((List<Job>) job.getParentJobs())
+        bsubCall << prepareParentJobs((List<BEJob>) job.getParentJobs())
 
         bsubCall << assembleVariableExportString()
 
@@ -181,7 +180,7 @@ class LSFCommand extends Command {
      * @param jobs
      * @return part of parameter area
      */
-    private String prepareParentJobs(List<Job> jobs) {
+    private String prepareParentJobs(List<BEJob> jobs) {
         if (jobs) {
             String joinedParentJobs = jobs.collect { "done\\(${it.getJobID()}\\)" }.join(" &amp\\;&amp\\; ")
             if (joinedParentJobs.length() > 0)
@@ -192,7 +191,7 @@ class LSFCommand extends Command {
     }
 
 
-    private String prepareToolScript(Job job) {
+    private String prepareToolScript(BEJob job) {
         String toolScript
         if (job.getToolScript() != null && job.getToolScript().length() > 0) {
             toolScript = job.getToolScript()

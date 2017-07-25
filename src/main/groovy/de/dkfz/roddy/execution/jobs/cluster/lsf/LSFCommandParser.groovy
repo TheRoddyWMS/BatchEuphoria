@@ -1,11 +1,10 @@
-package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf
+package de.dkfz.roddy.execution.jobs.cluster.lsf
 
-import de.dkfz.eilslabs.batcheuphoria.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
-
 import static de.dkfz.roddy.StringConstants.SPLIT_COLON
 import static de.dkfz.roddy.StringConstants.SPLIT_COMMA
 import static de.dkfz.roddy.StringConstants.SPLIT_EQUALS

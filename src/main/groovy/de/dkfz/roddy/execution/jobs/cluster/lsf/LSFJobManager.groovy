@@ -4,30 +4,32 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf
+package de.dkfz.roddy.execution.jobs.cluster.lsf
 
-import de.dkfz.eilslabs.batcheuphoria.config.ResourceSet
-import de.dkfz.eilslabs.batcheuphoria.execution.ExecutionService
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.ClusterJobManager
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSJobDependencyID
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.pbs.PBSResourceProcessingCommand
-import de.dkfz.eilslabs.batcheuphoria.jobs.Command
-import de.dkfz.eilslabs.batcheuphoria.jobs.GenericJobInfo
-import de.dkfz.eilslabs.batcheuphoria.jobs.Job
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobManagerCreationParameters
-import de.dkfz.eilslabs.batcheuphoria.jobs.JobState
-import de.dkfz.eilslabs.batcheuphoria.jobs.ProcessingCommands
+import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.JobResult
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.BEJobDependencyID
+import de.dkfz.roddy.execution.jobs.BEJobResult
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
+import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.execution.jobs.ProcessingCommands
+import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobDependencyID
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
-import groovy.util.slurpersupport.NodeChild
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
-
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.locks.ReentrantLock
-
 import static de.dkfz.roddy.StringConstants.MINUS
 import static de.dkfz.roddy.StringConstants.SBRACKET_LEFT
 import static de.dkfz.roddy.StringConstants.SPLIT_SBRACKET_LEFT
@@ -60,7 +62,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     protected Map<String, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
 
-    protected Map<String, Job> jobStatusListeners = [:]
+    protected Map<String, BEJob> jobStatusListeners = [:]
 
     private static ExecutionResult cachedExecutionResult
 
@@ -68,7 +70,32 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         return LSF_COMMAND_QUERY_STATES
     }
 
-    LSFJobManager(ExecutionService executionService, JobManagerCreationParameters parms) {
+    @Override
+    File getLoggingDirectoryForJob(BEJob job) {
+        return null
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+        return null
+    }
+
+    @Override
+    protected JobState parseJobState(String stateString) {
+        return null
+    }
+
+    LSFJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
 
@@ -76,17 +103,17 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         return null
     }
 
-    LSFCommand createCommand(Job job) {
+    LSFCommand createCommand(BEJob job) {
         return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
     }
 
     @Override
-    LSFCommand createCommand(Job job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
         throw new NotImplementedException()
     }
 
     @Override
-    JobResult runJob(Job job) {
+    BEJobResult runJob(BEJob job) {
         def command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -109,15 +136,15 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
      * Called by the execution service after a command was executed.
      */
     @Override
-    JobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
-        JobResult jobResult
+    BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+        BEJobResult jobResult
         if (res.successful) {
             String rawId = res.resultLines[0].find("<[0-9]*>")
             String exID = rawId.substring(1, rawId.length() - 1)
             def job = command.getJob()
             def jobDependencyID = createJobDependencyID(job, exID)
             command.setExecutionID(jobDependencyID)
-            jobResult = new de.dkfz.eilslabs.batcheuphoria.jobs.JobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<de.dkfz.eilslabs.batcheuphoria.jobs.Job>)
+            jobResult = new BEJobResult(command, jobDependencyID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
         }
         return jobResult
@@ -132,12 +159,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
 
-    List<String> collectJobIDsFromJobs(List<Job> jobs) {
+    List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
         jobs.collect { it.runResult?.jobID?.shortID }.findAll { it }
     }
 
     @Override
-    void startHeldJobs(List<Job> heldJobs) {
+    void startHeldJobs(List<BEJob> heldJobs) {
         if (!isHoldJobsEnabled()) return
         if (!heldJobs) return
         String qrls = "bresume ${collectJobIDsFromJobs(heldJobs).join(" ")}"
@@ -145,7 +172,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    de.dkfz.eilslabs.batcheuphoria.jobs.JobDependencyID createJobDependencyID(Job job, String jobResult) {
+    BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
         return new PBSJobDependencyID(job, jobResult)
     }
 
@@ -203,12 +230,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    Job parseToJob(String commandString) {
+    BEJob parseToJob(String commandString) {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        Job job = new Job(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
+        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
             new PBSJobDependencyID(null, it)
-        } as List<de.dkfz.roddy.execution.jobs.JobDependencyID>, this);
+        } as List<de.dkfz.roddy.execution.jobs.BEJobDependencyID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
@@ -224,7 +251,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    JobResult convertToArrayResult(Job arrayChildJob, JobResult parentJobsResult, int arrayIndex) {
+    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
         return null
     }
 
@@ -322,15 +349,15 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             // I don't currently know, if the jslisteners are used.
             //Create a local cache of jobstate logfile entries.
             Map<String, JobState> map = [:]
-            List<Job> removejobs = new LinkedList<>()
+            List<BEJob> removejobs = new LinkedList<>()
             synchronized (jobStatusListeners) {
                 for (String id : jobStatusListeners.keySet()) {
                     if (allStatesTemp.get(id)) {
                         JobState js = (JobState) allStatesTemp.get(id)[0]
-                        Job job = jobStatusListeners.get(id)
+                        BEJob job = jobStatusListeners.get(id)
                         setJobInfoForJobDetails(job, (String[]) allStatesTemp.get(id)[1])
                         logger.severe("id:" + id + " jobstate: " + js.toString() + " jobInfo: " + job.getJobInfo().toString())
-                        if (js == JobState.UNKNOWN_SUBMITTED) {
+                        if (js == JobState.UNKNOWN) {
                             // If the jobState is unknown and the job is not running anymore it is counted as failed.
                             job.setJobState(JobState.FAILED)
                             removejobs.add(job)
@@ -342,7 +369,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                             continue
                         }
 
-                        if (job.getJobState() == JobState.OK || job.getJobState() == JobState.FAILED)
+                        if (job.getJobState() == JobState.FAILED)
                             continue
                         //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
 
@@ -392,7 +419,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
      * @param job
      * @param jobDetails - XML job details
      */
-    void setJobInfoForJobDetails(Job job, String[] jobDetails) {
+    void setJobInfoForJobDetails(BEJob job, String[] jobDetails) {
         GenericJobInfo jobInfo
 
         if (job.getJobInfo() != null) {
@@ -409,25 +436,31 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setJobGroup(jobResult[7])
         jobInfo.setPriority(jobResult[8])
         jobInfo.setPidStr(jobResult[9])
-        jobInfo.setExitStatus(jobResult[10])
-        jobInfo.setSubHost(jobResult[11])
-        jobInfo.setExHosts(jobResult[12])
-        jobInfo.setSubTimeGMT(jobResult[13])
-        jobInfo.setStartTimeGMT(jobResult[14])
-        jobInfo.setEndTimeGMT(jobResult[15])
-        jobInfo.setCpuTime(jobResult[16])
-        jobInfo.setRunTime(jobResult[17])
+        jobInfo.setExitCode(jobResult[10]? Integer.valueOf(jobResult[10]) : null)
+        jobInfo.setSubmissionHost(jobResult[11])
+        jobInfo.setExecutionHosts(jobResult[12])
+        jobInfo.setCpuTime(jobResult[16] ? Duration.parse("PT" + jobResult[16].substring(0, 2) + "H" + jobResult[16].substring(3, 5) + "M" + jobResult[16].substring(6) + "S") : null)
+        jobInfo.setRunTime(jobResult[17] ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17]))) : null)
         jobInfo.setUserGroup(jobResult[18])
-        jobInfo.setSwap(jobResult[19])
+        jobInfo.setSwap(new BufferValue(jobResult[19],BufferUnit.g))
         jobInfo.setRunLimit(jobResult[21])
         jobInfo.setCwd(jobResult[22])
         jobInfo.setPendReason(jobResult[23])
         jobInfo.setExecCwd(jobResult[24])
-        jobInfo.setOutfile(jobResult[25])
-        jobInfo.setInfile(jobResult[26])
-        jobInfo.setResReq(jobResult[27])
+        jobInfo.setOutFile(jobResult[25])
+        jobInfo.setInFile(jobResult[26])
+        jobInfo.setResourceReq(jobResult[27])
         jobInfo.setExecHome(jobResult[28])
         job.setJobInfo(jobInfo)
+
+        DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
+        if (jobResult[13])
+            jobInfo.setSubmitTime(LocalDateTime.parse(jobResult[13], pbsDatePattern))
+        if (jobResult[14])
+            jobInfo.setStartTime(LocalDateTime.parse(jobResult[14], pbsDatePattern))
+        if (jobResult[15])
+            jobInfo.setEndTime(LocalDateTime.parse(jobResult[15], pbsDatePattern))
+
     }
 
 
@@ -482,14 +515,14 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    Map<Job, JobState> queryJobStatus(List<Job> jobs, boolean forceUpdate = false) {
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<Job, JobState> queriedStates = jobs.collectEntries { Job job -> [job, JobState.UNKNOWN] }
+        Map<BEJob, JobState> queriedStates = jobs.collectEntries { BEJob job -> [job, JobState.UNKNOWN] }
 
-        for (Job job in jobs) {
+        for (BEJob job in jobs) {
             // Aborted somewhat supercedes everything.
             JobState state
             if (job.jobState == JobState.ABORTED)
@@ -506,15 +539,15 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    Map<Job, GenericJobInfo> queryExtendedJobState(List<Job> jobs, boolean forceUpdate) {
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
         return null
     }
 
     @Override
-    void queryJobAbortion(List<Job> executedJobs) {
+    void queryJobAbortion(List<BEJob> executedJobs) {
         def executionResult = executionService.execute("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
         if (executionResult.successful) {
-            executedJobs.each { Job job -> job.jobState = JobState.ABORTED }
+            executedJobs.each { BEJob job -> job.jobState = JobState.ABORTED }
         } else {
             logger.always("Need to create a proper fail message for abortion.")
             throw new RuntimeException("Abortion of job states failed.")
@@ -522,14 +555,14 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    void addJobStatusChangeListener(Job job) {
+    void addJobStatusChangeListener(BEJob job) {
         synchronized (jobStatusListeners) {
             jobStatusListeners.put(job.getJobID(), job)
         }
     }
 
     @Override
-    String getLogFileWildcard(Job job) {
+    String getLogFileWildcard(BEJob job) {
         String id = job.getJobID()
         String searchID = id
         if (id == null) return null
@@ -571,7 +604,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    String[] peekLogFile(Job job) {
+    String[] peekLogFile(BEJob job) {
         String user = userIDForQueries
         String id = job.getJobID()
         String searchID = id
