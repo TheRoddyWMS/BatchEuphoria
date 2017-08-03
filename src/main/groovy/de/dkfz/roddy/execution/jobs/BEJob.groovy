@@ -32,6 +32,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
      */
     public final String jobName
 
+    public boolean isDirty
+
     /**
      * An internal job creation count. Has nothing to do with e.g. PBS / cluster / process id's!
      */
