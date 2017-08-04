@@ -123,7 +123,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobDependencyID> dependencyIDs, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
-        this.currentJobState = JobState.UNKNOWN
+        this.currentJobState = JobState.UNSTARTED
         this.tool = tool
         this.toolScript = toolScript
         if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")
@@ -291,26 +291,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     JobState getJobState() {
-        if (jobType == JobType.ARRAY_HEAD) {
-            int runningJobs = 0
-            int failedJobs = 0
-            int finishedJobs = 0
-            int unknownJobs = 0
-            for (BEJob job : arrayChildJobs) {
-                if (job.getJobState().isPlannedOrRunning())
-                    runningJobs++
-                else if (job.getJobState() == JobState.FAILED)
-                    failedJobs++
-                else if (job.getJobState() == JobState.OK)
-                    finishedJobs++
-                else if (job.getJobState() == JobState.UNKNOWN)
-                    unknownJobs++
-            }
-            if (failedJobs > 0) return JobState.FAILED
-            if (unknownJobs > 0) return JobState.UNKNOWN
-            if (runningJobs > 0) return JobState.RUNNING
-            return JobState.OK
-        }
         return currentJobState != null ? currentJobState : JobState.UNKNOWN
     }
 

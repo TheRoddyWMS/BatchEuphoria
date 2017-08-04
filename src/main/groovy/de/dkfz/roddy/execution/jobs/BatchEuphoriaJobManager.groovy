@@ -55,6 +55,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected String userIDForQueries
 
+    protected boolean strictMode
+
     private String userEmail
 
     private String userMask
@@ -84,6 +86,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userGroup = parms.userGroup
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
+        this.strictMode = parms.strictMode
 
         //Create a daemon thread which automatically calls queryJobStatus from time to time...
         try {
@@ -220,10 +223,29 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * the manager cannot retrieve info about the job, the result will be UNKNOWN
      * for this particular job.
      *
-     * @param jobIDs
+     * @param jobs
      * @return
      */
     abstract Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false)
+
+    /**
+     * Queries the status of all jobs in the list.
+     *
+     * Every job ID in the list is supposed to have an entry in the result map. If
+     * the manager cannot retrieve info about the job, the result will be UNKNOWN
+     * for this particular job.
+     *
+     * @param jobIds
+     * @return
+     */
+    abstract Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false)
+
+    /**
+     * Queries the status of all jobs.
+     *
+     * @return
+     */
+    abstract Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false)
 
     /**
      * Will be used to gather extended information about a job like:
@@ -235,7 +257,19 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param forceUpdate
      * @return
      */
-    abstract Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
+    abstract Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
+
+    /**
+     * Will be used to gather extended information about a job like:
+     * - The used memory
+     * - The used cores
+     * - The used walltime
+     *
+     * @param jobIds
+     * @param forceUpdate
+     * @return
+     */
+    abstract Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate)
 
     /**
      * Try to abort a range of jobs
@@ -369,4 +403,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract String getSubmissionCommand()
 
     abstract File getLoggingDirectoryForJob(BEJob job)
+
+    abstract protected JobState parseJobState(String stateString)
 }

@@ -1,6 +1,7 @@
 apply plugin: 'groovy'
 apply plugin: 'idea'
 apply plugin:'application'
+apply plugin:'maven'
 
 group = "de.dkfz.roddy"
 
@@ -40,6 +41,31 @@ dependencies {
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile 'com.github.eilslabs:RoddyToolLib:0.0.1'
+}
+
+task writePom {
+    doLast {
+        pom {
+            project {
+                inceptionYear '2017'
+                licenses {
+                    license {
+                        name 'MIT License'
+                        url 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/develop/LICENSE'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }.writeTo("$buildDir/pom.xml")
+    }
+}
+
+
+jar {
+    dependsOn writePom
+    into("META-INF/maven/$project.group/$project.name") {
+        from "$buildDir/pom.xml"
+    }
 }
 
 task listJars {

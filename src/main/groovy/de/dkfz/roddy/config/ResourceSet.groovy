@@ -5,6 +5,8 @@ import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
+import java.time.Duration
+
 @CompileStatic
 class ResourceSet {
     private final String queue
@@ -19,7 +21,7 @@ class ResourceSet {
     private Integer coresMax
     private Integer nodes
     private Integer nodesMax
-    private TimeUnit walltime
+    private Duration walltime
 
     /**
      * Hard disk storage used.
@@ -28,12 +30,25 @@ class ResourceSet {
     private BufferValue storageMax
     private String additionalNodeFlag
 
-    ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, TimeUnit walltime, BufferValue storage, String queue, String additionalNodeFlag) {
+    ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, Duration walltime, BufferValue storage, String queue, String additionalNodeFlag) {
         this.size = size
         this.mem = mem
         this.cores = cores
         this.nodes = nodes
         this.walltime = walltime
+        this.storage = storage
+        this.queue = queue
+        this.additionalNodeFlag = additionalNodeFlag
+    }
+
+    @Deprecated
+    ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, TimeUnit walltime, BufferValue storage, String queue, String additionalNodeFlag) {
+        this.size = size
+        this.mem = mem
+        this.cores = cores
+        this.nodes = nodes
+        String[] wt = walltime.toString().split(":")
+        this.walltime = Duration.ofDays(Long.parseLong(wt[0])).plusHours(Long.parseLong(wt[1])).plusMinutes(Long.parseLong(wt[2])).plusSeconds(Long.parseLong(wt[3]))
         this.storage = storage
         this.queue = queue
         this.additionalNodeFlag = additionalNodeFlag
@@ -79,7 +94,7 @@ class ResourceSet {
         return storage != null
     }
 
-    TimeUnit getWalltime() {
+    Duration getWalltime() {
         return walltime
     }
 
