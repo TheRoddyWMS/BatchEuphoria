@@ -13,7 +13,7 @@ import java.io.Serializable;
  */
 public enum JobState implements Serializable {
     /**
-     * BEJob is still running
+     * BEJob is still running; according to cluster monitor
      */
     RUNNING,
     /**
@@ -49,7 +49,7 @@ public enum JobState implements Serializable {
     /**
      * Jobs which were started and which might be running.
      */
-    STARTED,
+    STARTED,  // according to job state logfile
     HOLD,
     QUEUED,
     /**
@@ -85,9 +85,9 @@ public enum JobState implements Serializable {
             status = ABORTED;
         else if (stateString.equals("N"))   //N??
             status = FAILED;
-        else if (stateString.equals("60000") || stateString.equals("ABORTED"))   //Aborted due to failed parent job or due to a missing dependency.
+        else if (stateString.equals("ABORTED"))   //Aborted due to failed parent job or due to a missing dependency.
             status = ABORTED;
-        else if (stateString.equals("57427") || stateString.equals("STARTED"))   //Started and possibly running
+        else if (stateString.equals("STARTED"))   //Started and possibly running
             status = STARTED;
         else
             status = FAILED;
