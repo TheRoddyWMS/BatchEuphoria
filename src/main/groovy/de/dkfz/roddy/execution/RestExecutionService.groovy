@@ -15,6 +15,7 @@ import groovy.transform.CompileStatic
 import org.apache.commons.io.IOUtils
 import org.apache.http.Header
 import org.apache.http.HttpEntity
+import org.apache.http.HttpHost
 import org.apache.http.auth.AuthenticationException
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
@@ -29,15 +30,22 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.impl.client.HttpClients
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
+import org.apache.http.ssl.SSLContextBuilder
 import org.apache.http.ssl.SSLContexts
+import org.apache.http.ssl.TrustStrategy
 import org.apache.http.util.EntityUtils
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
+import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
 import java.security.KeyStore
+import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
 
 /**
  * Execution service for cluster systems with REST services. It is currently only used for LSF
@@ -71,7 +79,8 @@ class RestExecutionService implements BEExecutionService {
      */
     RestExecutionService(String baseURL, String username, String password) throws AuthenticationException {
         this.BASE_URL = baseURL
-        logon(username, password)
+        if(isAvailable())
+            logon(username, password)
     }
 
     /**
@@ -91,6 +100,7 @@ class RestExecutionService implements BEExecutionService {
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
         RestResult result = execute(new RestCommand(RESOURCE_LOGON, body, headers, RestCommand.HttpMethod.HTTPPOST))
+        logger.severe("status code: " + result.statusCode)
         if (result.statusCode != 200)
             throw new AuthenticationException("Could not authenticate, returned HTTP status code: ${result.statusCode}")
 
@@ -117,11 +127,30 @@ class RestExecutionService implements BEExecutionService {
     RestResult execute(RestCommand restCommand) {
         String url = BASE_URL + restCommand.resource
         CloseableHttpClient httpClient
-        if (isCertAuth)
+        if (isCertAuth) {
             httpClient = createHttpClientWithClientCertAuth()
-        else
-            httpClient = HttpClientBuilder.create().build()
+        } else {
+            SSLContextBuilder builder = new SSLContextBuilder();
+            builder.loadTrustMaterial(null, new TrustStrategy() {
+                @Override
+                public boolean isTrusted(X509Certificate[] chain, String authType)
+                        throws CertificateException {
+                    return true;
+                }
+            });
 
+            HostnameVerifier hostnameVerifierAllowAll = new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+
+            SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(builder.build(), hostnameVerifierAllowAll);
+
+            httpClient = HttpClients.custom().setSSLSocketFactory(
+                    sslSocketFactory).build();
+        }
         def httpRequest
 
         if (restCommand.httpMethod == RestCommand.HttpMethod.HTTPPOST) {
@@ -142,10 +171,10 @@ class RestExecutionService implements BEExecutionService {
         CloseableHttpResponse response = httpClient.execute(httpRequest)
 
         try {
-            logger.info("response status: " + response.getStatusLine())
+            logger.always("response status: " + response.getStatusLine())
             HttpEntity entity = response.getEntity()
-            logger.info("response body: " + response.getEntity().contentType.value)
             String result = IOUtils.toString(entity.content)
+            logger.always("response body: " + result)
             EntityUtils.consume(entity)
             return new RestResult(response.getAllHeaders(), result, response.getStatusLine().getStatusCode())
         } finally {
