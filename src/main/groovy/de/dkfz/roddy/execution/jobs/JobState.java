@@ -20,7 +20,7 @@ public enum JobState implements Serializable {
      */
     STARTED,
     /**
-     * BEJob is still running
+     * BEJob is still running; according to cluster monitor
      */
     RUNNING,
     SUSPENDED,
@@ -66,6 +66,5 @@ public enum JobState implements Serializable {
     }
 
     public boolean isUnknown() { return  this == UNKNOWN;}
-
 
 }

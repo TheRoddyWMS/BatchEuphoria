@@ -157,12 +157,6 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
         return new String[0];
     }
 
-    @Override
-    public String getJobStateInfoLine(BEJob job) {
-
-        return null;
-    }
-
 //    @Override
 //    public void queryJobAbortion(List executedJobs,BEExecutionService executionService) {
 //        TODO something with kill

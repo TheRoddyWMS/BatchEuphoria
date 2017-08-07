@@ -386,15 +386,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      */
     abstract String[] peekLogFile(BEJob job)
 
-    /**
-     * Stores a new job jobState info to an execution contexts job jobState log file.
-     *
-     * @param job
-     */
-    String getJobStateInfoLine(BEJob job) {
-        return null
-    }
-
     String getLogFileName(BEJob p) {
         return p.getJobName() + ".o" + p.getJobID()
     }
