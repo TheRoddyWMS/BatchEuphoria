@@ -133,14 +133,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     /**
      * For BPS, we enable hold jobs by default.
      * If it is not enabled, we might run into the problem, that job dependencies cannot be
-     * ressolved early enough due to timing problems.
+     * resolved early enough due to timing problems.
      * @return
      */
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
 
     List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        jobs.collect { it.runResult?.jobID?.shortID }.findAll { it }
+        BEJob.findJobsWithValidJobId(jobs).collect { it.runResult.getJobID().shortID }
     }
 
     @Override

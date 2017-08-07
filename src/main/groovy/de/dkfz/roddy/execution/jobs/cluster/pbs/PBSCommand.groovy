@@ -11,6 +11,7 @@ import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.tools.LoggerWrapper
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.logging.Level
 import java.util.regex.Matcher
@@ -231,71 +232,30 @@ class PBSCommand extends Command {
 
     String assembleDependencyString() {
         StringBuilder qsubCall = new StringBuilder("")
-        LinkedList<String> tempDependencies = new LinkedList<String>()
-        LinkedList<String> tempDependenciesArrays = new LinkedList<String>()
-        if (creatingJob.parentJobs) {
-            for (String d in (creatingJob.parentJobs as List<BEJob>).findAll { BEJob job -> !job.isFakeJob() }.collect { BEJob job -> job.jobID }) {
-                if (d != "" && d != NONE && d != "-1") {
-                    if (d.contains("[].")) {
-                        tempDependenciesArrays << d.toString()
-                    } else {
-                        tempDependencies << d.toString()
-                    }
-                }
-            }
+        LinkedList<String> tempDependencies =
+                creatingJob.getDependencyIDsAsString().findAll {
+                    it != "" && it != NONE && it != "-1"
+                } as LinkedList<String>
+        if (creatingJob.getDependencyIDsAsString().any { it.contains("[].") }) {
+            throw new NotImplementedException()
         }
-        if (tempDependencies.size() > 0 || tempDependenciesArrays.size() > 0) {
-            StringBuilder depStrBld = new StringBuilder()
+        if (tempDependencies.size() > 0) {
             try {
-                depStrBld << EMPTY //Prevent the string to be null!
-                //qsub wants the afterokarray before afterok. Don't swap this
-                if (tempDependenciesArrays.size() > 0) {
-                    depStrBld << getArrayDependencyParameterName() << getDependencyOptionSeparator()
-                    for (String d in tempDependenciesArrays) {
-                        depStrBld << (d != NONE && d != NONE_ARR && d != "-1" ? d + getDependencyIDSeparator() : EMPTY)
-                    }
-                    String tmp = depStrBld.toString()[0..-2]
-                    depStrBld = new StringBuilder()
-                    depStrBld << tmp
-                }
-                if (tempDependencies.size() > 0) {
-                    if (tempDependenciesArrays.size() > 0) {
-                        depStrBld << getDependencyTypesSeparator()
-                    }
-
-                    String dependencyType = getDependencyParameterName()
-                    for (ProcessingCommands pcmd : job.getListOfProcessingCommand()) {
-                        if (!(pcmd instanceof ChangedProcessDependencyProcessingCommand))
-                            continue
-                        ChangedProcessDependencyProcessingCommand dpc = pcmd as ChangedProcessDependencyProcessingCommand
-                        if (dpc == null) continue
-                        dependencyType = dpc.getProcessDependency().name()
-////                        dependencyType = dpc.dependencyOptions.name();
-//                        DependencyGroup group = DependencyGroup.getGroup(dpc.dependencyGroupID);
-//                        if(job == group.referenceJob) {
-//                            continue;
-//                        } else {
-//                            tempDependencies << group.referenceJob.getJobResult().getJobID().shortID;
-//                        }
-                    }
-
-                    depStrBld << dependencyType << getDependencyOptionSeparator()
-                    for (String d in tempDependencies) {
-                        depStrBld << (d != NONE && d != NONE_ARR && d != "-1" ? d + getDependencyIDSeparator() : EMPTY)
-                    }
-                    String tmp = depStrBld.toString()[0..-2]
-                    depStrBld = new StringBuilder()
-                    depStrBld << tmp
-                }
-
-                String depStr = depStrBld.toString()
-                if (depStr.length() > 1) {
-                    qsubCall << getDependsSuperParameter() << depStr
-                }
+                String dependencyType = getDependencyParameterName()
+                job.getListOfProcessingCommand().
+                    collect { it as ChangedProcessDependencyProcessingCommand }
+                        .findAll { it }
+                        .last().getProcessDependency().name()
+                qsubCall <<
+                        getDependsSuperParameter() <<
+                        dependencyType <<
+                        getDependencyOptionSeparator() <<
+                        tempDependencies.join(getDependencyIDSeparator())
             } catch (Exception ex) {
                 logger.log(Level.SEVERE, ex.toString())
             }
         }
+
         return qsubCall
     }
 }

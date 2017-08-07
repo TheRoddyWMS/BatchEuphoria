@@ -192,11 +192,18 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         return parentJobs
     }
 
+    static List<BEJob> findJobsWithValidJobId(List<BEJob> jobs) {
+        if (null == jobs)
+            return null
+        else
+            return jobs.findAll { it.runResult }.sort { it.getJobID() }.unique{ it.getJobID() }
+    }
+
     List<BEJobDependencyID> getDependencyIDs() {
         if (listOfCustomDependencyIDs)
             return listOfCustomDependencyIDs
 
-        def res = getParentJobs()?.collect { ((BEJob) it).runResult?.jobID }?.findAll { it }?.unique()
+        def res = findJobsWithValidJobId(getParentJobs())?.collect { it.runResult.jobID }
         if (!res) return []
         return res
     }
