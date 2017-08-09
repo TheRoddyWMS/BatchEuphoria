@@ -6,15 +6,15 @@
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution;
 
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
+import de.dkfz.roddy.execution.jobs.BEJobID;
 import de.dkfz.roddy.execution.jobs.BEJob;
 
 /**
  */
-public class DirectCommandDependencyID extends BEJobDependencyID {
+public class DirectCommandID extends BEJobID {
     private final String id;
 
-    protected DirectCommandDependencyID(String id, BEJob job) {
+    protected DirectCommandID(String id, BEJob job) {
         super(job);
         this.id = id;
     }
@@ -32,12 +32,6 @@ public class DirectCommandDependencyID extends BEJobDependencyID {
     @Override
     public String getShortID() {
         return id;
-    }
-
-    @Override
-    public boolean isArrayJob() {
-        //TODO
-        return false;
     }
 
     @Override

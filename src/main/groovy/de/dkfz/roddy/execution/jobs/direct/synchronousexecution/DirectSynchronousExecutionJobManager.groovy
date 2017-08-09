@@ -10,7 +10,7 @@ package de.dkfz.roddy.execution.jobs.direct.synchronousexecution;
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*;
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
+import de.dkfz.roddy.execution.jobs.BEJobID;
 import de.dkfz.roddy.execution.jobs.BEJobResult;
 import de.dkfz.roddy.tools.LoggerWrapper
 
@@ -40,8 +40,8 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
-        return new DirectCommandDependencyID(jobResult, job);
+    public BEJobID createJobDependencyID(BEJob job, String jobResult) {
+        return new DirectCommandID(jobResult, job);
     }
 
     @Override

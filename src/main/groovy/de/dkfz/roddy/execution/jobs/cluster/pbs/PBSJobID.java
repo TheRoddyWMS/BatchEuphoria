@@ -8,28 +8,23 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs;
 
 
 import de.dkfz.roddy.execution.jobs.BEJob;
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
+import de.dkfz.roddy.execution.jobs.BEJobID;
 
 import java.io.Serializable;
 
 /**
  */
-public class PBSJobDependencyID extends BEJobDependencyID implements Serializable {
+public class PBSJobID extends BEJobID implements Serializable {
     private String id;
 
-    public PBSJobDependencyID(BEJob job, String id) {
+    public PBSJobID(BEJob job, String id) {
         super(job);
         this.id = id;
     }
 
     @Override
     public boolean isValidID() {
-        return id != null && id != "none";
-    }
-
-    @Override
-    public boolean isArrayJob() {
-        return id.contains("[].");
+        return super.isValidID() && id != null && id != "none";
     }
 
     @Override

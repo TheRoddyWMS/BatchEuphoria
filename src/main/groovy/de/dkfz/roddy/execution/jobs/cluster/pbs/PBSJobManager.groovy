@@ -13,7 +13,7 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.JobState
@@ -152,8 +152,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
-        return new PBSJobDependencyID(job, jobResult)
+    BEJobID createJobDependencyID(BEJob job, String jobResult) {
+        return new PBSJobID(job, jobResult)
     }
 
     @Override
@@ -278,8 +278,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
         BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
-            new PBSJobDependencyID(null, it)
-        } as List<BEJobDependencyID>, this);
+            new PBSJobID(null, it)
+        } as List<BEJobID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()

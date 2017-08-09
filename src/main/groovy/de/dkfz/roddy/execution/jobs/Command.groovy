@@ -27,7 +27,7 @@ abstract class Command {
     /**
      * The id which was created upon execution by the job system.
      */
-    protected BEJobDependencyID executionID
+    protected BEJobID executionID
 
     /**
      * The job which created this command. Can be null!
@@ -54,7 +54,7 @@ abstract class Command {
         this.id = id
     }
 
-    final void setExecutionID(BEJobDependencyID id) {
+    final void setExecutionID(BEJobID id) {
         this.executionID = id
     }
 
@@ -62,7 +62,7 @@ abstract class Command {
         return executionID.isValidID()
     }
 
-    final BEJobDependencyID getExecutionID() {
+    final BEJobID getExecutionID() {
         return executionID
     }
 

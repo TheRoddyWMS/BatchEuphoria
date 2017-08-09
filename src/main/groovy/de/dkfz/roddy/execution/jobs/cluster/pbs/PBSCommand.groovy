@@ -241,14 +241,9 @@ class PBSCommand extends Command {
         }
         if (tempDependencies.size() > 0) {
             try {
-                String dependencyType = getDependencyParameterName()
-                job.getListOfProcessingCommand().
-                    collect { it as ChangedProcessDependencyProcessingCommand }
-                        .findAll { it }
-                        .last().getProcessDependency().name()
                 qsubCall <<
                         getDependsSuperParameter() <<
-                        dependencyType <<
+                        getDependencyParameterName() <<
                         getDependencyOptionSeparator() <<
                         tempDependencies.join(getDependencyIDSeparator())
             } catch (Exception ex) {

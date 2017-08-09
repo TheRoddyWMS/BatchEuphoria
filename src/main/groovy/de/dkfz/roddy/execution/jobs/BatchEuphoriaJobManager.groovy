@@ -7,7 +7,6 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -179,7 +178,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
-    abstract BEJobDependencyID createJobDependencyID(BEJob job, String jobResult)
+    abstract BEJobID createJobDependencyID(BEJob job, String jobResult)
 
     ProcessingCommands convertResourceSet(BEJob job) {
         return convertResourceSet(job.resourceSet)
