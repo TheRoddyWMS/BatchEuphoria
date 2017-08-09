@@ -21,6 +21,7 @@ import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
+import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
@@ -29,6 +30,7 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -74,18 +76,25 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             resourceList.append(" -q ").append(resourceSet.getQueue())
         }
         if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.K)
-            resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
+            String memo = resourceSet.getMem().toString(BufferUnit.M)
+            // resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
         }
         if (resourceSet.isWalltimeSet()) {
-            resourceList.append(" -W ").append(resourceSet.getWalltime().toString().substring(6, resourceSet.getWalltime().toString().length()))
+            //resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltime()))
         }
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
             int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
-            resourceList.append(" -n ").append(nodes * cores)
+            //resourceList.append(" -n ").append(nodes * cores)
         }
         return new PBSResourceProcessingCommand(resourceList.toString())
+    }
+
+    private String durationToLSFWallTime(Duration wallTime) {
+        if(wallTime){
+            return String.valueOf(wallTime.toMinutes())
+        }
+        return null
     }
 
 
@@ -207,7 +216,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     private String getParamAreaHeader(String headBoundary, String bodyBoundary) {
         return ["--${headBoundary}", "Content-Disposition: form-data; name=\"data\"",
                 "Content-Type: multipart/mixed; boundary=${bodyBoundary}",
-                "Accept-Language:de-de", "Content-ID: <data>", "\r\n"].join("\r\n")
+                "Accept-Language:en-en", "Content-ID: <data>", "\r\n"].join("\r\n")
     }
 
     /**
@@ -243,8 +252,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                     "Content-Disposition: form-data; name=\"COMMAND\"",
                     "Content-Type: application/xml; charset=UTF-8",
                     "Content-Transfer-Encoding: 8bit",
-                    "Accept-Language:en-en",
-                    "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"].join("\r\n")
+                    "Accept-Language:en-en\r\n",
+                    "<AppParam><id>COMMANDTORUN</id><value>sleep 15s</value><type></type></AppParam>\r\n"].join("\r\n")
         } else {
             return ""
         }
@@ -391,7 +400,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param job
      * @param jobDetails - XML job details
      */
-    void setJobInfoForJobDetails(BEJob job, NodeChild jobDetails) {
+    private void setJobInfoForJobDetails(BEJob job, NodeChild jobDetails) {
         GenericJobInfo jobInfo
 
         if (job.getJobInfo() != null) {
@@ -405,41 +414,43 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobDetailsAttributes.each { String key, value ->
             jobInfoProperties.put(key, jobDetails.getProperty(key).toString())
         }
-        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM dd hh:mm:ss yyyy")
 
-        jobInfo.setUser(jobInfoProperties.get("user"))
-        jobInfo.setCpuTime(Duration.parse(jobInfoProperties.get("cpuTime")))
-        jobInfo.setSystemTime(jobInfoProperties.get("getSystemTime"))
-        jobInfo.setUserTime(jobInfoProperties.get("getUserTime"))
-        jobInfo.setStartTime(LocalDateTime.parse(jobInfoProperties.get("startTime"), lsfDatePattern))
-        jobInfo.setSubmitTime(LocalDateTime.parse(jobInfoProperties.get("submitTime"), lsfDatePattern))
-        jobInfo.setEndTime(LocalDateTime.parse(jobInfoProperties.get("endTime"), lsfDatePattern))
-        jobInfo.setQueue(jobInfoProperties.get("queue"))
-        jobInfo.setExecutionHosts(jobInfoProperties.get("executionHosts"))
-        jobInfo.setSubmissionHost(jobInfoProperties.get("fromHost"))
-        jobInfo.setJobGroup(jobInfoProperties.get("jobGroup"))
-        jobInfo.setSwap(jobInfoProperties.get("swap")? new BufferValue(Integer.valueOf(jobInfoProperties.get("swap")),BufferUnit.m) : null)
-        jobInfo.setDescription(jobInfoProperties.get("description"))
-        jobInfo.setUserGroup(jobInfoProperties.get("userGroup"))
-        jobInfo.setMaxMemory(jobInfoProperties.get("mem").toInteger())
-        jobInfo.setRunTime(Duration.parse(jobInfoProperties.get("runTime")))
-        jobInfo.setRunLimit(jobInfoProperties.get("runLimit"))
-        jobInfo.setNumProcessors(jobInfoProperties.get("numProcessors"))
-        jobInfo.setNthreads(jobInfoProperties.get("nthreads"))
-        jobInfo.setProjectName(jobInfoProperties.get("projectName"))
-        jobInfo.setExitCode(jobInfoProperties.get("exitCode")?  Integer.valueOf(jobInfoProperties.get("exitCode")) : null)
-        jobInfo.setPidStr(jobInfoProperties.get("pidStr"))
-        jobInfo.setPgidStr(jobInfoProperties.get("pgidStr"))
-        jobInfo.setCwd(jobInfoProperties.get("cwd"))
-        jobInfo.setPendReason(jobInfoProperties.get("pendReason"))
-        jobInfo.setExecCwd(jobInfoProperties.get("execCwd"))
-        jobInfo.setPriority(jobInfoProperties.get("priority"))
-        jobInfo.setOutFile(jobInfoProperties.get("outFile"))
-        jobInfo.setInFile(jobInfoProperties.get("inFile"))
-        jobInfo.setResourceReq(jobInfoProperties.get("resourceReq"))
-        jobInfo.setExecHome(jobInfoProperties.get("execHome"))
-        jobInfo.setExecUserName(jobInfoProperties.get("execUserName"))
-        jobInfo.setAskedHostsStr(jobInfoProperties.get("askedHostsStr"))
+        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH)
+
+        jobInfo.setUser(jobDetails.getProperty("user").toString())
+        jobInfo.setCpuTime(jobInfoProperties.get("cpuTime")? Duration.parse(jobInfoProperties.get("cpuTime")):null)
+        jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
+        jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
+        jobInfo.setStartTime(jobDetails.getProperty("startTime")? LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern):null)
+        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime")? LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern):null)
+        jobInfo.setEndTime(jobDetails.getProperty("endTime")? LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern):null)
+        jobInfo.setQueue(jobDetails.getProperty("queue").toString())
+        jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts").toString())
+        jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
+        jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
+        jobInfo.setSwap(jobDetails.getProperty("swap")? new BufferValue(Integer.valueOf(jobDetails.getProperty("swap").toString()),BufferUnit.m) : null)
+        jobInfo.setDescription(jobDetails.getProperty("description").toString())
+        jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
+        jobInfo.setMaxMemory(jobDetails.getProperty("mem")?.toString().toInteger())
+        jobInfo.setRunTime(jobDetails.getProperty("runTime")? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))):null)
+        jobInfo.setRunLimit(jobDetails.getProperty("runLimit").toString())
+        jobInfo.setNumProcessors(jobDetails.getProperty("numProcessors").toString())
+        jobInfo.setNthreads(jobDetails.getProperty("nthreads").toString())
+        jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
+        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString()?  Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) : null)
+        jobInfo.setPidStr(jobDetails.getProperty("pidStr").toString())
+        jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
+        jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
+        jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
+        jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
+        jobInfo.setPriority(jobDetails.getProperty("priority").toString())
+        jobInfo.setOutFile(jobDetails.getProperty("outFile").toString())
+        jobInfo.setInFile(jobDetails.getProperty("inFile").toString())
+        jobInfo.setResourceReq(jobDetails.getProperty("resourceReq").toString())
+        jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
+        jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())
+        jobInfo.setAskedHostsStr(jobDetails.getProperty("askedHostsStr").toString())
+        println jobInfo.toString()
         job.setJobInfo(jobInfo)
     }
 
@@ -482,9 +493,16 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             jobInfo = job.getJobInfo()
         else
             jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getDependencyIDsAsString())
-
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
-        jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("timeOfCalculation").toString())), 0) : null)
+        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
+        println timeSummary.getProperty("timeOfCalculation")
+        println timeSummary.getProperty("ususpTime")
+        println timeSummary.getProperty("pendTime")
+        println timeSummary.getProperty("psuspTime")
+        println timeSummary.getProperty("runTime")
+
+        jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation")? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString()+" "+ LocalDateTime.now().getYear(), lsfDatePattern):null)
+        //jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("timeOfCalculation").toString())), 0) : null)
         jobInfo.setTimeUserSuspState(timeSummary.getProperty("ususpTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ususpTime").toString())), 0) : null)
         jobInfo.setTimePendState(timeSummary.getProperty("pendTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("pendTime").toString())), 0) : null)
         jobInfo.setTimePendSuspState(timeSummary.getProperty("psuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("psuspTime").toString())), 0) : null)

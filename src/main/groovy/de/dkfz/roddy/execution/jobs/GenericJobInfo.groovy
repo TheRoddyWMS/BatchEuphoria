@@ -85,7 +85,7 @@ class GenericJobInfo {
     Duration timePendSuspState; // Suspended by its owner or the LSF administrator while in PEND state
     Duration timeSystemSuspState; //Suspended by the LSF system after being dispatched
     Duration timeUnknownState;
-    Duration timeOfCalculation;
+    LocalDateTime timeOfCalculation;
 
 
     GenericJobInfo(String jobName, File tool, String id, Map<String, String> parameters, List<String> parentJobIDs) {
