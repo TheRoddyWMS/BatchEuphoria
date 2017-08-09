@@ -232,7 +232,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    protected JobState parseJobState(String stateString) {
+    JobState parseJobState(String stateString) {
         return null
     }
 }

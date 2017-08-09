@@ -404,5 +404,5 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract File getLoggingDirectoryForJob(BEJob job)
 
-    abstract protected JobState parseJobState(String stateString)
+    abstract JobState parseJobState(String stateString)
 }

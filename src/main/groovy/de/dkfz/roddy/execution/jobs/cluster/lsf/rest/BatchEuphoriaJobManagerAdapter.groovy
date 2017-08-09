@@ -187,7 +187,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    protected JobState parseJobState(String stateString) {
+    JobState parseJobState(String stateString) {
         return null
     }
 }
