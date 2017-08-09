@@ -776,7 +776,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.setCpuTime(jobResult.get("resources_used.cput") ? Duration.parse("PT" + jobResult.get("resources_used.cput").substring(0, 2) + "H" + jobResult.get("resources_used.cput").substring(3, 5) + "M" + jobResult.get("resources_used.cput").substring(6) + "S") : null)
             gj.setServer(jobResult.get("server"))
             gj.setUmask(jobResult.get("umask"))
-            gj.setJobState(this.parseJobState(jobResult.get("job_state")))
+            gj.setJobState(parseJobState(jobResult.get("job_state")))
             gj.setExitCode(jobResult.get("exit_status") ? Integer.valueOf(jobResult.get("exit_status")) : null)
             gj.setAccount(jobResult.get("Account_Name"))
             gj.setStartCount(jobResult.get("start_count") ? Integer.valueOf(jobResult.get("start_count")) : null)
@@ -813,7 +813,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    protected JobState parseJobState(String stateString) {
+    JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == PBS_JOBSTATE_RUNNING)
             js = JobState.RUNNING
