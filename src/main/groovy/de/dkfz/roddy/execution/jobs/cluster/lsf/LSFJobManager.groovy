@@ -10,7 +10,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -18,7 +18,6 @@ import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobDependencyID
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
@@ -91,7 +90,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    protected JobState parseJobState(String stateString) {
+    JobState parseJobState(String stateString) {
         return null
     }
 
@@ -117,7 +116,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         def command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
-        executionService.handleServiceBasedJobExitStatus(command, executionResult, null)
         // job.runResult is set within executionService.execute
 //        logger.severe("Set the job runResult in a better way from runJob itself or so.")
         cacheLock.lock()
@@ -172,8 +170,8 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
-        return new PBSJobDependencyID(job, jobResult)
+    BEJobID createJobDependencyID(BEJob job, String jobResult) {
+        return null //new BEJobID(null, job)
     }
 
     @Override
@@ -233,16 +231,16 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     BEJob parseToJob(String commandString) {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
-            new PBSJobDependencyID(null, it)
-        } as List<de.dkfz.roddy.execution.jobs.BEJobDependencyID>, this);
+      //  BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
+      //      new BEJobID(null, job)
+      //  } as List<de.dkfz.roddy.execution.jobs.BEJobDependencyID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
 //        job.setJobState(queryJobStatus(Arrays.asList(shortID)).get(shortID))
 //        if (job.getJobState().isPlannedOrRunning()) addJobStatusChangeListener(job)
 
-        return job
+        return null
     }
 
     @Override
@@ -430,7 +428,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
         jobInfo.setUser(jobResult[3])
-        jobInfo.setQueue(jobResult[4])
+        //jobInfo.setQueue(jobResult[4])
         jobInfo.setDescription(jobResult[5])
         jobInfo.setProjectName(jobResult[6])
         jobInfo.setJobGroup(jobResult[7])
@@ -442,8 +440,8 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setCpuTime(jobResult[16] ? Duration.parse("PT" + jobResult[16].substring(0, 2) + "H" + jobResult[16].substring(3, 5) + "M" + jobResult[16].substring(6) + "S") : null)
         jobInfo.setRunTime(jobResult[17] ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17]))) : null)
         jobInfo.setUserGroup(jobResult[18])
-        jobInfo.setSwap(new BufferValue(jobResult[19],BufferUnit.g))
-        jobInfo.setRunLimit(jobResult[21])
+       // jobInfo.setSwap(new BufferValue(jobResult[19],BufferUnit.g))
+       // jobInfo.setRunLimit(jobResult[21])
         jobInfo.setCwd(jobResult[22])
         jobInfo.setPendReason(jobResult[23])
         jobInfo.setExecCwd(jobResult[24])

@@ -6,11 +6,11 @@
 
 package de.dkfz.roddy
 
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFJobManager
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import de.dkfz.roddy.execution.jobs.direct.synchronousexecution.DirectSynchronousExecutionJobManager
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.eilslabs.batcheuphoria.execution.cluster.lsf.LSFJobManager
 import groovy.transform.CompileStatic
 
 /**
