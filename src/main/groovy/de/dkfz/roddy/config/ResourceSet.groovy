@@ -21,7 +21,7 @@ class ResourceSet {
     private Integer coresMax
     private Integer nodes
     private Integer nodesMax
-    private Duration walltime
+    private TimeUnit walltime
 
     /**
      * Hard disk storage used.
@@ -30,25 +30,22 @@ class ResourceSet {
     private BufferValue storageMax
     private String additionalNodeFlag
 
-    ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, Duration walltime, BufferValue storage, String queue, String additionalNodeFlag) {
-        this.size = size
+    ResourceSet(BufferValue mem, Integer cores, Integer nodes, Duration walltime, BufferValue storage, String queue, String additionalNodeFlag) {
         this.mem = mem
         this.cores = cores
         this.nodes = nodes
-        this.walltime = walltime
+        this.walltime = walltime ? new TimeUnit(walltime.getSeconds()+"s") : null
         this.storage = storage
         this.queue = queue
         this.additionalNodeFlag = additionalNodeFlag
     }
 
-    @Deprecated
     ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, TimeUnit walltime, BufferValue storage, String queue, String additionalNodeFlag) {
         this.size = size
         this.mem = mem
         this.cores = cores
         this.nodes = nodes
-        String[] wt = walltime.toString().split(":")
-        this.walltime = Duration.ofDays(Long.parseLong(wt[0])).plusHours(Long.parseLong(wt[1])).plusMinutes(Long.parseLong(wt[2])).plusSeconds(Long.parseLong(wt[3]))
+        this.walltime = walltime
         this.storage = storage
         this.queue = queue
         this.additionalNodeFlag = additionalNodeFlag
@@ -95,11 +92,12 @@ class ResourceSet {
     }
 
     TimeUnit getWalltime() {
-        return walltime? new TimeUnit(walltime.getSeconds()+"s") : null
+        return walltime
     }
 
     Duration getWalltimeAsDuration() {
-        return walltime
+        String[] wt = walltime.toString().split(":")
+        return Duration.ofDays(Long.parseLong(wt[0])).plusHours(Long.parseLong(wt[1])).plusMinutes(Long.parseLong(wt[2])).plusSeconds(Long.parseLong(wt[3]))
     }
 
     boolean isWalltimeSet() {
