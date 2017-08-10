@@ -9,8 +9,8 @@ package de.dkfz.roddy.execution.jobs;
 /**
  * Created by heinold on 23.02.17.
  */
-//public class BEFakeJobID extends BEJobDependencyID {
-public class BEFakeJobID extends BEJobDependencyID.FakeJobID {
+//public class BEFakeJobID extends BEJobID {
+public class BEFakeJobID extends BEJobID.FakeJobID {
     /**
      * Various reasons why a job was not executed and is a fake job.
      */
@@ -61,11 +61,6 @@ public class BEFakeJobID extends BEJobDependencyID.FakeJobID {
     @Override
     public String getShortID() {
         return String.format("0x%08X%s", nanotime, isArray ? "[]" : "");
-    }
-
-    @Override
-    public boolean isArrayJob() {
-        return false;
     }
 
     @Override

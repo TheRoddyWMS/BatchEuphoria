@@ -4,14 +4,11 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.direct.synchronousexecution;
-
+package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.*;
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID;
-import de.dkfz.roddy.execution.jobs.BEJobResult;
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
 
 /**
@@ -40,8 +37,8 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
-        return new DirectCommandDependencyID(jobResult, job);
+    public BEJobID createJobID(BEJob job, String jobResult) {
+        return new DirectCommandID(jobResult, job);
     }
 
     @Override
@@ -235,4 +232,5 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     JobState parseJobState(String stateString) {
         return null
     }
+
 }

@@ -15,7 +15,7 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class FakeBEJob extends BEJob {
     FakeBEJob() {
-        super("Fakejob", null,null, "", null, [], [:], [], [], null)
+        super("Fakejob", null,null, "", null, [], [:], [], null)
     }
 
     public FakeBEJob(Object context) {

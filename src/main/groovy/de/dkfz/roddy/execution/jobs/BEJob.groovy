@@ -76,7 +76,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
      * You should provide i.e. job ids of qsub jobs to automatically create job
      * dependencies.
      */
-    protected final List<BEJobDependencyID> listOfCustomDependencyIDs = new LinkedList<>()
+    protected final List<BEJobID> listOfCustomDependencyIDs = new LinkedList<>()
 
     /**
      * Temporary value which defines the jobs jobState.
@@ -121,7 +121,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobDependencyID> dependencyIDs, BatchEuphoriaJobManager jobManager) {
+    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.tool = tool
@@ -132,7 +132,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll((dependencyIDs ?: parentJobs ? parentJobs.collect { BEJob job -> job.runResult?.jobID ?: null }.findAll { BEJobDependencyID it -> it } : []) as List<BEJobDependencyID>)
+        this.listOfCustomDependencyIDs.addAll(parentJobIDs ? parentJobIDs : new LinkedList<BEJobID>())
         this.jobManager = jobManager
     }
 
@@ -192,19 +192,29 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         return parentJobs
     }
 
-    List<BEJobDependencyID> getDependencyIDs() {
-        if (listOfCustomDependencyIDs)
-            return listOfCustomDependencyIDs
+    static List<BEJob> findJobsWithValidJobId(List<BEJob> jobs) {
+        return jobs.findAll { !it.isFakeJob() }.sort { it.getJobID().toString() }.unique { it.getJobID() }
+    }
 
-        def res = getParentJobs()?.collect { ((BEJob) it).runResult?.jobID }?.findAll { it }?.unique()
-        if (!res) return []
-        return res
+    static List<BEJobID> findValidJobIDs(List<BEJobID> jobIDs) {
+        return jobIDs.findAll { it.isValidID() }.sort { it.toString() }.unique()
+    }
+
+    List<BEJobID> getDependencyIDs() {
+        if (listOfCustomDependencyIDs) {
+            return listOfCustomDependencyIDs
+        } else {
+            def parentJobs = getParentJobs()
+            if (null == parentJobs) {
+                return new LinkedList<BEJobID>()
+            } else {
+                return findJobsWithValidJobId(parentJobs)?.collect { it.runResult.jobID }
+            }
+        }
     }
 
     List<String> getDependencyIDsAsString() {
-        def depIDs = getDependencyIDs()
-        def res = depIDs.collect { BEJobDependencyID jid -> jid.id }
-        return res as List<String>
+        return getDependencyIDs().collect { BEJobID jid -> jid.toString() }
     }
 
     void setLoggingDirectory(File loggingDirectory) {

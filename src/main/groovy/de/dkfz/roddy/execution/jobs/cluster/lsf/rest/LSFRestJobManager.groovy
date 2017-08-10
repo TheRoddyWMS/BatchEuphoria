@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobDependencyID
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobID
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
@@ -180,7 +180,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
         if (result.statusCode == 200) {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
-            job.setRunResult(new BEJobResult(job.lastCommand, new PBSJobDependencyID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setRunResult(new BEJobResult(job.lastCommand, new PBSJobID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
         } else {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
         }
@@ -215,7 +215,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJob> jobs) {
-        String joinedParentJobs = jobs.collect { "done(${it.getJobID()})" }.join(" &amp;&amp; ")
+        String joinedParentJobs = BEJob.findJobsWithValidJobId(jobs).collect { "done(${it.getJobID()})" }.join(" &amp;&amp; ")
         if (joinedParentJobs.length() > 0)
             return "-w \"${joinedParentJobs} \""
 
@@ -334,7 +334,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return comma separated list of job ids
      */
     private String prepareURLWithParam(List<BEJob> jobs) {
-        return jobs.collect { it.getJobID() }.join(",")
+        return BEJob.findJobsWithValidJobId(jobs).collect { it.getJobID() }.join(",")
     }
 
     /**

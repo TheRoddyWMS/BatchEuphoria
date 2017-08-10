@@ -13,7 +13,7 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobDependencyID
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
 import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.execution.jobs.JobState
@@ -108,7 +108,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         def command = createCommand(job)
         def executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
-        executionService.handleServiceBasedJobExitStatus(command, executionResult, null)
 
         // job.runResult is set within executionService.execute
         // logger.severe("Set the job runResult in a better way from runJob itself or so.")
@@ -133,14 +132,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     /**
      * For BPS, we enable hold jobs by default.
      * If it is not enabled, we might run into the problem, that job dependencies cannot be
-     * ressolved early enough due to timing problems.
+     * resolved early enough due to timing problems.
      * @return
      */
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
 
     List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        jobs.collect { it.runResult?.jobID?.shortID }.findAll { it }
+        BEJob.findJobsWithValidJobId(jobs).collect { it.runResult.getJobID().shortID }
     }
 
     @Override
@@ -152,8 +151,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    BEJobDependencyID createJobDependencyID(BEJob job, String jobResult) {
-        return new PBSJobDependencyID(job, jobResult)
+    BEJobID createJobID(BEJob job, String jobResult) {
+        return new PBSJobID(job, jobResult)
     }
 
     @Override
@@ -277,9 +276,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     BEJob parseToJob(String commandString) {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
-            new PBSJobDependencyID(null, it)
-        } as List<BEJobDependencyID>, this);
+        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), jInfo.getParentJobIDs().collect {
+            new PBSJobID(null, it)
+        } as List<BEJobID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()

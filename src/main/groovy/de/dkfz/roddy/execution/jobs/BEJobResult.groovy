@@ -4,10 +4,7 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs;
-
-import de.dkfz.roddy.core.InfoObject
-
+package de.dkfz.roddy.execution.jobs
 /**
  * Result of a job run.
  * <p/>
@@ -26,7 +23,7 @@ public class BEJobResult implements Serializable {
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
      */
-    protected final BEJobDependencyID jobID;
+    protected final BEJobID jobID;
     /**
      * Was the job executed?
      */
@@ -53,15 +50,15 @@ public class BEJobResult implements Serializable {
 
     }
 
-    public BEJobResult(Object object, Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Object object, Command command, BEJobID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public BEJobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Command command, BEJobID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public BEJobResult(Command command, BEJobDependencyID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Command command, BEJobID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.command = command;
         this.jobID = jobID;
         this.wasExecuted = wasExecuted;
@@ -75,7 +72,7 @@ public class BEJobResult implements Serializable {
         return command;
     }
 
-    public BEJobDependencyID getJobID() {
+    public BEJobID getJobID() {
         return jobID;
     }
 

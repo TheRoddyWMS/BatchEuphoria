@@ -11,19 +11,32 @@ import groovy.transform.CompileStatic
 
 /**
  * Created by heinold on 01.03.17.
+ *
+ * JobIDs are born with the JobResults, although JobResults may or may not have a JobID.
+ * Jobs don't directly have a JobID. The reference is rather the other way around (see job field of BEJobID).
  */
 @CompileStatic
-abstract class BEJobDependencyID {
+abstract class BEJobID {
 
-    public final BEJob job;
+    public final BEJob job
+    private final String id
 
-    abstract boolean isValidID()
+    BEJobID(String id, BEJob job) {
+        this.id = id
+        this.job = job
+    }
 
-    abstract String getId()
+    boolean isValidID() {
+        return !BEFakeJobID.isFakeJobID(this.getId()) && getId() != null && getId() != "none"
+    }
 
-    abstract String getShortID()
+    public String getId() {
+        return this.id
+    }
 
-    abstract boolean isArrayJob()
+    public String getShortID() {
+        return getId()
+    }
 
     static FakeJobID getNotExecutedFakeJob(BEJob job) {
         return FakeBEJob.getNotExecutedFakeJob(job, false)
@@ -41,12 +54,12 @@ abstract class BEJobDependencyID {
         return FakeBEJob.getFileExistedFakeJob(new FakeBEJob(infoObject), false)
     }
 
-    BEJobDependencyID(BEJob job) {
+    BEJobID(BEJob job) {
         this.job = job
     }
 
     @Deprecated
-    static abstract class FakeJobID extends BEJobDependencyID {
+    static abstract class FakeJobID extends BEJobID {
         FakeJobID(BEJob job) {
             super(job)
         }
