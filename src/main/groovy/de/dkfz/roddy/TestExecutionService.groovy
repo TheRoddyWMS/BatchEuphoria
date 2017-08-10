@@ -52,15 +52,9 @@ class TestExecutionService implements BEExecutionService {
         return null
     }
 
-
     @Override
     boolean isAvailable() {
         return true
-    }
-
-    @Override
-    String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
-        return null
     }
 
     @Override

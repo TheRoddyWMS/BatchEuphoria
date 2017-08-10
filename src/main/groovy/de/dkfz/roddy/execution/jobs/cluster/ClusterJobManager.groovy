@@ -6,13 +6,9 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
-import de.dkfz.roddy.execution.BEExecutionService;
+import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.FakeBEJob
-import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters;
-import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.tools.LoggerWrapper
 
 /**

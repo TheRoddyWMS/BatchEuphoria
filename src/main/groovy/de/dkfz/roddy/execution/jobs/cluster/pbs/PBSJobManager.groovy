@@ -108,7 +108,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         def command = createCommand(job)
         def executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
-        executionService.handleServiceBasedJobExitStatus(command, executionResult, null)
 
         // job.runResult is set within executionService.execute
         // logger.severe("Set the job runResult in a better way from runJob itself or so.")
@@ -152,7 +151,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    BEJobID createJobDependencyID(BEJob job, String jobResult) {
+    BEJobID createID(BEJob job, String jobResult) {
         return new PBSJobID(job, jobResult)
     }
 
