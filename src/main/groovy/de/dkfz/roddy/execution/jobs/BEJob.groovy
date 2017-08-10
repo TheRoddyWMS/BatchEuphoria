@@ -121,6 +121,20 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BatchEuphoriaJobManager jobManager
 
+    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
+        this.jobName = jobName
+        this.currentJobState = JobState.UNSTARTED
+        this.tool = tool
+        this.toolScript = toolScript
+        if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")
+        this.toolMD5 = toolMD5
+        this.resourceSet = resourceSet
+        this.parameters = parameters
+        this.parentJobs = parentJobs
+        this.arrayIndices = arrayIndices ?: new LinkedList<String>()
+        this.listOfCustomDependencyIDs.addAll(reconcileParentJobInformation(parentJobIDs, parentJobs))
+        this.jobManager = jobManager
+    }
 
     private static List<BEJobID> jobs2jobIDs(List<BEJob> jobs) {
         if (null == jobs) {
@@ -145,26 +159,10 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         } else if (null != parentJobs) {
             pJids = jobs2jobIDs(findJobsWithValidJobId(parentJobs))
         } else {
-            pJids == findValidJobIDs(parentJobIDs)
+            pJids = findValidJobIDs(parentJobIDs)
         }
-        return pJids;
+        return pJids
     }
-
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
-        this.jobName = jobName
-        this.currentJobState = JobState.UNSTARTED
-        this.tool = tool
-        this.toolScript = toolScript
-        if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")
-        this.toolMD5 = toolMD5
-        this.resourceSet = resourceSet
-        this.parameters = parameters
-        this.parentJobs = parentJobs
-        this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll(reconcileParentJobInformation(parentJobIDs, parentJobs))
-        this.jobManager = jobManager
-    }
-
 
     protected void setJobType(JobType jobType) {
         this.jobType = jobType
