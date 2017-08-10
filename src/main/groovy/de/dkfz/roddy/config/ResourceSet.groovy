@@ -94,7 +94,11 @@ class ResourceSet {
         return storage != null
     }
 
-    Duration getWalltime() {
+    TimeUnit getWalltime() {
+        return walltime? new TimeUnit(walltime.getSeconds()+"s") : null
+    }
+
+    Duration getWalltimeAsDuration() {
         return walltime
     }
 

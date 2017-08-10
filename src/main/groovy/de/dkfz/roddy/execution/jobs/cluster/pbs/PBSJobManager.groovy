@@ -189,7 +189,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         StringBuilder sb = new StringBuilder()
 
         if (resourceSet.isMemSet()) sb << " -l mem=" << resourceSet.getMem().toString(BufferUnit.M)
-        if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << durationToPbsWallTime(resourceSet.getWalltime())
+        if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << resourceSet.getWalltime()
         if (job?.customQueue) sb << " -q " << job.customQueue
         else if (resourceSet.isQueueSet()) sb << " -q " << resourceSet.getQueue()
 
@@ -802,12 +802,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             return Duration.ofHours(Long.parseLong(wt[0])).plusMinutes(Long.parseLong(wt[1])).plusSeconds(Long.parseLong(wt[2]))
         if(wt.length == 4)
             return Duration.ofDays(Long.parseLong(wt[0])).plusHours(Long.parseLong(wt[1])).plusMinutes(Long.parseLong(wt[2])).plusSeconds(Long.parseLong(wt[3]))
-        return null
-    }
-
-    private TimeUnit durationToPbsWallTime(Duration wallTime) {
-        if(wallTime)
-            return new TimeUnit(String.valueOf(wallTime.seconds+"S"))
         return null
     }
 
