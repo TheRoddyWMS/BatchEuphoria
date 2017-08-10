@@ -164,7 +164,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         if (res.successful) {
             String exID = parseJobID(res.resultLines[0])
             def job = command.getJob()
-            def jobID = createID(job, exID)
+            def jobID = createJobID(job, exID)
             command.setExecutionID(jobID)
             jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
@@ -178,7 +178,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
-    abstract BEJobID createID(BEJob job, String jobResult)
+    abstract BEJobID createJobID(BEJob job, String jobResult)
 
     ProcessingCommands convertResourceSet(BEJob job) {
         return convertResourceSet(job.resourceSet)

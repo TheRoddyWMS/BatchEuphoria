@@ -18,15 +18,25 @@ import groovy.transform.CompileStatic
 @CompileStatic
 abstract class BEJobID {
 
-    public final BEJob job;
+    public final BEJob job
+    private final String id
 
-    boolean isValidID() {
-        return !BEFakeJobID.isFakeJobID(this.getId())
+    BEJobID(String id, BEJob job) {
+        this.id = id
+        this.job = job
     }
 
-    abstract String getId()
+    boolean isValidID() {
+        return !BEFakeJobID.isFakeJobID(this.getId()) && getId() != null && getId() != "none"
+    }
 
-    abstract String getShortID()
+    public String getId() {
+        return this.id
+    }
+
+    public String getShortID() {
+        return getId()
+    }
 
     static FakeJobID getNotExecutedFakeJob(BEJob job) {
         return FakeBEJob.getNotExecutedFakeJob(job, false)

@@ -37,7 +37,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public BEJobID createID(BEJob job, String jobResult) {
+    public BEJobID createJobID(BEJob job, String jobResult) {
         return new DirectCommandID(jobResult, job);
     }
 

@@ -151,7 +151,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    BEJobID createID(BEJob job, String jobResult) {
+    BEJobID createJobID(BEJob job, String jobResult) {
         return new PBSJobID(job, jobResult)
     }
 
@@ -276,7 +276,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     BEJob parseToJob(String commandString) {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
+        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), jInfo.getParentJobIDs().collect {
             new PBSJobID(null, it)
         } as List<BEJobID>, this);
 

@@ -121,7 +121,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJob> parentJobs, List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
+    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.tool = tool
@@ -132,36 +132,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll(reconcileParentJobInformation(parentJobIDs, parentJobs))
+        this.listOfCustomDependencyIDs.addAll(parentJobIDs)
         this.jobManager = jobManager
-    }
-
-    private static List<BEJobID> jobs2jobIDs(List<BEJob> jobs) {
-        if (null == jobs) {
-            return new LinkedList<BEJobID>()
-        } else {
-            return jobs.collect { it.runResult.jobID }
-        }
-    }
-
-    private List<BEJobID> reconcileParentJobInformation(List<BEJobID> parentJobIDs, List<BEJob> parentJobs) {
-        List<BEJobID> pJids
-        if ((null != parentJobIDs && !parentJobIDs.isEmpty()) &&
-                (null != parentJobs && !parentJobs.isEmpty())) {
-            def a = findValidJobIDs(parentJobIDs).collect{ it.toString() }
-            def b = jobs2jobIDs(findJobsWithValidJobId(parentJobs)).collect { it.toString() }
-            if (a != b) {
-                throw new RuntimeException("parentJobBEJob needs to be called with one of parentJobs, parentJobIDs, or parentJobsIDs and *corresponding* parentJobs.")
-            }
-            pJids = findValidJobIDs(parentJobIDs)
-        } else if (null == parentJobIDs && null == parentJobs) {
-            pJids = new LinkedList<BEJobID>()
-        } else if (null != parentJobs) {
-            pJids = jobs2jobIDs(findJobsWithValidJobId(parentJobs))
-        } else {
-            pJids = findValidJobIDs(parentJobIDs)
-        }
-        return pJids
     }
 
     protected void setJobType(JobType jobType) {

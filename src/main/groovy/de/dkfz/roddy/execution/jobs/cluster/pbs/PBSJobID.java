@@ -15,26 +15,14 @@ import java.io.Serializable;
 /**
  */
 public class PBSJobID extends BEJobID implements Serializable {
-    private String id;
 
     public PBSJobID(BEJob job, String id) {
-        super(job);
-        this.id = id;
-    }
-
-    @Override
-    public boolean isValidID() {
-        return super.isValidID() && id != null && id != "none";
-    }
-
-    @Override
-    public String getId() {
-        return id;
+        super(id, job);
     }
 
     @Override
     public String getShortID() {
-        return id.split("[.]")[0];
+        return getId().split("[.]")[0];
     }
 
     @Override

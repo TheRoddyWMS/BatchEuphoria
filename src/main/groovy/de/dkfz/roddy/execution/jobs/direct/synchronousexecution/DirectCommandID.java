@@ -12,30 +12,13 @@ import de.dkfz.roddy.execution.jobs.BEJob;
 /**
  */
 public class DirectCommandID extends BEJobID {
-    private final String id;
 
     protected DirectCommandID(String id, BEJob job) {
-        super(job);
-        this.id = id;
-    }
-
-    @Override
-    public boolean isValidID() {
-        return id != null && id != "none";
-    }
-
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public String getShortID() {
-        return id;
+        super(id, job);
     }
 
     @Override
     public String toString() {
-        return "Direct command " + id;
+        return "Direct command " + getId();
     }
 }
