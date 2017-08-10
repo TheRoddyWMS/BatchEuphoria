@@ -2,6 +2,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
@@ -128,8 +129,7 @@ class LSFCommandParser {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
         jInfo.setMaxCpus(cores as Integer)
         jInfo.setMaxNodes(nodes as Integer)
-        jInfo.setMaxMemory(memory as Integer)
-        jInfo.setMemoryBufferUnit(bufferUnit)
+        if (memory) jInfo.setMaxMemory(new BufferValue(memory as Integer,bufferUnit))
         jInfo.setWalltime(new TimeUnit(walltime))
         return jInfo
     }

@@ -77,21 +77,20 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
         if (resourceSet.isMemSet()) {
             String memo = resourceSet.getMem().toString(BufferUnit.M)
-            // resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
+            resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
         }
         if (resourceSet.isWalltimeSet()) {
-            //resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltime()))
+            resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltime()))
         }
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
-            //resourceList.append(" -n ").append(nodes * cores)
+            resourceList.append(" -n ").append(nodes)
         }
         return new PBSResourceProcessingCommand(resourceList.toString())
     }
 
     private String durationToLSFWallTime(Duration wallTime) {
-        if(wallTime){
+        if (wallTime) {
             return String.valueOf(wallTime.toMinutes())
         }
         return null
@@ -253,7 +252,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                     "Content-Type: application/xml; charset=UTF-8",
                     "Content-Transfer-Encoding: 8bit",
                     "Accept-Language:en-en\r\n",
-                    "<AppParam><id>COMMANDTORUN</id><value>sleep 15s</value><type></type></AppParam>\r\n"].join("\r\n")
+                    "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"].join("\r\n")
         } else {
             return ""
         }
@@ -294,6 +293,12 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
         if (this.getUserEmail()) envParams << "-u ${this.getUserEmail()}"
 
+        StringBuilder resources = new StringBuilder("-R 'select[type==any] ")
+        if (job.resourceSet.isCoresSet()) {
+            int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
+            resources.append(" affinity[core(${cores})]")
+        }
+        resources.append("' ")
 
         String parentJobs = ""
         if (job.dependencyIDs) {
@@ -304,7 +309,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                 "Content-Type: application/xml; charset=UTF-8",
                 "Content-Transfer-Encoding: 8bit",
                 "Accept-Language:en-en\r\n",
-                "<AppParam><id>EXTRA_PARAMS</id><value>${"-R 'select[type==any]' " + envParams + ((PBSResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
+                "<AppParam><id>EXTRA_PARAMS</id><value>${resources + envParams + ((PBSResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
                         "</value><type></type></AppParam>\r\n"].join("\r\n")
     }
 
@@ -409,35 +414,34 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getDependencyIDsAsString())
         }
 
-        Map<String, String> jobInfoProperties = [:]
-        Map<String, String> jobDetailsAttributes = jobDetails.attributes()
-        jobDetailsAttributes.each { String key, value ->
-            jobInfoProperties.put(key, jobDetails.getProperty(key).toString())
-        }
+
+        BufferValue swap = jobDetails.getProperty("swap") ? new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) : null
+        BufferValue memory = jobDetails.getProperty("mem") ? new BufferValue(jobDetails.getProperty("mem").toString(), BufferUnit.m) : null
+        String runLimit = jobDetails.getProperty("runLimit").toString()
+        Integer numProcessors = jobDetails.getProperty("numProcessors") as Integer
+        Integer numberOfThreads = jobDetails.getProperty("nthreads") as Integer
+        ResourceSet usedResources=jobInfo.getUsedResources() ?: new ResourceSet(null,new BufferValue(1,BufferUnit.m),null,null,null,null,null,null)
+
+
 
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH)
-
         jobInfo.setUser(jobDetails.getProperty("user").toString())
-        jobInfo.setCpuTime(jobInfoProperties.get("cpuTime")? Duration.parse(jobInfoProperties.get("cpuTime")):null)
+        jobInfo.setCpuTime(jobDetails.getProperty("cpuTime") ? Duration.ofMillis(Math.round(Double.parseDouble(jobDetails.getProperty("cpuTime").toString()) * 1000)) : null)
         jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
         jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTime(jobDetails.getProperty("startTime")? LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern):null)
-        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime")? LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern):null)
-        jobInfo.setEndTime(jobDetails.getProperty("endTime")? LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern):null)
-        jobInfo.setQueue(jobDetails.getProperty("queue").toString())
+        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) : null)
+        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) : null)
+        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) : null)
+        jobInfo.setUsedResources(jobDetails.getProperty("queue").toString())
         jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts").toString())
         jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
         jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
-        jobInfo.setSwap(jobDetails.getProperty("swap")? new BufferValue(Integer.valueOf(jobDetails.getProperty("swap").toString()),BufferUnit.m) : null)
         jobInfo.setDescription(jobDetails.getProperty("description").toString())
         jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
-        jobInfo.setMaxMemory(jobDetails.getProperty("mem")?.toString().toInteger())
-        jobInfo.setRunTime(jobDetails.getProperty("runTime")? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))):null)
-        jobInfo.setRunLimit(jobDetails.getProperty("runLimit").toString())
-        jobInfo.setNumProcessors(jobDetails.getProperty("numProcessors").toString())
-        jobInfo.setNthreads(jobDetails.getProperty("nthreads").toString())
+        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) : null)
+
         jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
-        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString()?  Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) : null)
+        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) : null)
         jobInfo.setPidStr(jobDetails.getProperty("pidStr").toString())
         jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
         jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
@@ -446,11 +450,10 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setPriority(jobDetails.getProperty("priority").toString())
         jobInfo.setOutFile(jobDetails.getProperty("outFile").toString())
         jobInfo.setInFile(jobDetails.getProperty("inFile").toString())
-        jobInfo.setResourceReq(jobDetails.getProperty("resourceReq").toString())
+        jobInfo.setResourceReq(jobDetails.getProperty("resReq").toString())
         jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
         jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())
         jobInfo.setAskedHostsStr(jobDetails.getProperty("askedHostsStr").toString())
-        println jobInfo.toString()
         job.setJobInfo(jobInfo)
     }
 
@@ -501,8 +504,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         println timeSummary.getProperty("psuspTime")
         println timeSummary.getProperty("runTime")
 
-        jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation")? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString()+" "+ LocalDateTime.now().getYear(), lsfDatePattern):null)
-        //jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("timeOfCalculation").toString())), 0) : null)
+        jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString() + " " + LocalDateTime.now().getYear(), lsfDatePattern) : null)
         jobInfo.setTimeUserSuspState(timeSummary.getProperty("ususpTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ususpTime").toString())), 0) : null)
         jobInfo.setTimePendState(timeSummary.getProperty("pendTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("pendTime").toString())), 0) : null)
         jobInfo.setTimePendSuspState(timeSummary.getProperty("psuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("psuspTime").toString())), 0) : null)

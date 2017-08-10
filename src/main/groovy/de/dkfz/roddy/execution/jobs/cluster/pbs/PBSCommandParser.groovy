@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
@@ -135,8 +136,7 @@ class PBSCommandParser {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
         if (cores) jInfo.setMaxCpus(cores as Integer)
         if (nodes) jInfo.setMaxNodes(nodes as Integer)
-        if (memory) jInfo.setMaxMemory(memory as Integer)
-        if (bufferUnit) jInfo.setMemoryBufferUnit(bufferUnit)
+        if (memory) jInfo.setMaxMemory(new BufferValue(memory as Integer,bufferUnit))
         if (walltime) jInfo.setWalltime(new TimeUnit(walltime))
         return jInfo
     }

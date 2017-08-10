@@ -51,25 +51,15 @@ class GenericJobInfo {
 
     Map<String, String> parameters
     List<String> parentJobIDs
-    TimeUnit walltime
-    Integer maxCpus
-    Integer maxNodes
-    Integer maxMemory //Total resident maxMemory usage of all processes in a job
-    BufferUnit memoryBufferUnit
-    String queue
     String otherSettings
     JobState jobState
-    String numProcessors;
     String userTime; //user time used
     String systemTime; //system time used
-    String runLimit;
     String pendReason;
     String execHome;
     String execUserName;
     String pidStr;
     String pgidStr; // Currently active process group ID in a job.
-    String nthreads; //Number of currently active threads of a job
-    BufferValue swap; //Total virtual maxMemory (swap) usage of all processes in a job
     Integer exitCode; // UNIX exit status of the job
     String jobGroup;
     String description;
@@ -104,10 +94,10 @@ class GenericJobInfo {
                 ", id='" + id + '\'' +
                 ", parameters=" + parameters +
                 ", parentJobIDs=" + parentJobIDs +
-                ", maxMemory=" + maxMemory +
-                ", maxCpus=" + maxCpus +
-                ", maxNodes=" + maxNodes +
-                ", queue=" + queue +
+                ", maxMemory=" + usedResources.getMem() +
+                ", maxCpus=" + usedResources.getCores() +
+                ", maxNodes=" + usedResources.getNodes() +
+                ", queue=" + usedResources.getQueue() +
                 ", otherSettings=" + otherSettings +
                 ", user=" + user +
                 ", submissionHost=" + submissionHost +
@@ -116,11 +106,9 @@ class GenericJobInfo {
                 ", submitTime=" + submitTime +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
-                ", numProcessors=" + numProcessors +
                 ", cpuTime=" + cpuTime +
                 ", userTime=" + userTime +
                 ", systemTime=" + systemTime +
-                ", runLimit=" + runLimit +
                 ", pendReason=" + pendReason +
                 ", priority=" + priority +
                 ", userGroup=" + userGroup +
@@ -129,8 +117,8 @@ class GenericJobInfo {
                 ", execUserName=" + execUserName +
                 ", pidStr=" + pidStr +
                 ", pgidStr=" + pgidStr +
-                ", nthreads=" + nthreads +
-                ", swap=" + swap +
+                ", nthreads=" + usedResources.getNumberOfThreads() +
+                ", swap=" + usedResources.getSwap() +
                 ", exitCode=" + exitCode +
                 ", jobGroup=" + jobGroup +
                 ", description=" + description +
