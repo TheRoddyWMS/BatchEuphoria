@@ -132,7 +132,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         this.parameters = parameters
         this.parentJobs = parentJobs
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll(parentJobIDs)
+        this.listOfCustomDependencyIDs.addAll(parentJobIDs ? parentJobIDs : new LinkedList<BEJobID>())
         this.jobManager = jobManager
     }
 
