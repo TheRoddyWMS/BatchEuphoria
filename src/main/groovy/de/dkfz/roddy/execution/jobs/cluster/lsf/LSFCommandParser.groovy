@@ -1,5 +1,6 @@
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
@@ -127,10 +128,10 @@ class LSFCommandParser {
 
     GenericJobInfo toGenericJobInfo() {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
-        jInfo.setMaxCpus(cores as Integer)
-        jInfo.setMaxNodes(nodes as Integer)
-        if (memory) jInfo.setMaxMemory(new BufferValue(memory as Integer,bufferUnit))
-        jInfo.setWalltime(new TimeUnit(walltime))
+        ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
+                cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
+                null, null, null)
+        jInfo.setAskedResources(askedResources)
         return jInfo
     }
 }

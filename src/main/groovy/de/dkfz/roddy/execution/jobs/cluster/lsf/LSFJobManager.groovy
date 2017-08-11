@@ -169,7 +169,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         executionService.execute(qrls)
     }
 
-    @Override
     BEJobID createJobDependencyID(BEJob job, String jobResult) {
         return null //new BEJobID(null, job)
     }
@@ -621,6 +620,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     @Override
     String parseJobID(String commandOutput) {
         return commandOutput
+    }
+
+    @Override
+    BEJobID createJobID(BEJob job, String jobResult) {
+        return null
     }
 
     @Override

@@ -53,10 +53,10 @@ class PBSCommandParserTest {
 
         def gji = testJobManager.parseGenericJobInfo(commandString)
         assert gji.jobName == "r170402_171935425_A100_indelCalling"
-        assert gji.maxCpus == 8
-        assert gji.maxNodes == 1
-        assert gji.walltime == new TimeUnit("02:02:00:00")
-        assert gji.maxMemory.toLong() == 16384
+        assert gji.askedResources.getCores() == 8
+        assert gji.askedResources.getNodes() == 1
+        assert gji.askedResources.getWalltime() == new TimeUnit("02:02:00:00")
+        assert gji.askedResources.getMem().toLong() == 16384
         assert gji.parameters  == ["PARAMETER_FILE":"/data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/r170402_171935425_A100_indelCalling_1.parameters"]
         assert gji.parentJobIDs == ["120015"]
     }

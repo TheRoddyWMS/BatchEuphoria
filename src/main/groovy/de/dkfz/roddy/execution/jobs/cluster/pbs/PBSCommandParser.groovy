@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
@@ -134,10 +135,10 @@ class PBSCommandParser {
 
     GenericJobInfo toGenericJobInfo() {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
-        if (cores) jInfo.setMaxCpus(cores as Integer)
-        if (nodes) jInfo.setMaxNodes(nodes as Integer)
-        if (memory) jInfo.setMaxMemory(new BufferValue(memory as Integer,bufferUnit))
-        if (walltime) jInfo.setWalltime(new TimeUnit(walltime))
+        ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
+                cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
+                null, null, null)
+        jInfo.setAskedResources(askedResources)
         return jInfo
     }
 }
