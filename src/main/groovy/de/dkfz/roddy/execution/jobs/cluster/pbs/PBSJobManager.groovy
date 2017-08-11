@@ -189,7 +189,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         StringBuilder sb = new StringBuilder()
 
         if (resourceSet.isMemSet()) sb << " -l mem=" << resourceSet.getMem().toString(BufferUnit.M)
-        if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << durationToPbsWallTime(resourceSet.getWalltime())
+        if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << resourceSet.getWalltime()
         if (job?.customQueue) sb << " -q " << job.customQueue
         else if (resourceSet.isQueueSet()) sb << " -q " << resourceSet.getQueue()
 
@@ -740,7 +740,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             BufferValue mem = null
             int cores
             int nodes
-            Duration walltime = null
+            TimeUnit walltime = null
             String additionalNodeFlag
 
             if (jobResult.get("Resource_List.mem"))
@@ -752,14 +752,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             if (jobResult.get("Resource_List.nodes"))
                 additionalNodeFlag = jobResult.get("Resource_List.nodes").find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature }
             if (jobResult.get("Resource_List.walltime"))
-                walltime = pbsWallTimeToDuration(jobResult.get("Resource_List.walltime"))
+                walltime = new TimeUnit(jobResult.get("Resource_List.walltime"))
 
             BufferValue usedMem = null
-            Duration usedWalltime = null
+            TimeUnit usedWalltime = null
             if (jobResult.get("resources_used.mem"))
                 usedMem = new BufferValue(Integer.valueOf(jobResult.get("resources_used.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("resources_used.mem")[-2]))
             if (jobResult.get("resources_used.walltime"))
-                usedWalltime = pbsWallTimeToDuration(jobResult.get("resources_used.walltime"))
+                usedWalltime = new TimeUnit(jobResult.get("resources_used.walltime"))
 
             gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
@@ -795,21 +795,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             queriedExtendedStates.put(it.getKey(), gj)
         }
         return queriedExtendedStates
-    }
-
-    private Duration pbsWallTimeToDuration(String wallTime) {
-        String[] wt = wallTime.split(":")
-        if(wt.length == 3)
-            return Duration.ofHours(Long.parseLong(wt[0])).plusMinutes(Long.parseLong(wt[1])).plusSeconds(Long.parseLong(wt[2]))
-        if(wt.length == 4)
-            return Duration.ofDays(Long.parseLong(wt[0])).plusHours(Long.parseLong(wt[1])).plusMinutes(Long.parseLong(wt[2])).plusSeconds(Long.parseLong(wt[3]))
-        return null
-    }
-
-    private TimeUnit durationToPbsWallTime(Duration wallTime) {
-        if(wallTime)
-            return new TimeUnit(String.valueOf(wallTime.seconds+"S"))
-        return null
     }
 
     @Override
