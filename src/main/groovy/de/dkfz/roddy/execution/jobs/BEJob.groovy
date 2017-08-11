@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.config.ResourceSet
+import groovy.transform.CompileDynamic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.concurrent.atomic.AtomicLong
@@ -22,8 +23,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
 
     protected JobType jobType = JobType.STANDARD
-
-    private final List<BEJob> arrayChildJobs = new LinkedList<>()
 
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
 
@@ -65,12 +64,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
      */
     protected final Map<String, String> parameters
 
-    /**
-     * If you want to generated arrays use this. <p>You can do things like: n-m,
-     */
-    protected final List<String> arrayIndices
-
-    protected final List<J> parentJobs
+    protected List<BEJob> parentJobs = new LinkedList<BEJob>()
 
     /**
      * You should provide i.e. job ids of qsub jobs to automatically create job
@@ -121,7 +115,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, List<String> arrayIndices, Map<String, String> parameters, List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
+    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Map<String, String> parameters, BatchEuphoriaJobManager jobManager) {
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.tool = tool
@@ -130,11 +124,29 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         this.toolMD5 = toolMD5
         this.resourceSet = resourceSet
         this.parameters = parameters
-        this.parentJobs = parentJobs
-        this.arrayIndices = arrayIndices ?: new LinkedList<String>()
-        this.listOfCustomDependencyIDs.addAll(parentJobIDs ? parentJobIDs : new LinkedList<BEJobID>())
         this.jobManager = jobManager
     }
+
+    static BEJob fromJobID(BEJobID jobID, BatchEuphoriaJobManager jobManager = jobID?.job?.jobManager) {
+        if (null != jobID.job) {
+            return jobID.job
+        } else {
+            return new BEJob(null, null, null, null, null, [:], jobManager)
+        }
+    }
+
+    BEJob addParentJobs(List<BEJob> parentJobs) {
+        assert(null != parentJobs)
+        this.parentJobs.addAll(parentJobs)
+        return this
+    }
+
+    BEJob addParentJobIDs(List<BEJobID> parentJobIDs) {
+        assert(null != parentJobIDs)
+        this.parentJobs.addAll(parentJobIDs.collect { fromJobID(it, jobManager) })
+        return this
+    }
+
 
     protected void setJobType(JobType jobType) {
         this.jobType = jobType
@@ -154,17 +166,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         if (jobID == null)
             return false
         return BEFakeJobID.isFakeJobID(jobID)
-    }
-
-    protected void postProcessArrayJob(JR runResult) {
-        throw new NotImplementedException()
-        Map<String, Object> prmsAsStringMap = new LinkedHashMap<>()
-        for (String k : parameters.keySet()) {
-            prmsAsStringMap.put(k, parameters.get(k))
-        }
-        jobType = JobType.ARRAY_HEAD
-        //TODO Think of proper array index handling!
-        int i = 1
     }
 
     void addProcessingCommand(ProcessingCommands processingCommand) {
@@ -193,24 +194,15 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     static List<BEJob> findJobsWithValidJobId(List<BEJob> jobs) {
-        return jobs.findAll { !it.isFakeJob() }.sort { it.getJobID().toString() }.unique { it.getJobID() }
+        return jobs.findAll { !it.isFakeJob() }.sort { it.getJobID().toString() }.unique { it.getJobID().toString() }
     }
 
     static List<BEJobID> findValidJobIDs(List<BEJobID> jobIDs) {
-        return jobIDs.findAll { it.isValidID() }.sort { it.toString() }.unique()
+        return jobIDs.findAll { it.isValidID() }.sort { it.toString() }.unique{ it.toString() }
     }
 
     List<BEJobID> getDependencyIDs() {
-        if (listOfCustomDependencyIDs) {
-            return listOfCustomDependencyIDs
-        } else {
-            def parentJobs = getParentJobs()
-            if (null == parentJobs) {
-                return new LinkedList<BEJobID>()
-            } else {
-                return findJobsWithValidJobId(parentJobs)?.collect { it.runResult.jobID }
-            }
-        }
+        return parentJobs.collect { it.getJobID() }
     }
 
     List<String> getDependencyIDsAsString() {
@@ -233,7 +225,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
      *
      * @return
      */
-    String getJobID() {
+    private String getJobIDString() {
         if (runResult != null)
             if (runResult.getJobID() != null)
                 return runResult.getJobID().getShortID()
@@ -243,9 +235,9 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
             return null
     }
 
-//    String getToolID() {
-//        return toolID
-//    }
+    BEJobID getJobID() {
+        return new BEJobID(jobIDString, this)
+    }
 
     File getTool() {
         return tool

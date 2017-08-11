@@ -166,7 +166,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List dependencies, List arraySettings) {
+    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List dependencies) {
         throw new NotImplementedException()
     }
 

@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobID
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -113,7 +114,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     Map<String, JobState> queryJobStatus(List jobIDs) {
         getJobDetails(jobIDs)
         Map<String, JobState> jobStates = [:]
-        (jobIDs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID(), job.getJobState()) }
+        (jobIDs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
         return jobStates
     }
 
@@ -211,15 +212,17 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
     /**
      * Prepare parent jobs is part of @prepareExtraParams
-     * @param jobs
+     * @param jobIds
      * @return part of parameter area
      */
-    private String prepareParentJobs(List<BEJob> jobs) {
-        String joinedParentJobs = BEJob.findJobsWithValidJobId(jobs).collect { "done(${it.getJobID()})" }.join(" &amp;&amp; ")
-        if (joinedParentJobs.length() > 0)
+    private String prepareParentJobs(List<BEJobID> jobIds) {
+        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        if (validJobIds.size() > 0) {
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
             return "-w \"${joinedParentJobs} \""
-
-        return ""
+        } else {
+            return ""
+        }
     }
 
     /**
@@ -275,17 +278,17 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     private String prepareExtraParams(BEJob job, String boundary) {
         StringBuilder envParams = new StringBuilder()
 
-        String jointExraParams = job.parameters.collect { key, value -> "${key}='${value}'" }.join(", ")
+        String jointExtraParams = job.parameters.collect { key, value -> "${key}='${value}'" }.join(", ")
 
-        if (jointExraParams.length() > 0)
-            envParams << "-env \" ${jointExraParams} \""
+        if (jointExtraParams.length() > 0)
+            envParams << "-env \" ${jointExtraParams} \""
 
         if (this.getUserEmail()) envParams << "-u ${this.getUserEmail()}"
 
 
         String parentJobs = ""
-        if (job.getParentJobs() != null && job.getParentJobs()?.size()) {
-            parentJobs = prepareParentJobs(job.getParentJobs() as List<BEJob>)
+        if (job.dependencyIDs) {
+            parentJobs = prepareParentJobs(job.dependencyIDs)
         }
         return ["--${boundary}",
                 "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"",
@@ -372,7 +375,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("job").each { NodeChild element ->
-                BEJob job = jobList.find { it.getJobID().equalsIgnoreCase(element.getProperty("jobId").toString()) }
+                BEJob job = jobList.find { it.getJobID().toString().equalsIgnoreCase(element.getProperty("jobId").toString()) }
 
                 setJobInfoForJobDetails(job, element)
                 job.setJobState(parseJobState(element.getProperty("jobStatus").toString()))
@@ -456,7 +459,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             res.getProperty("history").each { NodeChild jobHistory ->
 
                 BEJob job = jobList.find {
-                    it.getJobID().equalsIgnoreCase((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString())
+                    it.getJobID().toString().equalsIgnoreCase((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString())
                 }
 
                 setJobInfoForJobHistory(job, jobHistory)
