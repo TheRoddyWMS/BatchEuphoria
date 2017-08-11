@@ -80,7 +80,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
         }
         if (resourceSet.isWalltimeSet()) {
-            resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltime()))
+            resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
         }
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
@@ -420,7 +420,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         Duration runLimit = jobDetails.getProperty("runLimit") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) : null
         Integer numProcessors = jobDetails.getProperty("numProcessors") as Integer
         Integer numberOfThreads = jobDetails.getProperty("nthreads") as Integer
-        ResourceSet usedResources= new ResourceSet(null,memory,numProcessors,null,runLimit,null,queue,null)
+        ResourceSet usedResources= new ResourceSet(memory,numProcessors,null,runLimit,null,queue,null)
         jobInfo.setUsedResources(usedResources)
 
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH)

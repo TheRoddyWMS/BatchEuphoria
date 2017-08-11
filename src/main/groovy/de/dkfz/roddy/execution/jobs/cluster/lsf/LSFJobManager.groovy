@@ -58,10 +58,10 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String LSF_LOGFILE_WILDCARD = "*.o"
 
-    protected Map<String, JobState> allStates = [:]
+    protected Map<BEJobID, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
 
-    protected Map<String, BEJob> jobStatusListeners = [:]
+    protected Map<BEJobID, BEJob> jobStatusListeners = [:]
 
     private static ExecutionResult cachedExecutionResult
 
@@ -107,8 +107,8 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
-        throw new NotImplementedException()
+    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+        return null
     }
 
     @Override
@@ -405,7 +405,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         // Queries will then use the id.
 //            allStates[allStates.find { Job job, JobState state -> job.jobID == id }?.key] = status
 //        }
-        allStates.putAll((Map<String, JobState>) allStatesTemp.collectEntries {
+        allStates.putAll((Map<BEJobID, JobState>) allStatesTemp.collectEntries {
             new MapEntry(it.key, (JobState) it.value[0])
         })
         cacheLock.unlock()
