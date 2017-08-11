@@ -738,8 +738,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             GenericJobInfo gj = new GenericJobInfo(jobResult.get("Job_Name"), null, it.getKey(), null, jobResult.get("depend") ? jobResult.get("depend").find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
             BufferValue mem = null
-            int cores
-            int nodes
+            Integer cores
+            Integer nodes
             TimeUnit walltime = null
             String additionalNodeFlag
 
