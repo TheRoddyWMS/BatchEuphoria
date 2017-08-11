@@ -12,9 +12,9 @@ import java.io.Serializable;
  * A generic jobState for jobs.
  */
 public enum JobState implements Serializable {
+    UNSTARTED, // Initial state before submission.
     HOLD,
     QUEUED,
-    UNSTARTED,
     /**
      * It is used only in Roddy.
      */

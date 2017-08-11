@@ -13,7 +13,7 @@ import de.dkfz.roddy.tools.LoggerWrapper
 
 /**
  */
-public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
+class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
     public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName());
 
@@ -32,7 +32,7 @@ public class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManage
     }
 
     @Override
-    public DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+    public DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
         return null;
     }
 

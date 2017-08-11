@@ -128,10 +128,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract C createCommand(GenericJobInfo jobInfo)
 
-    abstract C createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings)
+    abstract C createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies)
 
     C createCommand(BEJob job, File tool, List<String> dependencies) {
-        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies, job.arrayIndices)
+        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies)
         c.setJob(job)
         return c
     }

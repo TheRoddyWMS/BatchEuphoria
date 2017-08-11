@@ -87,13 +87,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
 //    @Override
-    PBSCommand createCommand(BEJob job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, List<String> arraySettings, File logDirectory) {
-        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
+    PBSCommand createCommand(BEJob job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
+        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID.toString(), processingCommands, parameters, tags, null, dependencies, command, logDirectory)
         return pbsCommand
     }
 
     @Override
-    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
 //        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
 //        return pbsCommand
         throw new NotImplementedException()
@@ -115,11 +115,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         try {
             if (executionResult.successful && job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
-                allStates[job.jobID] = JobState.HOLD
+                allStates[job.jobID.toString()] = JobState.HOLD
             } else if (executionResult.successful && job.runResult.wasExecuted) {
-                allStates[job.jobID] = JobState.QUEUED
+                allStates[job.jobID.toString()] = JobState.QUEUED
             } else {
-                allStates[job.jobID] = JobState.FAILED
+                allStates[job.jobID.toString()] = JobState.FAILED
                 logger.severe("PBS call failed with error code ${executionResult.exitCode} and error message:\n\t" + executionResult?.resultLines?.join("\n\t"))
             }
         } finally {
@@ -274,13 +274,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      */
     @Override
     BEJob parseToJob(String commandString) {
-//        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), jInfo.getParentJobIDs().collect {
+        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, jInfo.getParameters(), this)
+        job.addParentJobIDs(jInfo.getParentJobIDs().collect {
             new PBSJobID(null, it)
-        } as List<BEJobID>, this);
+        } as List<BEJobID>)
+        job.jobInfo = jInfo
 
-        //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
+        //Automatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
 //        job.setJobState(queryJobStatus(Arrays.asList(shortID)).get(shortID))
 //        if (job.getJobState().isPlannedOrRunning()) addJobStatusChangeListener(job)
@@ -519,7 +520,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 state = JobState.ABORTED
             else {
                 cacheLock.lock()
-                state = allStates[job.jobID]
+                state = allStates[job.jobID.toString()]
                 cacheLock.unlock()
             }
             if (state) queriedStates[job] = state
@@ -565,7 +566,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
 
         Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
-            it.getJobID()
+            it.getJobID().toString()
         }, false)
         return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
     }
@@ -607,7 +608,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     void addJobStatusChangeListener(BEJob job) {
         synchronized (jobStatusListeners) {
-            jobStatusListeners.put(job.getJobID(), job)
+            jobStatusListeners.put(job.getJobID().toString(), job)
         }
     }
 
@@ -705,11 +706,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             } else {
                 [:]
             }
-        }.collectEntries { Object jobId, Object value ->
+        }.collectEntries { jobId, value ->
             // join multi-line values
             value = ((String) value).replaceAll("\n\t", "")
             [(jobId): value]
-        }.collectEntries { Object jobId, Object value ->
+        }.collectEntries { jobId, value ->
             Map<String, String> p = ((String) value).readLines().collectEntries { String line ->
                 if (line.startsWith("    ") && line.contains(" = ")) {
                     String[] parts = line.split(" = ")

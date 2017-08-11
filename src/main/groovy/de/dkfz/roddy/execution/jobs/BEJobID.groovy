@@ -16,10 +16,14 @@ import groovy.transform.CompileStatic
  * Jobs don't directly have a JobID. The reference is rather the other way around (see job field of BEJobID).
  */
 @CompileStatic
-abstract class BEJobID {
+class BEJobID {
 
     public final BEJob job
     private final String id
+
+    BEJobID(BEJob job) {
+        this.job = job
+    }
 
     BEJobID(String id, BEJob job) {
         this.id = id
@@ -38,6 +42,10 @@ abstract class BEJobID {
         return getId()
     }
 
+    String toString() {
+        return(id)
+    }
+
     static FakeJobID getNotExecutedFakeJob(BEJob job) {
         return FakeBEJob.getNotExecutedFakeJob(job, false)
     }
@@ -54,12 +62,8 @@ abstract class BEJobID {
         return FakeBEJob.getFileExistedFakeJob(new FakeBEJob(infoObject), false)
     }
 
-    BEJobID(BEJob job) {
-        this.job = job
-    }
-
     @Deprecated
-    static abstract class FakeJobID extends BEJobID {
+    static class FakeJobID extends BEJobID {
         FakeJobID(BEJob job) {
             super(job)
         }
