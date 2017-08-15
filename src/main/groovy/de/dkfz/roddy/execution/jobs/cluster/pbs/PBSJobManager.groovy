@@ -6,32 +6,23 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.BEJobResult
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
-import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.LoggerWrapper
-import de.dkfz.roddy.tools.RoddyConversionHelperMethods
-import de.dkfz.roddy.tools.RoddyIOHelperMethods
-import de.dkfz.roddy.tools.TimeUnit
+import de.dkfz.roddy.execution.jobs.*
+import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.tools.*
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
-import java.util.concurrent.ExecutionException
+
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.regex.Matcher
 import java.util.Map.Entry
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
+import java.util.regex.Matcher
+
 import static de.dkfz.roddy.StringConstants.*
 
 /**
@@ -139,7 +130,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     boolean getDefaultForHoldJobsEnabled() { return true }
 
     List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        BEJob.findJobsWithValidJobId(jobs).collect { it.runResult.getJobID().shortID }
+        jobs.findAll { !it.isFakeJob() }.collect { it.runResult.getJobID().shortID }
     }
 
     @Override
@@ -148,11 +139,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if (!heldJobs) return
         String qrls = "qrls ${collectJobIDsFromJobs(heldJobs).join(" ")}"
         executionService.execute(qrls)
-    }
-
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
-        return new PBSJobID(job, jobResult)
     }
 
     @Override
@@ -275,10 +261,16 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     BEJob parseToJob(String commandString) {
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, jInfo.getParameters(), this)
-        job.addParentJobIDs(jInfo.getParentJobIDs().collect {
-            new PBSJobID(null, it)
-        } as List<BEJobID>)
+        BEJob job = new BEJob(
+                new BEJobID(jInfo.id),
+                jInfo.getJobName(),
+                jInfo.getTool(),
+                null,
+                null,
+                null,
+                jInfo.getParentJobIDs().collect { new BEJob(new PBSJobID(it), this) },
+                jInfo.getParameters(),
+                this)
         job.jobInfo = jInfo
 
         //Automatically get the status of the job and if it is planned or running add it as a job status listener.

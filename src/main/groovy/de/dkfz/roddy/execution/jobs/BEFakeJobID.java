@@ -24,23 +24,23 @@ public class BEFakeJobID extends BEJobID.FakeJobID {
     private long nanotime;
     private boolean isArray;
 
-    public BEFakeJobID(BEJob job, FakeJobReason fakeJobReason, boolean isArray) {
-        super(job);
+    public BEFakeJobID(FakeJobReason fakeJobReason, boolean isArray) {
+        super(nextUnknownID(fakeJobReason.toString() + "-"));
         this.fakeJobReason = fakeJobReason;
         this.isArray = isArray;
         nanotime = System.nanoTime();
     }
 
-    public BEFakeJobID(BEJob job, boolean isArray) {
-        this(job, FakeJobReason.UNDEFINED, isArray);
+    public BEFakeJobID(boolean isArray) {
+        this(FakeJobReason.UNDEFINED, isArray);
     }
 
-    public BEFakeJobID(BEJob job, FakeJobReason fakeJobReason) {
-        this(job, fakeJobReason, false);
+    public BEFakeJobID(FakeJobReason fakeJobReason) {
+        this(fakeJobReason, false);
     }
 
-    public BEFakeJobID(BEJob job) {
-        this(job, FakeJobReason.UNDEFINED, false);
+    public BEFakeJobID() {
+        this(FakeJobReason.UNDEFINED, false);
     }
 
     /**

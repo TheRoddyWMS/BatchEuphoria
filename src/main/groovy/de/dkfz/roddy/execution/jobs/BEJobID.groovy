@@ -6,8 +6,9 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
+
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Created by heinold on 01.03.17.
@@ -16,18 +17,22 @@ import groovy.transform.CompileStatic
  * Jobs don't directly have a JobID. The reference is rather the other way around (see job field of BEJobID).
  */
 @CompileStatic
-class BEJobID {
+class BEJobID implements Comparable<BEJobID> {
 
-    public final BEJob job
     private final String id
 
-    BEJobID(BEJob job) {
-        this.job = job
+    private static AtomicLong unkownIdCounter = new AtomicLong(0L)
+
+    BEJobID() {
+        id = nextUnknownID()
     }
 
-    BEJobID(String id, BEJob job) {
+    BEJobID(String id) {
         this.id = id
-        this.job = job
+    }
+
+    protected static String nextUnknownID(String prefix = "UnkownJobID-") {
+        return prefix + unkownIdCounter.incrementAndGet()
     }
 
     boolean isValidID() {
@@ -46,27 +51,24 @@ class BEJobID {
         return(id)
     }
 
-    static FakeJobID getNotExecutedFakeJob(BEJob job) {
-        return FakeBEJob.getNotExecutedFakeJob(job, false)
+    static FakeJobID getNotExecutedFakeJobID() {
+        return FakeBEJob.getNotExecutedFakeJobID(false)
     }
 
-    static FakeJobID getNotExecutedFakeJob(BEJob job, boolean array) {
-        return FakeBEJob.getNotExecutedFakeJob(job, array)
-    }
-
-    static FakeJobID getFileExistedFakeJob(BEJob job, boolean array) {
-        return FakeBEJob.getFileExistedFakeJob(job, array)
-    }
-
-    static FakeJobID getFileExistedFakeJob(InfoObject infoObject) {
-        return FakeBEJob.getFileExistedFakeJob(new FakeBEJob(infoObject), false)
+    static FakeJobID getNotExecutedFakeJobID(boolean array) {
+        return FakeBEJob.getNotExecutedFakeJobID(array)
     }
 
     @Deprecated
     static class FakeJobID extends BEJobID {
-        FakeJobID(BEJob job) {
-            super(job)
+        FakeJobID(String id) {
+            super(id)
         }
+    }
+
+    @Override
+    int compareTo(BEJobID o) {
+        return this.id.compareTo(o.id)
     }
 
 }

@@ -27,10 +27,18 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
 
     /**
-     * The name of the job which should be passed to the execution system.
+     * The identifier of the job as returned by the batch processing system.
+     */
+    private BEJobID jobID
+
+    /**
+     * The destriptive name of the job. Can be passed to the execution system.
      */
     public final String jobName
 
+    /**
+     * Jobs can be marked as dirty if they are in a directed acyclic graph of job dependency modelling a workflow.
+     */
     public boolean isDirty
 
     /**
@@ -64,13 +72,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
      */
     protected final Map<String, String> parameters
 
-    protected List<BEJob> parentJobs = new LinkedList<BEJob>()
-
-    /**
-     * You should provide i.e. job ids of qsub jobs to automatically create job
-     * dependencies.
-     */
-    protected final List<BEJobID> listOfCustomDependencyIDs = new LinkedList<>()
+    protected SortedSet<BEJob> parentJobs = new TreeSet<BEJob>()
 
     /**
      * Temporary value which defines the jobs jobState.
@@ -87,7 +89,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     /**
      * Stores the result when the job was executed.
      */
-    JR runResult
+    private JR runResult
 
     //////////////////////////////////////////////////////////////
     // Now come some job / command specific settings
@@ -115,7 +117,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Map<String, String> parameters, BatchEuphoriaJobManager jobManager) {
+    BEJob(BEJobID jobID, String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Collection<BEJob> parentJobs, Map<String, String> parameters, BatchEuphoriaJobManager jobManager) {
+        this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.tool = tool
@@ -125,28 +128,34 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         this.resourceSet = resourceSet
         this.parameters = parameters
         this.jobManager = jobManager
+        this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
-    static BEJob fromJobID(BEJobID jobID, BatchEuphoriaJobManager jobManager = jobID?.job?.jobManager) {
-        if (null != jobID.job) {
-            return jobID.job
-        } else {
-            return new BEJob(null, null, null, null, null, [:], jobManager)
-        }
+    BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
+        this(jobID, null, null, null, null, null, [], [:], jobManager)
     }
 
-    BEJob addParentJobs(List<BEJob> parentJobs) {
+    BEJob addParentJobs(Collection<BEJob> parentJobs) {
         assert(null != parentJobs)
         this.parentJobs.addAll(parentJobs)
         return this
     }
 
-    BEJob addParentJobIDs(List<BEJobID> parentJobIDs) {
+    BEJob addParentJobIDs(List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
         assert(null != parentJobIDs)
-        this.parentJobs.addAll(parentJobIDs.collect { fromJobID(it, jobManager) })
+        this.parentJobs.addAll(parentJobIDs.collect { new BEJob(it, jobManager) })
         return this
     }
 
+    BEJobResult getRunResult() {
+        return this.runResult
+    }
+
+    BEJob setRunResult(BEJobResult result) {
+        assert(this.jobID == result.jobID)
+        this.runResult = result
+        return this
+    }
 
     protected void setJobType(JobType jobType) {
         this.jobType = jobType
@@ -190,15 +199,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     List<J> getParentJobs() {
-        return parentJobs
-    }
-
-    static List<BEJob> findJobsWithValidJobId(List<BEJob> jobs) {
-        return jobs.findAll { !it.isFakeJob() }.sort { it.getJobID().toString() }.unique { it.getJobID().toString() }
-    }
-
-    static List<BEJobID> findValidJobIDs(List<BEJobID> jobIDs) {
-        return jobIDs.findAll { it.isValidID() }.sort { it.toString() }.unique{ it.toString() }
+        return parentJobs as List<J>
     }
 
     List<BEJobID> getDependencyIDs() {
@@ -220,23 +221,13 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
             return jobManager.getLoggingDirectoryForJob(this)
     }
 
-    /**
-     * If the job was executed this return the jobs id otherwise null.
-     *
-     * @return
-     */
-    private String getJobIDString() {
-        if (runResult != null)
-            if (runResult.getJobID() != null)
-                return runResult.getJobID().getShortID()
-            else
-                return "Unknown"
-        else
-            return null
+    BEJob resetJobID(BEJobID jobID) {
+        this.jobID = jobID
+        return this
     }
 
     BEJobID getJobID() {
-        return new BEJobID(jobIDString, this)
+        return this.jobID
     }
 
     File getTool() {

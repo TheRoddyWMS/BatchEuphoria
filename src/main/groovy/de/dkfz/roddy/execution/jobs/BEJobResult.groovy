@@ -5,6 +5,9 @@
  */
 
 package de.dkfz.roddy.execution.jobs
+
+import groovy.transform.CompileStatic
+
 /**
  * Result of a job run.
  * <p/>
@@ -13,6 +16,7 @@ package de.dkfz.roddy.execution.jobs
  *
  * @author michael
  */
+@CompileStatic
 public class BEJobResult implements Serializable {
 
     /**
@@ -23,7 +27,7 @@ public class BEJobResult implements Serializable {
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
      */
-    protected final BEJobID jobID;
+    protected final BEJob job;
     /**
      * Was the job executed?
      */
@@ -50,17 +54,17 @@ public class BEJobResult implements Serializable {
 
     }
 
-    public BEJobResult(Object object, Command command, BEJobID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
-        this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
+    public BEJobResult(Object object, Command command, BEJob job, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+        this(command, job, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public BEJobResult(Command command, BEJobID jobID, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
-        this(command, jobID, wasExecuted, false, toolID, jobParameters, parentJobs)
+    public BEJobResult(Command command, BEJob job, boolean wasExecuted, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+        this(command, job, wasExecuted, false, toolID, jobParameters, parentJobs)
     }
 
-    public BEJobResult(Command command, BEJobID jobID, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    public BEJobResult(Command command, BEJob job, boolean wasExecuted, boolean wasArray, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.command = command;
-        this.jobID = jobID;
+        this.job = job;
         this.wasExecuted = wasExecuted;
         this.wasArray = wasArray;
         this.toolID = toolID;
@@ -73,7 +77,7 @@ public class BEJobResult implements Serializable {
     }
 
     public BEJobID getJobID() {
-        return jobID;
+        return job.jobID
     }
 
     public boolean isWasExecuted() {
@@ -89,7 +93,7 @@ public class BEJobResult implements Serializable {
     }
 
     public BEJob getJob() {
-        return jobID.job;
+        return job
     }
 
     public Map<String, String> getJobParameters() {

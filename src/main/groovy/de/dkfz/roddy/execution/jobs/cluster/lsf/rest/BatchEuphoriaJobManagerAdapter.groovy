@@ -37,11 +37,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
         return null
     }
 
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
-        throw new NotImplementedException()
-    }
-
     // needed
     @Override
     ProcessingCommands convertResourceSet(ResourceSet resourceSet) {

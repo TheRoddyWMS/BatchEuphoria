@@ -181,7 +181,9 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
         if (result.statusCode == 200) {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
-            job.setRunResult(new BEJobResult(job.lastCommand, new PBSJobID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            PBSJobID jobID = new PBSJobID(new XmlSlurper().parseText(result.body).text())
+            job.resetJobID(jobID)
+            job.setRunResult(new BEJobResult(job.lastCommand, job, true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
         } else {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
         }
@@ -216,7 +218,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        List<BEJobID> validJobIds = jobIds.findAll { it.isValidID() }
         if (validJobIds.size() > 0) {
             String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
             return "-w \"${joinedParentJobs} \""
@@ -337,7 +339,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return comma separated list of job ids
      */
     private String prepareURLWithParam(List<BEJob> jobs) {
-        return BEJob.findJobsWithValidJobId(jobs).collect { it.getJobID() }.join(",")
+        return jobs.findAll { !it.isFakeJob() }.collect { it.jobID }.join(",")
     }
 
     /**
