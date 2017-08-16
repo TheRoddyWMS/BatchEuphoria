@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
@@ -62,7 +63,6 @@ class LSFCommand extends Command {
         this.processingCommands = processingCommands
         this.command = command
         this.loggingDirectory = loggingDirectory
-        //this.arrayIndices = arrayIndices ?: new LinkedList<String>()
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 
@@ -135,7 +135,7 @@ class LSFCommand extends Command {
 
         bsubCall << assembleProcessingCommands()
 
-        bsubCall << prepareParentJobs((List<BEJob>) job.getParentJobs())
+        bsubCall << prepareParentJobs(job.getDependencyIDs())
 
         bsubCall << assembleVariableExportString()
 
@@ -188,17 +188,17 @@ class LSFCommand extends Command {
 
     /**
      * Prepare parent jobs is part of @prepareExtraParams
-     * @param jobs
+     * @param job ids
      * @return part of parameter area
      */
-    private String prepareParentJobs(List<BEJob> jobs) {
-        if (jobs) {
-            String joinedParentJobs = jobs.collect { "done\\(${it.getJobID()}\\)" }.join(" &amp\\;&amp\\; ")
-            if (joinedParentJobs.length() > 0)
-                return " -w \"${joinedParentJobs} \""
+    private String prepareParentJobs(List<BEJobID> jobIds) {
+        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        if (validJobIds.size() > 0) {
+            String joinedParentJobs = validJobIds.collect { "done\\(${it}\\)" }.join(" &amp\\;&amp\\; ")
+            return " -w \"${joinedParentJobs} \""
+        } else {
+            return ""
         }
-
-        return ""
     }
 
 
