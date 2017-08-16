@@ -15,7 +15,6 @@ import groovy.transform.CompileStatic
 import org.apache.commons.io.IOUtils
 import org.apache.http.Header
 import org.apache.http.HttpEntity
-import org.apache.http.HttpHost
 import org.apache.http.auth.AuthenticationException
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
@@ -79,7 +78,7 @@ class RestExecutionService implements BEExecutionService {
      */
     RestExecutionService(String baseURL, String username, String password) throws AuthenticationException {
         this.BASE_URL = baseURL
-        if(isAvailable())
+        if (isAvailable())
             logon(username, password)
     }
 
@@ -130,26 +129,7 @@ class RestExecutionService implements BEExecutionService {
         if (isCertAuth) {
             httpClient = createHttpClientWithClientCertAuth()
         } else {
-            SSLContextBuilder builder = new SSLContextBuilder();
-            builder.loadTrustMaterial(null, new TrustStrategy() {
-                @Override
-                public boolean isTrusted(X509Certificate[] chain, String authType)
-                        throws CertificateException {
-                    return true;
-                }
-            });
-
-            HostnameVerifier hostnameVerifierAllowAll = new HostnameVerifier() {
-                @Override
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            };
-
-            SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(builder.build(), hostnameVerifierAllowAll);
-
-            httpClient = HttpClients.custom().setSSLSocketFactory(
-                    sslSocketFactory).build();
+            httpClient = createHttpClientWithCredentialAuth()
         }
         def httpRequest
 
@@ -184,35 +164,57 @@ class RestExecutionService implements BEExecutionService {
     }
 
 
+    private CloseableHttpClient createHttpClientWithCredentialAuth() {
+        //TODO Currently all certificates are trusted for testing. It has to be fixed.
+        SSLContextBuilder builder = new SSLContextBuilder();
+        builder.loadTrustMaterial(null, new TrustStrategy() {
+            @Override
+            public boolean isTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+                return true;
+            }
+        });
+
+        HostnameVerifier hostnameVerifierAllowAll = new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        };
+
+        SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(builder.build(), hostnameVerifierAllowAll);
+
+        return HttpClients.custom().setSSLSocketFactory(
+                sslSocketFactory).build();
+
+    }
+
+
     private CloseableHttpClient createHttpClientWithClientCertAuth() {
-        try {
-            // read in the keystore from the filesystem, this should contain a single keypair
-            KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
-            clientKeyStore.load(new FileInputStream(this.keyStoreLocation), this.keyStorePassword.toCharArray());
+        // read in the keystore from the filesystem, this should contain a single keypair
+        KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
+        clientKeyStore.load(new FileInputStream(this.keyStoreLocation), this.keyStorePassword.toCharArray());
 
-            SSLContext sslContext = SSLContexts
-                    .custom()
-                    .loadKeyMaterial(clientKeyStore, this.keyStorePassword.toCharArray())
-                    .loadTrustMaterial(null, new TrustSelfSignedStrategy())
-                    .build();
+        SSLContext sslContext = SSLContexts
+                .custom()
+                .loadKeyMaterial(clientKeyStore, this.keyStorePassword.toCharArray())
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                .build();
 
-            SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(sslContext,
-                    new DefaultHostnameVerifier());
+        SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(sslContext,
+                new DefaultHostnameVerifier());
 
-            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-                    .register("https", sslConnectionFactory)
-                    .register("http", new PlainConnectionSocketFactory())
-                    .build();
+        Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
+                .register("https", sslConnectionFactory)
+                .register("http", new PlainConnectionSocketFactory())
+                .build();
 
-            HttpClientBuilder builder = HttpClientBuilder.create();
-            builder.setSSLSocketFactory(sslConnectionFactory)
-            builder.setConnectionManager(new PoolingHttpClientConnectionManager(registry));
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        builder.setSSLSocketFactory(sslConnectionFactory)
+        builder.setConnectionManager(new PoolingHttpClientConnectionManager(registry));
 
-            return builder.build();
-        } catch (Exception ex) {
-            // log ex
-            return null;
-        }
+        return builder.build();
+
     }
 
     @Override
