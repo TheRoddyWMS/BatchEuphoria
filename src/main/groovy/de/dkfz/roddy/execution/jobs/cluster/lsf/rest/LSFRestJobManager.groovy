@@ -10,8 +10,8 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.BEJobID
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFResourceProcessingCommand
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobID
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
@@ -21,7 +21,6 @@ import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
-import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
@@ -86,7 +85,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
             resourceList.append(" -n ").append(nodes)
         }
-        return new PBSResourceProcessingCommand(resourceList.toString())
+        return new LSFResourceProcessingCommand(resourceList.toString())
     }
 
     private String durationToLSFWallTime(Duration wallTime) {
@@ -309,7 +308,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                 "Content-Type: application/xml; charset=UTF-8",
                 "Content-Transfer-Encoding: 8bit",
                 "Accept-Language:en-en\r\n",
-                "<AppParam><id>EXTRA_PARAMS</id><value>${resources + envParams + ((PBSResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
+                "<AppParam><id>EXTRA_PARAMS</id><value>${resources + envParams + ((LSFResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
                         "</value><type></type></AppParam>\r\n"].join("\r\n")
     }
 

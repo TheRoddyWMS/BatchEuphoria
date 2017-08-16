@@ -121,7 +121,7 @@ class LSFCommand extends Command {
 
         StringBuilder bsubCall = new StringBuilder(EMPTY)
 
-        bsubCall << BSUB << " -R 'select[type==any]'" << PARM_JOBNAME << id
+        bsubCall << BSUB << assembleResources() << PARM_JOBNAME << id
 
         if (holdJobsOnStart) bsubCall << " -H "
 
@@ -142,6 +142,17 @@ class LSFCommand extends Command {
         bsubCall << " " << prepareToolScript(job)
 
         return bsubCall
+    }
+
+
+    StringBuilder assembleResources(){
+        StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
+        if (job.resourceSet.isCoresSet()) {
+            int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
+            resources.append(" affinity[core\\(${cores}\\)]")
+        }
+        resources.append("\' ")
+        return resources
     }
 
 
