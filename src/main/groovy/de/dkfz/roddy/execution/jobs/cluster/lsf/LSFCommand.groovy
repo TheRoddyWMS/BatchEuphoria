@@ -146,12 +146,12 @@ class LSFCommand extends Command {
 
 
     StringBuilder assembleResources(){
-        StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
+        StringBuilder resources = new StringBuilder(" -R \\'select[type==any] ")
         if (job.resourceSet.isCoresSet()) {
             int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
             resources.append(" affinity[core\\(${cores}\\)]")
         }
-        resources.append("\' ")
+        resources.append("\\' ")
         return resources
     }
 

@@ -52,7 +52,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \\\"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home delimiter=\\'\\<\\'\\\""
+            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter=\\'\\<\\'\\\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String LSF_LOGFILE_WILDCARD = "*.o"
 
@@ -424,13 +424,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
         Duration runTime = !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null
         BufferValue swap = !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"),BufferUnit.m) : null
-
         BufferValue memory = !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"),BufferUnit.m) : null
         Duration runLimit = !jobResult[21].toString().equals("-")? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null
-        //Integer numProcessors = jobDetails.getProperty("numProcessors") as Integer
-        //Integer numberOfThreads = jobDetails.getProperty("nthreads") as Integer
+        Integer nodes = !jobResult[29].toString().equals("-")? jobResult[29].toString() as Integer : null
 
-        ResourceSet usedResources= new ResourceSet(memory,null,null,runTime,null,queue,null)
+        ResourceSet usedResources= new ResourceSet(memory,null,nodes,runTime,null,queue,null)
         jobInfo.setUsedResources(usedResources)
 
         ResourceSet askedResources = new ResourceSet(null,null,null,runLimit,null,queue,null)
