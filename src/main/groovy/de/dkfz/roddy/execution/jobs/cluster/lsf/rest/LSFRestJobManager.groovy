@@ -11,7 +11,6 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFResourceProcessingCommand
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
@@ -29,7 +28,6 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 import java.time.Duration
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -54,6 +52,14 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     public static String URI_JOB_HISTORY = "/jobhistory"
     public static String URI_USER_COMMAND = "/userCmd"
 
+    protected Map<String, JobState> allStates = [:]
+
+    protected Map<String, BEJob> jobStatusListeners = [:]
+
+    @Override
+    String getSpecificJobIDIdentifier() {
+        return '${LSB_JOBID}'
+    }
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
         super(restExecutionService, parms)
@@ -109,19 +115,19 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List list, boolean forceUpdate) {
-        getJobDetails(list)
+    Map<BEJob, JobState> queryJobStatus(List jobs, boolean forceUpdate) {
+        getJobDetails(jobs)
         Map<BEJob, JobState> jobStates = [:]
-        (list as List<BEJob>).each { BEJob job -> jobStates.put(job, job.getJobState()) }
+        (jobs as List<BEJob>).each { BEJob job -> jobStates.put(job, job.getJobState()) }
         return jobStates
     }
 
 
     @Override
-    Map<String, JobState> queryJobStatus(List jobIDs) {
-        getJobDetails(jobIDs)
+    Map<String, JobState> queryJobStatus(List jobs) {
+        getJobDetails(jobs)
         Map<String, JobState> jobStates = [:]
-        (jobIDs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
+        (jobs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
         return jobStates
     }
 
@@ -188,8 +194,11 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
         if (result.statusCode == 200) {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
-            job.setRunResult(new BEJobResult(job.lastCommand, new PBSJobID(job, new XmlSlurper().parseText(result.body).text()), true, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setRunResult(new BEJobResult(job.lastCommand, new BEJobID(new XmlSlurper().parseText(result.body).text(), job), result.successful, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setJobState(JobState.UNKNOWN)
+            jobStatusListeners.put(job.getJobID().getId(), job)
         } else {
+            job.setRunResult(new BEJobResult(job.lastCommand, null, result.successful, job.tool, job.parameters, job.parentJobs as List<BEJob>))
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
         }
     }
@@ -299,6 +308,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
         resources.append("' ")
 
+        if (job.loggingDirectory) resources.append("-outdir ${job.loggingDirectory} ")
+
         String parentJobs = ""
         if (job.dependencyIDs) {
             parentJobs = prepareParentJobs(job.dependencyIDs)
@@ -388,7 +399,9 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("job").each { NodeChild element ->
-                BEJob job = jobList.find { it.getJobID().toString().equalsIgnoreCase(element.getProperty("jobId").toString()) }
+                BEJob job = jobList.find {
+                    it.getJobID().toString().equalsIgnoreCase(element.getProperty("jobId").toString())
+                }
 
                 setJobInfoForJobDetails(job, element)
                 job.setJobState(parseJobState(element.getProperty("jobStatus").toString()))
@@ -419,7 +432,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         Duration runLimit = jobDetails.getProperty("runLimit") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) : null
         Integer numProcessors = jobDetails.getProperty("numProcessors") as Integer
         Integer numberOfThreads = jobDetails.getProperty("nthreads") as Integer
-        ResourceSet usedResources= new ResourceSet(memory,numProcessors,null,runLimit,null,queue,null)
+        ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH)
@@ -507,6 +520,29 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setTimeSystemSuspState(timeSummary.getProperty("ssuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ssuspTime").toString())), 0) : null)
         jobInfo.setRunTime(timeSummary.getProperty("runTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("runTime").toString())), 0) : null)
         job.setJobInfo(jobInfo)
+    }
+
+    @Override
+    void addJobStatusChangeListener(BEJob job) {
+        synchronized (jobStatusListeners) {
+            jobStatusListeners.put(job.getJobID().getId(), job)
+        }
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+        List<BEJob> beJobs = []
+        for (String id : jobIds) {
+            if (jobStatusListeners.get(id))
+                beJobs.add(jobStatusListeners.get(id))
+        }
+        return queryJobStatus(beJobs)
+    }
+
+    @Override
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+
+        return this.queryJobStatus(jobStatusListeners.values().collect())
     }
 
 

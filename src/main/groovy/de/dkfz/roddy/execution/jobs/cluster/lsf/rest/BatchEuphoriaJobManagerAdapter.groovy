@@ -34,7 +34,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
 
     @Override
     BEJobResult runJob(BEJob job) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
@@ -75,22 +75,22 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     // needed
     @Override
     void updateJobStatus() {
-
+        throw new NotImplementedException()
     }
 
     @Override
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     Map<String, GenericJobInfo> queryExtendedJobStateById(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     void addJobStatusChangeListener(BEJob job) {
-
+        throw new NotImplementedException()
     }
 
     @Override
@@ -156,7 +156,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
 // needed
     @Override
     void queryJobAbortion(List executedJobs) {
-
+        throw new NotImplementedException()
     }
 
     // needed
@@ -172,21 +172,21 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
 
     @Override
     Map<BEJob, JobState> queryJobStatus(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List jobIds, boolean forceUpdate) {
-        return null
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
+        throw new NotImplementedException()
     }
 
     @Override
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     JobState parseJobState(String stateString) {
-        return null
+        throw new NotImplementedException()
     }
 }

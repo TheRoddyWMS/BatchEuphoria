@@ -45,6 +45,8 @@ import javax.net.ssl.SSLSession
 import java.security.KeyStore
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * Execution service for cluster systems with REST services. It is currently only used for LSF
@@ -58,6 +60,9 @@ class RestExecutionService implements BEExecutionService {
     public boolean isCertAuth = false //true if certificate authentication is used
 
     private String token = ""
+    private LocalDateTime tokenDate
+    private String username
+    private String password
 
     private File keyStoreLocation
     private String keyStorePassword
@@ -78,6 +83,9 @@ class RestExecutionService implements BEExecutionService {
      */
     RestExecutionService(String baseURL, String username, String password) throws AuthenticationException {
         this.BASE_URL = baseURL
+        this.username = username
+        this.password = password
+
         if (isAvailable())
             logon(username, password)
     }
@@ -104,6 +112,7 @@ class RestExecutionService implements BEExecutionService {
             throw new AuthenticationException("Could not authenticate, returned HTTP status code: ${result.statusCode}")
 
         this.token = new XmlSlurper().parseText(result.body).getProperty("token").toString()
+        this.tokenDate = LocalDateTime.now()
         return result
     }
 
@@ -156,6 +165,13 @@ class RestExecutionService implements BEExecutionService {
             String result = IOUtils.toString(entity.content)
             logger.always("response body: " + result)
             EntityUtils.consume(entity)
+
+            if (response.getStatusLine().statusCode == 403 && !isCertAuth && Duration.between(tokenDate, LocalDateTime.now()).seconds > 60) {
+                if (this.logon(username, password)) {
+                    return this.execute(restCommand)
+                }
+            }
+
             return new RestResult(response.getAllHeaders(), result, response.getStatusLine().getStatusCode())
         } finally {
             response.close()
