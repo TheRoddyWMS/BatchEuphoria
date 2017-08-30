@@ -49,6 +49,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     public static String URI_JOB_RESUME = "/jobs/resume"
     public static String URI_JOB_REQUEUE = "/jobs/requeue"
     public static String URI_JOB_DETAILS = "/jobs/"
+    public static String URI_JOB_BASICS = "/jobs/basicinfo"
     public static String URI_JOB_HISTORY = "/jobhistory"
     public static String URI_USER_COMMAND = "/userCmd"
 
@@ -415,6 +416,40 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     /**
+     * Updates job information for given jobs
+     * @param jobList
+     */
+    Map<String, JobState> getJobStats(List<String> jobIds) {
+        List<Header> headers = []
+        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+
+        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_BASICS, null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
+        if (result.statusCode == 200) {
+            GPathResult res = new XmlSlurper().parseText(result.body)
+            logger.info("status code: " + result.statusCode + " result:" + result.body)
+            Map<String, JobState> resultStates = [:]
+            res.getProperty("pseudoJob").each { NodeChild element ->
+                String jobId = null
+                if (jobIds) {
+                    jobId = jobIds.find {
+                        it.equalsIgnoreCase(element.getProperty("jobId").toString())
+                    }
+                } else {
+                    jobId = element.getProperty("jobId").toString()
+                }
+
+                if (jobId) {
+                    resultStates.put(jobId, parseJobState(element.getProperty("jobStatus").toString()))
+                }
+            }
+            return resultStates
+        } else {
+            logger.warning("status code: " + result.statusCode + " result: " + result.body)
+            return [:]
+        }
+    }
+
+    /**
      * Used by @getJobDetails to set JobInfo
      * @param job
      * @param jobDetails - XML job details
@@ -432,8 +467,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         BufferValue swap = jobDetails.getProperty("swap") ? new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) : null
         BufferValue memory = jobDetails.getProperty("mem") ? new BufferValue(jobDetails.getProperty("mem").toString(), BufferUnit.m) : null
         Duration runLimit = jobDetails.getProperty("runLimit") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) : null
-        Integer numProcessors = jobDetails.getProperty("numProcessors") as Integer
-        Integer numberOfThreads = jobDetails.getProperty("nthreads") as Integer
+        Integer numProcessors = jobDetails.getProperty("numProcessors").toString() as Integer
+        Integer numberOfThreads = jobDetails.getProperty("nthreads").toString() as Integer
         ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
@@ -533,24 +568,12 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
     @Override
     Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
-        List<BEJob> beJobs = []
-        for (String id : jobIds) {
-            if (jobStatusListeners.get(id))
-                beJobs.add(jobStatusListeners.get(id))
-        }
-        getJobDetails(beJobs)
-        Map<String, JobState> jobStates = [:]
-        (beJobs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
-        return jobStates
+        return getJobStats(jobIds)
     }
 
     @Override
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
-        List<BEJob> jobs = jobStatusListeners.values().collect()
-        getJobDetails(jobs)
-        Map<String, JobState> jobStates = [:]
-        (jobs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
-        return jobStates
+        return getJobStats(null)
     }
 
 
