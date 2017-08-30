@@ -38,7 +38,7 @@ class RestResult extends ExecutionResult {
 
     @Override
     boolean isSuccessful() {
-        return successful
+        return statusCode == 200
     }
 
 }
