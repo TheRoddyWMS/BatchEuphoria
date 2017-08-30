@@ -209,6 +209,19 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
 
         requestBody << paramArea
+        if (job.toolScript) {
+            requestBody << "--${headBoundary}\r\n"
+
+            requestBody << [
+                    "Content-Disposition: form-data; name='f1'",
+                    "Content-Type: application/octet-stream",
+                    "Content-Transfer-Encoding: UTF-8",
+                    "Content-ID: <${job.jobName}>",
+                    "",
+                    "${job.toolScript}\r\n",
+            ].join("\r\n")
+        }
+
         requestBody << "--${headBoundary}--\r\n"
 
         logger.postAlwaysInfo("request body:\n" + requestBody)
@@ -274,22 +287,14 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareToolScript(BEJob job, String boundary) {
-        String toolScript
-        if (job.getToolScript() != null && job.getToolScript().length() > 0) {
-            toolScript = job.getToolScript()
-        } else {
-            if (job.getTool() != null) toolScript = job.getTool().getAbsolutePath()
-        }
-        if (toolScript) {
-            return ["--${boundary}",
-                    "Content-Disposition: form-data; name=\"COMMAND\"",
-                    "Content-Type: application/xml; charset=UTF-8",
-                    "Content-Transfer-Encoding: 8bit",
-                    "Accept-Language:en-en\r\n",
-                    "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"].join("\r\n")
-        } else {
-            return ""
-        }
+
+        return ["--${boundary}",
+                "Content-Disposition: form-data; name=\"COMMAND\"",
+                "Content-Type: application/xml; charset=UTF-8",
+                "Content-Transfer-Encoding: 8bit",
+                "Accept-Language:en-en\r\n",
+                "<AppParam><id>COMMANDTORUN</id><value>${job.tool ?: job.jobName+",upload"}</value><type>${job.tool ? "" : "file"}</type></AppParam>\r\n",
+        ].join("\r\n")
     }
 
     /**
