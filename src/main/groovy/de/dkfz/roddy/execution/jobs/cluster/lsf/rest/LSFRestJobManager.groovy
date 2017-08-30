@@ -308,7 +308,9 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
         resources.append("' ")
 
-        if (job.loggingDirectory) resources.append("-outdir ${job.loggingDirectory} ")
+        StringBuilder logging = new StringBuilder("")
+        if (job.loggingDirectory) logging.append("-oo ${job.loggingDirectory}/job.out ")
+        if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/job.err ")
 
         String parentJobs = ""
         if (job.dependencyIDs) {
@@ -319,7 +321,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                 "Content-Type: application/xml; charset=UTF-8",
                 "Content-Transfer-Encoding: 8bit",
                 "Accept-Language:en-en\r\n",
-                "<AppParam><id>EXTRA_PARAMS</id><value>${resources + envParams + ((LSFResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
+                "<AppParam><id>EXTRA_PARAMS</id><value>${logging + resources + envParams + ((LSFResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
                         "</value><type></type></AppParam>\r\n"].join("\r\n")
     }
 
