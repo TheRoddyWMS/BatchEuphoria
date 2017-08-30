@@ -536,13 +536,19 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             if (jobStatusListeners.get(id))
                 beJobs.add(jobStatusListeners.get(id))
         }
-        return queryJobStatus(beJobs)
+        getJobDetails(beJobs)
+        Map<String, JobState> jobStates = [:]
+        (beJobs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
+        return jobStates
     }
 
     @Override
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
-
-        return this.queryJobStatus(jobStatusListeners.values().collect())
+        List<BEJob> jobs = jobStatusListeners.values().collect()
+        getJobDetails(jobs)
+        Map<String, JobState> jobStates = [:]
+        (jobs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
+        return jobStates
     }
 
 
