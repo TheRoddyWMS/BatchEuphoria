@@ -309,8 +309,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         resources.append("' ")
 
         StringBuilder logging = new StringBuilder("")
-        if (job.loggingDirectory) logging.append("-oo ${job.loggingDirectory}/job.out ")
-        if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/job.err ")
+        if (job.loggingDirectory) logging.append("-oo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
+        if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
 
         String parentJobs = ""
         if (job.dependencyIDs) {
