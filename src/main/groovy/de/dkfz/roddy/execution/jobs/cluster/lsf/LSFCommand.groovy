@@ -27,7 +27,8 @@ class LSFCommand extends Command {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
 
-    public static final String PARM_LOGPATH = " -o "
+    public static final String PARM_LOGPATH = " -eo "
+    public static final String PARM_OUTPATH = " -oo "
     public static final String BSUB = "bsub"
     public static final String PARM_DEPENDS = " -W depend="
     public static final String PARM_MAIL = " -u "
@@ -73,6 +74,12 @@ class LSFCommand extends Command {
 
     }
 
+    String getLoggingParameter() {
+        StringBuilder logging = new StringBuilder(EMPTY)
+        if (job.loggingDirectory) logging << (PARM_OUTPATH + " ${loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
+        if (job.loggingDirectory) logging << (PARM_LOGPATH + " ${loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
+        return logging
+    }
 
     String getGroupListString(String groupList) {
 
@@ -127,7 +134,7 @@ class LSFCommand extends Command {
 
         bsubCall << getAdditionalCommandParameters()
 
-        if (loggingDirectory) bsubCall << PARM_LOGPATH << loggingDirectory
+        if (loggingDirectory) bsubCall << getLoggingParameter()
 
         if (email) bsubCall << getEmailParameter(email)
 
@@ -145,7 +152,7 @@ class LSFCommand extends Command {
     }
 
 
-    StringBuilder assembleResources(){
+    StringBuilder assembleResources() {
         StringBuilder resources = new StringBuilder(" -R \\'select[type==any] ")
         if (job.resourceSet.isCoresSet()) {
             int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1

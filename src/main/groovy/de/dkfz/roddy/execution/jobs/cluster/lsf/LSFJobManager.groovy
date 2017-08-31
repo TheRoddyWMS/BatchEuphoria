@@ -23,6 +23,8 @@ import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.RoddyIOHelperMethods
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
+
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -47,7 +49,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     public static final String LSF_JOBSTATE_RUNNING = "RUN"
     public static final String LSF_JOBSTATE_HOLD = "PSUSP"
     public static final String LSF_JOBSTATE_QUEUED = "PEND"
-    public static final String LSF_JOBSTATE_COMPLETED_UNKNOWN = "DONE"
+    public static final String LSF_JOBSTATE_COMPLETED_SUCCESSFUL = "DONE"
     public static final String LSF_JOBSTATE_EXITING = "EXIT"
     public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \\\"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
@@ -55,11 +57,13 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter=\\'\\<\\'\\\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String LSF_LOGFILE_WILDCARD = "*.o"
+    public static final String LSF_JOBID = '${LSB_JOBID}'
+    public static final String LSF_ARRAYID = '${$LSB_JOBINDEX}'
 
-    protected Map<BEJobID, JobState> allStates = [:]
+    protected Map<String, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
 
-    protected Map<BEJobID, BEJob> jobStatusListeners = [:]
+    protected Map<String, BEJob> jobStatusListeners = [:]
 
     private static ExecutionResult cachedExecutionResult
 
@@ -69,27 +73,79 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
     @Override
     File getLoggingDirectoryForJob(BEJob job) {
-        return null
+        return job.getLoggingDirectory()
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
-        return null
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+
+        if (allStates == null || forceUpdate)
+            updateJobStatus(forceUpdate)
+
+        Map<String, JobState> queriedStates = jobIds.collectEntries { String jobId -> [jobId, JobState.UNKNOWN] }
+
+        for (String jobId in jobIds) {
+            JobState state
+            cacheLock.lock()
+            state = allStates[jobId]
+            cacheLock.unlock()
+            if (state) queriedStates[jobId] = state
+        }
+
+        return queriedStates
     }
 
     @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+
+        if (allStates == null || forceUpdate)
+            updateJobStatus(forceUpdate)
+
+        Map<String, JobState> queriedStates = [:]
+        cacheLock.lock()
+        queriedStates.putAll(allStates)
+        cacheLock.unlock()
+
+        return queriedStates
+    }
+
+    @Override
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+
+        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
+            it.getJobID().toString()
+        }, false)
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
     }
 
     @Override
     Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
-        return null
+        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+        updateJobStatus()
+        for (String id : jobIds) {
+            Map.Entry<String, BEJob> job = jobStatusListeners.find { it.key == id }
+            if (job)
+                queriedExtendedStates.put(job.getKey(), job.getValue().getJobInfo())
+        }
+        return queriedExtendedStates
     }
 
     @Override
     JobState parseJobState(String stateString) {
-        return null
+        JobState js = JobState.UNKNOWN
+
+        if (stateString == getStringForRunningJob())
+            js = JobState.RUNNING
+        if (stateString == getStringForJobOnHold())
+            js = JobState.SUSPENDED
+        if (stateString == getStringForQueuedJob())
+            js = JobState.QUEUED
+        if (stateString == getStringForCompletedJob())
+            js = JobState.COMPLETED_SUCCESSFUL
+        if (stateString == getStringForFailedJob())
+            js = JobState.FAILED
+
+        return js
     }
 
     LSFJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
@@ -97,7 +153,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     LSFCommand createCommand(GenericJobInfo jobInfo) {
-        return null
+        throw new NotImplementedException()
     }
 
     LSFCommand createCommand(BEJob job) {
@@ -106,7 +162,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
     @Override
     LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
@@ -118,13 +174,13 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 //        logger.severe("Set the job runResult in a better way from runJob itself or so.")
         cacheLock.lock()
         if (job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
-            allStates[job.jobID] = JobState.HOLD
+            allStates[job.jobID.getId()] = JobState.HOLD
         } else if (job.runResult.wasExecuted) {
-            allStates[job.jobID] = JobState.QUEUED
+            allStates[job.jobID.getId()] = JobState.QUEUED
         } else {
-            allStates[job.jobID] = JobState.FAILED
+            allStates[job.jobID.getId()] = JobState.FAILED
         }
-        jobStatusListeners.put(job.jobID, job)
+        jobStatusListeners.put(job.jobID.getId(), job)
         return job.runResult
     }
 
@@ -226,8 +282,8 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 //        return null
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
         //BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
-      //      new BEJobID(null, job)
-      //  } as List<de.dkfz.roddy.execution.jobs.BEJobDependencyID>, this);
+        //      new BEJobID(null, job)
+        //  } as List<de.dkfz.roddy.execution.jobs.BEJobDependencyID>, this);
 
         //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
 //        String shortID = job.getJobID()
@@ -319,15 +375,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                     logger.severe(line)
                     logger.severe(split.toString())
                     logger.severe(id + " " + split[JOBSTATE])
-                    if (split[JOBSTATE] == getStringForRunningJob())
-                        js = JobState.RUNNING
-                    if (split[JOBSTATE] == getStringForJobOnHold())
-                        js = JobState.HOLD
-                    if (split[JOBSTATE] == getStringForQueuedJob())
-                        js = JobState.QUEUED
-                    if (split[JOBSTATE] == getStringForCompletedJob()) {
-                        js = JobState.COMPLETED_UNKNOWN
-                    }
+                    js = parseJobState(split[JOBSTATE])
                     logger.severe(js.toString())
                     allStatesTemp.put(id, [js, split])
 
@@ -343,11 +391,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             Map<String, JobState> map = [:]
             List<BEJob> removejobs = new LinkedList<>()
             synchronized (jobStatusListeners) {
-                for (BEJobID id : jobStatusListeners.keySet()) {
-                    if (allStatesTemp.get(id.getId())) {
-                        JobState js = (JobState) allStatesTemp.get(id.getId())[0]
+                for (String id : jobStatusListeners.keySet()) {
+                    if (allStatesTemp.get(id)) {
+                        JobState js = (JobState) allStatesTemp.get(id)[0]
                         BEJob job = jobStatusListeners.get(id)
-                        setJobInfoForJobDetails(job, (String[]) allStatesTemp.get(id.getId())[1])
+                        setJobInfoForJobDetails(job, (String[]) allStatesTemp.get(id)[1])
                         logger.severe("id:" + id + " jobstate: " + js.toString() + " jobInfo: " + job.getJobInfo().toString())
                         if (js == JobState.UNKNOWN) {
                             // If the jobState is unknown and the job is not running anymore it is counted as failed.
@@ -377,7 +425,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                                     jobsCurrentState = map.get(job.getRunResult().getJobID().getId())
                                 } else { //Search within entries.
                                     map.each { String s, JobState v ->
-                                        if (s.startsWith(id.getId())) {
+                                        if (s.startsWith(id)) {
                                             jobsCurrentState = v
                                             return
                                         }
@@ -400,7 +448,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         // Queries will then use the id.
 //            allStates[allStates.find { Job job, JobState state -> job.jobID == id }?.key] = status
 //        }
-        allStates.putAll((Map<BEJobID, JobState>) allStatesTemp.collectEntries {
+        allStates.putAll((Map<String, JobState>) allStatesTemp.collectEntries {
             new MapEntry(it.key, (JobState) it.value[0])
         })
         cacheLock.unlock()
@@ -423,15 +471,15 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
         String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
         Duration runTime = !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null
-        BufferValue swap = !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"),BufferUnit.m) : null
-        BufferValue memory = !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"),BufferUnit.m) : null
-        Duration runLimit = !jobResult[21].toString().equals("-")? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null
-        Integer nodes = !jobResult[29].toString().equals("-")? jobResult[29].toString() as Integer : null
+        BufferValue swap = !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null
+        BufferValue memory = !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null
+        Duration runLimit = !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null
+        Integer nodes = !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null
 
-        ResourceSet usedResources= new ResourceSet(memory,null,nodes,runTime,null,queue,null)
+        ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
-        ResourceSet askedResources = new ResourceSet(null,null,null,runLimit,null,queue,null)
+        ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
 
         jobInfo.setAskedResources(askedResources)
         jobInfo.setUsedResources(usedResources)
@@ -441,7 +489,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setJobGroup(!jobResult[7].toString().equals("-") ? jobResult[7] : null)
         jobInfo.setPriority(!jobResult[8].toString().equals("-") ? jobResult[8] : null)
         jobInfo.setPidStr(!jobResult[9].toString().equals("-") ? jobResult[9] : null)
-        jobInfo.setExitCode(!jobResult[10].toString().equals("-")? Integer.valueOf(jobResult[10]) : null)
+        jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
         jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
         jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
         jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? Duration.parse("PT" + jobResult[16].substring(0, 2) + "H" + jobResult[16].substring(3, 5) + "M" + jobResult[16].substring(6) + "S") : null)
@@ -458,11 +506,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
         if (!jobResult[13].toString().equals("-"))
-            jobInfo.setSubmitTime(LocalDateTime.parse(jobResult[13]+ " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setSubmitTime(LocalDateTime.parse(jobResult[13] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
         if (!jobResult[14].toString().equals("-"))
-            jobInfo.setStartTime(LocalDateTime.parse(jobResult[14]+ " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setStartTime(LocalDateTime.parse(jobResult[14] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
         if (!jobResult[15].toString().equals("-"))
-            jobInfo.setEndTime(LocalDateTime.parse(jobResult[15]+ " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setEndTime(LocalDateTime.parse(jobResult[15] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
 
     }
 
@@ -482,24 +530,27 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         return LSF_JOBSTATE_RUNNING
     }
 
-//    @Override
+    String getStringForFailedJob() {
+        return LSF_JOBSTATE_EXITING
+    }
+
     String getStringForCompletedJob() {
-        return LSF_JOBSTATE_COMPLETED_UNKNOWN
+        return LSF_JOBSTATE_COMPLETED_SUCCESSFUL
     }
 
     @Override
     String getSpecificJobIDIdentifier() {
-        return null
+        return LSF_JOBID
     }
 
     @Override
     String getSpecificJobArrayIndexIdentifier() {
-        return null
+        return LSF_ARRAYID
     }
 
     @Override
     String getSpecificJobScratchIdentifier() {
-        return null
+        throw new NotImplementedException()
     }
 
     protected int getPositionOfJobID() {
@@ -531,7 +582,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                 state = JobState.ABORTED
             else {
                 cacheLock.lock()
-                state = allStates[job.getJobID()]
+                state = allStates[job.getJobID().getId()]
                 cacheLock.unlock()
             }
             if (state) queriedStates[job] = state
@@ -540,10 +591,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         return queriedStates
     }
 
-    @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-        return null
-    }
 
     @Override
     void queryJobAbortion(List<BEJob> executedJobs) {
@@ -561,22 +608,14 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     @Override
     void addJobStatusChangeListener(BEJob job) {
         synchronized (jobStatusListeners) {
-            jobStatusListeners.put(job.getJobID(), job)
+            jobStatusListeners.put(job.getJobID().getId(), job)
         }
     }
 
     @Override
     String getLogFileWildcard(BEJob job) {
         String id = job.getJobID()
-        String searchID = id
-        if (id == null) return null
-        if (id.contains("[]"))
-            return ""
-        if (id.contains("[")) {
-            String[] split = id.split("\\]")[0].split("\\[")
-            searchID = split[0] + "-" + split[1]
-        }
-        return LSF_LOGFILE_WILDCARD + searchID
+        return LSF_LOGFILE_WILDCARD + id
     }
 
 //    /**
@@ -631,7 +670,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
     @Override
     BEJobID createJobID(BEJob job, String jobId) {
-        return new BEJobID(jobId,job)
+        return new BEJobID(jobId, job)
     }
 
     @Override
