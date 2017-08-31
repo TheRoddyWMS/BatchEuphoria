@@ -26,7 +26,6 @@ import groovy.util.slurpersupport.NodeChild
 import org.apache.http.Header
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
-
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -397,7 +396,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
-        if (result.statusCode == 200) {
+        if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
@@ -416,15 +415,15 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     /**
-     * Updates job information for given jobs
-     * @param jobList
+     * Retrieve job status for given job ids
+     * @param list of job ids
      */
     Map<String, JobState> getJobStats(List<String> jobIds) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_BASICS, null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
-        if (result.statusCode == 200) {
+        if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             logger.info("status code: " + result.statusCode + " result:" + result.body)
             Map<String, JobState> resultStates = [:]
@@ -511,7 +510,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         def result = restExecutionService.execute(new RestCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
-        if (result.statusCode == 200) {
+        if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
@@ -574,6 +573,34 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     @Override
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
         return getJobStats(null)
+    }
+
+    @Override
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+
+        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
+            it.getJobID().toString()
+        }, false)
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID().getId() == it.key }, (GenericJobInfo) it.value] }
+    }
+
+
+    @Override
+    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+        List<BEJob> jobs = []
+        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+        for (String id : jobIds) {
+            Map.Entry<String, BEJob> job = jobStatusListeners.find { it.key == id }
+            if (job)
+                jobs.add(job.value)
+        }
+        if (jobs.size() != 0) {
+            getJobDetails(jobs)
+            for (BEJob job : jobs) {
+                queriedExtendedStates.put(job.getJobID().getId(), job.getJobInfo())
+            }
+        }
+        return queriedExtendedStates
     }
 
 
