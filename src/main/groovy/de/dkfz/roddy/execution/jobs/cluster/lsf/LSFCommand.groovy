@@ -162,12 +162,12 @@ class LSFCommand extends Command {
 
 
     StringBuilder assembleResources() {
-        StringBuilder resources = new StringBuilder(" -R \\'select[type==any] ")
+        StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
         if (job.resourceSet.isCoresSet()) {
             int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
             resources.append(" affinity[core\\(${cores}\\)]")
         }
-        resources.append("\\' ")
+        resources.append("\' ")
         return resources
     }
 
@@ -210,7 +210,7 @@ class LSFCommand extends Command {
     private String prepareParentJobs(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "done\\(${it}\\)" }.join(" &amp\\;&amp\\; ")
+            String joinedParentJobs = validJobIds.collect { "done\\(${it}\\)" }.join(" && ")
             return " -w \"${joinedParentJobs} \""
         } else {
             return ""
