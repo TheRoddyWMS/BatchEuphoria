@@ -1,10 +1,4 @@
-/*
- * Copyright (c) 2017 eilslabs.
- *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
- */
-
-package de.dkfz.roddy.execution.jobs.cluster.pbs
+package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -13,17 +7,16 @@ import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
-
 import static de.dkfz.roddy.StringConstants.SPLIT_COLON
 import static de.dkfz.roddy.StringConstants.SPLIT_COMMA
 import static de.dkfz.roddy.StringConstants.SPLIT_EQUALS
 
 /**
  * Used to convert commands from cli to e.g. GenericJobInfo
- * Created by heinold on 04.04.17.
+ * Created by kaercher on 15.05.17.
  */
 @CompileStatic
-class PBSCommandParser {
+class LSFCommandParser {
 
     String[] options
     String jobName
@@ -41,7 +34,7 @@ class PBSCommandParser {
 
     String commandString
 
-    PBSCommandParser(String commandString) {
+    LSFCommandParser(String commandString) {
         this.commandString = commandString
         parse()
     }
@@ -56,7 +49,7 @@ class PBSCommandParser {
         // Create a complex line object which will be used for further parsing.
         ComplexLine line = new ComplexLine(commandString)
 
-        if (!commandString.startsWith("qsub")) return  // It is obviously not a PBS call
+        if (!commandString.startsWith("bsub")) return  // It is obviously not a PBS call
 
         String[] splitted = line.splitBy(" ").findAll { it }
         script = splitted[-1]
@@ -64,16 +57,16 @@ class PBSCommandParser {
 
         for (int i = 0; i < splitted.length - 1; i++) {
             String option = splitted[i]
-            if (!option.startsWith("-")) continue // It is not an option but a parameter or a text (e.g. qsub, script)
+            if (!option.startsWith("-")) continue // It is not an option but a parameter or a text (e.g. bsub, script)
 
             String parms = splitted[i + 1]
             if (option == "-N") {
                 jobName = parms
-            } else if (option == "-v") {
+            } else if (option == "-env") {
                 parseVariables(parms)
-            } else if (option == "-l") { //others
+            } else if (option == "-M" && option == "-W" && option == "-n") { //others
                 parseResources(parms)
-            } else if (option == "-W") {
+            } else if (option == "-W depend=") {
                 parseDependencies(parms)
             }
         }
@@ -101,12 +94,12 @@ class PBSCommandParser {
                     bufferUnit = BufferUnit.valueOf(parmVal[-1])
                     memory = parmVal[0..-2]
                 } else if (parmID == "walltime") {
-                    walltime = parm.split("[=]")[1]
-                } else if (parmID == "nodes") {
+                    walltime = parameters.split("[=]")[1]
+                } else if (parmID == "maxNodes") {
                     String[] splitParm = parm.split(SPLIT_COLON)
                     for (String resource : splitParm) {
                         String[] splitResource = resource.split(SPLIT_EQUALS)
-                        if (splitResource[0] == "nodes") {
+                        if (splitResource[0] == "maxNodes") {
                             nodes = splitResource[1]
                         } else if (splitResource[0] == "ppn") {
                             cores = splitResource[1]
@@ -120,9 +113,9 @@ class PBSCommandParser {
     }
 
     private void parseDependencies(String parameters) {
-        if (parameters.startsWith("depend")) {
+        if (parameters.startsWith("-W depend=")) {
             def deps = parameters[7..-1].split("[:]")
-            if (!deps[0].endsWith("afterok"))
+            if (deps[0] != "afterok")
                 println "Not supported: " + deps[0]
             try {
                 dependencies.addAll(deps[1..-1])
@@ -142,3 +135,4 @@ class PBSCommandParser {
         return jInfo
     }
 }
+

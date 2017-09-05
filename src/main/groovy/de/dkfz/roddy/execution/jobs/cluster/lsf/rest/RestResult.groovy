@@ -35,4 +35,10 @@ class RestResult extends ExecutionResult {
         this.body = body
         this.statusCode = statusCode
     }
+
+    @Override
+    boolean isSuccessful() {
+        return statusCode == 200
+    }
+
 }

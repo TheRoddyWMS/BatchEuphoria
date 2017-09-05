@@ -158,6 +158,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     boolean isFakeJob() {
+        getJobID().toString()
         if (this instanceof FakeBEJob)
             return true
         if (jobName != null && jobName.equals("Fakejob"))
