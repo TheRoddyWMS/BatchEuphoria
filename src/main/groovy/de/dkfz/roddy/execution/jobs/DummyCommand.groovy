@@ -29,9 +29,9 @@ class DummyCommand extends Command {
         super(parentJobManager, job, "dummy_" + getNextIDCountValue(), null, null)
         this.jobName = jobName
         if (isArray) {
-            setExecutionID(FakeBEJob.getNotExecutedFakeJobID(true))
+            setExecutionID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED, true))
         } else {
-            setExecutionID(FakeBEJob.getNotExecutedFakeJobID())
+            setExecutionID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED))
         }
     }
 

@@ -149,7 +149,7 @@ class LSFCommand extends Command {
 
         bsubCall << assembleProcessingCommands()
 
-        bsubCall << prepareParentJobs(job.getDependencyIDs())
+        bsubCall << prepareParentJobs(job.getParentJobIDs())
 
         bsubCall << assembleVariableExportString()
 

@@ -51,14 +51,6 @@ class BEJobID implements Comparable<BEJobID> {
         return(id)
     }
 
-    static FakeJobID getNotExecutedFakeJobID() {
-        return FakeBEJob.getNotExecutedFakeJobID(false)
-    }
-
-    static FakeJobID getNotExecutedFakeJobID(boolean array) {
-        return FakeBEJob.getNotExecutedFakeJobID(array)
-    }
-
     @Deprecated
     static class FakeJobID extends BEJobID {
         FakeJobID(String id) {

@@ -233,10 +233,10 @@ class PBSCommand extends Command {
     String assembleDependencyString() {
         StringBuilder qsubCall = new StringBuilder("")
         LinkedList<String> tempDependencies =
-                creatingJob.getDependencyIDsAsString().findAll {
+                creatingJob.getParentJobIDsAsString().findAll {
                     it != "" && it != NONE && it != "-1"
                 } as LinkedList<String>
-        if (creatingJob.getDependencyIDsAsString().any { it.contains("[].") }) {
+        if (creatingJob.getParentJobIDsAsString().any { it.contains("[].") }) {
             throw new NotImplementedException()
         }
         if (tempDependencies.size() > 0) {

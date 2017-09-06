@@ -166,7 +166,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             def job = command.getJob()
             def jobID = new BEJobID(exID)
             command.setExecutionID(jobID)
-            jobResult = new BEJobResult(command, job, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
+        } else {
+            def job = command.getJob()
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
         }
         return jobResult

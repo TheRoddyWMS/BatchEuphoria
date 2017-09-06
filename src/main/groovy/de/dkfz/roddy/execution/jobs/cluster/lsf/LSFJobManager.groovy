@@ -157,7 +157,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
+        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
     }
 
     @Override
@@ -173,9 +173,9 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         // job.runResult is set within executionService.execute
 //        logger.severe("Set the job runResult in a better way from runJob itself or so.")
         cacheLock.lock()
-        if (job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
+        if (job.wasExecuted() && job.jobManager.isHoldJobsEnabled()) {
             allStates[job.jobID.getId()] = JobState.HOLD
-        } else if (job.runResult.wasExecuted) {
+        } else if (job.wasExecuted()) {
             allStates[job.jobID.getId()] = JobState.QUEUED
         } else {
             allStates[job.jobID.getId()] = JobState.FAILED
@@ -194,9 +194,14 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             String rawId = res.resultLines[0].find("<[0-9]*>")
             String exID = rawId.substring(1, rawId.length() - 1)
             def job = command.getJob()
-            BEJobID jobID = createJobID(job, exID)
+            BEJobID jobID = new BEJobID(exID)
+            job.resetJobID(jobID)
             command.setExecutionID(jobID)
-            jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
+        } else {
+            def job = command.getJob()
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
         }
         return jobResult
@@ -465,7 +470,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
         } else {
-            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getParentJobIDsAsString())
         }
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
 
@@ -661,11 +666,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     @Override
     String parseJobID(String commandOutput) {
         return commandOutput
-    }
-
-    @Override
-    BEJobID createJobID(BEJob job, String jobId) {
-        return new BEJobID(jobId, job)
     }
 
     @Override

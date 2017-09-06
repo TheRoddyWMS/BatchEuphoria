@@ -7,8 +7,6 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.config.ResourceSet
-import groovy.transform.CompileDynamic
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -18,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong
  * object.
  */
 @groovy.transform.CompileStatic
-class BEJob<J extends BEJob, JR extends BEJobResult> {
+class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
 
@@ -136,13 +134,13 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     BEJob addParentJobs(Collection<BEJob> parentJobs) {
-        assert(null != parentJobs)
+        assert (null != parentJobs)
         this.parentJobs.addAll(parentJobs)
         return this
     }
 
     BEJob addParentJobIDs(List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
-        assert(null != parentJobIDs)
+        assert (null != parentJobIDs)
         this.parentJobs.addAll(parentJobIDs.collect { new BEJob(it, jobManager) })
         return this
     }
@@ -152,7 +150,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     BEJob setRunResult(BEJobResult result) {
-        assert(this.jobID == result.jobID)
+        assert (this.jobID == result.jobID)
         this.runResult = result
         return this
     }
@@ -203,12 +201,20 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
         return parentJobs as List<J>
     }
 
-    List<BEJobID> getDependencyIDs() {
+    static List<BEJob> findJobsWithValidJobId(List<BEJob> jobs) {
+        return jobs.findAll { !it.isFakeJob() }.sort { it.getJobID().toString() }.unique { it.getJobID().toString() }
+    }
+
+    static List<BEJobID> findValidJobIDs(List<BEJobID> jobIDs) {
+        return jobIDs.findAll { it.isValidID() }.sort { it.toString() }.unique { it.toString() }
+    }
+
+    List<BEJobID> getParentJobIDs() {
         return parentJobs.collect { it.getJobID() }
     }
 
-    List<String> getDependencyIDsAsString() {
-        return getDependencyIDs().collect { BEJobID jid -> jid.toString() }
+    List<String> getParentJobIDsAsString() {
+        return getParentJobIDs().collect { BEJobID jid -> jid.toString() }
     }
 
     void setLoggingDirectory(File loggingDirectory) {
@@ -216,16 +222,26 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
     }
 
     File getLoggingDirectory() {
-        if(this.loggingDirectory)
+        if (this.loggingDirectory)
             return this.loggingDirectory
         else
             return jobManager.getLoggingDirectoryForJob(this)
     }
 
-    BEJob resetJobID(BEJobID jobID) {
+    void resetJobID(BEJobID jobID) {
+        assert (null != jobID)
         this.jobID = jobID
-        return this
     }
+
+    void resetJobID() {
+        resetJobID(new BEJobID())
+    }
+
+    void resetJobID(String jobId) {
+        assert (null != jobId)
+        resetJobID(new BEJobID(jobId))
+    }
+
 
     BEJobID getJobID() {
         return this.jobID
@@ -300,4 +316,15 @@ class BEJob<J extends BEJob, JR extends BEJobResult> {
             return "BEJob: ${jobName} calling tool ${tool.getAbsolutePath()}"
         }
     }
+
+    boolean wasExecuted() {
+        return runResult != null && runResult.wasExecuted
+    }
+
+    @Override
+    int compareTo(BEJob o) {
+        return this.jobID.compareTo(o.jobID)
+    }
+
+
 }

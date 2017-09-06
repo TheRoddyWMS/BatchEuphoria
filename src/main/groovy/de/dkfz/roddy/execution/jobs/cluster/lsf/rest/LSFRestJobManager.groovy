@@ -196,12 +196,12 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
             BEJobID jobID = new BEJobID(new XmlSlurper().parseText(result.body).text())
             job.resetJobID(jobID)
-            BEJobResult jobResult = new BEJobResult(job.lastCommand, job, result.successful, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            BEJobResult jobResult = new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             job.setJobState(JobState.UNKNOWN)
             jobStatusListeners.put(job.getJobID().getId(), job)
         } else {
-            job.setRunResult(new BEJobResult(job.lastCommand, null, result.successful, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setRunResult(new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
         }
     }
@@ -235,7 +235,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = jobIds.findAll { it.isValidID() }
+        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
             String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
             return "-w \"${joinedParentJobs} \""
@@ -316,8 +316,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
 
         String parentJobs = ""
-        if (job.dependencyIDs) {
-            parentJobs = prepareParentJobs(job.dependencyIDs)
+        if (job.parentJobIDs) {
+            parentJobs = prepareParentJobs(job.parentJobIDs)
         }
         return ["--${boundary}",
                 "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"",
@@ -366,7 +366,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return comma separated list of job ids
      */
     private String prepareURLWithParam(List<BEJob> jobs) {
-        return jobs.findAll { !it.isFakeJob() }.collect { it.jobID }.join(",")
+        return BEJob.findJobsWithValidJobId(jobs).collect { it.jobID }.join(",")
     }
 
     /**
@@ -462,7 +462,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
         } else {
-            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getParentJobIDsAsString())
         }
 
         String queue = jobDetails.getProperty("queue").toString()
@@ -542,7 +542,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null)
             jobInfo = job.getJobInfo()
         else
-            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getParentJobIDsAsString())
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
         println timeSummary.getProperty("timeOfCalculation")
