@@ -186,20 +186,11 @@ class LSFCommand extends Command {
 
 
     StringBuilder assembleVariableExportString() {
-
-        StringBuilder envParams = new StringBuilder()
-
-        job.parameters.eachWithIndex { key, value, index ->
-            if (index == 0)
-                envParams << getVariablesParameter() << " \" ${key}='${value}'"
-            else
-                envParams << "," + "${key}='${value}'"
+        if (job.parameters.isEmpty()) {
+            return new StringBuilder("")
+        } else {
+            return new StringBuilder("\"" + getVariablesParameter() + job.parameters.collect { key, value -> "${key}=${value}" }.join(", ") + "\"")
         }
-
-        if (envParams.length() > 0)
-            envParams << "\""
-
-        return envParams
     }
 
     /**
