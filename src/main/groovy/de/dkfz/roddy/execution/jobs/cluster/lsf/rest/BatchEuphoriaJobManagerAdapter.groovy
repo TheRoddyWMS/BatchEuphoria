@@ -130,11 +130,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    String getSpecificJobScratchIdentifier() {
-        throw new NotImplementedException()
-    }
-
-    @Override
     String[] peekLogFile(BEJob job) {
         return new String[0]
     }

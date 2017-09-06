@@ -548,11 +548,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         return LSF_ARRAYID
     }
 
-    @Override
-    String getSpecificJobScratchIdentifier() {
-        throw new NotImplementedException()
-    }
-
     protected int getPositionOfJobID() {
         return 0
     }
