@@ -49,7 +49,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     public static final String PBS_LOGFILE_WILDCARD = "*.o"
     public static final String PBS_JOBID = '${PBS_JOBID}'
     public static final String PBS_ARRAYID = '${PBS_ARRAYID}'
-    public static final String PBS_SCRATCH = '${PBS_SCRATCH_DIR}/${PBS_JOBID}'
     static public final String WITH_DELIMITER = '(?=(%1$s))'
 
     private Map<String, Boolean> mapOfInitialQueries = new LinkedHashMap<>()
@@ -477,11 +476,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return PBS_ARRAYID
     }
 
-    @Override
-    String getSpecificJobScratchIdentifier() {
-        return PBS_SCRATCH
-    }
-
     protected int getPositionOfJobID() {
         return 0
     }
@@ -730,8 +724,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             GenericJobInfo gj = new GenericJobInfo(jobResult.get("Job_Name"), null, it.getKey(), null, jobResult.get("depend") ? jobResult.get("depend").find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
             BufferValue mem = null
-            int cores
-            int nodes
+            Integer cores
+            Integer nodes
             TimeUnit walltime = null
             String additionalNodeFlag
 

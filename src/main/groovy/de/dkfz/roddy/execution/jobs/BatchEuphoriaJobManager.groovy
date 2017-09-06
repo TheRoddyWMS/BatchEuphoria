@@ -324,13 +324,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getSpecificJobArrayIndexIdentifier()
 
-    abstract String getSpecificJobScratchIdentifier()
-
     Map<String, String> getSpecificEnvironmentSettings() {
         Map<String, String> map = new LinkedHashMap<>()
         map.put(jobIDIdentifier, getSpecificJobIDIdentifier())
         map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier())
-        map.put(jobScratchIdentifier, getSpecificJobScratchIdentifier())
         return map
     }
 

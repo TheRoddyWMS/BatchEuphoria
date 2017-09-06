@@ -15,19 +15,15 @@ class ResourceSet {
      * The target memory value.
      */
     private BufferValue mem
-    private BufferValue memMax
-
     private Integer cores
-    private Integer coresMax
     private Integer nodes
-    private Integer nodesMax
     private TimeUnit walltime
-
+    private Integer nthreads; //Number of currently active threads of a job
+    private BufferValue swap; //Total virtual maxMemory (swap) usage of all processes in a job
     /**
      * Hard disk storage used.
      */
     private BufferValue storage
-    private BufferValue storageMax
     private String additionalNodeFlag
 
     ResourceSet(BufferValue mem, Integer cores, Integer nodes, Duration walltime, BufferValue storage, String queue, String additionalNodeFlag) {
@@ -118,5 +114,13 @@ class ResourceSet {
 
     String getAdditionalNodeFlag() {
         return additionalNodeFlag
+    }
+
+    Integer getNumberOfThreads(){
+        return nthreads
+    }
+
+    BufferValue getSwap(){
+        return swap
     }
 }
