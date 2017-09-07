@@ -144,12 +144,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public String getSpecificJobScratchIdentifier() {
-        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable");
-        return '/data/roddyScratch/$$'
-    }
-
-    @Override
     public String[] peekLogFile(BEJob job) {
         return new String[0];
     }
