@@ -225,7 +225,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         if (this.loggingDirectory)
             return this.loggingDirectory
         else
-            return jobManager.getLoggingDirectoryForJob(this)
+            return jobManager.getDefaultLoggingDirectory()
     }
 
     void resetJobID(BEJobID jobID) {

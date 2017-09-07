@@ -188,11 +188,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        return executionService.queryWorkingDirectory()
-    }
-
-    @Override
     public Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
         return null;
     }

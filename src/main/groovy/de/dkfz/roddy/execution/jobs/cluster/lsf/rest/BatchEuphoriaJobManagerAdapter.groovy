@@ -139,10 +139,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
         throw new NotImplementedException()
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        throw new NotImplementedException()
-    }
 // needed
     @Override
     void queryJobAbortion(List executedJobs) {

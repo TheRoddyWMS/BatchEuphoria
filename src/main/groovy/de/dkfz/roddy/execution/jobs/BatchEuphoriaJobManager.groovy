@@ -86,6 +86,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
         this.strictMode = parms.strictMode
+        this.isParameterFileEnabled = parms.isParameterFileEnabled
 
         //Create a daemon thread which automatically calls queryJobStatus from time to time...
         try {
@@ -400,7 +401,12 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getSubmissionCommand()
 
-    abstract File getLoggingDirectoryForJob(BEJob job)
+    File getDefaultLoggingDirectory() {
+        logger.severe("We do not know yet, how to query the default logging directory... the submission server does not necessarily have to know about this.")
+        logger.severe("We assume, that the logging directory is set to the current working directory automatically or to the home folder.")
+        return executionService.queryWorkingDirectory()
+    }
+
 
     abstract JobState parseJobState(String stateString)
 

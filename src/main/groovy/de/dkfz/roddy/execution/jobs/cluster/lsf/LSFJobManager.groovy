@@ -72,11 +72,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        return job.getLoggingDirectory()
-    }
-
-    @Override
     Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)

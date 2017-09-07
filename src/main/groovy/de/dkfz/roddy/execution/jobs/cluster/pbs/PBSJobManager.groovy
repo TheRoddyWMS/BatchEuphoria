@@ -612,13 +612,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return PBS_LOGFILE_WILDCARD + searchID
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        logger.severe("We do not know yet, how to query the default logging directory... the submission server does not necessarily have to know about this.")
-        logger.severe("We assume, that the logging directory is set to the current working directory automatically or to the home folder.")
-        return executionService.queryWorkingDirectory()
-    }
-
 //    /**
 //     * Returns the path to the jobs logfile (if existing). Otherwise null.
 //     * Throws a runtime exception if more than one logfile exists.
