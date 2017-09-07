@@ -11,7 +11,10 @@ import groovy.transform.CompileStatic
 
 /**
  * Created by heinold on 28.02.17.
+ *
+ * Remove. The class is basically a copy of the JobManagerCreationParameter with added fluent setters.
  */
+@Deprecated
 @CompileStatic
 class JobManagerCreationParametersBuilder {
 
@@ -88,6 +91,7 @@ class JobManagerCreationParametersBuilder {
         this.userMask = userMask
         return this
     }
+
     JobManagerCreationParameters build() {
         return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier, userAccount, userEmail, userMask, userGroup, strictMode)
     }

@@ -16,7 +16,10 @@ import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.regex.Matcher
 
+import static de.dkfz.roddy.StringConstants.BRACE_RIGHT
 import static de.dkfz.roddy.StringConstants.COLON
+import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
+import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
 import static de.dkfz.roddy.StringConstants.EMPTY
 
 
@@ -66,6 +69,7 @@ class LSFCommand extends Command {
         super(parentManager, job, id, parameters, tags)
         this.processingCommands = processingCommands
         this.command = command
+        assert (null != loggingDirectory)
         this.loggingDirectory = loggingDirectory
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
@@ -79,8 +83,8 @@ class LSFCommand extends Command {
 
     String getLoggingParameter() {
         StringBuilder logging = new StringBuilder(EMPTY)
-        if (job.loggingDirectory) logging << (PARM_OUTPATH + " ${loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
-        if (job.loggingDirectory) logging << (PARM_LOGPATH + " ${loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
+        logging << (PARM_OUTPATH + " ${loggingDirectory}/${id ? id : "%J"}.o%J ")
+        logging << (PARM_LOGPATH + " ${loggingDirectory}/${id ? id : "%J"}.e%J ")
         return logging
     }
 
@@ -126,7 +130,6 @@ class LSFCommand extends Command {
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         String accountName = parentJobManager.getUserAccount()
-        boolean useParameterFile = parentJobManager.isParameterFileEnabled()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         StringBuilder bsubCall = new StringBuilder(EMPTY)
@@ -184,13 +187,12 @@ class LSFCommand extends Command {
         return bsubCall
     }
 
-
-    StringBuilder assembleVariableExportString() {
-        if (job.parameters.isEmpty()) {
-            return new StringBuilder("")
-        } else {
-            return new StringBuilder("\"" + getVariablesParameter() + job.parameters.collect { key, value -> "${key}=${value}" }.join(", ") + "\"")
-        }
+    // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
+    String assembleVariableExportString() {
+        if (parameters.isEmpty())
+            return ""
+        else
+            return getVariablesParameter() + "\"" + parameters.collect { key, value -> "${key}=${value}" }.join(", ") + "\""
     }
 
     /**

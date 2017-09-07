@@ -152,7 +152,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
+        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.loggingDirectory)
     }
 
     @Override

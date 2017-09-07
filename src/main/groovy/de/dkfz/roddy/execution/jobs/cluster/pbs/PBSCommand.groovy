@@ -144,7 +144,6 @@ class PBSCommand extends Command {
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
-        boolean useParameterFile = parentJobManager.isParameterFileEnabled()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         StringBuilder qsubCall = new StringBuilder(EMPTY)
@@ -215,19 +214,12 @@ class PBSCommand extends Command {
         return qsubCall
     }
 
+    // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     String assembleVariableExportString() {
-        StringBuilder qsubCall = new StringBuilder()
-
-
-        if (job.getParameterFile()) {
-            qsubCall << getVariablesParameter() << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.getParameterFile()
-        } else {
-            List<String> finalParameters = job.finalParameters()
-            if (finalParameters)
-                qsubCall << getVariablesParameter() << finalParameters.join(",")
-        }
-
-        return qsubCall
+        if (parameters.isEmpty())
+            return ""
+        else
+            return getVariablesParameter() + "\"" + parameters.collect { key, value -> "${key}=${value}" }.join(", ") + "\""
     }
 
     String assembleDependencyString() {

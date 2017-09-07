@@ -64,8 +64,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private boolean isParameterFileEnabled
-
     private Boolean isHoldJobsEnabled = null
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
@@ -86,7 +84,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
         this.strictMode = parms.strictMode
-        this.isParameterFileEnabled = parms.isParameterFileEnabled
 
         //Create a daemon thread which automatically calls queryJobStatus from time to time...
         try {
@@ -366,14 +363,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     String getUserAccount() {
         return userAccount
-    }
-
-    void setParameterFileEnabled(boolean parameterFileEnabled) {
-        isParameterFileEnabled = parameterFileEnabled
-    }
-
-    boolean isParameterFileEnabled() {
-        return isParameterFileEnabled
     }
 
     /**
