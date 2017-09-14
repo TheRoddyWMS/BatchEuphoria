@@ -189,11 +189,18 @@ class LSFCommand extends Command {
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     String assembleVariableExportString() {
-        if (parameters.isEmpty())
-            return ""
-        else
-            return getVariablesParameter() + "\"" + parameters.collect { key, value -> "${key}=${value}" }.join(", ") + "\""
+        StringBuilder qsubCall = new StringBuilder()
+
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
+            qsubCall << getVariablesParameter() << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ", PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"] << "\""
+        } else {
+            qsubCall << getVariablesParameter() << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(", ") << "\""
+        }
+
+        return qsubCall
     }
+
 
     /**
      * Prepare parent jobs is part of @prepareExtraParams
