@@ -166,15 +166,28 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     BEJobResult runJob(BEJob job) {
-        def command = createCommand(job, job.tool, [])
-        def res = executionService.execute(command)
-
+        // Some of the parent jobs are in a bad state!
+        Command command = createCommand(job, job.tool, [])
         BEJobResult jobResult
-        String exID = parseJobID(res.processID)
-        def jobID = createJobID(job, exID)
+        BEJobID jobID
+        boolean successful = false
+
+        /** For direct execution, there might be parent jobs, which  failed or were aborted. Don't start, if this is the case.  **/
+        if (job.parentJobs.findAll { BEJob pJob -> !(pJob.getJobState() == JobState.COMPLETED_SUCCESSFUL || pJob.getJobState() == JobState.UNKNOWN) }) {
+            jobID = new BEFakeJobID(job, BEFakeJobID.FakeJobReason.NOT_EXECUTED)
+            command.setExecutionID(jobID)
+        } else {
+            def res = executionService.execute(command)
+            jobID = createJobID(job, parseJobID(res.processID))
+            successful = res.successful
+            if (!successful)
+                logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
+        }
+
         command.setExecutionID(jobID)
-        jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+        jobResult = new BEJobResult(command, jobID, successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
+
         return jobResult
     }
 
