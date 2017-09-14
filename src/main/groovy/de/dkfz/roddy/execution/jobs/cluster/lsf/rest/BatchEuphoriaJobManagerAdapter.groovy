@@ -28,11 +28,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Command createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
-    @Override
     BEJobResult runJob(BEJob job) {
         throw new NotImplementedException()
     }
@@ -152,7 +147,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List dependencies) {
+    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
         throw new NotImplementedException()
     }
 

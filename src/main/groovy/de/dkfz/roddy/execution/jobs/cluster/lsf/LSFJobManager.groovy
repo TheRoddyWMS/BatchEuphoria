@@ -147,16 +147,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         super(executionService, parms)
     }
 
-    LSFCommand createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
     LSFCommand createCommand(BEJob job) {
         return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.loggingDirectory)
     }
 
     @Override
-    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
         throw new NotImplementedException()
     }
 

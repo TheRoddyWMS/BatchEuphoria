@@ -189,10 +189,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return parameters
     }
 
-    List<String> finalParameters() {
-        return parameters.collect { String k, String v -> return "${k}=${v}".toString() }
-    }
-
     List<ProcessingCommands> getListOfProcessingCommand() {
         return [jobManager.convertResourceSet(this)] + processingCommand
     }
@@ -287,10 +283,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     String getJobName() {
         return jobName
-    }
-
-    File getParameterFile() {
-        return null
     }
 
     void setJobState(JobState js) {

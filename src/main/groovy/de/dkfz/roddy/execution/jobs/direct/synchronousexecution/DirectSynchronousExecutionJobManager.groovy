@@ -27,12 +27,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public DirectCommand createCommand(GenericJobInfo jobInfo) {
-        return null;
-    }
-
-    @Override
-    public DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    public DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
         return null;
     }
 
@@ -154,8 +149,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public DirectCommand createCommand(BEJob job, File tool, List<String> dependencies) {
-        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"));
+    public DirectCommand createCommand(BEJob job, File tool, List<String> parentJobs, Map<String, String> parameters) {
+        return new DirectCommand(this, job, tool.getName(), null, parameters(), null, null, parentJobs, tool.getAbsolutePath(), new File("/tmp"));
     }
 
     @Override

@@ -71,11 +71,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        return pbsCommand;
 //    }
 
-    @Override
-    PBSCommand createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
 //    @Override
     PBSCommand createCommand(BEJob job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
         PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID.toString(), processingCommands, parameters, tags, null, dependencies, command, logDirectory)
@@ -83,7 +78,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
 //        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
 //        return pbsCommand
         throw new NotImplementedException()
