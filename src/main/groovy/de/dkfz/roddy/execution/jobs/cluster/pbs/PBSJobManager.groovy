@@ -47,8 +47,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     public static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -f"
     public static final String PBS_COMMAND_DELETE_JOBS = "qdel"
     public static final String PBS_LOGFILE_WILDCARD = "*.o"
-    public static final String PBS_JOBID = '${PBS_JOBID}'
-    public static final String PBS_ARRAYID = '${PBS_ARRAYID}'
     static public final String WITH_DELIMITER = '(?=(%1$s))'
 
     private Map<String, Boolean> mapOfInitialQueries = new LinkedHashMap<>()
@@ -462,13 +460,28 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        return PBS_JOBID
+    String getJobIdVariable() {
+        return "PBS_JOBID"
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        return PBS_ARRAYID
+    String getJobArrayIndexVariable() {
+        return "PBS_ARRAYID"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "PBS_NODEFILE"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "PBS_O_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "PBS_O_WORKDIR"
     }
 
     protected int getPositionOfJobID() {
@@ -787,6 +800,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         return js;
+    }
+
+    @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["PBS_*"])
     }
 
 }

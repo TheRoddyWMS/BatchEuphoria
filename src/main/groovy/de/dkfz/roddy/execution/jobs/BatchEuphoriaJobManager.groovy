@@ -28,18 +28,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     public static final boolean JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY = false
     public static final boolean JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY = false
 
-    public static final String BE_DEFAULT_JOBID = "BE_JOBID"
-
-    public static final String BE_DEFAULT_JOBARRAYINDEX = "BE JOBARRAYINDEX"
-
-    public static final String BE_DEFAULT_JOBSCRATCH = "BE JOBSCRATCH"
-
-    protected String jobIDIdentifier = BE_DEFAULT_JOBID
-
-    protected String jobArrayIndexIdentifier = BE_DEFAULT_JOBARRAYINDEX
-
-    protected String jobScratchIdentifier = BE_DEFAULT_JOBSCRATCH
-
     protected final BEExecutionService executionService
 
     protected Thread updateDaemonThread
@@ -76,9 +64,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             logger.warning("Silently falling back to default job tracking behaviour. The user name was not set properly and the system cannot track the users jobs.")
             isTrackingOfUserJobsEnabled = false
         }
-        this.jobIDIdentifier = parms.jobIDIdentifier
-        this.jobScratchIdentifier = parms.jobScratchIdentifier
-        this.jobArrayIndexIdentifier = parms.jobArrayIDIdentifier
         this.userEmail = parms.userEmail
         this.userGroup = parms.userGroup
         this.userAccount = parms.userAccount
@@ -320,16 +305,15 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.jobScratchIdentifier = jobScratchIdentifier
     }
 
-    abstract String getSpecificJobIDIdentifier()
+    abstract String getJobIdVariable()
 
-    abstract String getSpecificJobArrayIndexIdentifier()
+    abstract String getJobArrayIndexVariable()
 
-    Map<String, String> getSpecificEnvironmentSettings() {
-        Map<String, String> map = new LinkedHashMap<>()
-        map.put(jobIDIdentifier, getSpecificJobIDIdentifier())
-        map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier())
-        return map
-    }
+    abstract String getNodeFileVariable()
+
+    abstract String getSubmitHostVariable()
+
+    abstract String getSubmitDirectoryVariable()
 
     void setUserEmail(String userEmail) {
         this.userEmail = userEmail
@@ -396,5 +380,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
 
     abstract JobState parseJobState(String stateString)
+
+
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList([])
+    }
 
 }

@@ -110,12 +110,27 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
+    String getJobIdVariable() {
         throw new NotImplementedException()
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
+    String getJobArrayIndexVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
         throw new NotImplementedException()
     }
 

@@ -23,9 +23,6 @@ class JobManagerCreationParametersBuilder {
     String userIdForJobQueries = ""
     boolean trackUserJobsOnly = JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
     boolean trackOnlyStartedJobs = JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
-    String jobIDIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBID
-    String jobArrayIDIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBARRAYINDEX
-    String jobScratchIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBSCRATCH
     String userGroup = null
     String userAccount = null
     String userEmail = null
@@ -57,21 +54,6 @@ class JobManagerCreationParametersBuilder {
         return this;
     }
 
-    JobManagerCreationParametersBuilder setJobIDIdentifier(String jobIDIdentifier) {
-        this.jobIDIdentifier = jobIDIdentifier
-        return this;
-    }
-
-    JobManagerCreationParametersBuilder setJobArrayIDIdentifier(String jobArrayIDIdentifier) {
-        this.jobArrayIDIdentifier = jobArrayIDIdentifier
-        return this;
-    }
-
-    JobManagerCreationParametersBuilder setJobScratchIdentifier(String jobScratchIdentifier) {
-        this.jobScratchIdentifier = jobScratchIdentifier
-        return this;
-    }
-
     JobManagerCreationParametersBuilder setUserGroup(String userGroup) {
         this.userGroup = userGroup
         return this
@@ -93,6 +75,6 @@ class JobManagerCreationParametersBuilder {
     }
 
     JobManagerCreationParameters build() {
-        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier, userAccount, userEmail, userMask, userGroup, strictMode)
+        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, userAccount, userEmail, userMask, userGroup, strictMode)
     }
 }

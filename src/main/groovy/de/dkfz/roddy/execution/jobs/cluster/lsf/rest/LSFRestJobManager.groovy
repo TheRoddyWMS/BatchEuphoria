@@ -57,8 +57,28 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     protected Map<String, BEJob> jobStatusListeners = [:]
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        return '${LSB_JOBID}'
+    String getJobIdVariable() {
+        return 'LSB_JOBID'
+    }
+
+    @Override
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
     }
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
@@ -623,5 +643,10 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         return js
     }
 
+
+    @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["LSB_*", "LS_*"])
+    }
 
 }

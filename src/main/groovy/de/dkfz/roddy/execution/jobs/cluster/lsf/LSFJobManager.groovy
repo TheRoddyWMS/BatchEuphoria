@@ -57,8 +57,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter=\\'\\<\\'\\\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String LSF_LOGFILE_WILDCARD = "*.o"
-    public static final String LSF_JOBID = '${LSB_JOBID}'
-    public static final String LSF_ARRAYID = '${$LSB_JOBINDEX}'
 
     protected Map<String, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
@@ -535,14 +533,30 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        return LSF_JOBID
+    String getJobIdVariable() {
+        return "LSB_JOBID"
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        return LSF_ARRAYID
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
     }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
+    }
+
 
     protected int getPositionOfJobID() {
         return 0
@@ -663,6 +677,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     String getSubmissionCommand() {
         return LSFCommand.BSUB
     }
+
+    @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["LSB_*", "LS_*"])
+    }
+
 }
 
 /*
