@@ -219,7 +219,13 @@ class PBSCommand extends Command {
         StringBuilder qsubCall = new StringBuilder()
 
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
-            qsubCall << getVariablesParameter() << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"] << "\""
+            qsubCall << getVariablesParameter() << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
+
+            if (job.parameters.containsKey("debugWrapInScript")) {
+                qsubCall << "," << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
+            }
+            qsubCall << "\""
+
         } else {
             qsubCall << getVariablesParameter() << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(",") << "\""
         }
