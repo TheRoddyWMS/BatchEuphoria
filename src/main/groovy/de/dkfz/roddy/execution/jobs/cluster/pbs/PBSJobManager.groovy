@@ -58,10 +58,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         /**
          * General or specific todos for BatchEuphoriaJobManager and PBSJobManager
          */
-        logger.severe("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
-        logger.severe("Set logfile location, parameter file and job state log file on job creation (or override a method).")
-        logger.severe("Allow enabling and disabling of options for resource arbitration for defective job managers.")
-        logger.severe("parseToJob() is not implemented and will return null.")
+        logger.rare("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
+        logger.rare("Set logfile location, parameter file and job state log file on job creation (or override a method).")
+        logger.rare("Allow enabling and disabling of options for resource arbitration for defective job managers.")
+        logger.rare("parseToJob() is not implemented and will return null.")
     }
 // Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
 //    @Override
