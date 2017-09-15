@@ -238,6 +238,8 @@ class PBSCommand extends Command {
         LinkedList<String> tempDependencies =
                 creatingJob.getParentJobIDsAsString().findAll {
                     it != "" && it != NONE && it != "-1"
+                }.collect {
+                    it.split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
                 } as LinkedList<String>
         if (creatingJob.getParentJobIDsAsString().any { it.contains("[].") }) {
             throw new NotImplementedException()
