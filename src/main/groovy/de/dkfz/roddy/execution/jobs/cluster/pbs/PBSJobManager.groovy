@@ -688,36 +688,26 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      * @return output of qstat in a map with jobid as key
      */
     private Map<String, Map<String, String>> readQstatOutput(String qstatOutput) {
-
-        try {
-            return qstatOutput.split(String.format(WITH_DELIMITER, "\n\nJob Id: ")).collectEntries {
-                Matcher matcher = it =~ /^\s*Job Id: (?<jobId>\d+)\..*\n/
-                if (matcher) {
-                    [
-                            (matcher.group("jobId")):
-                                    it
-                    ]
-                } else {
-                    [:]
-                }
-            }.collectEntries { jobId, value ->
-                // join multi-line values
-                value = ((String) value).replaceAll("\n\t", "")
-                [(jobId): value]
-            }.collectEntries { jobId, value ->
-                Map<String, String> p = ((String) value).readLines().collectEntries { String line ->
-                    if (line.startsWith("    ") && line.contains(" = ")) {
-                        String[] parts = line.split(" = ")
-                        [parts.head().replaceAll(/^ {4}/, ""), parts.tail().join(' ')]
-                    } else {
-                        [:]
+        return qstatOutput.split(String.format(WITH_DELIMITER, "\n\nJob Id: ")).collectEntries {
+            Matcher matcher = it =~ /^\s*Job Id: (?<jobId>\d+)\..*\n/
+            def result = new HashMap()
+            if (matcher) {
+                result.put(matcher.group("jobId"), it)
+            }
+            result
+        }.collectEntries { jobId, value ->
+            // join multi-line values
+            value = ((String) value).replaceAll("\n\t", "")
+            [(jobId): value]
+        }.collectEntries { jobId, value ->
+            Map<String, String> p = ((String) value).readLines().
+                    findAll { it.startsWith("    ") && it.contains(" = ") }.
+                    collectEntries {
+                        String[] parts = it.split(" = ")
+                        new MapEntry(parts.head().replaceAll(/^ {4}/, ""), parts.tail().join(' '))
                     }
-                }
-                [(jobId): p]
-            } as Map<String, Map<String, String>>
-        } catch (Exception ex) {
-            throw new BEException("Error while parsing qstat output:\n${qstatOutput}", ex)
-        }
+            [(jobId): p]
+        } as Map<String, Map<String, String>>
     }
 
     static LocalDateTime parseTime(String str) {
