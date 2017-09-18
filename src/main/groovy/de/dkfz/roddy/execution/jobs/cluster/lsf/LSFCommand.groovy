@@ -16,10 +16,7 @@ import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.regex.Matcher
 
-import static de.dkfz.roddy.StringConstants.BRACE_RIGHT
 import static de.dkfz.roddy.StringConstants.COLON
-import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
-import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
 import static de.dkfz.roddy.StringConstants.EMPTY
 
 
@@ -213,7 +210,7 @@ class LSFCommand extends Command {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
             String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
             return " -w \"${joinedParentJobs} \""

@@ -255,7 +255,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
             String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
             return "-w \"${joinedParentJobs} \""
@@ -386,7 +386,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return comma separated list of job ids
      */
     private String prepareURLWithParam(List<BEJob> jobs) {
-        return BEJob.findJobsWithValidJobId(jobs).collect { it.jobID }.join(",")
+        return BEJob.jobsWithUniqueValidJobId(jobs).collect { it.jobID }.join(",")
     }
 
     /**

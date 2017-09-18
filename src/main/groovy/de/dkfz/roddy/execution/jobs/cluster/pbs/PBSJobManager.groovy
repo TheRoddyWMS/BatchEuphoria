@@ -16,7 +16,6 @@ import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.tools.*
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
-import java.text.ParseException
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -124,7 +123,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     boolean getDefaultForHoldJobsEnabled() { return true }
 
     List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        BEJob.findJobsWithValidJobId(jobs).collect { it.runResult.getJobID().shortID }
+        BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID().shortID }
     }
 
     @Override
