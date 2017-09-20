@@ -7,9 +7,6 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
 import java.time.Duration

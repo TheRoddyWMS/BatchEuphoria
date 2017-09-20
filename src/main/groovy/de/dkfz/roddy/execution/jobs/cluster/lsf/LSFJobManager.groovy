@@ -51,10 +51,10 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     public static final String LSF_JOBSTATE_QUEUED = "PEND"
     public static final String LSF_JOBSTATE_COMPLETED_SUCCESSFUL = "DONE"
     public static final String LSF_JOBSTATE_EXITING = "EXIT"
-    public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \\\"jobid job_name stat user queue " +
+    public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter=\\'\\<\\'\\\""
+            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter='<'\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String LSF_LOGFILE_WILDCARD = "*.o"
 
@@ -161,15 +161,19 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         // job.runResult is set within executionService.execute
 //        logger.severe("Set the job runResult in a better way from runJob itself or so.")
-        cacheLock.lock()
-        if (job.wasExecuted() && job.jobManager.isHoldJobsEnabled()) {
-            allStates[job.jobID.getId()] = JobState.HOLD
-        } else if (job.wasExecuted()) {
-            allStates[job.jobID.getId()] = JobState.QUEUED
-        } else {
-            allStates[job.jobID.getId()] = JobState.FAILED
+        try {
+            cacheLock.lock()
+            if (job.wasExecuted() && job.jobManager.isHoldJobsEnabled()) {
+                allStates[job.jobID.getId()] = JobState.HOLD
+            } else if (job.wasExecuted()) {
+                allStates[job.jobID.getId()] = JobState.QUEUED
+            } else {
+                allStates[job.jobID.getId()] = JobState.FAILED
+            }
+            jobStatusListeners.put(job.jobID.getId(), job)
+        } finally {
+            cacheLock.unlock()
         }
-        jobStatusListeners.put(job.jobID.getId(), job)
         return job.runResult
     }
 
@@ -587,8 +591,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                 state = JobState.ABORTED
             else {
                 cacheLock.lock()
-                state = allStates[job.getJobID().getId()]
-                cacheLock.unlock()
+                try {
+                    state = allStates[job.getJobID().getId()]
+                } finally {
+                    cacheLock.unlock()
+                }
             }
             if (state) queriedStates[job] = state
         }

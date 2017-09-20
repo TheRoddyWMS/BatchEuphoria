@@ -305,7 +305,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         if (getToolScript()) {
             return "BEJob: ${jobName} with piped script:\n\t" + getToolScript().readLines().join("\n\t")
         } else {
-            return "BEJob: ${jobName} calling tool ${tool.getAbsolutePath()}"
+            return "BEJob: ${jobName} calling tool ${tool?.getAbsolutePath()}"
         }
     }
 

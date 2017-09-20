@@ -6,8 +6,12 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import static BatchEuphoriaJobManager.*
 import groovy.transform.CompileStatic
+
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_CREATE_DAEMON
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_UPDATEINTERVAL
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
 
 /**
  * Created by heinold on 28.02.17.
@@ -75,6 +79,7 @@ class JobManagerCreationParametersBuilder {
     }
 
     JobManagerCreationParameters build() {
-        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, userAccount, userEmail, userMask, userGroup, strictMode)
+        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs,
+                userAccount, userEmail, userMask, userGroup, strictMode)
     }
 }
