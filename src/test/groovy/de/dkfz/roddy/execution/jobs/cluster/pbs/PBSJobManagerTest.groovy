@@ -6,31 +6,33 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import groovy.transform.CompileStatic;
-import org.junit.Test;
+import de.dkfz.roddy.BEException
+import groovy.transform.CompileStatic
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.ExpectedException
+
+import java.time.Duration
+import java.time.format.DateTimeParseException
+
+import static junit.framework.Assert.assertEquals
 
 /**
  */
 @CompileStatic
-public class PBSJobManagerTest {
+class PBSJobManagerTest {
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none()
 
     @Test
-    public void testConvertToolEntryToPBSCommandParameters() {
-        // Roddy specific tests!
-//        ResourceSet rset1 = new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 2, 1, new TimeUnit("h"), null, null, null);
-//        ResourceSet rset2 = new ResourceSet(ResourceSetSize.l, null, null, 1, new TimeUnit("h"), null, null, null);
-//        ResourceSet rset3 = new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 2, null, null, null, null, null);
-//
-//        Configuration cfg = new Configuration(new InformationalConfigurationContent(null, Configuration.ConfigurationType.OTHER, "test", "", "", null, "", ResourceSetSize.l, null, null, null, null));
-//
-//        BatchEuphoriaJobManager cFactory = new PBSJobManager(false);
-//        PBSResourceProcessingCommand test = (PBSResourceProcessingCommand) cFactory.convertResourceSet(cfg, rset1);
-//        assert test.getProcessingString().trim().equals("-l mem=1024M -l nodes=1:ppn=2 -l walltime=00:01:00:00");
-//
-//        test = (PBSResourceProcessingCommand) cFactory.convertResourceSet(cfg, rset2);
-//        assert test.getProcessingString().equals(" -l nodes=1:ppn=1 -l walltime=00:01:00:00");
-//
-//        test = (PBSResourceProcessingCommand) cFactory.convertResourceSet(cfg, rset3);
-//        assert test.getProcessingString().equals(" -l mem=1024M -l nodes=1:ppn=2");
+    void testParseDuration() throws DateTimeParseException, BEException {
+        assertEquals(Duration.ofSeconds(0), PBSJobManager.parseColonSeparatedHHMMSSDuration("00:00:00"))
+        assertEquals(Duration.ofHours(24), PBSJobManager.parseColonSeparatedHHMMSSDuration("24:00:00"))
+        assertEquals(Duration.ofHours(119), PBSJobManager.parseColonSeparatedHHMMSSDuration("119:00:00"))
+
+        thrown.expect(BEException.class)
+        thrown.expectMessage("Duration string is not of the format HH+:MM:SS: '02:42'")
+        PBSJobManager.parseColonSeparatedHHMMSSDuration("02:42")
     }
 }
