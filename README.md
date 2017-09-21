@@ -23,7 +23,7 @@ If you are behind a firewall and need to access the internet via a proxy, you ca
 ```groovy
 systemProp.http.proxyHost=HTTP_proxy
 systemProp.http.proxyPort=HTTP_proxy_port
-systemProp.https.proxyHost=HTTPS proxy
+systemProp.https.proxyHost=HTTPS_proxy
 systemProp.https.proxyPort=HTTPS_proxy_port
 ```
 
