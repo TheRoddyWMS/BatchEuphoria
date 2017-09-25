@@ -1,7 +1,17 @@
+/*
+ * Copyright (c) 2017 eilslabs.
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ */
+
+plugins {
+    id 'org.ajoberstar.grgit' version '1.7.2'
+}
+
 apply plugin: 'groovy'
 apply plugin: 'idea'
-apply plugin:'application'
-apply plugin:'maven'
+apply plugin: 'application'
+apply plugin: 'maven'
 
 group = "de.dkfz.roddy"
 
@@ -9,20 +19,13 @@ mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
-
 /*
  * Gets the version name from the current Git tag. If the current commit is not tagged,
  * this returned string will indicate that. Also if the repository is dirty.
  */
 def getVersionName() {
-    String[] command = ["/usr/bin/env", "git", "-C", "${project.rootDir}", "describe", "--tags", "--dirty"]
-    def process = new ProcessBuilder(command).redirectErrorStream(true).start()
-    def output = process.inputStream.readLines().join("")
-    if (process.waitFor() != 0) {
-        throw new RuntimeException("Command failed with code ${process.exitValue()}: '${command.join(" ")}'\nError output: '${output}'")
-    } else {
-        return output.trim()
-    }
+    def dirtySuffix = grgit.status().isClean() ? '' : '-dirty'
+    return grgit.describe() + dirtySuffix
 }
 
 
