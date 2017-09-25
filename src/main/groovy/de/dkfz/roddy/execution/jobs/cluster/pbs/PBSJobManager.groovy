@@ -711,14 +711,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return LocalDateTime.parse(str, pbsDatePattern)
     }
 
-    static Duration parseColonSeparatedHHMMSSDuration(String str) {
-        String[] hhmmss = str.split(":")
-        if (hhmmss.size() != 3) {
-            throw new BEException("Duration string is not of the format HH+:MM:SS: '${str}'")
-        }
-        return Duration.parse(String.format("PT%sH%sM%sS", hhmmss))
-    }
-
     /**
      * Reads the qstat output and creates GenericJobInfo objects
      * @param resultLines - Input of ExecutionResult object
@@ -777,7 +769,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 gj.setAccount(jobResult.get("Account_Name"))
                 gj.setStartCount(jobResult.get("start_count") ? Integer.valueOf(jobResult.get("start_count")) : null)
 
-                DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
                 if (jobResult.get("qtime")) // The time that the job entered the current queue.
                     gj.setSubmitTime(parseTime(jobResult.get("qtime")))
                 if (jobResult.get("start_time")) // The timepoint the job was started.

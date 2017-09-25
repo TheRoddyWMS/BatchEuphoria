@@ -452,6 +452,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         cacheLock.unlock()
     }
 
+    static LocalDateTime parseTime(String str) {
+        def datePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
+        return LocalDateTime.parse(str, datePattern)
+    }
+
     /**
      * Used by @getJobDetails to set JobInfo
      * @param job
@@ -490,7 +495,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
         jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
         jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
-        jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? Duration.parse("PT" + jobResult[16].substring(0, 2) + "H" + jobResult[16].substring(3, 5) + "M" + jobResult[16].substring(6) + "S") : null)
+        jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null)
         jobInfo.setRunTime(runTime)
         jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
         jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
@@ -502,13 +507,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
         job.setJobInfo(jobInfo)
 
-        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
         if (!jobResult[13].toString().equals("-"))
-            jobInfo.setSubmitTime(LocalDateTime.parse(jobResult[13] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear()))
         if (!jobResult[14].toString().equals("-"))
-            jobInfo.setStartTime(LocalDateTime.parse(jobResult[14] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear()))
         if (!jobResult[15].toString().equals("-"))
-            jobInfo.setEndTime(LocalDateTime.parse(jobResult[15] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear()))
 
     }
 
