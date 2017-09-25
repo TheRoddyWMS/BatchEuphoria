@@ -51,6 +51,10 @@ class LSFCommand extends Command {
 
     protected List<String> dependencyIDs
 
+    /**
+     *
+     */
+    public boolean copyExecutionEnvironment = true
 
     protected final List<ProcessingCommands> processingCommands
 
@@ -86,16 +90,12 @@ class LSFCommand extends Command {
     }
 
     String getGroupListString(String groupList) {
-
         return PARM_GROUPLIST + groupList
-
     }
 
 
     String getVariablesParameter() {
-
         return PARM_VARIABLES
-
     }
 
     protected String getDependencyOptionSeparator() {
@@ -108,16 +108,12 @@ class LSFCommand extends Command {
 
 
     protected String getAdditionalCommandParameters() {
-
         return ""
-
     }
 
 
     protected String getDependsSuperParameter() {
-
         PARM_DEPENDS
-
     }
 
     @Override
@@ -185,20 +181,45 @@ class LSFCommand extends Command {
     }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
+    /**
+     * Compose the -env parameter of bsub. This supports the 'none' and 'all' parameters to clean the bsub environment or to copy the full
+     * environment during submission to the execution host. This depends on whether the `copyExecutionEnvironment` field is set (default=true). Also
+     * copying specific variables (just use variable name pointing to null value in the `parameters` hash) and setting to a specific value are
+     * supported.
+     *
+     * Note that variable quoting is left to the client code. The whole -env parameter-value is quoted with ".
+     *
+     * * @return    a String of '-env "[all|none](, varName[=varValue](, varName[=varValue])*)?"'
+     */
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
+        qsubCall << getVariablesParameter() << "\""
+        if (copyExecutionEnvironment) {
+            qsubCall << "all"
+        } else {
+            qsubCall << "none"
+        }
 
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
             // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
-            qsubCall << getVariablesParameter() << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ", PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
+            qsubCall << ", CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ", PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
 
             if (job.parameters.containsKey("debugWrapInScript")) {
                 qsubCall << ", " << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
             }
-            qsubCall << "\""
         } else {
-            qsubCall << getVariablesParameter() << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(", ") << "\""
+            if (!parameters.isEmpty()) {
+                qsubCall << ", " << parameters.collect { key, value ->
+                    if (null == value)
+                        key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
+                    else
+                        "${key}=${value}"     // sets value to value
+                }.join(", ")
+            }
         }
+
+        qsubCall << "\""
 
         return qsubCall
     }
