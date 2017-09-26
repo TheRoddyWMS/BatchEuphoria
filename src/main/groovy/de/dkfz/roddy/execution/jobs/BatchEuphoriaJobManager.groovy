@@ -11,6 +11,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Basic factory and manager class for BEJob and Command management
@@ -109,10 +110,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         })
     }
 
-    abstract C createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs)
+    abstract C createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs)
 
     C createCommand(BEJob job, File tool, List<String> parentJobs, Map<String, String> parameters) {
-        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, parameters, parentJobs)
+        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingParameters(), tool, parameters, parentJobs)
         c.setJob(job)
         return c
     }
@@ -164,17 +165,13 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
-    ProcessingCommands convertResourceSet(BEJob job) {
-        return convertResourceSet(job.resourceSet)
+    ProcessingParameters convertResourceSet(BEJob job) {
+        return convertResourceSet(job, job.resourceSet)
     }
 
-    abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet)
+    abstract ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet)
 
-    abstract ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions)
-
-//    public abstract ProcessingCommands getProcessingCommanldsFromConfiguration(Configuration configuration, String toolID);
-
-    abstract ProcessingCommands extractProcessingCommandsFromToolScript(File file)
+    abstract ProcessingParameters extractProcessingParametersFromToolScript(File file)
 
     List<C> getListOfCreatedCommands() {
         List<C> newList = new LinkedList<>()

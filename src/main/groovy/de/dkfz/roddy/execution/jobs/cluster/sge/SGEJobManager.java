@@ -15,7 +15,7 @@
 //import de.dkfz.roddy.execution.jobs.BEJob;
 //import de.dkfz.roddy.execution.jobs.ProcessingCommands;
 //import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager;
-//import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand;
+//import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingParameters;
 //import de.dkfz.roddy.tools.BufferUnit;
 //
 //import java.io.File;
@@ -107,7 +107,7 @@
 //        if (resourceSet.isStorageSet()) {
 ////            sb.append(" -l mem=").append(resourceSet.getMem()).append("g");
 //        }
-//        return new PBSResourceProcessingCommand(sb.toString());
+//        return new PBSResourceProcessingParameters(sb.toString());
 //    }
 //
 //    @Override

@@ -6,17 +6,12 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
+import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFResourceProcessingCommand
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.BEJobResult
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -26,6 +21,7 @@ import groovy.util.slurpersupport.NodeChild
 import org.apache.http.Header
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
+
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -95,23 +91,23 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
 
     @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
-        StringBuilder resourceList = new StringBuilder()
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
         if (resourceSet.isQueueSet()) {
-            resourceList.append(" -q ").append(resourceSet.getQueue())
+            resourceParameters.put('-q', resourceSet.getQueue())
         }
         if (resourceSet.isMemSet()) {
             String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
+            resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
         }
         if (resourceSet.isWalltimeSet()) {
-            resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
         }
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            resourceList.append(" -n ").append(nodes)
+            resourceParameters.put('-n', nodes.toString())
         }
-        return new LSFResourceProcessingCommand(resourceList.toString())
+        return new ProcessingParameters(resourceParameters)
     }
 
     private String durationToLSFWallTime(Duration wallTime) {
@@ -135,21 +131,20 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List jobs, boolean forceUpdate) {
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
         getJobDetails(jobs)
         Map<BEJob, JobState> jobStates = [:]
-        (jobs as List<BEJob>).each { BEJob job -> jobStates.put(job, job.getJobState()) }
+        jobs.each { BEJob job -> jobStates.put(job, job.getJobState()) }
         return jobStates
     }
 
 
-    @Override
-    Map<String, JobState> queryJobStatus(List jobs) {
-        getJobDetails(jobs)
-        Map<String, JobState> jobStates = [:]
-        (jobs as List<BEJob>).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
-        return jobStates
-    }
+//    Map<String, JobState> queryJobStatus(List jobs) {
+//        getJobDetails(jobs)
+//        Map<String, JobState> jobStates = [:]
+//        (jobs as BEJob).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
+//        return jobStates
+//    }
 
     /**
      * Submit job
@@ -344,8 +339,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
                 "Content-Type: application/xml; charset=UTF-8",
                 "Content-Transfer-Encoding: 8bit",
                 "Accept-Language:en-en\r\n",
-                "<AppParam><id>EXTRA_PARAMS</id><value>${logging + resources + envParams + ((LSFResourceProcessingCommand) convertResourceSet(job.resourceSet)).processingString + parentJobs}" +
-                        "</value><type></type></AppParam>\r\n"].join("\r\n")
+                "<AppParam><id>EXTRA_PARAMS</id><value>${logging + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs}" + "</value><type></type></AppParam>\r\n"].join("\r\n")
     }
 
     /**

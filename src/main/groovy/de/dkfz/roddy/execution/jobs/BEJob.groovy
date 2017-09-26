@@ -77,7 +77,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
      */
     protected transient JobState currentJobState
 
-    private List<ProcessingCommands> processingCommand = new LinkedList<ProcessingCommands>()
+    private List<ProcessingParameters> processingParameters = new LinkedList<ProcessingParameters>()
 
     /**
      * Command object of last execution.
@@ -176,9 +176,9 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return BEFakeJobID.isFakeJobID(jobID)
     }
 
-    void addProcessingCommand(ProcessingCommands processingCommand) {
-        if (processingCommand == null) return
-        this.processingCommand.add(processingCommand)
+    void addProcessingParameters(ProcessingParameters processingParameters) {
+        if (processingParameters == null) return
+        this.processingParameters.add(processingParameters)
     }
 
     JobType getJobType() {
@@ -189,8 +189,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return parameters
     }
 
-    List<ProcessingCommands> getListOfProcessingCommand() {
-        return [jobManager.convertResourceSet(this)] + processingCommand
+    List<ProcessingParameters> getListOfProcessingParameters() {
+        return [jobManager.convertResourceSet(this)] + processingParameters
     }
 
     List<J> getParentJobs() {

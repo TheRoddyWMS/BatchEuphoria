@@ -6,17 +6,18 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.tools.LoggerWrapper
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.logging.Level
 import java.util.regex.Matcher
 
-import static de.dkfz.roddy.StringConstants.*
+import static de.dkfz.roddy.StringConstants.COLON
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * This class is used to create and execute qsub commands
@@ -61,7 +62,7 @@ class PBSCommand extends Command {
 
     protected List<String> dependencyIDs
 
-    protected final List<ProcessingCommands> processingCommands
+    protected final List<ProcessingParameters> processingParameters
 
     /**
      *
@@ -71,9 +72,9 @@ class PBSCommand extends Command {
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
         super(parentManager, job, id, parameters, tags)
-        this.processingCommands = processingCommands
+        this.processingParameters = processingParameters
         this.command = command
         this.loggingDirectory = loggingDirectory
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
@@ -199,18 +200,6 @@ class PBSCommand extends Command {
             i++
         }
         qsubCall << sbArrayIndices.toString()[0..-2]
-        return qsubCall
-    }
-
-    StringBuilder assembleProcessingCommands() {
-        StringBuilder qsubCall = new StringBuilder()
-        for (ProcessingCommands pcmd in job.getListOfProcessingCommand()) {
-            if (!(pcmd instanceof PBSResourceProcessingCommand)) continue
-            PBSResourceProcessingCommand command = (PBSResourceProcessingCommand) pcmd
-            if (command == null)
-                continue
-            qsubCall << StringConstants.WHITESPACE << command.getProcessingString()
-        }
         return qsubCall
     }
 

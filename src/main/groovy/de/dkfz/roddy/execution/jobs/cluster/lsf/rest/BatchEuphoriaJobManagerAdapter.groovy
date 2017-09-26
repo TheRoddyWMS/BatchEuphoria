@@ -8,21 +8,17 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BEJobResult
+import groovy.transform.CompileStatic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Created by kaercher on 22.03.17.
  */
+@CompileStatic
 class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
+
     BatchEuphoriaJobManagerAdapter(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
@@ -34,17 +30,12 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
 
     // needed
     @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         throw new NotImplementedException()
     }
 
     @Override
-    ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions) {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         throw new NotImplementedException()
     }
 
@@ -157,7 +148,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
 
     // needed
     @Override
-    Map<String, JobState> queryJobStatus(List jobIDs) {
+    Map<String, JobState> queryJobStatus(List jobs) {
         throw new NotImplementedException()
     }
 

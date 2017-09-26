@@ -6,34 +6,21 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BEJobResult
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.LoggerWrapper
-import de.dkfz.roddy.tools.RoddyConversionHelperMethods
-import de.dkfz.roddy.tools.RoddyIOHelperMethods
+import de.dkfz.roddy.tools.*
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.locks.ReentrantLock
-import static de.dkfz.roddy.StringConstants.MINUS
-import static de.dkfz.roddy.StringConstants.SBRACKET_LEFT
-import static de.dkfz.roddy.StringConstants.SPLIT_SBRACKET_LEFT
-import static de.dkfz.roddy.StringConstants.SPLIT_SBRACKET_RIGHT
 
+import static de.dkfz.roddy.StringConstants.*
 
 /**
  * Factory for the management of LSF cluster systems.
@@ -150,7 +137,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
+    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
         throw new NotImplementedException()
     }
 
@@ -215,34 +202,24 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         executionService.execute(qrls)
     }
 
-
     @Override
-    ProcessingCommands parseProcessingCommands(String processingString) {
-        return convertLSFResourceOptionsString(processingString)
-    }
-
-    static ProcessingCommands convertLSFResourceOptionsString(String processingString) {
-        return new LSFResourceProcessingCommand(processingString)
-    }
-
-    @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
-        StringBuilder resourceList = new StringBuilder()
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
         if (resourceSet.isQueueSet()) {
-            resourceList.append(" -q ").append(resourceSet.getQueue())
+            resourceParameters.put("-q", resourceSet.getQueue())
         }
         if (resourceSet.isMemSet()) {
             String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceList.append(" -M ").append(memo.substring(0, memo.toString().length() - 1))
+            resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
         }
         if (resourceSet.isWalltimeSet()) {
-            resourceList.append(" -W ").append(durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
         }
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            resourceList.append(" -n ").append(nodes)
+            resourceParameters.put("-n", nodes.toString())
         }
-        return new LSFResourceProcessingCommand(resourceList.toString())
+        return new ProcessingParameters(resourceParameters)
     }
 
     private String durationToLSFWallTime(Duration wallTime) {
@@ -254,7 +231,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
 
     @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         String[] text = RoddyIOHelperMethods.loadTextFile(file)
 
         List<String> lines = new LinkedList<String>()
@@ -272,7 +249,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         for (String line : lines) {
             processingOptionsStr << " " << line.substring(5)
         }
-        return convertLSFResourceOptionsString(processingOptionsStr.toString())
+        return ProcessingParameters.fromString(processingOptionsStr.toString())
     }
 
     @Override
