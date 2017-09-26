@@ -15,7 +15,7 @@
 //import de.dkfz.roddy.execution.jobs.BEJob;
 //import de.dkfz.roddy.execution.jobs.ProcessingCommands;
 //import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager;
-//import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand;
+//import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingParameters;
 //import de.dkfz.roddy.tools.BufferUnit;
 //
 //import java.io.File;
@@ -62,6 +62,32 @@
 //        return "SGEResourceOptions_";
 //    }
 //
+//
+//@Override
+//    String getJobIdVariable() {
+//            return 'JOB_ID'
+//            }
+//
+//@Override
+//    String getJobArrayIndexVariable() {
+//            return "SGE_TASK_ID"
+//            }
+//
+//@Override
+//    String getNodeFileVariable() {
+//            return "PE_HOSTFILE"
+//            }
+//
+//@Override
+//    String getSubmitHostVariable() {
+//            return "SGE_O_HOST"
+//            }
+//
+//@Override
+//    String getSubmitDirectoryVariable() {
+//            return "SGE_O_WORKDIR"
+//            }
+//
 //    @Override
 //    public ProcessingCommands convertResourceSet(Configuration configuration, ResourceSet resourceSet) {
 //        // "-l mf=4G -l h_vmem=6G -l h_stack=128M -V"
@@ -81,7 +107,7 @@
 //        if (resourceSet.isStorageSet()) {
 ////            sb.append(" -l mem=").append(resourceSet.getMem()).append("g");
 //        }
-//        return new PBSResourceProcessingCommand(sb.toString());
+//        return new PBSResourceProcessingParameters(sb.toString());
 //    }
 //
 //    @Override

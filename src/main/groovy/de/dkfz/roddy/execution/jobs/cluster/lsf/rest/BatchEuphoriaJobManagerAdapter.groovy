@@ -8,53 +8,34 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BEJobResult
+import groovy.transform.CompileStatic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Created by kaercher on 22.03.17.
  */
+@CompileStatic
 class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
+
     BatchEuphoriaJobManagerAdapter(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
 
     @Override
-    Command createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
-    @Override
     BEJobResult runJob(BEJob job) {
-        return null
-    }
-
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
         throw new NotImplementedException()
     }
 
     // needed
     @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         throw new NotImplementedException()
     }
 
     @Override
-    ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions) {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         throw new NotImplementedException()
     }
 
@@ -75,22 +56,22 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     // needed
     @Override
     void updateJobStatus() {
-
+        throw new NotImplementedException()
     }
 
     @Override
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     Map<String, GenericJobInfo> queryExtendedJobStateById(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     void addJobStatusChangeListener(BEJob job) {
-
+        throw new NotImplementedException()
     }
 
     @Override
@@ -120,17 +101,27 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
+    String getJobIdVariable() {
         throw new NotImplementedException()
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
+    String getJobArrayIndexVariable() {
         throw new NotImplementedException()
     }
 
     @Override
-    String getSpecificJobScratchIdentifier() {
+    String getNodeFileVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
         throw new NotImplementedException()
     }
 
@@ -149,44 +140,40 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
         throw new NotImplementedException()
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        throw new NotImplementedException()
-    }
 // needed
     @Override
     void queryJobAbortion(List executedJobs) {
-
+        throw new NotImplementedException()
     }
 
     // needed
     @Override
-    Map<String, JobState> queryJobStatus(List jobIDs) {
+    Map<String, JobState> queryJobStatus(List jobs) {
         throw new NotImplementedException()
     }
 
     @Override
-    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List dependencies) {
+    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
         throw new NotImplementedException()
     }
 
     @Override
     Map<BEJob, JobState> queryJobStatus(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List jobIds, boolean forceUpdate) {
-        return null
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
+        throw new NotImplementedException()
     }
 
     @Override
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     JobState parseJobState(String stateString) {
-        return null
+        throw new NotImplementedException()
     }
 }

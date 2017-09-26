@@ -37,8 +37,9 @@ class BEIntegrationTestStarter {
     static LoggerWrapper log = LoggerWrapper.getLogger(BEIntegrationTestStarter)
     static TestExecutionService executionService
     static RestExecutionService restExecutionService
-    static String testScript = "\"#!/bin/bash\\nsleep 15\\n\""
+    static String testScript = "\"sleep 120s \""
     static File batchEuphoriaTestScript
+
     static ResourceSet resourceSet = new ResourceSet(new BufferValue(10, BufferUnit.m), 1, 1, Duration.ofMinutes(1), null, null, null)
 
     static void main(String[] args) {
@@ -46,7 +47,7 @@ class BEIntegrationTestStarter {
 
         initializeTests(testInput)
 
-        if (testInput.clusterSystem == AvailableClusterSystems.lsf) {
+        if (testInput.clusterSystem == AvailableClusterSystems.lsfrest) {
             initializeLSFTest(testInput.restServer, testInput.restAccount)
             runTestsFor(testInput.clusterSystem, restExecutionService)
         } else {
@@ -76,9 +77,9 @@ class BEIntegrationTestStarter {
 
         testJobWithPipedScript(jobManager)
 
-        testJobWithFile(jobManager)
+        //testJobWithFile(jobManager)
 
-        testMultipleJobsWithFile(jobManager)
+        //testMultipleJobsWithFile(jobManager)
 
         log.severe("Did not test jobManager.queryExtendedJobState")
         log.severe("Did not test jobManager.waitForJobsToFinish")
@@ -86,21 +87,19 @@ class BEIntegrationTestStarter {
 
 
     private static void testJobWithPipedScript(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithPipedScript = new BEJob("batchEuphoriaTestJob", null, testScript, null, resourceSet, ["a": "value"], jobManager)
+        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager)
         singleJobTest(jobManager, testJobWithPipedScript)
     }
 
     private static void testJobWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithFile = new BEJob("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
+        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager)
         singleJobTest(jobManager, testJobWithFile)
     }
 
     private static void testMultipleJobsWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testParent = new BEJob("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
-        BEJob testJobChild1 = new BEJob("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
-                .addParentJobIDs([testParent.runResult.jobID])
-        BEJob testJobChild2 = new BEJob("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
-                .addParentJobIDs([testParent.runResult.jobID, testJobChild1.runResult.jobID])
+        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager)
+        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager)], ["a": "value"], jobManager)
+        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager), new BEJob(testJobChild1.runResult.jobID, jobManager)], ["a": "value"], jobManager)
         multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
@@ -113,7 +112,7 @@ class BEIntegrationTestStarter {
 
             // run single job and check status
             BEJobResult jr = jobManager.runJob(testJob)
-            if (jobManager.isHoldJobsEnabled()) {
+            /*if (jobManager.isHoldJobsEnabled()) {
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
 
@@ -138,11 +137,19 @@ class BEIntegrationTestStarter {
             def jm = jobManager as LSFRestJobManager
             if (jm)
                 jm.updateJobStatistics(jobList)
-
+            */
+            System.sleep(10000)
+            def jm = jobManager as LSFRestJobManager
+            if (jm){
+                jm.getJobDetails([testJob])
+                jm.updateJobStatistics(jobList)
+            }
+            println "jobstate "+testJob.jobState
             log.always(testJob.getJobInfo().toString())
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
+            ex.printStackTrace()
             log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass()}",ex)
         } finally {
 
@@ -176,7 +183,7 @@ class BEIntegrationTestStarter {
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers
             // from failed or debug runs.
         } catch (Exception ex) {
-            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass().toString()}",ex)
+            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass().toString()}", ex)
         } finally {
 
         }
@@ -269,7 +276,7 @@ class BEIntegrationTestStarter {
             executionService = new TestExecutionService(testInput.account, testInput.server)
             batchEuphoriaTestScript = File.createTempFile("batchEuphoriaTestScript_", ".sh")
             batchEuphoriaTestScript << testScript
-            executionService.copyFileToRemote(batchEuphoriaTestScript, batchEuphoriaTestScript)
+            //executionService.copyFileToRemote(batchEuphoriaTestScript, batchEuphoriaTestScript)
         } catch (Exception ex) {
             log.severe("Could not setup execution service and copy test script.", ex)
         }
@@ -280,11 +287,12 @@ class BEIntegrationTestStarter {
         char[] pwd = null
         if (cnsl != null)
             pwd = cnsl.readPassword("LSF Password: ");
-
+            
         try {
             restExecutionService = new RestExecutionService(server, user, pwd.toString())
         } catch (Exception ex) {
-            log.severe("Could not setup LSF execution service", ex)
+
+            new Exception("Could not setup LSF execution service ${ex}")
         }
     }
 

@@ -10,6 +10,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  */
@@ -27,37 +28,17 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public DirectCommand createCommand(GenericJobInfo jobInfo) {
+    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
         return null;
     }
 
     @Override
-    public DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         return null;
     }
 
     @Override
-    public BEJobID createJobID(BEJob job, String jobResult) {
-        return new DirectCommandID(jobResult, job);
-    }
-
-    @Override
-    public ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
-        return null;
-    }
-
-    @Override
-    public ProcessingCommands parseProcessingCommands(String pCmd) {
-        return new DummyProcessingCommand(pCmd);
-    }
-
-//    @Override
-//    public ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID) {
-//        return null;
-//    }
-
-    @Override
-    public ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         return null;
     }
 
@@ -132,21 +113,28 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public String getSpecificJobIDIdentifier() {
-        logger.severe("BEJob id for " + getClass().getName() + " should be configurable");
-        return '"$$"'
+    String getJobIdVariable() {
+        return '$'
     }
 
     @Override
-    public String getSpecificJobArrayIndexIdentifier() {
-        logger.severe("BEJob arrays are not supported in " + getClass().getName());
-        return "0";
+    String getJobArrayIndexVariable() {
+        throw new NotImplementedException()
     }
 
     @Override
-    public String getSpecificJobScratchIdentifier() {
-        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable");
-        return '/data/roddyScratch/$$'
+    String getNodeFileVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "PWD"
     }
 
     @Override
@@ -165,8 +153,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public DirectCommand createCommand(BEJob job, File tool, List<String> dependencies) {
-        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"));
+    public DirectCommand createCommand(BEJob job, File tool, List<String> parentJobs, Map<String, String> parameters) {
+        return new DirectCommand(this, job, tool.getName(), null, parameters(), null, null, parentJobs, tool.getAbsolutePath(), new File("/tmp"));
     }
 
     @Override
@@ -196,11 +184,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     @Override
     public String getSubmissionCommand() {
         return null;
-    }
-
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        return executionService.queryWorkingDirectory()
     }
 
     @Override

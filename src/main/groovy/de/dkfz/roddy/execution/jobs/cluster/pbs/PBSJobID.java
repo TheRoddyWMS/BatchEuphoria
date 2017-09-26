@@ -7,7 +7,6 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs;
 
 
-import de.dkfz.roddy.execution.jobs.BEJob;
 import de.dkfz.roddy.execution.jobs.BEJobID;
 
 import java.io.Serializable;
@@ -16,8 +15,13 @@ import java.io.Serializable;
  */
 public class PBSJobID extends BEJobID implements Serializable {
 
-    public PBSJobID(BEJob job, String id) {
-        super(id, job);
+    public PBSJobID(String id) {
+        super(id);
+    }
+
+    @Override
+    public boolean isValidID() {
+        return super.isValidID() ;
     }
 
     @Override
