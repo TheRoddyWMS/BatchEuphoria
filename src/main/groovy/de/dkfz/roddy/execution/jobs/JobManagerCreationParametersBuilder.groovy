@@ -6,12 +6,19 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import static BatchEuphoriaJobManager.*
 import groovy.transform.CompileStatic
+
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_CREATE_DAEMON
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_UPDATEINTERVAL
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
+import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
 
 /**
  * Created by heinold on 28.02.17.
+ *
+ * Remove. The class is basically a copy of the JobManagerCreationParameter with added fluent setters.
  */
+@Deprecated
 @CompileStatic
 class JobManagerCreationParametersBuilder {
 
@@ -20,9 +27,6 @@ class JobManagerCreationParametersBuilder {
     String userIdForJobQueries = ""
     boolean trackUserJobsOnly = JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
     boolean trackOnlyStartedJobs = JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
-    String jobIDIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBID
-    String jobArrayIDIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBARRAYINDEX
-    String jobScratchIdentifier = BatchEuphoriaJobManager.BE_DEFAULT_JOBSCRATCH
     String userGroup = null
     String userAccount = null
     String userEmail = null
@@ -54,21 +58,6 @@ class JobManagerCreationParametersBuilder {
         return this;
     }
 
-    JobManagerCreationParametersBuilder setJobIDIdentifier(String jobIDIdentifier) {
-        this.jobIDIdentifier = jobIDIdentifier
-        return this;
-    }
-
-    JobManagerCreationParametersBuilder setJobArrayIDIdentifier(String jobArrayIDIdentifier) {
-        this.jobArrayIDIdentifier = jobArrayIDIdentifier
-        return this;
-    }
-
-    JobManagerCreationParametersBuilder setJobScratchIdentifier(String jobScratchIdentifier) {
-        this.jobScratchIdentifier = jobScratchIdentifier
-        return this;
-    }
-
     JobManagerCreationParametersBuilder setUserGroup(String userGroup) {
         this.userGroup = userGroup
         return this
@@ -88,7 +77,9 @@ class JobManagerCreationParametersBuilder {
         this.userMask = userMask
         return this
     }
+
     JobManagerCreationParameters build() {
-        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs, jobIDIdentifier, jobArrayIDIdentifier, jobScratchIdentifier, userAccount, userEmail, userMask, userGroup, strictMode)
+        return new JobManagerCreationParameters(createDaemon, updateInterval, userIdForJobQueries, trackUserJobsOnly, trackOnlyStartedJobs,
+                userAccount, userEmail, userMask, userGroup, strictMode)
     }
 }

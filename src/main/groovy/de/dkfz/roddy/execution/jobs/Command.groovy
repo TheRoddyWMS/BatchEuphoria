@@ -37,7 +37,7 @@ abstract class Command {
     /**
      * Parameters for the qsub command
      */
-    protected final Map<String, String> parameters = [:]
+    public final Map<String, String> parameters = [:]
 
     /**
      * A list of named tags for the command object
@@ -46,6 +46,15 @@ abstract class Command {
 
     protected final BatchEuphoriaJobManager parentJobManager
 
+    /**
+     * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
+     *
+     * @param parentJobManager
+     * @param job
+     * @param id
+     * @param parameters       Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
+     * @param commandTags
+     */
     protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
         this.parentJobManager = parentJobManager
         this.commandTags.putAll(commandTags ?: [:])

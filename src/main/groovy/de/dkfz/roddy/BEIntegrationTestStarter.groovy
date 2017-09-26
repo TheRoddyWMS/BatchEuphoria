@@ -87,21 +87,19 @@ class BEIntegrationTestStarter {
 
 
     private static void testJobWithPipedScript(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithPipedScript = new BEJob("batchEuphoriaTestJob", null, testScript, null, resourceSet, ["a": "value"], jobManager)
+        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager)
         singleJobTest(jobManager, testJobWithPipedScript)
     }
 
     private static void testJobWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithFile = new BEJob("batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
+        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager)
         singleJobTest(jobManager, testJobWithFile)
     }
 
     private static void testMultipleJobsWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testParent = new BEJob("batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
-        BEJob testJobChild1 = new BEJob("batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
-                .addParentJobIDs([testParent.runResult.jobID])
-        BEJob testJobChild2 = new BEJob("batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, ["a": "value"], jobManager)
-                .addParentJobIDs([testParent.runResult.jobID, testJobChild1.runResult.jobID])
+        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager)
+        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager)], ["a": "value"], jobManager)
+        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager), new BEJob(testJobChild1.runResult.jobID, jobManager)], ["a": "value"], jobManager)
         multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 

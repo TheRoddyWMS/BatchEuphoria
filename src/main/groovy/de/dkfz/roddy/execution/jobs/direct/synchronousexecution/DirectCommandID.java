@@ -13,8 +13,8 @@ import de.dkfz.roddy.execution.jobs.BEJob;
  */
 public class DirectCommandID extends BEJobID {
 
-    protected DirectCommandID(String id, BEJob job) {
-        super(id, job);
+    protected DirectCommandID(String id) {
+        super(id);
     }
 
     @Override

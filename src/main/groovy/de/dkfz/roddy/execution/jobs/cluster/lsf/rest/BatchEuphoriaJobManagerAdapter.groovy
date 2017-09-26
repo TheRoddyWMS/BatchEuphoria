@@ -28,17 +28,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Command createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
-    @Override
     BEJobResult runJob(BEJob job) {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
         throw new NotImplementedException()
     }
 
@@ -120,12 +110,27 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
+    String getJobIdVariable() {
         throw new NotImplementedException()
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
+    String getJobArrayIndexVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
         throw new NotImplementedException()
     }
 
@@ -144,10 +149,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
         throw new NotImplementedException()
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        throw new NotImplementedException()
-    }
 // needed
     @Override
     void queryJobAbortion(List executedJobs) {
@@ -161,7 +162,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List dependencies) {
+    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
         throw new NotImplementedException()
     }
 

@@ -19,8 +19,6 @@ import org.apache.http.Header
 class RestResult extends ExecutionResult {
 
     Header[] headers
-    String body
-    int statusCode
     BEJob job
 
     /**
@@ -32,13 +30,19 @@ class RestResult extends ExecutionResult {
     RestResult(Header[] headers, String body, int statusCode) {
         super(statusCode == 200, statusCode, [body], null)
         this.headers = headers
-        this.body = body
-        this.statusCode = statusCode
     }
 
     @Override
     boolean isSuccessful() {
         return statusCode == 200
+    }
+
+    int getStatusCode() {
+        exitCode
+    }
+
+    String getBody() {
+        resultLines.join("\n")
     }
 
 }

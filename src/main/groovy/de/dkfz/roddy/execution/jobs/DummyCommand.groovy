@@ -23,20 +23,20 @@ class DummyCommand extends Command {
         return ++idCounter
     }
 
-    private String jobName;
+    private String jobName
 
     DummyCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, boolean isArray) {
-        super(parentJobManager, job, "dummy_" + getNextIDCountValue(), null, null);
-        this.jobName = jobName;
+        super(parentJobManager, job, "dummy_" + getNextIDCountValue(), null, null)
+        this.jobName = jobName
         if (isArray) {
-            setExecutionID(FakeBEJob.getNotExecutedFakeJob(job, true));
+            setExecutionID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED, true))
         } else {
-            setExecutionID(FakeBEJob.getNotExecutedFakeJob(job));
+            setExecutionID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED))
         }
     }
 
     @Override
-    public String toString() {
+    String toString() {
         return String.format("Command of class %s with id %s and name %s", this.getClass().getName(), getID(), jobName);
     }
 }

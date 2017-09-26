@@ -52,13 +52,35 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     public static String URI_JOB_HISTORY = "/jobhistory"
     public static String URI_USER_COMMAND = "/userCmd"
 
+    public static Integer HTTP_OK = 200
+
     protected Map<String, JobState> allStates = [:]
 
     protected Map<String, BEJob> jobStatusListeners = [:]
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        return '${LSB_JOBID}'
+    String getJobIdVariable() {
+        return 'LSB_JOBID'
+    }
+
+    @Override
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
     }
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
@@ -192,13 +214,17 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         logger.postAlwaysInfo("request body:\n" + requestBody)
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
-        if (result.statusCode == 200) {
-            logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
-            job.setRunResult(new BEJobResult(job.lastCommand, new BEJobID(new XmlSlurper().parseText(result.body).text(), job), result.successful, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+        if (result.statusCode == HTTP_OK) {
+            def parsedBody = new XmlSlurper().parseText(result.body)
+            logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + parsedBody)
+            BEJobID jobID = new BEJobID(parsedBody.text())
+            job.resetJobID(jobID)
+            BEJobResult jobResult = new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
             job.setJobState(JobState.UNKNOWN)
             jobStatusListeners.put(job.getJobID().getId(), job)
         } else {
-            job.setRunResult(new BEJobResult(job.lastCommand, null, result.successful, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setRunResult(new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
         }
     }
@@ -232,7 +258,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
             String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
             return "-w \"${joinedParentJobs} \""
@@ -313,8 +339,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
 
         String parentJobs = ""
-        if (job.dependencyIDs) {
-            parentJobs = prepareParentJobs(job.dependencyIDs)
+        if (job.parentJobIDs) {
+            parentJobs = prepareParentJobs(job.parentJobIDs)
         }
         return ["--${boundary}",
                 "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"",
@@ -363,7 +389,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @return comma separated list of job ids
      */
     private String prepareURLWithParam(List<BEJob> jobs) {
-        return BEJob.findJobsWithValidJobId(jobs).collect { it.getJobID() }.join(",")
+        return BEJob.jobsWithUniqueValidJobId(jobs).collect { it.jobID }.join(",")
     }
 
     /**
@@ -459,7 +485,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
         } else {
-            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getParentJobIDsAsString())
         }
 
         String queue = jobDetails.getProperty("queue").toString()
@@ -539,7 +565,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null)
             jobInfo = job.getJobInfo()
         else
-            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getParentJobIDsAsString())
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
         println timeSummary.getProperty("timeOfCalculation")
@@ -620,5 +646,10 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         return js
     }
 
+
+    @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["LSB_*", "LS_*"])
+    }
 
 }

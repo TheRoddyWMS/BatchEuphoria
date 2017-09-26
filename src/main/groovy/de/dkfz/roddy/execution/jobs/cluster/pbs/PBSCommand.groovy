@@ -144,7 +144,6 @@ class PBSCommand extends Command {
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
-        boolean useParameterFile = parentJobManager.isParameterFileEnabled()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         StringBuilder qsubCall = new StringBuilder(EMPTY)
@@ -215,16 +214,20 @@ class PBSCommand extends Command {
         return qsubCall
     }
 
+    // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
 
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            qsubCall << getVariablesParameter() << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
 
-        if (job.getParameterFile()) {
-            qsubCall << getVariablesParameter() << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.getParameterFile()
+            if (job.parameters.containsKey("debugWrapInScript")) {
+                qsubCall << "," << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
+            }
+            qsubCall << "\""
+
         } else {
-            List<String> finalParameters = job.finalParameters()
-            if (finalParameters)
-                qsubCall << getVariablesParameter() << finalParameters.join(",")
+            qsubCall << getVariablesParameter() << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(",") << "\""
         }
 
         return qsubCall
@@ -233,10 +236,12 @@ class PBSCommand extends Command {
     String assembleDependencyString() {
         StringBuilder qsubCall = new StringBuilder("")
         LinkedList<String> tempDependencies =
-                creatingJob.getDependencyIDsAsString().findAll {
+                creatingJob.getParentJobIDsAsString().findAll {
                     it != "" && it != NONE && it != "-1"
+                }.collect {
+                    it.split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
                 } as LinkedList<String>
-        if (creatingJob.getDependencyIDsAsString().any { it.contains("[].") }) {
+        if (creatingJob.getParentJobIDsAsString().any { it.contains("[].") }) {
             throw new NotImplementedException()
         }
         if (tempDependencies.size() > 0) {

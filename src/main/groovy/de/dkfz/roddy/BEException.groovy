@@ -6,6 +6,9 @@ package de.dkfz.roddy
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
+/**
+ * BatchEuphoria-specific exception class.
+ */
 class BEException extends Exception {
 
     BEException(String message) {

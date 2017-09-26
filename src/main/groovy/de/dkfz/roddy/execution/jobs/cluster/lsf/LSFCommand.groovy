@@ -51,6 +51,10 @@ class LSFCommand extends Command {
 
     protected List<String> dependencyIDs
 
+    /**
+     *
+     */
+    public boolean copyExecutionEnvironment = true
 
     protected final List<ProcessingCommands> processingCommands
 
@@ -66,6 +70,7 @@ class LSFCommand extends Command {
         super(parentManager, job, id, parameters, tags)
         this.processingCommands = processingCommands
         this.command = command
+        assert (null != loggingDirectory)
         this.loggingDirectory = loggingDirectory
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
@@ -79,22 +84,18 @@ class LSFCommand extends Command {
 
     String getLoggingParameter() {
         StringBuilder logging = new StringBuilder(EMPTY)
-        if (job.loggingDirectory) logging << (PARM_OUTPATH + " ${loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
-        if (job.loggingDirectory) logging << (PARM_LOGPATH + " ${loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
+        logging << (PARM_OUTPATH + " ${loggingDirectory}/${id ? id : "%J"}.o%J ")
+        logging << (PARM_LOGPATH + " ${loggingDirectory}/${id ? id : "%J"}.e%J ")
         return logging
     }
 
     String getGroupListString(String groupList) {
-
         return PARM_GROUPLIST + groupList
-
     }
 
 
     String getVariablesParameter() {
-
         return PARM_VARIABLES
-
     }
 
     protected String getDependencyOptionSeparator() {
@@ -107,16 +108,12 @@ class LSFCommand extends Command {
 
 
     protected String getAdditionalCommandParameters() {
-
         return ""
-
     }
 
 
     protected String getDependsSuperParameter() {
-
         PARM_DEPENDS
-
     }
 
     @Override
@@ -126,7 +123,6 @@ class LSFCommand extends Command {
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         String accountName = parentJobManager.getUserAccount()
-        boolean useParameterFile = parentJobManager.isParameterFileEnabled()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         StringBuilder bsubCall = new StringBuilder(EMPTY)
@@ -149,7 +145,7 @@ class LSFCommand extends Command {
 
         bsubCall << assembleProcessingCommands()
 
-        bsubCall << prepareParentJobs(job.getDependencyIDs())
+        bsubCall << prepareParentJobs(job.getParentJobIDs())
 
         bsubCall << assembleVariableExportString()
 
@@ -165,7 +161,7 @@ class LSFCommand extends Command {
         StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
         if (job.resourceSet.isCoresSet()) {
             int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
-            resources.append(" affinity[core\\(${cores}\\)]")
+            resources.append(" affinity[core(${cores})]")
         }
         resources.append("\' ")
         return resources
@@ -184,23 +180,50 @@ class LSFCommand extends Command {
         return bsubCall
     }
 
-
-    StringBuilder assembleVariableExportString() {
-
-        StringBuilder envParams = new StringBuilder()
-
-        job.parameters.eachWithIndex { key, value, index ->
-            if (index == 0)
-                envParams << getVariablesParameter() << " \" ${key}='${value}'"
-            else
-                envParams << "," + "${key}='${value}'"
+    // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
+    /**
+     * Compose the -env parameter of bsub. This supports the 'none' and 'all' parameters to clean the bsub environment or to copy the full
+     * environment during submission to the execution host. This depends on whether the `copyExecutionEnvironment` field is set (default=true). Also
+     * copying specific variables (just use variable name pointing to null value in the `parameters` hash) and setting to a specific value are
+     * supported.
+     *
+     * Note that variable quoting is left to the client code. The whole -env parameter-value is quoted with ".
+     *
+     * * @return    a String of '-env "[all|none](, varName[=varValue](, varName[=varValue])*)?"'
+     */
+    String assembleVariableExportString() {
+        StringBuilder qsubCall = new StringBuilder()
+        qsubCall << getVariablesParameter() << "\""
+        if (copyExecutionEnvironment) {
+            qsubCall << "all"
+        } else {
+            qsubCall << "none"
         }
 
-        if (envParams.length() > 0)
-            envParams << "\""
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
+            // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
+            qsubCall << ", CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ", PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
 
-        return envParams
+            if (job.parameters.containsKey("debugWrapInScript")) {
+                qsubCall << ", " << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
+            }
+        } else {
+            if (!parameters.isEmpty()) {
+                qsubCall << ", " << parameters.collect { key, value ->
+                    if (null == value)
+                        key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
+                    else
+                        "${key}=${value}"     // sets value to value
+                }.join(", ")
+            }
+        }
+
+        qsubCall << "\""
+
+        return qsubCall
     }
+
 
     /**
      * Prepare parent jobs is part of @prepareExtraParams
@@ -208,9 +231,9 @@ class LSFCommand extends Command {
      * @return part of parameter area
      */
     private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = BEJob.findValidJobIDs(jobIds)
+        List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "done\\(${it}\\)" }.join(" && ")
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
             return " -w \"${joinedParentJobs} \""
         } else {
             return ""

@@ -6,16 +6,21 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
 import de.dkfz.roddy.tools.LoggerWrapper
 
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 /**
  * A class for processing backends running on a cluster.
  * This mainly defines variables and constants which can be set via the config.
  */
-public abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
+abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
 
     public static final String CVALUE_ENFORCE_SUBMISSION_TO_NODES="enforceSubmissionToNodes";
@@ -96,6 +101,14 @@ public abstract class ClusterJobManager<C extends Command> extends BatchEuphoria
 //        }
 
         return errnousJobs
+    }
+
+    static Duration parseColonSeparatedHHMMSSDuration(String str) {
+        String[] hhmmss = str.split(":")
+        if (hhmmss.size() != 3) {
+            throw new BEException("Duration string is not of the format HH+:MM:SS: '${str}'")
+        }
+        return Duration.parse(String.format("PT%sH%sM%sS", hhmmss))
     }
 
 }

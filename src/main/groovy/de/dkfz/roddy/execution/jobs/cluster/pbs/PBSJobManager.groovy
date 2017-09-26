@@ -48,8 +48,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     public static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -f"
     public static final String PBS_COMMAND_DELETE_JOBS = "qdel"
     public static final String PBS_LOGFILE_WILDCARD = "*.o"
-    public static final String PBS_JOBID = '${PBS_JOBID}'
-    public static final String PBS_ARRAYID = '${PBS_ARRAYID}'
     static public final String WITH_DELIMITER = '(?=(%1$s))'
 
     private Map<String, Boolean> mapOfInitialQueries = new LinkedHashMap<>()
@@ -72,11 +70,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        return pbsCommand;
 //    }
 
-    @Override
-    PBSCommand createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
 //    @Override
     PBSCommand createCommand(BEJob job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
         PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID.toString(), processingCommands, parameters, tags, null, dependencies, command, logDirectory)
@@ -84,14 +77,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
 //        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
 //        return pbsCommand
         throw new NotImplementedException()
     }
 
     PBSCommand createCommand(BEJob job) {
-        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
+        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
     }
 
     @Override
@@ -130,7 +123,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     boolean getDefaultForHoldJobsEnabled() { return true }
 
     List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        BEJob.findJobsWithValidJobId(jobs).collect { it.runResult.getJobID().shortID }
+        BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID().shortID }
     }
 
     @Override
@@ -139,11 +132,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if (!heldJobs) return
         String qrls = "qrls ${collectJobIDsFromJobs(heldJobs).join(" ")}"
         executionService.execute(qrls)
-    }
-
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
-        return new PBSJobID(job, jobResult)
     }
 
     @Override
@@ -266,10 +254,16 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     BEJob parseToJob(String commandString) {
         GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, jInfo.getParameters(), this)
-        job.addParentJobIDs(jInfo.getParentJobIDs().collect {
-            new PBSJobID(null, it)
-        } as List<BEJobID>)
+        BEJob job = new BEJob(
+                new BEJobID(jInfo.id),
+                jInfo.getJobName(),
+                jInfo.getTool(),
+                null,
+                null,
+                null,
+                jInfo.getParentJobIDs().collect { new BEJob(new PBSJobID(it), this) },
+                jInfo.getParameters(),
+                this)
         job.jobInfo = jInfo
 
         //Automatically get the status of the job and if it is planned or running add it as a job status listener.
@@ -467,13 +461,28 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        return PBS_JOBID
+    String getJobIdVariable() {
+        return "PBS_JOBID"
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        return PBS_ARRAYID
+    String getJobArrayIndexVariable() {
+        return "PBS_ARRAYID"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "PBS_NODEFILE"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "PBS_O_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "PBS_O_WORKDIR"
     }
 
     protected int getPositionOfJobID() {
@@ -612,13 +621,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return PBS_LOGFILE_WILDCARD + searchID
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        logger.severe("We do not know yet, how to query the default logging directory... the submission server does not necessarily have to know about this.")
-        logger.severe("We assume, that the logging directory is set to the current working directory automatically or to the home folder.")
-        return executionService.queryWorkingDirectory()
-    }
-
 //    /**
 //     * Returns the path to the jobs logfile (if existing). Otherwise null.
 //     * Throws a runtime exception if more than one logfile exists.
@@ -686,7 +688,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             Matcher matcher = it =~ /^\s*Job Id: (?<jobId>\d+)\..*\n/
             def result = new HashMap()
             if (matcher) {
-                result.put(matcher.group("jobId"), it)
+                result[matcher.group("jobId")] = it
             }
             result
         }.collectEntries { jobId, value ->
@@ -707,14 +709,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     static LocalDateTime parseTime(String str) {
         def pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
         return LocalDateTime.parse(str, pbsDatePattern)
-    }
-
-    static Duration parseColonSeparatedHHMMSSDuration(String str) {
-        String[] hhmmss = str.split(":")
-        if (hhmmss.size() != 3) {
-            throw new BEException("Duration string is not of the format HH+:MM:SS: '${str}'")
-        }
-        return Duration.parse(String.format("PT%sH%sM%sS", hhmmss))
     }
 
     /**
@@ -775,7 +769,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 gj.setAccount(jobResult.get("Account_Name"))
                 gj.setStartCount(jobResult.get("start_count") ? Integer.valueOf(jobResult.get("start_count")) : null)
 
-                DateTimeFormatter pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
                 if (jobResult.get("qtime")) // The time that the job entered the current queue.
                     gj.setSubmitTime(parseTime(jobResult.get("qtime")))
                 if (jobResult.get("start_time")) // The timepoint the job was started.
@@ -811,6 +804,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         return js;
+    }
+
+    @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["PBS_*"])
     }
 
 }

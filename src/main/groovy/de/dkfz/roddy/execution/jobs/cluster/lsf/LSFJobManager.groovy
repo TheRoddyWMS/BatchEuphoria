@@ -51,14 +51,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     public static final String LSF_JOBSTATE_QUEUED = "PEND"
     public static final String LSF_JOBSTATE_COMPLETED_SUCCESSFUL = "DONE"
     public static final String LSF_JOBSTATE_EXITING = "EXIT"
-    public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \\\"jobid job_name stat user queue " +
+    public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter=\\'\\<\\'\\\""
+            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter='<'\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String LSF_LOGFILE_WILDCARD = "*.o"
-    public static final String LSF_JOBID = '${LSB_JOBID}'
-    public static final String LSF_ARRAYID = '${$LSB_JOBINDEX}'
 
     protected Map<String, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
@@ -69,11 +67,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
 
     protected String getQueryCommand() {
         return LSF_COMMAND_QUERY_STATES
-    }
-
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        return job.getLoggingDirectory()
     }
 
     @Override
@@ -152,16 +145,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         super(executionService, parms)
     }
 
-    LSFCommand createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
     LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
+        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.loggingDirectory)
     }
 
     @Override
-    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
         throw new NotImplementedException()
     }
 
@@ -172,15 +161,19 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         // job.runResult is set within executionService.execute
 //        logger.severe("Set the job runResult in a better way from runJob itself or so.")
-        cacheLock.lock()
-        if (job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
-            allStates[job.jobID.getId()] = JobState.HOLD
-        } else if (job.runResult.wasExecuted) {
-            allStates[job.jobID.getId()] = JobState.QUEUED
-        } else {
-            allStates[job.jobID.getId()] = JobState.FAILED
+        try {
+            cacheLock.lock()
+            if (job.wasExecuted() && job.jobManager.isHoldJobsEnabled()) {
+                allStates[job.jobID.getId()] = JobState.HOLD
+            } else if (job.wasExecuted()) {
+                allStates[job.jobID.getId()] = JobState.QUEUED
+            } else {
+                allStates[job.jobID.getId()] = JobState.FAILED
+            }
+            jobStatusListeners.put(job.jobID.getId(), job)
+        } finally {
+            cacheLock.unlock()
         }
-        jobStatusListeners.put(job.jobID.getId(), job)
         return job.runResult
     }
 
@@ -194,9 +187,14 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             String rawId = res.resultLines[0].find("<[0-9]*>")
             String exID = rawId.substring(1, rawId.length() - 1)
             def job = command.getJob()
-            BEJobID jobID = createJobID(job, exID)
+            BEJobID jobID = new BEJobID(exID)
+            job.resetJobID(jobID)
             command.setExecutionID(jobID)
-            jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
+        } else {
+            def job = command.getJob()
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
         }
         return jobResult
@@ -454,6 +452,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         cacheLock.unlock()
     }
 
+    static LocalDateTime parseTime(String str) {
+        def datePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
+        return LocalDateTime.parse(str, datePattern)
+    }
+
     /**
      * Used by @getJobDetails to set JobInfo
      * @param job
@@ -465,7 +468,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
         } else {
-            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getDependencyIDsAsString())
+            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getParentJobIDsAsString())
         }
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
 
@@ -492,7 +495,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
         jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
         jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
-        jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? Duration.parse("PT" + jobResult[16].substring(0, 2) + "H" + jobResult[16].substring(3, 5) + "M" + jobResult[16].substring(6) + "S") : null)
+        jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null)
         jobInfo.setRunTime(runTime)
         jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
         jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
@@ -504,13 +507,12 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
         job.setJobInfo(jobInfo)
 
-        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
         if (!jobResult[13].toString().equals("-"))
-            jobInfo.setSubmitTime(LocalDateTime.parse(jobResult[13] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear()))
         if (!jobResult[14].toString().equals("-"))
-            jobInfo.setStartTime(LocalDateTime.parse(jobResult[14] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear()))
         if (!jobResult[15].toString().equals("-"))
-            jobInfo.setEndTime(LocalDateTime.parse(jobResult[15] + " " + LocalDateTime.now().getYear(), lsfDatePattern))
+            jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear()))
 
     }
 
@@ -539,14 +541,30 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        return LSF_JOBID
+    String getJobIdVariable() {
+        return "LSB_JOBID"
     }
 
     @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        return LSF_ARRAYID
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
     }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
+    }
+
 
     protected int getPositionOfJobID() {
         return 0
@@ -577,8 +595,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                 state = JobState.ABORTED
             else {
                 cacheLock.lock()
-                state = allStates[job.getJobID().getId()]
-                cacheLock.unlock()
+                try {
+                    state = allStates[job.getJobID().getId()]
+                } finally {
+                    cacheLock.unlock()
+                }
             }
             if (state) queriedStates[job] = state
         }
@@ -664,14 +685,15 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    BEJobID createJobID(BEJob job, String jobId) {
-        return new BEJobID(jobId, job)
-    }
-
-    @Override
     String getSubmissionCommand() {
         return LSFCommand.BSUB
     }
+
+    @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["LSB_*", "LS_*"])
+    }
+
 }
 
 /*
