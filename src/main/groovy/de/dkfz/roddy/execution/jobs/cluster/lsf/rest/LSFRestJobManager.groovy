@@ -48,6 +48,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     public static String URI_JOB_HISTORY = "/jobhistory"
     public static String URI_USER_COMMAND = "/userCmd"
 
+    public static Integer HTTP_OK = 200
+
     protected Map<String, JobState> allStates = [:]
 
     protected Map<String, BEJob> jobStatusListeners = [:]
@@ -207,9 +209,10 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         logger.postAlwaysInfo("request body:\n" + requestBody)
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
-        if (result.statusCode == 200) {
-            logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + new XmlSlurper().parseText(result.body))
-            BEJobID jobID = new BEJobID(new XmlSlurper().parseText(result.body).text())
+        if (result.statusCode == HTTP_OK) {
+            def parsedBody = new XmlSlurper().parseText(result.body)
+            logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + parsedBody)
+            BEJobID jobID = new BEJobID(parsedBody.text())
             job.resetJobID(jobID)
             BEJobResult jobResult = new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
