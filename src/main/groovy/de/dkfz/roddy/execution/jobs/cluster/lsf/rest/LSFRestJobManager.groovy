@@ -18,6 +18,7 @@ import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
+import org.apache.commons.text.StringEscapeUtils
 import org.apache.http.Header
 import org.apache.http.entity.ContentType
 import org.apache.http.message.BasicHeader
@@ -249,7 +250,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         Content-Disposition: form-data; name="${name}"
         Content-Type: application/xml; charset=UTF-8
 
-        <AppParam><id>${id}</id><value>${value}</value><type>${type}</type></AppParam>
+        <AppParam><id>${id}</id><value>${StringEscapeUtils.escapeXml10(value)}</value><type>${type}</type></AppParam>
         """.stripIndent().replace("\n", NEW_LINE)
     }
 
@@ -278,10 +279,10 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param jobIds
      * @return part of parameter area
      */
-        private static String prepareParentJobs(List<BEJobID> jobIds) {
+    private static String prepareParentJobs(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
             return "-w \"${joinedParentJobs} \""
         } else {
             return ""
