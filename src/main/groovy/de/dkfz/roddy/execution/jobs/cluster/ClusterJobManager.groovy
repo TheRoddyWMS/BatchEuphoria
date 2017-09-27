@@ -19,7 +19,7 @@ import java.time.Duration
  * A class for processing backends running on a cluster.
  * This mainly defines variables and constants which can be set via the config.
  */
-// @CompileStatic
+@CompileStatic
 abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
 
@@ -46,7 +46,7 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         while (isRunning) {
 
             isRunning = false
-            Map<String, JobState> stringJobStateMap = queryJobStatus(ids, true)
+            Map<String, JobState> stringJobStateMap = queryJobStatusById(ids, true)
             if (logger.isVerbosityHigh()) {
                 for (String s : stringJobStateMap.keySet()) {
                     if (stringJobStateMap.get(s) != null)
