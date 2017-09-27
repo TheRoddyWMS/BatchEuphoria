@@ -28,27 +28,17 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    public DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
+    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
         return null;
     }
 
     @Override
-    public ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         return null;
     }
 
     @Override
-    public ProcessingCommands parseProcessingCommands(String pCmd) {
-        return new DummyProcessingCommand(pCmd);
-    }
-
-//    @Override
-//    public ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID) {
-//        return null;
-//    }
-
-    @Override
-    public ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         return null;
     }
 

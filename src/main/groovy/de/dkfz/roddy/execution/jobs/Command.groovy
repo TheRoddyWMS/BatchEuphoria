@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.StringConstants
 import groovy.transform.CompileStatic
 
 /**
@@ -116,5 +117,18 @@ abstract class Command {
     @Override
     String toString() {
         return String.format("Command of class %s with id %s", this.getClass().getName(), getID())
+    }
+
+
+    StringBuilder assembleProcessingCommands() {
+        StringBuilder bsubCall = new StringBuilder()
+        for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
+            if (!(pcmd instanceof ProcessingParameters)) continue
+            ProcessingParameters command = (ProcessingParameters) pcmd
+            if (command == null)
+                continue
+            bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
+        }
+        return bsubCall
     }
 }

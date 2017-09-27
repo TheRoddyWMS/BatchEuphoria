@@ -11,15 +11,15 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
 import de.dkfz.roddy.tools.LoggerWrapper
+import groovy.transform.CompileStatic
 
 import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * A class for processing backends running on a cluster.
  * This mainly defines variables and constants which can be set via the config.
  */
+@CompileStatic
 abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
 
@@ -33,17 +33,12 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     int waitForJobsToFinish() {
         logger.info("The user requested to wait for all jobs submitted by this process to finish.")
         List<String> ids = new LinkedList<>()
-//        List<ExecutionContext> listOfContexts = new LinkedList<>();
         synchronized (listOfCreatedCommands) {
             for (Object _command : listOfCreatedCommands) {
                 PBSCommand command = (PBSCommand) _command
                 if (command.getJob() instanceof FakeBEJob)
                     continue
                 ids.add(command.getExecutionID().getShortID())
-//                ExecutionContext context = command.getExecutionContext();
-//                if (!listOfContexts.contains(context)) {
-//                    listOfContexts.add(context);
-//                }
             }
         }
 
@@ -51,7 +46,7 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         while (isRunning) {
 
             isRunning = false
-            Map<String, JobState> stringJobStateMap = queryJobStatus(ids, true)
+            Map<String, JobState> stringJobStateMap = queryJobStatusById(ids, true)
             if (logger.isVerbosityHigh()) {
                 for (String s : stringJobStateMap.keySet()) {
                     if (stringJobStateMap.get(s) != null)
