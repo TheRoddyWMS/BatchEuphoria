@@ -57,12 +57,10 @@ public class DirectCommand extends Command {
         StringBuilder parameterBuilder = new StringBuilder();
 
         // Taken from PBSCommand. Really needs to be unified!
-        if (job.getParameterFile()) {
-            parameterBuilder << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << " PARAMETER_FILE=" << job.getParameterFile()
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            parameterBuilder << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << " PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
         } else {
-            List<String> finalParameters = job.finalParameters()
-            if (finalParameters)
-                parameterBuilder << finalParameters.join(" ")
+            parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
         }
 
         //TODO Log handling

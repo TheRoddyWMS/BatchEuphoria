@@ -28,11 +28,11 @@ class SGEJobManager extends PBSJobManager {
         super(executionService, parms)
     }
 
-    @Override
-    SGECommand createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
-    }
-
+//    @Override
+//    SGECommand createCommand(GenericJobInfo jobInfo) {
+//        throw new NotImplementedException()
+//    }
+//
 //    SGECommand createCommand(BEJob job, List<ProcessingParameters> ProcessingParameters, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
 //        SGECommand sgeCommand = new SGECommand(this, job, job.jobID.toString(), ProcessingParameters, parameters, tags, null, dependencies, command, logDirectory)
 //        return sgeCommand
@@ -111,21 +111,21 @@ class SGEJobManager extends PBSJobManager {
         return "r"
     }
 
-    @Override
-    String getSpecificJobIDIdentifier() {
-        return "JOB_ID"
-    }
-
+//    @Override
+//    String getSpecificJobIDIdentifier() {
+//        return "JOB_ID"
+//    }
+//
 //    @Override
 //    String getSpecificJobArrayIndexIdentifier() {
 //        return PBS_ARRAYID
 //    }
 
-    @Override
-    String getSpecificJobScratchIdentifier() {
-        return '/tmp/roddyScratch/${JOB_ID}'
-    }
-
+//    @Override
+//    String getSpecificJobScratchIdentifier() {
+//        return '/tmp/roddyScratch/${JOB_ID}'
+//    }
+//
     @Override
     protected int getPositionOfJobID() {
         return 0

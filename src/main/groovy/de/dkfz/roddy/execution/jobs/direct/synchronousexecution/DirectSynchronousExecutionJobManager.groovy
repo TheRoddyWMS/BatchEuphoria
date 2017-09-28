@@ -26,41 +26,41 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         //Not necessary, a command / job knows its state in local execution
     }
 
-    @Override
-    DirectCommand createCommand(GenericJobInfo jobInfo) {
-        return null
-    }
-
+//    @Override
+//    DirectCommand createCommand(GenericJobInfo jobInfo) {
+//        return null
+//    }
+//
     @Override
     DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
         return null
     }
 
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
-        return new DirectCommandID(jobResult, job)
-    }
-
-    @Override
-    ProcessingParameters convertResourceSet(ResourceSet resourceSet) {
-        return null
-    }
-
-    @Override
-    ProcessingParameters parseProcessingCommands(String pCmd) {
-        return new ProcessingParameters([:])
-    }
-
+//    @Override
+//    BEJobID createJobID(BEJob job, String jobResult) {
+//        return new DirectCommandID(jobResult, job)
+//    }
+//
+//    @Override
+//    ProcessingParameters convertResourceSet(ResourceSet resourceSet) {
+//        return null
+//    }
+//
+//    @Override
+//    ProcessingParameters parseProcessingCommands(String pCmd) {
+//        return new ProcessingParameters([:])
+//    }
+//
 //    @Override
 //    public ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID) {
 //        return null;
 //    }
 
-    @Override
-    ProcessingParameters extractProcessingCommandsFromToolScript(File file) {
-        return null
-    }
-
+//    @Override
+//    ProcessingParameters extractProcessingCommandsFromToolScript(File file) {
+//        return null
+//    }
+//
     @Override
     BEJob parseToJob(String commandString) {
         return null
@@ -156,23 +156,23 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return null
     }
 
-    @Override
-    String getSpecificJobIDIdentifier() {
-        logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
-        return '"$$"'
-    }
+//    @Override
+//    String getSpecificJobIDIdentifier() {
+//        logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
+//        return '"$$"'
+//    }
 
-    @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        logger.severe("BEJob arrays are not supported in " + getClass().getName())
-        return "0"
-    }
+//    @Override
+//    String getSpecificJobArrayIndexIdentifier() {
+//        logger.severe("BEJob arrays are not supported in " + getClass().getName())
+//        return "0"
+//    }
 
-    @Override
-    String getSpecificJobScratchIdentifier() {
-        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
-        return '/data/roddyScratch/$$'
-    }
+//    @Override
+//    String getSpecificJobScratchIdentifier() {
+//        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
+//        return '/data/roddyScratch/$$'
+//    }
 
     @Override
     String[] peekLogFile(BEJob job) {
@@ -184,11 +184,11 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]
     }
 
-    @Override
-    DirectCommand createCommand(BEJob job, File tool, List<String> dependencies) {
-        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
-    }
-
+//    @Override
+//    DirectCommand createCommand(BEJob job, File tool, List<String> dependencies) {
+//        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
+//    }
+//
     @Override
     BEJobResult runJob(BEJob job) {
         // Some of the parent jobs are in a bad state!
@@ -241,11 +241,11 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return null
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        return executionService.queryWorkingDirectory()
-    }
-
+//    @Override
+//    File getLoggingDirectoryForJob(BEJob job) {
+//        return executionService.queryWorkingDirectory()
+//    }
+//
     @Override
     Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
         return null

@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.sge
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import groovy.transform.CompileStatic
 
@@ -23,7 +23,7 @@ import java.util.Map
 @CompileStatic
 class SGECommand extends PBSCommand {
 
-    SGECommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    SGECommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
         super(parentManager, job, id, processingCommands, parameters, tags, arrayIndices, dependencyIDs, command, loggingDirectory)
     }
 
