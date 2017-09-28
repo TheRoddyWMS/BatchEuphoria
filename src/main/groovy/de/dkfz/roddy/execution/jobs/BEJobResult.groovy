@@ -55,10 +55,6 @@ class BEJobResult implements Serializable {
 
     }
 
-    BEJobResult(Object object, Command command, BEJob job, ExecutionResult res, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
-        this(command, job, res, false, toolID, jobParameters, parentJobs)
-    }
-
     BEJobResult(Command command, BEJob job, ExecutionResult res, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this(command, job, res, false, toolID, jobParameters, parentJobs)
     }

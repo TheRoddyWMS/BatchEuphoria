@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
@@ -71,14 +72,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //    }
 
 //    @Override
-    PBSCommand createCommand(BEJob job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
-        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID.toString(), processingCommands, parameters, tags, null, dependencies, command, logDirectory)
+    PBSCommand createCommand(BEJob job, List<ProcessingParameters> processingParameters, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
+        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID.toString(), processingParameters, parameters, tags, null, dependencies, command, logDirectory)
         return pbsCommand
     }
 
     @Override
-    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> parentJobs) {
-//        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingCommands, parameters, tags, arraySettings, dependencies, command, logDirectory)
+    PBSCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
+//        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID, processingParameters, parameters, tags, arraySettings, dependencies, command, logDirectory)
 //        return pbsCommand
         throw new NotImplementedException()
     }
@@ -134,10 +135,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         executionService.execute(qrls)
     }
 
-    @Override
-    ProcessingCommands parseProcessingCommands(String processingString) {
-        return convertPBSResourceOptionsString(processingString)
-    }
 //
 //    @Override
 //    public ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID) {
@@ -152,58 +149,45 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        return convertPBSResourceOptionsString(resourceOptions);
 //    }
 
-    @Override
-    ProcessingCommands convertResourceSet(BEJob job) {
-        return convertResourceSet(job, job.resourceSet)
-    }
-
-    @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
-        return convertResourceSet(null, resourceSet)
-    }
-
-    ProcessingCommands convertResourceSet(BEJob job, ResourceSet resourceSet) {
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         assert resourceSet
 
-        StringBuilder sb = new StringBuilder()
+        LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
 
-        if (resourceSet.isMemSet()) sb << " -l mem=" << resourceSet.getMem().toString(BufferUnit.M)
-        if (resourceSet.isWalltimeSet()) sb << " -l walltime=" << resourceSet.getWalltime()
-        if (job?.customQueue) sb << " -q " << job.customQueue
-        else if (resourceSet.isQueueSet()) sb << " -q " << resourceSet.getQueue()
+        if (resourceSet.isMemSet()) parameters.put('-l', 'mem=' + resourceSet.getMem().toString(BufferUnit.M))
+        if (resourceSet.isWalltimeSet()) parameters.put('-l', 'walltime=' + resourceSet.getWalltime())
+        if (job?.customQueue) parameters.put('-q', job.customQueue)
+        else if (resourceSet.isQueueSet()) parameters.put('-q', resourceSet.getQueue())
 
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
             int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
             // Currently not active
-            String enforceSubmissionNodes = ""
+            String enforceSubmissionNodes = ''
             if (!enforceSubmissionNodes) {
-                sb << " -l nodes=" << nodes << ":ppn=" << cores
+                String pVal = 'nodes=' << nodes << ':ppn=' << cores
                 if (resourceSet.isAdditionalNodeFlagSet()) {
-                    sb << ":" << resourceSet.getAdditionalNodeFlag()
+                    pVal << ':' << resourceSet.getAdditionalNodeFlag()
                 }
+                parameters.put("-l", pVal)
             } else {
                 String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
                 nodesArr.each {
                     String node ->
-                        sb << " -l nodes=" << node << ":ppn=" << resourceSet.getCores()
+                        parameters.put('-l', 'nodes=' + node + ':ppn=' + resourceSet.getCores())
                 }
             }
         }
 
         if (resourceSet.isStorageSet()) {
-//            sb << " -l mem=" << resourceSet.getMem() << "g");
+            parameters.put('-l', 'mem=' + resourceSet.getMem() + 'g')
         }
 
-        return new PBSResourceProcessingCommand(sb.toString())
+        return new ProcessingParameters(parameters)
     }
 
     String getResourceOptionsPrefix() {
         return "PBSResourceOptions_"
-    }
-
-    static ProcessingCommands convertPBSResourceOptionsString(String processingString) {
-        return new PBSResourceProcessingCommand(processingString)
     }
 
     /**
@@ -221,7 +205,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      * @return
      */
     @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         String[] text = RoddyIOHelperMethods.loadTextFile(file)
 
         List<String> lines = new LinkedList<String>()
@@ -239,7 +223,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         for (String line : lines) {
             processingOptionsStr << " " << line.substring(5)
         }
-        return convertPBSResourceOptionsString(processingOptionsStr.toString())
+        return ProcessingParameters.fromString(processingOptionsStr.toString())
     }
 
     /**
