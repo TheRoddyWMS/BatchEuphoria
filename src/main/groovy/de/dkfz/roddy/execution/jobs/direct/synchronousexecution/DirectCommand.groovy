@@ -6,10 +6,10 @@
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 
 import static de.dkfz.roddy.StringConstants.BRACE_RIGHT
 import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
@@ -22,7 +22,7 @@ import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
 @groovy.transform.CompileStatic
 public class DirectCommand extends Command {
 
-    private final List processingCommands;
+    private final List<ProcessingParameters> processingParameters;
     private final List<String> arrayIndices;
     private final List<String> dependencyIDs;
     private final String command;
@@ -30,10 +30,10 @@ public class DirectCommand extends Command {
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
 
-    public DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
         super(parentManager, job, id, parameters, tags)
         //, processingCommands, tool, parameters, dependencies, arraySettings);
-        this.processingCommands = processingCommands;
+        this.processingParameters = processingParameters;
         this.arrayIndices = arrayIndices;
         this.dependencyIDs = dependencyIDs;
         this.command = command;

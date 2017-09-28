@@ -4,17 +4,19 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs;
+package de.dkfz.roddy.execution.jobs
+
+import de.dkfz.roddy.core.InfoObject;
 
 /**
  * Created by heinold on 23.02.17.
  */
 //public class BEFakeJobID extends BEJobID {
-public class BEFakeJobID extends BEJobID.FakeJobID {
+class BEFakeJobID extends BEJobID.FakeJobID {
     /**
      * Various reasons why a job was not executed and is a fake job.
      */
-    public enum FakeJobReason {
+    enum FakeJobReason {
         NOT_EXECUTED,
         FILE_EXISTED,
         UNDEFINED,
@@ -24,23 +26,15 @@ public class BEFakeJobID extends BEJobID.FakeJobID {
     private long nanotime;
     private boolean isArray;
 
-    public BEFakeJobID(BEJob job, FakeJobReason fakeJobReason, boolean isArray) {
-        super(job);
+    BEFakeJobID(FakeJobReason fakeJobReason, boolean isArray = false) {
+        super(nextUnknownID(fakeJobReason.toString() + "-"));
         this.fakeJobReason = fakeJobReason;
         this.isArray = isArray;
         nanotime = System.nanoTime();
     }
 
-    public BEFakeJobID(BEJob job, boolean isArray) {
-        this(job, FakeJobReason.UNDEFINED, isArray);
-    }
-
-    public BEFakeJobID(BEJob job, FakeJobReason fakeJobReason) {
-        this(job, fakeJobReason, false);
-    }
-
-    public BEFakeJobID(BEJob job) {
-        this(job, FakeJobReason.UNDEFINED, false);
+    BEFakeJobID() {
+        this(FakeJobReason.UNDEFINED, false);
     }
 
     /**

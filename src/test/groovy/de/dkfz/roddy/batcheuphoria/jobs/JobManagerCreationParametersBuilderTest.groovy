@@ -21,9 +21,6 @@ class JobManagerCreationParametersBuilderTest {
     @Test
     void testDefaults() {
         def parms = new JobManagerCreationParametersBuilder().build()
-        assert parms.jobScratchIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBSCRATCH
-        assert parms.jobIDIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBID
-        assert parms.jobArrayIDIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBARRAYINDEX
         assert parms.trackOnlyStartedJobs == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
         assert parms.trackUserJobsOnly == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
         assert parms.userIdForJobQueries == ""
@@ -33,17 +30,10 @@ class JobManagerCreationParametersBuilderTest {
     @Test
     void testBuild() {
         JobManagerCreationParameters parms = new JobManagerCreationParametersBuilder()
-                .setJobIDIdentifier("SOMETHING")
-                .setJobArrayIDIdentifier("SOMETHINGB")
-                .setJobScratchIdentifier("SCRAT")
                 .setUserIdForJobQueries("BLA")
-                .setJobScratchIdentifier("SCRAT")
                 .setTrackUserJobsOnly(false).build()
 
         assert parms instanceof JobManagerCreationParameters
-        assert parms.jobScratchIdentifier == "SCRAT"
-        assert parms.jobIDIdentifier == "SOMETHING"
-        assert parms.jobArrayIDIdentifier == "SOMETHINGB"
         assert parms.trackOnlyStartedJobs == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
         assert parms.trackUserJobsOnly == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
         assert parms.userIdForJobQueries == "BLA"

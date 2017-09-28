@@ -6,15 +6,15 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSResourceProcessingCommand
 import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
@@ -33,18 +33,18 @@ class SGEJobManager extends PBSJobManager {
         throw new NotImplementedException()
     }
 
-    SGECommand createCommand(BEJob job, List<ProcessingCommands> processingCommands, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
-        SGECommand sgeCommand = new SGECommand(this, job, job.jobID.toString(), processingCommands, parameters, tags, null, dependencies, command, logDirectory)
-        return sgeCommand
-    }
+//    SGECommand createCommand(BEJob job, List<ProcessingParameters> ProcessingParameters, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
+//        SGECommand sgeCommand = new SGECommand(this, job, job.jobID.toString(), ProcessingParameters, parameters, tags, null, dependencies, command, logDirectory)
+//        return sgeCommand
+//    }
 
     @Override
-    SGECommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    SGECommand createCommand(BEJob job, String jobName, List<ProcessingParameters> ProcessingParameters, File tool, Map<String, String> parameters, List<String> dependencies) {
         throw new NotImplementedException()
     }
 
     SGECommand createCommand(BEJob job) {
-        return new SGECommand(this, job, job.jobName, [], job.parameters, [:], [], job.dependencyIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
+        return new SGECommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
     }
 //    @Override
 //    public void addSpecificSettingsToConfiguration(Configuration configuration) {
@@ -53,10 +53,10 @@ class SGEJobManager extends PBSJobManager {
 //        configuration.getConfigurationValues().add(new ConfigurationValue("RODDY_AUTOCLEANUP_SCRATCH", "true"));
 //    }
 
-    @Override
-    ProcessingCommands parseProcessingCommands(String processingString) {
-        return convertPBSResourceOptionsString(processingString)
-    }
+//    @Override
+//    ProcessingParameters parseProcessingParameters(String processingString) {
+//        return convertPBSResourceOptionsString(processingString)
+//    }
 
     @Override
     String getResourceOptionsPrefix() {
@@ -64,20 +64,35 @@ class SGEJobManager extends PBSJobManager {
     }
 
     @Override
-    ProcessingCommands convertResourceSet(BEJob job, ResourceSet resourceSet) {
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
+//        if (resourceSet.isQueueSet()) {
+//            resourceParameters.put("-q", resourceSet.getQueue())
+//        }
+        if (resourceSet.isMemSet()) {
+            String memo = resourceSet.getMem().toString(BufferUnit.M)
+            resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
+        }
+//        if (resourceSet.isWalltimeSet()) {
+//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+//        }
+//        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
+//            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
+//            resourceParameters.put("-n", nodes.toString())
+//        }
+
         StringBuilder sb = new StringBuilder()
         sb.append(" -V") //TODO Think if default SGE options should go somewhere else?
         if (resourceSet.isMemSet()) {
-            String memoryInMB = resourceSet.getMem().toString(BufferUnit.M)
-            sb << " -l " << "s_data" << "=" << memoryInMB
+            resourceParameters.put('-l', 's_data=' + resourceSet.getMem().toString(BufferUnit.G) + 'g')
         }
         if (resourceSet.isStorageSet()) {
         }
-        return new PBSResourceProcessingCommand(sb.toString())
+        return new ProcessingParameters(resourceParameters)
     }
 
     @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         return null
     }
 
@@ -101,10 +116,10 @@ class SGEJobManager extends PBSJobManager {
         return "JOB_ID"
     }
 
-    @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        return PBS_ARRAYID
-    }
+//    @Override
+//    String getSpecificJobArrayIndexIdentifier() {
+//        return PBS_ARRAYID
+//    }
 
     @Override
     String getSpecificJobScratchIdentifier() {

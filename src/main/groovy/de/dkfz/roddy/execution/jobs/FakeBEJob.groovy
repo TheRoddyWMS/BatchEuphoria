@@ -14,32 +14,17 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 class FakeBEJob extends BEJob {
+
+    FakeBEJob(BEFakeJobID jobID) {
+        super(jobID, 'Fakejob', null, null, "", null, [], [:], null)
+    }
+
     FakeBEJob() {
-        super("Fakejob", null,null, "", null, [:], null)
+        super(null, 'Fakejob', null, null, "", null, [], [:], null)
     }
 
-    public FakeBEJob(Object context) {
+    FakeBEJob(InfoObject context) {
         this()
     }
 
-    public FakeBEJob(InfoObject context) {
-        this()
-    }
-
-
-    static BEFakeJobID getNotExecutedFakeJob(BEJob job) {
-        return getNotExecutedFakeJob(job, false)
-    }
-
-    static BEFakeJobID getNotExecutedFakeJob(BEJob job, boolean array) {
-        return new BEFakeJobID(job, BEFakeJobID.FakeJobReason.NOT_EXECUTED, array)
-    }
-
-    static BEFakeJobID getFileExistedFakeJob(InfoObject infoObject) {
-        return getFileExistedFakeJob(new FakeBEJob(infoObject), false)
-    }
-
-    static BEFakeJobID getFileExistedFakeJob(BEJob job, boolean array) {
-        return new BEFakeJobID(job, BEFakeJobID.FakeJobReason.FILE_EXISTED, array)
-    }
 }

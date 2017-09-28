@@ -32,7 +32,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
         return null
     }
 
@@ -42,13 +42,13 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
+    ProcessingParameters convertResourceSet(ResourceSet resourceSet) {
         return null
     }
 
     @Override
-    ProcessingCommands parseProcessingCommands(String pCmd) {
-        return new DummyProcessingCommand(pCmd)
+    ProcessingParameters parseProcessingCommands(String pCmd) {
+        return new ProcessingParameters([:])
     }
 
 //    @Override
@@ -57,7 +57,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 //    }
 
     @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingCommandsFromToolScript(File file) {
         return null
     }
 
@@ -132,6 +132,31 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
+    String getJobIdVariable() {
+        return null
+    }
+
+    @Override
+    String getJobArrayIndexVariable() {
+        return null
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return null
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return null
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return null
+    }
+
+    @Override
     String getSpecificJobIDIdentifier() {
         logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
         return '"$$"'
@@ -189,6 +214,16 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         job.setRunResult(jobResult)
 
         return jobResult
+    }
+
+    @Override
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        return null
+    }
+
+    @Override
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
+        return null
     }
 
     @Override
