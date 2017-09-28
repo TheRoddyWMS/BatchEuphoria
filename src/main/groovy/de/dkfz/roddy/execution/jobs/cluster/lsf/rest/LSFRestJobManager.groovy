@@ -18,7 +18,6 @@ import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
-import org.apache.http.Consts
 import org.apache.http.Header
 import org.apache.http.entity.ContentType
 import org.apache.http.message.BasicHeader
@@ -208,15 +207,11 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
         jobParts.add(createJobPart("EXTRA_PARAMS", prepareExtraParams(job)))
         ContentWithHeaders jobPartsWithHeader = joinParts(jobParts)
-        List<Header> he = []
-        he.add new BasicHeader("Accept-Language", "en-en")
-        he.addAll jobPartsWithHeader.headers
-        requestParts.add(createRequestPart("data", jobPartsWithHeader.content, he))
+        requestParts.add(createRequestPart("data", jobPartsWithHeader.content, jobPartsWithHeader.headers))
 
         if (job.toolScript) {
             requestParts.add(createRequestPart("f1", job.toolScript, [
                     new BasicHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString()),
-                    new BasicHeader("Content-Transfer-Encoding", Consts.UTF_8.toString()),
             ] as List<Header>, job.jobName))
         }
 
@@ -252,8 +247,6 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         return """\
         Content-Disposition: form-data; name="${name}"
         Content-Type: application/xml; charset=UTF-8
-        Content-Transfer-Encoding: 8bit
-        Accept-Language: en-en
 
         <AppParam><id>${id}</id><value>${value}</value><type>${type}</type></AppParam>
         """.stripIndent().replace("\n", NEW_LINE)
