@@ -38,7 +38,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     public static final String LSF_JOBSTATE_QUEUED = "PEND"
     public static final String LSF_JOBSTATE_COMPLETED_SUCCESSFUL = "DONE"
     public static final String LSF_JOBSTATE_EXITING = "EXIT"
-    public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -o \"jobid job_name stat user queue " +
+    public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -a -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter='<'\""
