@@ -69,6 +69,7 @@ public class BEFakeJobID extends BEJobID.FakeJobID {
     }
 
     public static boolean isFakeJobID(String jobID) {
+        assert jobID != null;
         return jobID.startsWith("0x");
     }
 }

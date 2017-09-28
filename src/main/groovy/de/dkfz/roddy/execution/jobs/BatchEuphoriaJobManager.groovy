@@ -161,14 +161,12 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      */
     BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
         BEJobResult jobResult
-        if (res.successful) {
-            String exID = parseJobID(res.resultLines[0])
-            def job = command.getJob()
-            def jobID = createJobID(job, exID)
-            command.setExecutionID(jobID)
-            jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
-        }
+        String exID = parseJobID(res.resultLines[0])
+        def job = command.getJob()
+        def jobID = createJobID(job, exID)
+        command.setExecutionID(jobID)
+        jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+        job.setRunResult(jobResult)
         return jobResult
     }
 
