@@ -44,7 +44,7 @@ dependencies {
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile 'com.google.guava:guava:23.0'
-    compile 'com.github.eilslabs:RoddyToolLib:0.0.1'
+    compile 'com.github.eilslabs:RoddyToolLib:0.0.2'
 }
 
 task writePom {
