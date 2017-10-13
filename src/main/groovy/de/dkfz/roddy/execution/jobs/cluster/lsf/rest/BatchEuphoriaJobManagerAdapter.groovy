@@ -106,6 +106,11 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
+    String getQueueVariable() {
+        throw new NotImplementedException()
+    }
+
+    @Override
     String getJobArrayIndexVariable() {
         throw new NotImplementedException()
     }

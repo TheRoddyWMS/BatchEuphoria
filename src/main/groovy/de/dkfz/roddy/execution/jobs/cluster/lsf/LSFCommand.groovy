@@ -30,7 +30,7 @@ class LSFCommand extends Command {
     public static final String PARM_LOGPATH = " -eo "
     public static final String PARM_OUTPATH = " -oo "
     public static final String BSUB = "bsub"
-    public static final String PARM_DEPENDS = " -W depend="
+    public static final String PARM_DEPENDS = " -ti -w "
     public static final String PARM_MAIL = " -u "
     public static final String PARM_VARIABLES = " -env "
     public static final String PARM_JOBNAME = " -J "
@@ -217,8 +217,8 @@ class LSFCommand extends Command {
     private String prepareParentJobs(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "exit(${it}, 0)" }.join(" && ")
-            return " -w \"${joinedParentJobs} \""
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
+            return " ${dependsSuperParameter} \"${joinedParentJobs}\" "
         } else {
             return ""
         }

@@ -542,6 +542,11 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         return "LSB_SUBCWD"
     }
 
+    @Override
+    String getQueueVariable() {
+        return "LSB_QUEUE"
+    }
+
 
     protected int getPositionOfJobID() {
         return 0

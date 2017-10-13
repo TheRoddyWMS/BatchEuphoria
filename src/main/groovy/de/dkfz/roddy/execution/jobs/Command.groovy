@@ -38,7 +38,7 @@ abstract class Command {
     /**
      * Parameters for the qsub command
      */
-    public final Map<String, String> parameters = [:]
+    public final LinkedHashMap<String, String> parameters = [:]
 
     /**
      * A list of named tags for the command object
