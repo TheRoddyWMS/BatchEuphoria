@@ -35,7 +35,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.codehaus.groovy:groovy-all:2.4.7'
+    compile 'org.codehaus.groovy:groovy-all:2.4.9'
     testCompile 'junit:junit:4.12'
     testCompile 'com.google.guava:guava:23.0'
     compile 'net.logstash.logback:logstash-logback-encoder:4.7'
@@ -44,7 +44,7 @@ dependencies {
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile 'com.google.guava:guava:23.0'
-    compile 'com.github.eilslabs:RoddyToolLib:0.0.1'
+    compile 'com.github.eilslabs:RoddyToolLib:0.0.2'
 }
 
 task writePom {
@@ -90,4 +90,9 @@ task uberjar(type: Jar,dependsOn:[':compileJava',':compileGroovy']) {
         attributes 'Implementation-Version': version
     }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
+// Fix Gradle version
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.3'
 }

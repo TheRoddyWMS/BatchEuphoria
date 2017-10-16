@@ -60,6 +60,11 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
+    String getQueueVariable() {
+        return 'LSB_QUEUE'
+    }
+
+    @Override
     String getJobArrayIndexVariable() {
         return "LSB_JOBINDEX"
     }
