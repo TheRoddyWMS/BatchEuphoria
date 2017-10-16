@@ -51,6 +51,7 @@ task writePom {
     doLast {
         pom {
             project {
+                version getVersionName()
                 inceptionYear '2017'
                 licenses {
                     license {
