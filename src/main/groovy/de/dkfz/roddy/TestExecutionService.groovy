@@ -33,7 +33,7 @@ class TestExecutionService implements BEExecutionService {
 
     @Override
     ExecutionResult execute(String command, boolean waitFor = true) {
-        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${command}")
+        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${Command.escapeBash(command)}")
     }
 
     ExecutionResult executeLocal(String command) {

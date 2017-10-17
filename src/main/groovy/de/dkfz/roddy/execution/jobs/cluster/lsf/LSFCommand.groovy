@@ -12,8 +12,6 @@ import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.tools.LoggerWrapper
 
-import java.util.regex.Matcher
-
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.EMPTY
 
@@ -125,7 +123,7 @@ class LSFCommand extends Command {
         StringBuilder bsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
-            bsubCall << "echo '" << job.getToolScript().replaceAll("'", Matcher.quoteReplacement("'\\''")) << "' | "
+            bsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
         }
 
         bsubCall << BSUB << assembleResources() << PARM_JOBNAME << id

@@ -37,7 +37,7 @@ class BEIntegrationTestStarter {
     static LoggerWrapper log = LoggerWrapper.getLogger(BEIntegrationTestStarter)
     static TestExecutionService executionService
     static RestExecutionService restExecutionService
-    static String testScript = "\"sleep 120s \""
+    static String testScript = "sleep 120s"
     static File batchEuphoriaTestScript
 
     static ResourceSet resourceSet = new ResourceSet(new BufferValue(10, BufferUnit.m), 1, 1, Duration.ofMinutes(1), null, null, null)
