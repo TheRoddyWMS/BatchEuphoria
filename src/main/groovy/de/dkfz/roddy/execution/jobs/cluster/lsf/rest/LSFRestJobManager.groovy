@@ -167,21 +167,16 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB\r\n" +
      "Content-Disposition: form-data; name=\"data\"\r\n" +
      "Content-Type: multipart/mixed; boundary=_Part_1_701508.1145579811786\r\n" +
-     "Accept-Language:de-de\r\n" +
      "Content-ID: <data>\r\n" +
      "\r\n" +
      "--_Part_1_701508.1145579811786\r\n" +
      "Content-Disposition: form-data; name=\"COMMANDTORUN\"\r\n" +
      "Content-Type: application/xml; charset=UTF-8\r\n" +
-     "Content-Transfer-Encoding: 8bit\r\n" +
-     "Accept-Language:de-de\r\n" +
      "\r\n" +
      "<AppParam><id>COMMANDTORUN</id><value>sleep 100</value><type></type></AppParam>\r\n" +
      "--_Part_1_701508.1145579811786\r\n" +
      "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"\r\n" +
      "Content-Type: application/xml; charset=UTF-8\r\n" +
-     "Content-Transfer-Encoding: 8bit\r\n" +
-     "Accept-Language:de-de\r\n"+
      "\r\n" +
      "<AppParam><id>EXTRA_PARAMS</id><value>-R 'select[type==any]'</value><type></type></AppParam>\r\n" +
      "--_Part_1_701508.1145579811786\r\n" +
@@ -190,29 +185,29 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      */
     private void submitJob(BEJob job) {
         List<Header> headers = []
-        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+        headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
         List<String> requestParts = []
-        requestParts.add(createRequestPart("AppName", "generic"))
+        requestParts << createRequestPart("AppName", "generic")
 
         // --- Parameters Area ---
         List<String> jobParts = []
         if (job.tool) {
-            jobParts.add(createJobPart("COMMAND", job.tool?.absolutePath as String, "COMMANDTORUN"))
+            jobParts << createJobPart("COMMAND", job.tool?.absolutePath as String, "COMMANDTORUN")
         } else {
-            jobParts.add(createJobPart("COMMAND", "${job.jobName},upload" as String, "COMMANDTORUN", "file"))
+            jobParts << createJobPart("COMMAND", "${job.jobName},upload" as String, "COMMANDTORUN", "file")
         }
         if (job.getJobName()) {
-            jobParts.add(createJobPart("JOB_NAME", job.getJobName()))
+            jobParts << createJobPart("JOB_NAME", job.getJobName())
         }
-        jobParts.add(createJobPart("EXTRA_PARAMS", prepareExtraParams(job)))
+        jobParts << createJobPart("EXTRA_PARAMS", prepareExtraParams(job))
         ContentWithHeaders jobPartsWithHeader = joinParts(jobParts)
-        requestParts.add(createRequestPart("data", jobPartsWithHeader.content, jobPartsWithHeader.headers))
+        requestParts << createRequestPart("data", jobPartsWithHeader.content, jobPartsWithHeader.headers)
 
         if (job.toolScript) {
-            requestParts.add(createRequestPart("f1", job.toolScript, [
+            requestParts << createRequestPart("f1", job.toolScript, [
                     new BasicHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString()),
-            ] as List<Header>, job.jobName))
+            ] as List<Header>, job.jobName)
         }
 
         ContentWithHeaders requestPartsWithHeader = joinParts(requestParts)
@@ -236,13 +231,19 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
     }
 
+    /**
+     * Create a part of a multipart request in the special format required
+     */
     private static String createRequestPart(String name, String value, List<Header> additionalHeaders = [], String id = name) {
         List<Header> headers = additionalHeaders
         headers.add(0, new BasicHeader("Content-Disposition", "form-data; name=\"${name}\""))
-        headers.add(new BasicHeader("Content-ID", "<${id}>"))
+        headers << new BasicHeader("Content-ID", "<${id}>")
         return "${headers.join(NEW_LINE)}${NEW_LINE}${NEW_LINE}${value}${NEW_LINE}"
     }
 
+    /**
+     * Create a part of a multipart document in the format required for parameters
+     */
     private static String createJobPart(String name, String value, String id = name, String type = "") {
         return """\
         Content-Disposition: form-data; name="${name}"
@@ -252,6 +253,9 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         """.stripIndent().replace("\n", NEW_LINE)
     }
 
+    /**
+     * Join multiple parts to for a multipart request and return them with the corresponding header
+     */
     private static ContentWithHeaders joinParts(List parts) {
         if (parts.empty) {
             new ContentWithHeaders(content: "", headers: [])
