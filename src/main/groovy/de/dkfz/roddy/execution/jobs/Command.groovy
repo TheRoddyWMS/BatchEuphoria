@@ -9,6 +9,8 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.StringConstants
 import groovy.transform.CompileStatic
 
+import java.util.regex.Matcher
+
 /**
  * Base class for all types of commands.
  * <p>
@@ -130,5 +132,9 @@ abstract class Command {
             bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
         }
         return bsubCall
+    }
+
+    public static final String escapeBash(final String input) {
+        "'${input.replaceAll("'", Matcher.quoteReplacement("'\\''"))}'"
     }
 }
