@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestCommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
@@ -242,7 +243,7 @@ class RestExecutionService implements BEExecutionService {
 
         RestResult result = execute(new RestCommand(RESOURCE_PING, null, headers, RestCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
-            throw new AuthenticationException("Web service is not available, returned HTTP status code: ${result.statusCode}")
+            throw new BEException("Web service is not available, returned HTTP status code: ${result.statusCode}")
 
         return true
     }

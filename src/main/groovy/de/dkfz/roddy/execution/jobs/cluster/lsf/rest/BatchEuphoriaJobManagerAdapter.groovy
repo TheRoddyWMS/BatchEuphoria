@@ -6,21 +6,51 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
+import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
+
+import java.time.Duration
 
 /**
  * Created by kaercher on 22.03.17.
  */
 @CompileStatic
-class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
+class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
 
     BatchEuphoriaJobManagerAdapter(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
+    }
+
+    @Override
+    String getJobIdVariable() {
+        return "LSB_JOBID"
+    }
+
+    @Override
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
     }
 
     @Override
@@ -31,7 +61,29 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     // needed
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        throw new NotImplementedException()
+        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
+        if (resourceSet.isQueueSet()) {
+            resourceParameters.put('-q', resourceSet.getQueue())
+        }
+        if (resourceSet.isMemSet()) {
+            String memo = resourceSet.getMem().toString(BufferUnit.M)
+            resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
+        }
+        if (resourceSet.isWalltimeSet()) {
+            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+        }
+        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
+            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
+            resourceParameters.put('-n', nodes.toString())
+        }
+        return new ProcessingParameters(resourceParameters)
+    }
+
+    private String durationToLSFWallTime(Duration wallTime) {
+        if (wallTime) {
+            return String.valueOf(wallTime.toMinutes())
+        }
+        return null
     }
 
     @Override
@@ -101,32 +153,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    String getJobIdVariable() {
-        throw new NotImplementedException()
-    }
-
-    @Override
     String getQueueVariable() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getJobArrayIndexVariable() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getNodeFileVariable() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getSubmitHostVariable() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getSubmitDirectoryVariable() {
         throw new NotImplementedException()
     }
 
@@ -158,7 +185,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
+    LSFCommand createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
         throw new NotImplementedException()
     }
 

@@ -7,11 +7,13 @@
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.BatchEuphoriaJobManagerAdapter
 import de.dkfz.roddy.tools.*
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
@@ -28,7 +30,7 @@ import static de.dkfz.roddy.StringConstants.*
  *
  */
 @groovy.transform.CompileStatic
-class LSFJobManager extends ClusterJobManager<LSFCommand> {
+class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFJobManager.class.getSimpleName())
 
@@ -183,6 +185,8 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             def job = command.getJob()
             jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
+            logger.postAlwaysInfo("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
+            throw new BEException("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
         }
         return jobResult
     }
@@ -199,35 +203,14 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         if (!isHoldJobsEnabled()) return
         if (!heldJobs) return
         String qrls = "bresume ${collectJobIDsFromJobs(heldJobs).join(" ")}"
-        executionService.execute(qrls)
+
+        ExecutionResult er = executionService.execute(qrls)
+        if(!er.successful){
+            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+        }
     }
 
-    @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
-        if (resourceSet.isQueueSet()) {
-            resourceParameters.put("-q", resourceSet.getQueue())
-        }
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
-        }
-        if (resourceSet.isWalltimeSet()) {
-            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
-        }
-        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            resourceParameters.put("-n", nodes.toString())
-        }
-        return new ProcessingParameters(resourceParameters)
-    }
-
-    private String durationToLSFWallTime(Duration wallTime) {
-        if (wallTime) {
-            return String.valueOf(wallTime.toMinutes())
-        }
-        return null
-    }
 
 
     @Override
@@ -355,7 +338,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                     allStatesTemp.put(id, [js, split])
 
                     if (logger.isVerbosityHigh())
-                        System.out.println("   Extracted jobState: " + js.toString())
+                        logger.postAlwaysInfo("   Extracted jobState: " + js.toString())
                 }
             }
 
@@ -415,6 +398,9 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                     }
                 }
             }
+        }else{
+            logger.warning("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            throw new Exception("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
         }
         cacheLock.lock()
         allStates.clear()
@@ -437,7 +423,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     /**
      * Used by @getJobDetails to set JobInfo
      * @param job
-     * @param jobDetails - XML job details
+     * @param jobDetails -
      */
     void setJobInfoForJobDetails(BEJob job, String[] jobDetails) {
         GenericJobInfo jobInfo
@@ -448,49 +434,51 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
             jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getParentJobIDsAsString())
         }
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
+        try {
+            String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
+            Duration runTime = !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null
+            BufferValue swap = !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null
+            BufferValue memory = !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null
+            Duration runLimit = !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null
+            Integer nodes = !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null
 
-        String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
-        Duration runTime = !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null
-        BufferValue swap = !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null
-        BufferValue memory = !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null
-        Duration runLimit = !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null
-        Integer nodes = !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null
+            ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
+            jobInfo.setUsedResources(usedResources)
 
-        ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
-        jobInfo.setUsedResources(usedResources)
+            ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
 
-        ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
+            jobInfo.setAskedResources(askedResources)
+            jobInfo.setUsedResources(usedResources)
+            jobInfo.setUser(!jobResult[3].toString().equals("-") ? jobResult[3] : null)
+            jobInfo.setDescription(!jobResult[5].toString().equals("-") ? jobResult[5] : null)
+            jobInfo.setProjectName(!jobResult[6].toString().equals("-") ? jobResult[6] : null)
+            jobInfo.setJobGroup(!jobResult[7].toString().equals("-") ? jobResult[7] : null)
+            jobInfo.setPriority(!jobResult[8].toString().equals("-") ? jobResult[8] : null)
+            jobInfo.setPidStr(!jobResult[9].toString().equals("-") ? jobResult[9] : null)
+            jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
+            jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
+            jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
+            jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null)
+            jobInfo.setRunTime(runTime)
+            jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
+            jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
+            jobInfo.setPendReason(!jobResult[23].toString().equals("-") ? jobResult[23] : null)
+            jobInfo.setExecCwd(!jobResult[24].toString().equals("-") ? jobResult[24] : null)
+            jobInfo.setOutFile(!jobResult[25].toString().equals("-") ? jobResult[25] : null)
+            jobInfo.setInFile(!jobResult[26].toString().equals("-") ? jobResult[26] : null)
+            jobInfo.setResourceReq(!jobResult[27].toString().equals("-") ? jobResult[27] : null)
+            jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
+            job.setJobInfo(jobInfo)
 
-        jobInfo.setAskedResources(askedResources)
-        jobInfo.setUsedResources(usedResources)
-        jobInfo.setUser(!jobResult[3].toString().equals("-") ? jobResult[3] : null)
-        jobInfo.setDescription(!jobResult[5].toString().equals("-") ? jobResult[5] : null)
-        jobInfo.setProjectName(!jobResult[6].toString().equals("-") ? jobResult[6] : null)
-        jobInfo.setJobGroup(!jobResult[7].toString().equals("-") ? jobResult[7] : null)
-        jobInfo.setPriority(!jobResult[8].toString().equals("-") ? jobResult[8] : null)
-        jobInfo.setPidStr(!jobResult[9].toString().equals("-") ? jobResult[9] : null)
-        jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
-        jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
-        jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
-        jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null)
-        jobInfo.setRunTime(runTime)
-        jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
-        jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
-        jobInfo.setPendReason(!jobResult[23].toString().equals("-") ? jobResult[23] : null)
-        jobInfo.setExecCwd(!jobResult[24].toString().equals("-") ? jobResult[24] : null)
-        jobInfo.setOutFile(!jobResult[25].toString().equals("-") ? jobResult[25] : null)
-        jobInfo.setInFile(!jobResult[26].toString().equals("-") ? jobResult[26] : null)
-        jobInfo.setResourceReq(!jobResult[27].toString().equals("-") ? jobResult[27] : null)
-        jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
-        job.setJobInfo(jobInfo)
-
-        if (!jobResult[13].toString().equals("-"))
-            jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear()))
-        if (!jobResult[14].toString().equals("-"))
-            jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear()))
-        if (!jobResult[15].toString().equals("-"))
-            jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear()))
-
+            if (!jobResult[13].toString().equals("-"))
+                jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear()))
+            if (!jobResult[14].toString().equals("-"))
+                jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear()))
+            if (!jobResult[15].toString().equals("-"))
+                jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear()))
+        }catch (Exception exp){
+            throw new BEException("Error while processing/parsing bjobs output: ${jobDetails}", exp)
+        }
     }
 
 
@@ -516,37 +504,6 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
     String getStringForCompletedJob() {
         return LSF_JOBSTATE_COMPLETED_SUCCESSFUL
     }
-
-    @Override
-    String getJobIdVariable() {
-        return "LSB_JOBID"
-    }
-
-    @Override
-    String getJobArrayIndexVariable() {
-        return "LSB_JOBINDEX"
-    }
-
-    @Override
-    String getNodeFileVariable() {
-        return "LSB_HOSTS"
-    }
-
-    @Override
-    String getSubmitHostVariable() {
-        return "LSB_SUB_HOST"
-    }
-
-    @Override
-    String getSubmitDirectoryVariable() {
-        return "LSB_SUBCWD"
-    }
-
-    @Override
-    String getQueueVariable() {
-        return "LSB_QUEUE"
-    }
-
 
     protected int getPositionOfJobID() {
         return 0
@@ -598,8 +555,8 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
         if (executionResult.successful) {
             executedJobs.each { BEJob job -> job.jobState = JobState.ABORTED }
         } else {
-            logger.always("Need to create a proper fail message for abortion.")
-            throw new RuntimeException("Abortion of job states failed.")
+            logger.warning("Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}")
+            throw new BEException("Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}")
         }
     }
 
