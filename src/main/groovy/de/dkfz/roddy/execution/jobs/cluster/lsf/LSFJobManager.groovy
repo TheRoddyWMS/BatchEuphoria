@@ -338,9 +338,9 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
                     if (logger.isVerbosityHigh()) {
-                        System.out.println("QStat Job line: " + line)
-                        System.out.println("	Entry in arr[" + ID + "]: " + split[ID])
-                        System.out.println("    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE])
+                        logger.info("QStat Job line: " + line)
+                        logger.info("	Entry in arr[" + ID + "]: " + split[ID])
+                        logger.info("    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE])
                     }
 
                     String[] idSplit = split[ID].split("[.]")
@@ -355,7 +355,7 @@ class LSFJobManager extends ClusterJobManager<LSFCommand> {
                     allStatesTemp.put(id, [js, split])
 
                     if (logger.isVerbosityHigh())
-                        System.out.println("   Extracted jobState: " + js.toString())
+                        logger.info("   Extracted jobState: " + js.toString())
                 }
             }
 

@@ -55,7 +55,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     protected String toolMD5
 
     /**
-     * A tool script which will be piped (or whatever...) to the job manager submission command / method
+     * A tool script (the actual code!) which will be piped (or whatever...) to the job manager submission command / method
      * It is either testScript OR tool
      */
     String toolScript
@@ -115,13 +115,16 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(BEJobID jobID, String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Collection<BEJob> parentJobs, Map<String, String> parameters, BatchEuphoriaJobManager jobManager) {
+    BEJob(BEJobID jobID, String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Collection<BEJob> parentJobs,
+          Map<String, String> parameters, BatchEuphoriaJobManager jobManager) {
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.tool = tool
         this.toolScript = toolScript
-        if (tool && toolScript) throw new RuntimeException("A job must only have an input script or a callable file.")
+        // FakeJobs have neither tool nor toolScript set.
+        if (tool && toolScript)
+            throw new RuntimeException("A job must have exactly one of tool and toolScript set. Found: tool=${tool}, toolScript=${toolScript}")
         this.toolMD5 = toolMD5
         this.resourceSet = resourceSet
         this.parameters = parameters
