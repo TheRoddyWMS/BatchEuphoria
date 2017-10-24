@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
@@ -27,6 +28,7 @@ import org.apache.http.protocol.HTTP
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ExecutionException
 
 /**
  * REST job manager for cluster systems.
@@ -58,36 +60,6 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
     private static String NEW_LINE = "\r\n"
 
-    @Override
-    String getJobIdVariable() {
-        return 'LSB_JOBID'
-    }
-
-    @Override
-    String getQueueVariable() {
-        return 'LSB_QUEUE'
-    }
-
-    @Override
-    String getJobArrayIndexVariable() {
-        return "LSB_JOBINDEX"
-    }
-
-    @Override
-    String getNodeFileVariable() {
-        return "LSB_HOSTS"
-    }
-
-    @Override
-    String getSubmitHostVariable() {
-        return "LSB_SUB_HOST"
-    }
-
-    @Override
-    String getSubmitDirectoryVariable() {
-        return "LSB_SUBCWD"
-    }
-
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
         super(restExecutionService, parms)
         this.restExecutionService = restExecutionService as RestExecutionService
@@ -100,33 +72,6 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         return job.runResult
     }
 
-
-    @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
-        if (resourceSet.isQueueSet()) {
-            resourceParameters.put('-q', resourceSet.getQueue())
-        }
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
-        }
-        if (resourceSet.isWalltimeSet()) {
-            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
-        }
-        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            resourceParameters.put('-n', nodes.toString())
-        }
-        return new ProcessingParameters(resourceParameters)
-    }
-
-    private String durationToLSFWallTime(Duration wallTime) {
-        if (wallTime) {
-            return String.valueOf(wallTime.toMinutes())
-        }
-        return null
-    }
 
 
     @Override
@@ -229,6 +174,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         } else {
             job.setRunResult(new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
+            throw new BEException("Job ${job.jobName} could not be started. \n Returned status code:${result.statusCode} \n result:${result.body}")
         }
     }
 
@@ -381,7 +327,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             logger.info("status code: " + result.statusCode + " result: " + result.body)
         } else {
             //error
-            logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
+            logger.warning("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 
@@ -408,7 +355,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             }
 
         } else {
-            logger.warning("status code: " + result.statusCode + " result: " + result.body)
+            logger.warning("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 
@@ -441,8 +389,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             }
             return resultStates
         } else {
-            logger.warning("status code: " + result.statusCode + " result: " + result.body)
-            return [:]
+            logger.warning("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 
@@ -522,7 +470,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             }
 
         } else {
-            logger.warning("status code: " + result.statusCode + " result: " + result.body)
+            logger.warning("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 

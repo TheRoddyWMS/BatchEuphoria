@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
@@ -78,7 +79,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                 createUpdateDaemonThread(interval)
             }
         } catch (Exception ex) {
-            logger.severe("Creating the command factory daemon failed for some reason. Roddy will not be able to query the job system.", ex)
+            logger.severe("Creating the command factory daemon failed for some reason. BE will not be able to query the job system.", ex)
         }
     }
 
@@ -155,6 +156,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             def job = command.getJob()
             jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
+            logger.postAlwaysInfo("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
+            throw new BEException("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
         }
         return jobResult
     }
