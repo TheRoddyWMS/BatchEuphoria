@@ -29,6 +29,15 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         super(executionService, parms)
     }
 
+    protected static <T> T catchExceptionAndLog(final Closure<T> closure) {
+        try {
+            return closure.call()
+        } catch (Throwable t) {
+            logger.warning(t.message)
+        }
+        return null
+    }
+
     @Override
     int waitForJobsToFinish() {
         logger.info("The user requested to wait for all jobs submitted by this process to finish.")

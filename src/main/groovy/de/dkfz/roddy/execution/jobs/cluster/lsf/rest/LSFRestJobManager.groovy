@@ -6,7 +6,6 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
-import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
@@ -28,7 +27,6 @@ import org.apache.http.protocol.HTTP
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.ExecutionException
 
 /**
  * REST job manager for cluster systems.
@@ -409,29 +407,29 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         }
 
         String queue = jobDetails.getProperty("queue").toString()
-        BufferValue swap = jobDetails.getProperty("swap") ? new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) : null
-        BufferValue memory = jobDetails.getProperty("mem") ? new BufferValue(jobDetails.getProperty("mem").toString(), BufferUnit.m) : null
-        Duration runLimit = jobDetails.getProperty("runLimit") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) : null
-        Integer numProcessors = jobDetails.getProperty("numProcessors").toString() as Integer
-        Integer numberOfThreads = jobDetails.getProperty("nthreads").toString() as Integer
+        BufferValue swap = jobDetails.getProperty("swap") ? catchExceptionAndLog { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
+        BufferValue memory = jobDetails.getProperty("mem") ? catchExceptionAndLog { new BufferValue(jobDetails.getProperty("mem").toString(), BufferUnit.m) } : null
+        Duration runLimit = jobDetails.getProperty("runLimit") ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
+        Integer numProcessors = catchExceptionAndLog { jobDetails.getProperty("numProcessors").toString() as Integer }
+        Integer numberOfThreads = catchExceptionAndLog { jobDetails.getProperty("nthreads").toString() as Integer }
         ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
-        DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH)
+        DateTimeFormatter lsfDatePattern = catchExceptionAndLog { DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH) }
         jobInfo.setUser(jobDetails.getProperty("user").toString())
         jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
         jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) : null)
-        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) : null)
-        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) : null)
+        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? catchExceptionAndLog { LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? catchExceptionAndLog { LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? catchExceptionAndLog { LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) } : null)
         jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts").toString())
         jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
         jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
         jobInfo.setDescription(jobDetails.getProperty("description").toString())
         jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
-        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) : null)
+        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
         jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
-        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) : null)
+        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? catchExceptionAndLog { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
         jobInfo.setPidStr(jobDetails.getProperty("pidStr").toString())
         jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
         jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
