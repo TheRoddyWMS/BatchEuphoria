@@ -174,6 +174,8 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         BEJobResult jobResult
         if (res.successful) {
             String rawId = res.resultLines[0].find("<[0-9]*>")
+            if (rawId == null)
+                throw new BEException("Could not parse raw ID from: '${res.resultLines[0]}'")
             String exID = rawId.substring(1, rawId.length() - 1)
             def job = command.getJob()
             BEJobID jobID = new BEJobID(exID)
@@ -293,13 +295,8 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         List<String> resultLines = new LinkedList<String>()
         cacheLock.lock()
 
-        try {
-            if (forceUpdate || cachedExecutionResult == null || cachedExecutionResult.getAgeInSeconds() > 30) {
-                cachedExecutionResult = executionService.execute(queryCommand)
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace()
-
+        if (forceUpdate || cachedExecutionResult == null || cachedExecutionResult.getAgeInSeconds() > 30) {
+            cachedExecutionResult = executionService.execute(queryCommand)
         }
         er = cachedExecutionResult
         resultLines.addAll(er.resultLines)
@@ -329,20 +326,13 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                     String[] idSplit = split[ID].split("[.]")
                     //(idSplit.length <= 1) continue;
                     String id = idSplit[0]
-                    JobState js = JobState.UNKNOWN
-                    logger.severe(line)
-                    logger.severe(split.toString())
-                    logger.severe(id + " " + split[JOBSTATE])
-                    js = parseJobState(split[JOBSTATE])
-                    logger.severe(js.toString())
+                    JobState js = parseJobState(split[JOBSTATE])
                     allStatesTemp.put(id, [js, split])
 
                     if (logger.isVerbosityHigh())
                         logger.postAlwaysInfo("   Extracted jobState: " + js.toString())
                 }
             }
-
-//            logger.severe("Reading out job states from job state logfiles is not possible yet!")
 
             // I don't currently know, if the jslisteners are used.
             //Create a local cache of jobstate logfile entries.
@@ -391,7 +381,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                                 }
                                 js = jobsCurrentState
                             } catch (Exception ex) {
-                                //Could not read out job jobState from file
+                                logger.severe("Could not read out job jobState from file")
                             }
                         }
                         job.setJobState(js)
