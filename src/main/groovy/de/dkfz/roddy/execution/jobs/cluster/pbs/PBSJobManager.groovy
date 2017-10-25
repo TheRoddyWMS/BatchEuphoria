@@ -132,7 +132,12 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if (!isHoldJobsEnabled()) return
         if (!heldJobs) return
         String qrls = "qrls ${collectJobIDsFromJobs(heldJobs).join(" ")}"
-        executionService.execute(qrls)
+
+        ExecutionResult er = executionService.execute(qrls)
+        if(!er.successful){
+            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+        }
     }
 
 //
@@ -323,7 +328,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         if (!er.successful) {
             if (strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
-                throw new ExecutionException("The execution of ${queryCommand} failed.", null)
+                throw new BEException("The execution of ${queryCommand} failed.", null)
         } else {
             if (resultLines.size() > 2) {
 
@@ -449,6 +454,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
+    String getQueueVariable() {
+        return 'PBS_QUEUE'
+    }
+
+    @Override
     String getJobArrayIndexVariable() {
         return "PBS_ARRAYID"
     }
@@ -567,6 +577,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         if (er != null && er.successful) {
             queriedExtendedStates = this.processQstatOutput(er.resultLines)
+        }else{
+            logger.postAlwaysInfo("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n result:${er.resultLines}")
+            throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n result:${er.resultLines}")
         }
         return queriedExtendedStates
     }
@@ -646,7 +659,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if (executionResult.successful)
             return executionResult.resultLines.toArray(new String[0])
         else if (strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
-            throw new ExecutionException("The execution of ${queryCommand} failed.", null)
+            throw new BEException("The execution of ${queryCommand} failed.", null)
 
         return new String[0]
     }

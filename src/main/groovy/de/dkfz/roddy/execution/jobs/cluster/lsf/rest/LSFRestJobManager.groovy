@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
@@ -18,13 +19,16 @@ import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
+import org.apache.commons.text.StringEscapeUtils
 import org.apache.http.Header
+import org.apache.http.entity.ContentType
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ExecutionException
 
 /**
  * REST job manager for cluster systems.
@@ -54,30 +58,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
     protected Map<String, BEJob> jobStatusListeners = [:]
 
-    @Override
-    String getJobIdVariable() {
-        return 'LSB_JOBID'
-    }
-
-    @Override
-    String getJobArrayIndexVariable() {
-        return "LSB_JOBINDEX"
-    }
-
-    @Override
-    String getNodeFileVariable() {
-        return "LSB_HOSTS"
-    }
-
-    @Override
-    String getSubmitHostVariable() {
-        return "LSB_SUB_HOST"
-    }
-
-    @Override
-    String getSubmitDirectoryVariable() {
-        return "LSB_SUBCWD"
-    }
+    private static String NEW_LINE = "\r\n"
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
         super(restExecutionService, parms)
@@ -91,33 +72,6 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         return job.runResult
     }
 
-
-    @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
-        if (resourceSet.isQueueSet()) {
-            resourceParameters.put('-q', resourceSet.getQueue())
-        }
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
-        }
-        if (resourceSet.isWalltimeSet()) {
-            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
-        }
-        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            resourceParameters.put('-n', nodes.toString())
-        }
-        return new ProcessingParameters(resourceParameters)
-    }
-
-    private String durationToLSFWallTime(Duration wallTime) {
-        if (wallTime) {
-            return String.valueOf(wallTime.toMinutes())
-        }
-        return null
-    }
 
 
     @Override
@@ -159,21 +113,16 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB\r\n" +
      "Content-Disposition: form-data; name=\"data\"\r\n" +
      "Content-Type: multipart/mixed; boundary=_Part_1_701508.1145579811786\r\n" +
-     "Accept-Language:de-de\r\n" +
      "Content-ID: <data>\r\n" +
      "\r\n" +
      "--_Part_1_701508.1145579811786\r\n" +
      "Content-Disposition: form-data; name=\"COMMANDTORUN\"\r\n" +
      "Content-Type: application/xml; charset=UTF-8\r\n" +
-     "Content-Transfer-Encoding: 8bit\r\n" +
-     "Accept-Language:de-de\r\n" +
      "\r\n" +
      "<AppParam><id>COMMANDTORUN</id><value>sleep 100</value><type></type></AppParam>\r\n" +
      "--_Part_1_701508.1145579811786\r\n" +
      "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"\r\n" +
      "Content-Type: application/xml; charset=UTF-8\r\n" +
-     "Content-Transfer-Encoding: 8bit\r\n" +
-     "Accept-Language:de-de\r\n"+
      "\r\n" +
      "<AppParam><id>EXTRA_PARAMS</id><value>-R 'select[type==any]'</value><type></type></AppParam>\r\n" +
      "--_Part_1_701508.1145579811786\r\n" +
@@ -181,34 +130,38 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
      */
     private void submitJob(BEJob job) {
-        String headBoundary = UUID.randomUUID().toString()
-
         List<Header> headers = []
-        headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${headBoundary}"))
-        headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
+        headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
-        StringBuilder requestBody = new StringBuilder()
-        requestBody << getAppNameArea("generic", headBoundary)
+        List<String> requestParts = []
+        requestParts << createRequestPart("AppName", "generic")
 
         // --- Parameters Area ---
-        StringBuilder paramArea = new StringBuilder()
-        String bodyBoundary = UUID.randomUUID().toString()
+        List<String> jobParts = []
+        if (job.tool) {
+            jobParts << createJobPart("COMMAND", job.tool?.absolutePath as String, "COMMANDTORUN")
+        } else {
+            jobParts << createJobPart("COMMAND", "${job.jobName},upload" as String, "COMMANDTORUN", "file")
+        }
+        if (job.getJobName()) {
+            jobParts << createJobPart("JOB_NAME", job.getJobName())
+        }
+        jobParts << createJobPart("EXTRA_PARAMS", prepareExtraParams(job))
+        ContentWithHeaders jobPartsWithHeader = joinParts(jobParts)
+        requestParts << createRequestPart("data", jobPartsWithHeader.content, jobPartsWithHeader.headers)
 
-        paramArea << prepareToolScript(job, bodyBoundary)
-        paramArea << prepareJobName(job, bodyBoundary)
-        paramArea << prepareExtraParams(job, bodyBoundary)
-
-        if (paramArea.length() > 0) {
-            paramArea.insert(0, getParamAreaHeader(headBoundary, bodyBoundary)) //header
-            paramArea << "--${bodyBoundary}--\r\n\r\n" //footer
+        if (job.toolScript) {
+            requestParts << createRequestPart("f1", job.toolScript, [
+                    new BasicHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString()),
+            ] as List<Header>, job.jobName)
         }
 
-        requestBody << paramArea
-        requestBody << "--${headBoundary}--\r\n"
+        ContentWithHeaders requestPartsWithHeader = joinParts(requestParts)
+        headers.addAll(requestPartsWithHeader.headers)
 
-        logger.postAlwaysInfo("request body:\n" + requestBody)
+        logger.postAlwaysInfo("request body:\n" + requestPartsWithHeader.content)
 
-        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestBody.toString(), headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
+        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
         if (result.statusCode == HTTP_OK) {
             def parsedBody = new XmlSlurper().parseText(result.body)
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + parsedBody)
@@ -221,86 +174,62 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         } else {
             job.setRunResult(new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
+            throw new BEException("Job ${job.jobName} could not be started. \n Returned status code:${result.statusCode} \n result:${result.body}")
         }
     }
 
     /**
-     * Get app name area for job submission
-     * @param appName - usually it is "generic" which exits in all LSF environments
-     * @param headBoundary - a random string
-     * @return app name area string for job submission
+     * Create a part of a multipart request in the special format required
      */
-    private String getAppNameArea(String appName, String headBoundary) {
-        return ["--${headBoundary}", "Content-Disposition: form-data; name=\"AppName\"",
-                "Content-ID: <AppName>\r\n", "${appName}\r\n"].join("\r\n")
+    private static String createRequestPart(String name, String value, List<Header> additionalHeaders = [], String id = name) {
+        List<Header> headers = additionalHeaders
+        headers.add(0, new BasicHeader("Content-Disposition", "form-data; name=\"${name}\""))
+        headers << new BasicHeader("Content-ID", "<${id}>")
+        return "${headers.join(NEW_LINE)}${NEW_LINE}${NEW_LINE}${value}${NEW_LINE}"
     }
 
     /**
-     * Get param area header for job submission
-     * @param headBoundary - a random string
-     * @param bodyBoundary - a random string
-     * @return param area header string for job submission
+     * Create a part of a multipart document in the format required for parameters
      */
-    private String getParamAreaHeader(String headBoundary, String bodyBoundary) {
-        return ["--${headBoundary}", "Content-Disposition: form-data; name=\"data\"",
-                "Content-Type: multipart/mixed; boundary=${bodyBoundary}",
-                "Accept-Language:en-en", "Content-ID: <data>", "\r\n"].join("\r\n")
+    private static String createJobPart(String name, String value, String id = name, String type = "") {
+        return """\
+        Content-Disposition: form-data; name="${name}"
+        Content-Type: application/xml; charset=UTF-8
+
+        <AppParam><id>${id}</id><value>${StringEscapeUtils.escapeXml10(value)}</value><type>${type}</type></AppParam>
+        """.stripIndent().replace("\n", NEW_LINE)
     }
+
+    /**
+     * Join multiple parts to for a multipart request and return them with the corresponding header
+     */
+    private static ContentWithHeaders joinParts(List parts) {
+        if (parts.empty) {
+            new ContentWithHeaders(content: "", headers: [])
+        }
+        String boundary = UUID.randomUUID().toString()
+        return new ContentWithHeaders(
+                content: parts.collect { "--${boundary}${NEW_LINE}${it}" }.join("") + "--${boundary}--${NEW_LINE}",
+                headers: [new BasicHeader(HTTP.CONTENT_TYPE, "multipart/mixed;boundary=${boundary}")] as List<Header>,
+        )
+    }
+
+    static class ContentWithHeaders {
+        String content
+        List<Header> headers
+    }
+
 
     /**
      * Prepare parent jobs is part of @prepareExtraParams
      * @param jobIds
      * @return part of parameter area
      */
-    private String prepareParentJobs(List<BEJobID> jobIds) {
+    private static String prepareParentJobs(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" &amp;&amp; ")
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
             return "-w \"${joinedParentJobs} \""
-        } else {
-            return ""
-        }
-    }
-
-    /**
-     * Prepare script is part of @prepareExtraParams
-     * @param job
-     * @param boundary
-     * @return part of parameter area
-     */
-    private String prepareToolScript(BEJob job, String boundary) {
-        String toolScript
-        if (job.getToolScript() != null && job.getToolScript().length() > 0) {
-            toolScript = job.getToolScript()
-        } else {
-            if (job.getTool() != null) toolScript = job.getTool().getAbsolutePath()
-        }
-        if (toolScript) {
-            return ["--${boundary}",
-                    "Content-Disposition: form-data; name=\"COMMAND\"",
-                    "Content-Type: application/xml; charset=UTF-8",
-                    "Content-Transfer-Encoding: 8bit",
-                    "Accept-Language:en-en\r\n",
-                    "<AppParam><id>COMMANDTORUN</id><value>${toolScript}</value><type></type></AppParam>\r\n"].join("\r\n")
-        } else {
-            return ""
-        }
-    }
-
-    /**
-     * Prepare job name is part of @prepareExtraParams
-     * @param job
-     * @param boundary
-     * @return part of parameter area
-     */
-    private String prepareJobName(BEJob job, String boundary) {
-        if (job.getJobName()) {
-            return ["--${boundary}",
-                    "Content-Disposition: form-data; name=\"JOB_NAME\"",
-                    "Content-Type: application/xml; charset=UTF-8",
-                    "Content-Transfer-Encoding: 8bit",
-                    "Accept-Language:en-en\r\n",
-                    "<AppParam><id>JOB_NAME</id><value>${job.getJobName()}</value><type></type></AppParam>\r\n"].join("\r\n")
         } else {
             return ""
         }
@@ -312,7 +241,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param boundary
      * @return body for parameter area
      */
-    private String prepareExtraParams(BEJob job, String boundary) {
+    private String prepareExtraParams(BEJob job) {
         StringBuilder envParams = new StringBuilder()
 
         String jointExtraParams = job.parameters.collect { key, value -> "${key}='${value}'" }.join(", ")
@@ -337,12 +266,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.parentJobIDs) {
             parentJobs = prepareParentJobs(job.parentJobIDs)
         }
-        return ["--${boundary}",
-                "Content-Disposition: form-data; name=\"EXTRA_PARAMS\"",
-                "Content-Type: application/xml; charset=UTF-8",
-                "Content-Transfer-Encoding: 8bit",
-                "Accept-Language:en-en\r\n",
-                "<AppParam><id>EXTRA_PARAMS</id><value>${logging + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs}" + "</value><type></type></AppParam>\r\n"].join("\r\n")
+        return logging + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs
     }
 
     /**
@@ -403,7 +327,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             logger.info("status code: " + result.statusCode + " result: " + result.body)
         } else {
             //error
-            logger.warning("status code: " + result.statusCode + " result error2: " + result.body)
+            logger.warning("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 
@@ -430,7 +355,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             }
 
         } else {
-            logger.warning("status code: " + result.statusCode + " result: " + result.body)
+            logger.warning("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 
@@ -463,8 +389,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             }
             return resultStates
         } else {
-            logger.warning("status code: " + result.statusCode + " result: " + result.body)
-            return [:]
+            logger.warning("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 
@@ -544,7 +470,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             }
 
         } else {
-            logger.warning("status code: " + result.statusCode + " result: " + result.body)
+            logger.warning("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
+            throw new BEException("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
 

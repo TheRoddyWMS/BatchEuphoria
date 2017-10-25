@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestCommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
@@ -13,6 +14,7 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import org.apache.commons.io.IOUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.apache.http.Header
 import org.apache.http.HttpEntity
 import org.apache.http.auth.AuthenticationException
@@ -102,7 +104,7 @@ class RestExecutionService implements BEExecutionService {
     }
 
     RestResult logon(String username, String password) {
-        String body = "<User><name>${username}</name><pass>${password}</pass></User>"
+        String body = "<User><name>${StringEscapeUtils.escapeXml10(username)}</name><pass>${StringEscapeUtils.escapeXml10(password)}</pass></User>"
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
@@ -241,7 +243,7 @@ class RestExecutionService implements BEExecutionService {
 
         RestResult result = execute(new RestCommand(RESOURCE_PING, null, headers, RestCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
-            throw new AuthenticationException("Web service is not available, returned HTTP status code: ${result.statusCode}")
+            throw new BEException("Web service is not available, returned HTTP status code: ${result.statusCode}")
 
         return true
     }

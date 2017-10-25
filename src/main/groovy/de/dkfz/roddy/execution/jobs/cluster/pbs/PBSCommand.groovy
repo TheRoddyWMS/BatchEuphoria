@@ -14,7 +14,6 @@ import de.dkfz.roddy.tools.LoggerWrapper
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.logging.Level
-import java.util.regex.Matcher
 
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.EMPTY
@@ -150,7 +149,7 @@ class PBSCommand extends Command {
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
-            qsubCall << "echo '" << job.getToolScript().replaceAll("'", Matcher.quoteReplacement("'\\''")) << "' | "
+            qsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
         }
 
         qsubCall << QSUB << PARM_JOBNAME << id

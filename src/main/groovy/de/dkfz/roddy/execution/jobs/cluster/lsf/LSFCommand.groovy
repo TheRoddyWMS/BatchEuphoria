@@ -12,8 +12,6 @@ import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.tools.LoggerWrapper
 
-import java.util.regex.Matcher
-
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.EMPTY
 
@@ -30,7 +28,7 @@ class LSFCommand extends Command {
     public static final String PARM_LOGPATH = " -eo "
     public static final String PARM_OUTPATH = " -oo "
     public static final String BSUB = "bsub"
-    public static final String PARM_DEPENDS = " -W depend="
+    public static final String PARM_DEPENDS = " -ti -w "
     public static final String PARM_MAIL = " -u "
     public static final String PARM_VARIABLES = " -env "
     public static final String PARM_JOBNAME = " -J "
@@ -125,7 +123,7 @@ class LSFCommand extends Command {
         StringBuilder bsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
-            bsubCall << "echo '" << job.getToolScript().replaceAll("'", Matcher.quoteReplacement("'\\''")) << "' | "
+            bsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
         }
 
         bsubCall << BSUB << assembleResources() << PARM_JOBNAME << id
@@ -217,8 +215,8 @@ class LSFCommand extends Command {
     private String prepareParentJobs(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "exit(${it}, 0)" }.join(" && ")
-            return " -w \"${joinedParentJobs} \""
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
+            return " ${dependsSuperParameter} \"${joinedParentJobs}\" "
         } else {
             return ""
         }
