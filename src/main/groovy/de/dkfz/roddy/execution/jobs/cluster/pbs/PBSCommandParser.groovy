@@ -125,7 +125,7 @@ class PBSCommandParser {
             def deps = parameters[7..-1].split("[:]")
             if (!deps[0].endsWith("afterok"))
                 throw new BEException("Not supported: " + deps[0])
-            dependencies.addAll(deps[1..-1])
+            dependencies += deps[1..-1]
         }
     }
 

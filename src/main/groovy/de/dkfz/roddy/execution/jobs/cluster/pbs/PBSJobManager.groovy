@@ -343,9 +343,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     String[] split = line.split(" ")
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
-                    logger.info("QStat BEJob line: " + line)
-                    logger.info("	Entry in arr[" + ID + "]: " + split[ID])
-                    logger.info("    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE])
+                    logger.info(["QStat BEJob line: " + line,
+                                 "	Entry in arr[" + ID + "]: " + split[ID],
+                                 "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
                     String[] idSplit = split[ID].split("[.]")
                     //(idSplit.length <= 1) continue;
