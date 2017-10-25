@@ -6,11 +6,13 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Basic factory and manager class for BEJob and Command management
@@ -27,18 +29,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true
     public static final boolean JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY = false
     public static final boolean JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY = false
-
-    public static final String BE_DEFAULT_JOBID = "BE_JOBID"
-
-    public static final String BE_DEFAULT_JOBARRAYINDEX = "BE JOBARRAYINDEX"
-
-    public static final String BE_DEFAULT_JOBSCRATCH = "BE JOBSCRATCH"
-
-    protected String jobIDIdentifier = BE_DEFAULT_JOBID
-
-    protected String jobArrayIndexIdentifier = BE_DEFAULT_JOBARRAYINDEX
-
-    protected String jobScratchIdentifier = BE_DEFAULT_JOBSCRATCH
 
     protected final BEExecutionService executionService
 
@@ -64,8 +54,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private boolean isParameterFileEnabled
-
     private Boolean isHoldJobsEnabled = null
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
@@ -78,9 +66,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             logger.warning("Silently falling back to default job tracking behaviour. The user name was not set properly and the system cannot track the users jobs.")
             isTrackingOfUserJobsEnabled = false
         }
-        this.jobIDIdentifier = parms.jobIDIdentifier
-        this.jobScratchIdentifier = parms.jobScratchIdentifier
-        this.jobArrayIndexIdentifier = parms.jobArrayIDIdentifier
         this.userEmail = parms.userEmail
         this.userGroup = parms.userGroup
         this.userAccount = parms.userAccount
@@ -94,7 +79,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                 createUpdateDaemonThread(interval)
             }
         } catch (Exception ex) {
-            logger.severe("Creating the command factory daemon failed for some reason. Roddy will not be able to query the job system.", ex)
+            logger.severe("Creating the command factory daemon failed for some reason. BE will not be able to query the job system.", ex)
         }
     }
 
@@ -126,12 +111,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         })
     }
 
-    abstract C createCommand(GenericJobInfo jobInfo)
+    abstract C createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs)
 
-    abstract C createCommand(BEJob job, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies)
-
-    C createCommand(BEJob job, File tool, List<String> dependencies) {
-        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingCommand(), tool, job.getParameters(), dependencies)
+    C createCommand(BEJob job, File tool, List<String> parentJobs, Map<String, String> parameters) {
+        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingParameters(), tool, parameters, parentJobs)
         c.setJob(job)
         return c
     }
@@ -164,10 +147,17 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         if (res.successful) {
             String exID = parseJobID(res.resultLines[0])
             def job = command.getJob()
-            def jobID = createJobID(job, exID)
+            def jobID = new BEJobID(exID)
             command.setExecutionID(jobID)
-            jobResult = new BEJobResult(command, jobID, res.successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.resetJobID(exID)
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
+        } else {
+            def job = command.getJob()
+            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
+            logger.postAlwaysInfo("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
+            throw new BEException("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
         }
         return jobResult
     }
@@ -178,19 +168,13 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
 
-    abstract BEJobID createJobID(BEJob job, String jobResult)
-
-    ProcessingCommands convertResourceSet(BEJob job) {
-        return convertResourceSet(job.resourceSet)
+    ProcessingParameters convertResourceSet(BEJob job) {
+        return convertResourceSet(job, job.resourceSet)
     }
 
-    abstract ProcessingCommands convertResourceSet(ResourceSet resourceSet)
+    abstract ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet)
 
-    abstract ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions)
-
-//    public abstract ProcessingCommands getProcessingCommanldsFromConfiguration(Configuration configuration, String toolID);
-
-    abstract ProcessingCommands extractProcessingCommandsFromToolScript(File file)
+    abstract ProcessingParameters extractProcessingParametersFromToolScript(File file)
 
     List<C> getListOfCreatedCommands() {
         List<C> newList = new LinkedList<>()
@@ -314,27 +298,17 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.jobArrayIndexIdentifier = jobArrayIndexIdentifier
     }
 
-    String getJobScratchIdentifier() {
-        return jobScratchIdentifier
-    }
+    abstract String getJobIdVariable()
 
-    void setJobScratchIdentifier(String jobScratchIdentifier) {
-        this.jobScratchIdentifier = jobScratchIdentifier
-    }
+    abstract String getQueueVariable()
 
-    abstract String getSpecificJobIDIdentifier()
+    abstract String getJobArrayIndexVariable()
 
-    abstract String getSpecificJobArrayIndexIdentifier()
+    abstract String getNodeFileVariable()
 
-    abstract String getSpecificJobScratchIdentifier()
+    abstract String getSubmitHostVariable()
 
-    Map<String, String> getSpecificEnvironmentSettings() {
-        Map<String, String> map = new LinkedHashMap<>()
-        map.put(jobIDIdentifier, getSpecificJobIDIdentifier())
-        map.put(jobArrayIndexIdentifier, getSpecificJobArrayIndexIdentifier())
-        map.put(jobScratchIdentifier, getSpecificJobScratchIdentifier())
-        return map
-    }
+    abstract String getSubmitDirectoryVariable()
 
     void setUserEmail(String userEmail) {
         this.userEmail = userEmail
@@ -368,14 +342,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return userAccount
     }
 
-    void setParameterFileEnabled(boolean parameterFileEnabled) {
-        isParameterFileEnabled = parameterFileEnabled
-    }
-
-    boolean isParameterFileEnabled() {
-        return isParameterFileEnabled
-    }
-
     /**
      * Tries to get the log for a running job.
      * Returns an empty array, if the job's jobState is not RUNNING
@@ -401,8 +367,16 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getSubmissionCommand()
 
-    abstract File getLoggingDirectoryForJob(BEJob job)
+    File getDefaultLoggingDirectory() {
+        return executionService.queryWorkingDirectory()
+    }
+
 
     abstract JobState parseJobState(String stateString)
+
+
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList([])
+    }
 
 }

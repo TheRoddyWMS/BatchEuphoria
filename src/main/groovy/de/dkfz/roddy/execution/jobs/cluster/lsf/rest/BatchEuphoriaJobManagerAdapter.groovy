@@ -6,55 +6,88 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BEJobResult
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
+import de.dkfz.roddy.tools.BufferUnit
+import groovy.transform.CompileStatic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
+
+import java.time.Duration
 
 /**
  * Created by kaercher on 22.03.17.
  */
-class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
+@CompileStatic
+class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
+
     BatchEuphoriaJobManagerAdapter(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
     }
 
     @Override
-    Command createCommand(GenericJobInfo jobInfo) {
-        throw new NotImplementedException()
+    String getJobIdVariable() {
+        return "LSB_JOBID"
+    }
+
+    @Override
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
     }
 
     @Override
     BEJobResult runJob(BEJob job) {
-        return null
-    }
-
-    @Override
-    BEJobID createJobID(BEJob job, String jobResult) {
         throw new NotImplementedException()
     }
 
     // needed
     @Override
-    ProcessingCommands convertResourceSet(ResourceSet resourceSet) {
-        throw new NotImplementedException()
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
+        if (resourceSet.isQueueSet()) {
+            resourceParameters.put('-q', resourceSet.getQueue())
+        }
+        if (resourceSet.isMemSet()) {
+            String memo = resourceSet.getMem().toString(BufferUnit.M)
+            resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
+        }
+        if (resourceSet.isWalltimeSet()) {
+            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+        }
+        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
+            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
+            resourceParameters.put('-n', nodes.toString())
+        }
+        return new ProcessingParameters(resourceParameters)
+    }
+
+    private String durationToLSFWallTime(Duration wallTime) {
+        if (wallTime) {
+            return String.valueOf(wallTime.toMinutes())
+        }
+        return null
     }
 
     @Override
-    ProcessingCommands parseProcessingCommands(String alignmentProcessingOptions) {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    ProcessingCommands extractProcessingCommandsFromToolScript(File file) {
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
         throw new NotImplementedException()
     }
 
@@ -75,22 +108,22 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     // needed
     @Override
     void updateJobStatus() {
-
+        throw new NotImplementedException()
     }
 
     @Override
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     Map<String, GenericJobInfo> queryExtendedJobStateById(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     void addJobStatusChangeListener(BEJob job) {
-
+        throw new NotImplementedException()
     }
 
     @Override
@@ -120,17 +153,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
     }
 
     @Override
-    String getSpecificJobIDIdentifier() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getSpecificJobArrayIndexIdentifier() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getSpecificJobScratchIdentifier() {
+    String getQueueVariable() {
         throw new NotImplementedException()
     }
 
@@ -149,44 +172,40 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager {
         throw new NotImplementedException()
     }
 
-    @Override
-    File getLoggingDirectoryForJob(BEJob job) {
-        throw new NotImplementedException()
-    }
 // needed
     @Override
     void queryJobAbortion(List executedJobs) {
-
+        throw new NotImplementedException()
     }
 
     // needed
     @Override
-    Map<String, JobState> queryJobStatus(List jobIDs) {
+    Map<String, JobState> queryJobStatus(List jobs) {
         throw new NotImplementedException()
     }
 
     @Override
-    Command createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List dependencies) {
+    LSFCommand createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
         throw new NotImplementedException()
     }
 
     @Override
     Map<BEJob, JobState> queryJobStatus(List list, boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List jobIds, boolean forceUpdate) {
-        return null
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
+        throw new NotImplementedException()
     }
 
     @Override
     Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null
+        throw new NotImplementedException()
     }
 
     @Override
     JobState parseJobState(String stateString) {
-        return null
+        throw new NotImplementedException()
     }
 }

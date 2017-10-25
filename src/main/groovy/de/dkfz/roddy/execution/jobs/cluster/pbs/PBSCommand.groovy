@@ -6,17 +6,17 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.tools.LoggerWrapper
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.util.logging.Level
-import java.util.regex.Matcher
 
-import static de.dkfz.roddy.StringConstants.*
+import static de.dkfz.roddy.StringConstants.COLON
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * This class is used to create and execute qsub commands
@@ -61,7 +61,7 @@ class PBSCommand extends Command {
 
     protected List<String> dependencyIDs
 
-    protected final List<ProcessingCommands> processingCommands
+    protected final List<ProcessingParameters> processingParameters
 
     /**
      *
@@ -71,9 +71,9 @@ class PBSCommand extends Command {
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
         super(parentManager, job, id, parameters, tags)
-        this.processingCommands = processingCommands
+        this.processingParameters = processingParameters
         this.command = command
         this.loggingDirectory = loggingDirectory
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
@@ -144,13 +144,12 @@ class PBSCommand extends Command {
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
-        boolean useParameterFile = parentJobManager.isParameterFileEnabled()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
-            qsubCall << "echo '" << job.getToolScript().replaceAll("'", Matcher.quoteReplacement("'\\''")) << "' | "
+            qsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
         }
 
         qsubCall << QSUB << PARM_JOBNAME << id
@@ -203,28 +202,20 @@ class PBSCommand extends Command {
         return qsubCall
     }
 
-    StringBuilder assembleProcessingCommands() {
-        StringBuilder qsubCall = new StringBuilder()
-        for (ProcessingCommands pcmd in job.getListOfProcessingCommand()) {
-            if (!(pcmd instanceof PBSResourceProcessingCommand)) continue
-            PBSResourceProcessingCommand command = (PBSResourceProcessingCommand) pcmd
-            if (command == null)
-                continue
-            qsubCall << StringConstants.WHITESPACE << command.getProcessingString()
-        }
-        return qsubCall
-    }
-
+    // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
 
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            qsubCall << getVariablesParameter() << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
 
-        if (job.getParameterFile()) {
-            qsubCall << getVariablesParameter() << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.getParameterFile()
+            if (job.parameters.containsKey("debugWrapInScript")) {
+                qsubCall << "," << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
+            }
+            qsubCall << "\""
+
         } else {
-            List<String> finalParameters = job.finalParameters()
-            if (finalParameters)
-                qsubCall << getVariablesParameter() << finalParameters.join(",")
+            qsubCall << getVariablesParameter() << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(",") << "\""
         }
 
         return qsubCall
@@ -233,10 +224,12 @@ class PBSCommand extends Command {
     String assembleDependencyString() {
         StringBuilder qsubCall = new StringBuilder("")
         LinkedList<String> tempDependencies =
-                creatingJob.getDependencyIDsAsString().findAll {
+                creatingJob.getParentJobIDsAsString().findAll {
                     it != "" && it != NONE && it != "-1"
+                }.collect {
+                    it.split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
                 } as LinkedList<String>
-        if (creatingJob.getDependencyIDsAsString().any { it.contains("[].") }) {
+        if (creatingJob.getParentJobIDsAsString().any { it.contains("[].") }) {
             throw new NotImplementedException()
         }
         if (tempDependencies.size() > 0) {

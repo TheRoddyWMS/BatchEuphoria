@@ -20,9 +20,6 @@ class JobManagerCreationParametersTest {
     @Test
     void testDefaults() {
         def parms = new JobManagerCreationParameters();
-        assert parms.jobScratchIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBSCRATCH
-        assert parms.jobIDIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBID
-        assert parms.jobArrayIDIdentifier == BatchEuphoriaJobManager.BE_DEFAULT_JOBARRAYINDEX
         assert parms.trackOnlyStartedJobs == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
         assert parms.trackUserJobsOnly == BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
         assert parms.userIdForJobQueries == ""

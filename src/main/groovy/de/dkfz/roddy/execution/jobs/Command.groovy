@@ -6,7 +6,10 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.StringConstants
 import groovy.transform.CompileStatic
+
+import java.util.regex.Matcher
 
 /**
  * Base class for all types of commands.
@@ -37,7 +40,7 @@ abstract class Command {
     /**
      * Parameters for the qsub command
      */
-    protected final Map<String, String> parameters = [:]
+    public final LinkedHashMap<String, String> parameters = [:]
 
     /**
      * A list of named tags for the command object
@@ -46,6 +49,15 @@ abstract class Command {
 
     protected final BatchEuphoriaJobManager parentJobManager
 
+    /**
+     * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
+     *
+     * @param parentJobManager
+     * @param job
+     * @param id
+     * @param parameters       Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
+     * @param commandTags
+     */
     protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
         this.parentJobManager = parentJobManager
         this.commandTags.putAll(commandTags ?: [:])
@@ -107,5 +119,22 @@ abstract class Command {
     @Override
     String toString() {
         return String.format("Command of class %s with id %s", this.getClass().getName(), getID())
+    }
+
+
+    StringBuilder assembleProcessingCommands() {
+        StringBuilder bsubCall = new StringBuilder()
+        for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
+            if (!(pcmd instanceof ProcessingParameters)) continue
+            ProcessingParameters command = (ProcessingParameters) pcmd
+            if (command == null)
+                continue
+            bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
+        }
+        return bsubCall
+    }
+
+    public static final String escapeBash(final String input) {
+        "'${input.replaceAll("'", Matcher.quoteReplacement("'\\''"))}'"
     }
 }
