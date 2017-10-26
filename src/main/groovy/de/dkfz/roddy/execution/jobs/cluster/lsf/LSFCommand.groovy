@@ -28,7 +28,7 @@ class LSFCommand extends Command {
     public static final String PARM_LOGPATH = " -eo "
     public static final String PARM_OUTPATH = " -oo "
     public static final String BSUB = "bsub"
-    public static final String PARM_DEPENDS = " -ti -w "
+    public static final String PARM_DEPENDS = " -ti -w "  // -ti: Immediate orphan job termination for jobs with failed dependencies.
     public static final String PARM_MAIL = " -u "
     public static final String PARM_VARIABLES = " -env "
     public static final String PARM_JOBNAME = " -J "
