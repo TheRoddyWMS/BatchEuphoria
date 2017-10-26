@@ -47,11 +47,9 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
 
             isRunning = false
             Map<String, JobState> stringJobStateMap = queryJobStatusById(ids, true)
-            if (logger.isVerbosityHigh()) {
-                for (String s : stringJobStateMap.keySet()) {
-                    if (stringJobStateMap.get(s) != null)
-                        System.out.println(s + " = " + stringJobStateMap.get(s))
-                }
+            for (String s : stringJobStateMap.keySet()) {
+                if (stringJobStateMap.get(s) != null)
+                    logger.info(s + " = " + stringJobStateMap.get(s))
             }
             for (JobState js : stringJobStateMap.values()) {
                 if (js == null) //Only one job needs to be active.

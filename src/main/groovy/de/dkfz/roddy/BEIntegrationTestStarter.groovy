@@ -144,13 +144,12 @@ class BEIntegrationTestStarter {
                 jm.getJobDetails([testJob])
                 jm.updateJobStatistics(jobList)
             }
-            println "jobstate "+testJob.jobState
             log.always(testJob.getJobInfo().toString())
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
             ex.printStackTrace()
-            log.severe("An error occurd while testing for BatchEuphoriaJobManager type ${jobManager.getClass()}",ex)
+            log.severe("An error occured while testing for BatchEuphoriaJobManager type ${jobManager.getClass()}",ex)
         } finally {
 
         }

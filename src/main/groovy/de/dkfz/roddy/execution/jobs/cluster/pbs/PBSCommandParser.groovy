@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
@@ -123,13 +124,8 @@ class PBSCommandParser {
         if (parameters.startsWith("depend")) {
             def deps = parameters[7..-1].split("[:]")
             if (!deps[0].endsWith("afterok"))
-                println "Not supported: " + deps[0]
-            try {
-                dependencies.addAll(deps[1..-1])
-            } catch (Exception ex) {
-                println(parameters)
-                println(ex)
-            }
+                throw new BEException("Not supported: " + deps[0])
+            dependencies += deps[1..-1]
         }
     }
 

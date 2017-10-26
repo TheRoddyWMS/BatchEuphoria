@@ -7,12 +7,11 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.BEException
-import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Basic factory and manager class for BEJob and Command management
@@ -97,11 +96,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
         updateDaemonThread = Thread.startDaemon("Command factory update daemon.", {
             while (!closeThread) {
-                try {
-                    updateJobStatus()
-                } catch (Exception e) {
-                    e.printStackTrace()
-                }
+                updateJobStatus()
                 try {
                     Thread.sleep(interval * 1000)
                 } catch (InterruptedException e) {
