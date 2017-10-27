@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
+import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import groovy.transform.CompileStatic
 import org.junit.Test
@@ -456,5 +457,4 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
         assert genericJobInfoOutput1.size() == 4
         assert genericJobInfoOutput2.size() == 1
     }
-
 }

@@ -32,8 +32,9 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     protected static <T> T catchExceptionAndLog(final Closure<T> closure) {
         try {
             return closure.call()
-        } catch (Throwable t) {
-            logger.warning(t.message)
+        } catch (Exception e) {
+            logger.warning(e.message)
+            logger.warning(e.stackTrace.join("\n"))
         }
         return null
     }
