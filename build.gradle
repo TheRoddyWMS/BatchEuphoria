@@ -13,7 +13,7 @@ apply plugin: 'idea'
 apply plugin: 'application'
 apply plugin: 'maven'
 
-group = "de.dkfz.roddy"
+group = "com.github.eilslabs"
 
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 sourceCompatibility = '1.8'
@@ -66,7 +66,6 @@ task writePom {
     }
 }
 
-
 jar {
     dependsOn writePom
     into("META-INF/maven/$project.group/$project.name") {
@@ -81,8 +80,8 @@ task listJars {
 }
 
 
-task uberjar(type: Jar,dependsOn:[':compileJava',':compileGroovy']) {
-    from files(sourceSets.main.output.classesDir)
+task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
+    from files(sourceSets.main.output.dirs)
     from configurations.runtime.asFileTree.files.collect { zipTree(it) }
 
     version = getVersionName()
@@ -96,5 +95,5 @@ task uberjar(type: Jar,dependsOn:[':compileJava',':compileGroovy']) {
 
 // Fix Gradle version
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.3'
+    gradleVersion = '4.2.1'
 }
