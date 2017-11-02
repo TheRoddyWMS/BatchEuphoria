@@ -6,13 +6,11 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
-import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.BatchEuphoriaJobManagerAdapter
 import de.dkfz.roddy.tools.*
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
@@ -424,21 +422,20 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getParentJobIDsAsString())
         }
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
-        try {
+
             String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
-            Duration runTime = !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null
-            BufferValue swap = !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null
-            BufferValue memory = !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null
-            Duration runLimit = !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null
-            Integer nodes = !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null
+            Duration runTime = catchExceptionAndLog { !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null }
+            BufferValue swap = catchExceptionAndLog { !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null }
+            BufferValue memory = catchExceptionAndLog { !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null }
+            Duration runLimit = catchExceptionAndLog { !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null }
+            Integer nodes = catchExceptionAndLog { !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null }
 
             ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
             jobInfo.setUsedResources(usedResources)
 
             ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
-
             jobInfo.setAskedResources(askedResources)
-            jobInfo.setUsedResources(usedResources)
+
             jobInfo.setUser(!jobResult[3].toString().equals("-") ? jobResult[3] : null)
             jobInfo.setDescription(!jobResult[5].toString().equals("-") ? jobResult[5] : null)
             jobInfo.setProjectName(!jobResult[6].toString().equals("-") ? jobResult[6] : null)
@@ -448,7 +445,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
             jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
             jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
-            jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null)
+            catchExceptionAndLog { jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null) }
             jobInfo.setRunTime(runTime)
             jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
             jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
@@ -461,14 +458,11 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             job.setJobInfo(jobInfo)
 
             if (!jobResult[13].toString().equals("-"))
-                jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear()))
+                catchExceptionAndLog { jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear())) }
             if (!jobResult[14].toString().equals("-"))
-                jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear()))
+                catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear())) }
             if (!jobResult[15].toString().equals("-"))
-                jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear()))
-        }catch (Exception exp){
-            throw new BEException("Error while processing/parsing bjobs output: ${jobDetails}", exp)
-        }
+                catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear())) }
     }
 
 
