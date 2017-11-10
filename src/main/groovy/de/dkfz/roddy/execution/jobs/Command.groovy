@@ -23,6 +23,8 @@ import java.util.regex.Matcher
 @CompileStatic
 abstract class Command {
 
+    private static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
+
     /**
      * The id of this command.
      */
@@ -104,6 +106,10 @@ abstract class Command {
 
     Map<String, Object> getTags() {
         return commandTags
+    }
+
+    protected final String getWorkingDirectory(){
+        return job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT
     }
 
     /**

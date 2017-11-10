@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
@@ -160,9 +161,9 @@ class PBSCommand extends Command {
 
         qsubCall << getAdditionalCommandParameters()
 
-        if (loggingDirectory) qsubCall << PARM_LOGPATH << loggingDirectory
+        qsubCall << "-w " << getWorkingDirectory()
 
-        qsubCall << getJoinLogParameter()
+        qsubCall << getLoggingParameter(job.jobLog)
 
         if (isArray) qsubCall << assembleArraySettings()
 
@@ -224,12 +225,12 @@ class PBSCommand extends Command {
     String assembleDependencyString() {
         StringBuilder qsubCall = new StringBuilder("")
         LinkedList<String> tempDependencies =
-                creatingJob.getParentJobIDsAsString().findAll {
-                    it != "" && it != NONE && it != "-1"
+                creatingJob.getParentJobIDs().findAll {
+                    it.getId() != "" && it.getId() != NONE && it.getId() != "-1"
                 }.collect {
-                    it.split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
+                    it.getId().split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
                 } as LinkedList<String>
-        if (creatingJob.getParentJobIDsAsString().any { it.contains("[].") }) {
+        if (creatingJob.getParentJobIDs().any { it.getId().contains("[].") }) {
             throw new NotImplementedException()
         }
         if (tempDependencies.size() > 0) {
@@ -245,5 +246,15 @@ class PBSCommand extends Command {
         }
 
         return qsubCall
+    }
+
+    private String getLoggingParameter(JobLog jobLog) {
+        if (!jobLog.out && !jobLog.error) {
+            return "-k"
+        } else if (!jobLog.error) {
+            return "${getJoinLogParameter()} -o ${jobLog.out.replace(JobLog.JOB_ID, '$PBS_JOBID')}"
+        } else {
+            return "-o ${jobLog.out.replace(JobLog.JOB_ID, '$PBS_JOBID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '$PBS_JOBID')}"
+        }
     }
 }

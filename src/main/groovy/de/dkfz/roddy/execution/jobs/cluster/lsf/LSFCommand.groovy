@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.Command
@@ -77,11 +78,14 @@ class LSFCommand extends Command {
 
     }
 
-    String getLoggingParameter() {
-        StringBuilder logging = new StringBuilder(EMPTY)
-        logging << (PARM_OUTPATH + " ${loggingDirectory}/${id ? id : "%J"}.o%J ")
-        logging << (PARM_LOGPATH + " ${loggingDirectory}/${id ? id : "%J"}.e%J ")
-        return logging
+    private String getLoggingParameter(JobLog jobLog) {
+        if (!jobLog.out && !jobLog.error) {
+            return "-o /dev/null"
+        } else if (!jobLog.error) {
+            return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')}"
+        } else {
+            return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')} -eo ${jobLog.error.replace(JobLog.JOB_ID, '%J')}"
+        }
     }
 
     String getGroupListString(String groupList) {
@@ -132,7 +136,9 @@ class LSFCommand extends Command {
 
         bsubCall << getAdditionalCommandParameters()
 
-        if (loggingDirectory) bsubCall << getLoggingParameter()
+        bsubCall << "-cwd " << getWorkingDirectory()
+
+        bsubCall << getLoggingParameter(job.jobLog)
 
         if (email) bsubCall << getEmailParameter(email)
 
@@ -236,5 +242,4 @@ class LSFCommand extends Command {
             return ""
         }
     }
-
 }
