@@ -44,7 +44,7 @@ class SGEJobManager extends PBSJobManager {
     }
 
     SGECommand createCommand(BEJob job) {
-        return new SGECommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
+        return new SGECommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
     }
 //    @Override
 //    public void addSpecificSettingsToConfiguration(Configuration configuration) {

@@ -117,12 +117,12 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List list, boolean forceUpdate) {
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> list, boolean forceUpdate) {
         throw new NotImplementedException()
     }
 
     @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List list, boolean forceUpdate) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> list, boolean forceUpdate) {
         throw new NotImplementedException()
     }
 
@@ -134,12 +134,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     @Override
     String getLogFileWildcard(BEJob job) {
         throw new NotImplementedException()
-    }
-
-    // needed
-    @Override
-    boolean compareJobIDs(String jobID, String id) {
-        return false
     }
 
     @Override
@@ -158,11 +152,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    String[] peekLogFile(BEJob job) {
-        return new String[0]
-    }
-
-    @Override
     String parseJobID(String commandOutput) {
         throw new NotImplementedException()
     }
@@ -174,33 +163,28 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
 
 // needed
     @Override
-    void queryJobAbortion(List executedJobs) {
+    void queryJobAbortion(List<BEJob> executedJobs) {
         throw new NotImplementedException()
     }
 
     // needed
     @Override
-    Map<String, JobState> queryJobStatus(List jobs) {
+    Map<BEJobID, JobState> queryJobStatus(List<BEJob> jobs) {
         throw new NotImplementedException()
     }
 
     @Override
-    LSFCommand createCommand(BEJob job, String jobName, List processingCommands, File tool, Map parameters, List parentJobs) {
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> list, boolean forceUpdate) {
         throw new NotImplementedException()
     }
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List list, boolean forceUpdate) {
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate) {
         throw new NotImplementedException()
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate) {
         throw new NotImplementedException()
     }
 

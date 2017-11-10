@@ -216,7 +216,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobIds
      * @return
      */
-    abstract Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false)
+    abstract Map<String, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false)
 
     /**
      * Queries the status of all jobs.
@@ -247,7 +247,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param forceUpdate
      * @return
      */
-    abstract Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate)
+    abstract Map<String, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate)
 
     /**
      * Try to abort a range of jobs
@@ -258,8 +258,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract void addJobStatusChangeListener(BEJob job)
 
     abstract String getLogFileWildcard(BEJob job)
-
-    abstract boolean compareJobIDs(String jobID, String id)
 
     void addCommandToList(C pbsCommand) {
         synchronized (listOfCreatedCommands) {
@@ -276,14 +274,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract String getStringForJobOnHold()
 
     abstract String getStringForRunningJob()
-
-    String getJobIDIdentifier() {
-        return jobIDIdentifier
-    }
-
-    void setJobIDIdentifier(String jobIDIdentifier) {
-        this.jobIDIdentifier = jobIDIdentifier
-    }
 
     abstract String getJobIdVariable()
 
@@ -329,22 +319,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return userAccount
     }
 
-    /**
-     * Tries to get the log for a running job.
-     * Returns an empty array, if the job's jobState is not RUNNING
-     *
-     * @param job
-     * @return
-     */
-    abstract String[] peekLogFile(BEJob job)
-
-    String getLogFileName(BEJob p) {
-        return p.getJobName() + ".o" + p.getJobID()
-    }
-
-    String getLogFileName(Command command) {
-        return command.getJob().getJobName() + ".o" + command.getExecutionID().getId()
-    }
 
     boolean executesWithoutJobSystem() {
         return false

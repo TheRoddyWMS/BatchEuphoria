@@ -255,8 +255,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             resources.append(" affinity[core(${cores})]")
         }
         resources.append("' ")
-
         StringBuilder logging = new StringBuilder("")
+        if(job.getWorkingDirectory()) logging.append("-cwd ${job.getWorkingDirectory()}")
         if (job.loggingDirectory) logging.append("-oo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
         if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
 
@@ -403,7 +403,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
         } else {
-            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getParentJobIDsAsString())
+            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.parentJobIDs*.id)
         }
 
         String queue = jobDetails.getProperty("queue").toString()
@@ -484,7 +484,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null)
             jobInfo = job.getJobInfo()
         else
-            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getParentJobIDsAsString())
+            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.parentJobIDs*.id)
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
         jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString() + " " + LocalDateTime.now().getYear(), lsfDatePattern) : null)

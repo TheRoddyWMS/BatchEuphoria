@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
@@ -24,8 +25,6 @@ import java.util.Map.Entry
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import java.util.regex.Matcher
-
-import static de.dkfz.roddy.StringConstants.*
 
 /**
  * A job submission implementation for standard PBS systems.
@@ -63,19 +62,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         logger.rare("Allow enabling and disabling of options for resource arbitration for defective job managers.")
         logger.rare("parseToJob() is not implemented and will return null.")
     }
-// Will not work in first implementation. This constructor was used in the transformation process from one Batch system to another one (e.g. PBS => SGE)
-//    @Override
-//    PBSCommand createCommand(GenericJobInfo jobInfo) {
-//        BEJob job = new BEJob(jobInfo.getJobName(), jobInfo.getTool(), new LinkedHashMap<String, Object>(jobInfo.getParameters()));
-//        PBSCommand pbsCommand = new PBSCommand(job, jobInfo.getExecutionContext(), BEExecutionService.getInstance(), job.getJobName(), null, job.getParameters(), null, jobInfo.getParentJobIDs(), jobInfo.getExecutionContext().getConfiguration().getProcessingToolPath(jobInfo.getExecutionContext(), jobInfo.getTool()).getAbsolutePath());
-//        return pbsCommand;
-//    }
-
-//    @Override
-    PBSCommand createCommand(BEJob job, List<ProcessingParameters> processingParameters, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
-        PBSCommand pbsCommand = new PBSCommand(this, job, job.jobID.toString(), processingParameters, parameters, tags, null, dependencies, command, logDirectory)
-        return pbsCommand
-    }
 
     @Override
     PBSCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
@@ -85,7 +71,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     PBSCommand createCommand(BEJob job) {
-        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
+        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
     }
 
     @Override
@@ -100,11 +86,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         try {
             if (executionResult.successful && job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
-                allStates[job.jobID.toString()] = JobState.HOLD
+                allStates[job.jobID] = JobState.HOLD
             } else if (executionResult.successful && job.runResult.wasExecuted) {
-                allStates[job.jobID.toString()] = JobState.QUEUED
+                allStates[job.jobID] = JobState.QUEUED
             } else {
-                allStates[job.jobID.toString()] = JobState.FAILED
+                allStates[job.jobID] = JobState.FAILED
                 logger.severe("PBS call failed with error code ${executionResult.exitCode} and error message:\n\t" + executionResult?.resultLines?.join("\n\t"))
             }
         } finally {
@@ -252,7 +238,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 null,
                 jInfo.getParentJobIDs().collect { new BEJob(new PBSJobID(it), this) },
                 jInfo.getParameters(),
-                this)
+                this,
+                JobLog.none(),
+        )
         job.jobInfo = jInfo
 
         //Automatically get the status of the job and if it is planned or running add it as a job status listener.
@@ -277,9 +265,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     private static ExecutionResult cachedExecutionResult
 
-    protected Map<String, JobState> allStates = [:]
+    protected Map<BEJobID, JobState> allStates = [:]
 
-    protected Map<String, BEJob> jobStatusListeners = [:]
+    protected Map<BEJobID, BEJob> jobStatusListeners = [:]
 
     /**
      * Queries the jobs states.
@@ -311,7 +299,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             queryCommand += " -u $userIDForQueries "
 
 
-        Map<String, JobState> allStatesTemp = [:]
+        Map<BEJobID, JobState> allStatesTemp = [:]
         ExecutionResult er
         List<String> resultLines = new LinkedList<String>()
         cacheLock.lock()
@@ -348,10 +336,12 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                                  "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
                     String[] idSplit = split[ID].split("[.]")
+                    BEJobID jobID  = new BEJobID(split[ID])
+                    
                     //(idSplit.length <= 1) continue;
                     String id = idSplit[0]
                     JobState js = parseJobState(split[JOBSTATE])
-                    allStatesTemp.put(id, js)
+                    allStatesTemp.put(jobID, js)
                     logger.info("   Extracted jobState: " + js.toString())
                 }
             }
@@ -360,10 +350,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
             // I don't currently know, if the jslisteners are used.
             //Create a local cache of jobstate logfile entries.
-            Map<String, JobState> map = [:]
+            Map<BEJobID, JobState> map = [:]
             List<BEJob> removejobs = new LinkedList<>()
             synchronized (jobStatusListeners) {
-                for (String id : jobStatusListeners.keySet()) {
+                for (BEJobID id : jobStatusListeners.keySet()) {
                     JobState js = allStatesTemp.get(id)
                     BEJob job = jobStatusListeners.get(id)
 
@@ -395,8 +385,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                             if (job.getRunResult() != null) {
                                 jobsCurrentState = map.get(job.getRunResult().getJobID().getId())
                             } else { //Search within entries.
-                                map.each { String s, JobState v ->
-                                    if (s.startsWith(id)) {
+                                map.each { BEJobID s, JobState v ->
+                                    if (s.compareTo(id) == 0) {
                                         jobsCurrentState = v
                                         return
                                     }
@@ -505,7 +495,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 state = JobState.ABORTED
             else {
                 cacheLock.lock()
-                state = allStates[job.jobID.toString()]
+                state = allStates[job.jobID]
                 cacheLock.unlock()
             }
             if (state) queriedStates[job] = state
@@ -515,14 +505,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<String, JobState> queriedStates = jobIds.collectEntries { String jobId -> [jobId, JobState.UNKNOWN] }
+        Map<BEJobID, JobState> queriedStates = jobIds.collectEntries { BEJobID jobId -> [jobId, JobState.UNKNOWN] }
 
-        for (String jobId in jobIds) {
+        for (BEJobID jobId in jobIds) {
             JobState state
             cacheLock.lock()
             state = allStates[jobId]
@@ -534,12 +524,12 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<String, JobState> queriedStates = [:]
+        Map<BEJobID, JobState> queriedStates = [:]
         cacheLock.lock()
         queriedStates.putAll(allStates)
         cacheLock.unlock()
@@ -551,13 +541,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
 
         Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
-            it.getJobID().toString()
+            it.getJobID()
         }, false)
         return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
     }
 
     @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+    Map<String, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
         Map<String, GenericJobInfo> queriedExtendedStates = [:]
         String qStatCommand = PBS_COMMAND_QUERY_STATES_FULL
         if (isTrackingOfUserJobsEnabled)
@@ -596,7 +586,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     void addJobStatusChangeListener(BEJob job) {
         synchronized (jobStatusListeners) {
-            jobStatusListeners.put(job.getJobID().toString(), job)
+            jobStatusListeners.put(job.getJobID(), job)
         }
     }
 
@@ -612,53 +602,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             searchID = split[0] + "-" + split[1]
         }
         return PBS_LOGFILE_WILDCARD + searchID
-    }
-
-//    /**
-//     * Returns the path to the jobs logfile (if existing). Otherwise null.
-//     * Throws a runtime exception if more than one logfile exists.
-//     *
-//     * @param readOutJob
-//     * @return
-//     */
-//    @Override
-//    public File getLogFileForJob(ReadOutJob readOutJob) {
-//        List<File> files = Roddy.getInstance().listFilesInDirectory(readOutJob.context.getExecutionDirectory(), Arrays.asList("*" + readOutJob.getJobID()));
-//        if (files.size() > 1)
-//            throw new RuntimeException("There should only be one logfile for this job: " + readOutJob.getJobID());
-//        if (files.size() == 0)
-//            return null;
-//        return files.get(0);
-//    }
-
-    @Override
-    boolean compareJobIDs(String jobID, String id) {
-        if (jobID.length() == id.length()) {
-            return jobID == id
-        } else {
-            String id0 = jobID.split("[.]")[0]
-            String id1 = id.split("[.]")[0]
-            return id0 == id1
-        }
-    }
-
-    @Override
-    String[] peekLogFile(BEJob job) {
-        String user = userIDForQueries
-        String id = job.getJobID()
-        String searchID = id
-        if (id.contains(SBRACKET_LEFT)) {
-            String[] split = id.split(SPLIT_SBRACKET_RIGHT)[0].split(SPLIT_SBRACKET_LEFT)
-            searchID = split[0] + MINUS + split[1]
-        }
-        String cmd = String.format("jobHost=`qstat -f %s  | grep exec_host | cut -d \"/\" -f 1 | cut -d \"=\" -f 2`; ssh %s@${jobHost: 1} 'cat /opt/torque/spool/spool/*'%s'*'", id, user, searchID)
-        ExecutionResult executionResult = executionService.execute(cmd)
-        if (executionResult.successful)
-            return executionResult.resultLines.toArray(new String[0])
-        else if (strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
-            throw new BEException("The execution of ${queryCommand} failed.", null)
-
-        return new String[0]
     }
 
     @Override

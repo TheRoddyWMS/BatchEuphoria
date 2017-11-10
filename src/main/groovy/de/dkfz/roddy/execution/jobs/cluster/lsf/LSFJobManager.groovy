@@ -43,12 +43,12 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter='<'\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
-    public static final String LSF_LOGFILE_WILDCARD = "*.o"
+    public static final String  LSF_LOGFILE_WILDCARD = "*.o"
 
-    protected Map<String, JobState> allStates = [:]
+    protected Map<BEJobID, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
 
-    protected Map<String, BEJob> jobStatusListeners = [:]
+    protected Map<BEJobID, BEJob> jobStatusListeners = [:]
 
     private static ExecutionResult cachedExecutionResult
 
@@ -57,14 +57,14 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<String, JobState> queriedStates = jobIds.collectEntries { String jobId -> [jobId, JobState.UNKNOWN] }
+        Map<BEJobID, JobState> queriedStates = jobIds.collectEntries { BEJobID jobId -> [jobId, JobState.UNKNOWN] }
 
-        for (String jobId in jobIds) {
+        for (BEJobID jobId in jobIds) {
             JobState state
             cacheLock.lock()
             state = allStates[jobId]
@@ -76,12 +76,12 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
 
         if (allStates == null || forceUpdate)
             updateJobStatus(forceUpdate)
 
-        Map<String, JobState> queriedStates = [:]
+        Map<BEJobID, JobState> queriedStates = [:]
         cacheLock.lock()
         queriedStates.putAll(allStates)
         cacheLock.unlock()
@@ -92,18 +92,18 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     @Override
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
 
-        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
-            it.getJobID().toString()
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
+            it.getJobID()
         }, false)
-        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
     }
 
     @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
-        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         updateJobStatus()
-        for (String id : jobIds) {
-            Map.Entry<String, BEJob> job = jobStatusListeners.find { it.key == id }
+        for (BEJobID id : jobIds) {
+            Map.Entry<BEJobID, BEJob> job = jobStatusListeners.find { it.key == id }
             if (job)
                 queriedExtendedStates.put(job.getKey(), job.getValue().getJobInfo())
         }
@@ -133,12 +133,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.loggingDirectory)
-    }
-
-    @Override
-    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
-        throw new NotImplementedException()
+        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.loggingDirectory)
     }
 
     @Override
@@ -151,13 +146,13 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         try {
             cacheLock.lock()
             if (job.wasExecuted() && job.jobManager.isHoldJobsEnabled()) {
-                allStates[job.jobID.getId()] = JobState.HOLD
+                allStates[job.jobID] = JobState.HOLD
             } else if (job.wasExecuted()) {
-                allStates[job.jobID.getId()] = JobState.QUEUED
+                allStates[job.jobID] = JobState.QUEUED
             } else {
-                allStates[job.jobID.getId()] = JobState.FAILED
+                allStates[job.jobID] = JobState.FAILED
             }
-            jobStatusListeners.put(job.jobID.getId(), job)
+            jobStatusListeners.put(job.jobID, job)
         } finally {
             cacheLock.unlock()
         }
@@ -368,7 +363,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         // Queries will then use the id.
 //            allStates[allStates.find { Job job, JobState state -> job.jobID == id }?.key] = status
 //        }
-        allStates.putAll((Map<String, JobState>) allStatesTemp.collectEntries {
+        allStates.putAll((Map<BEJobID, JobState>) allStatesTemp.collectEntries {
             new MapEntry(it.key, (JobState) it.value[0])
         })
         cacheLock.unlock()
@@ -421,7 +416,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         if (job.getJobInfo() != null) {
             jobInfo = job.getJobInfo()
         } else {
-            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.getParentJobIDsAsString())
+            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.parentJobIDs*.id)
         }
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
 
@@ -521,7 +516,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             else {
                 cacheLock.lock()
                 try {
-                    state = allStates[job.getJobID().getId()]
+                    state = allStates[job.getJobID()]
                 } finally {
                     cacheLock.unlock()
                 }
@@ -549,7 +544,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     @Override
     void addJobStatusChangeListener(BEJob job) {
         synchronized (jobStatusListeners) {
-            jobStatusListeners.put(job.getJobID().getId(), job)
+            jobStatusListeners.put(job.getJobID(), job)
         }
     }
 
@@ -559,50 +554,6 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         return LSF_LOGFILE_WILDCARD + id
     }
 
-//    /**
-//     * Returns the path to the jobs logfile (if existing). Otherwise null.
-//     * Throws a runtime exception if more than one logfile exists.
-//     *
-//     * @param readOutJob
-//     * @return
-//     */
-//    @Override
-//    public File getLogFileForJob(ReadOutJob readOutJob) {
-//        List<File> files = Roddy.getInstance().listFilesInDirectory(readOutJob.context.getExecutionDirectory(), Arrays.asList("*" + readOutJob.getJobID()));
-//        if (files.size() > 1)
-//            throw new RuntimeException("There should only be one logfile for this job: " + readOutJob.getJobID());
-//        if (files.size() == 0)
-//            return null;
-//        return files.get(0);
-//    }
-
-    @Override
-    boolean compareJobIDs(String jobID, String id) {
-        if (jobID.length() == id.length()) {
-            return jobID == id
-        } else {
-            String id0 = jobID.split("[.]")[0]
-            String id1 = id.split("[.]")[0]
-            return id0 == id1
-        }
-    }
-
-    @Override
-    String[] peekLogFile(BEJob job) {
-        String user = userIDForQueries
-        String id = job.getJobID()
-        String searchID = id
-        if (id.contains(SBRACKET_LEFT)) {
-            String[] split = id.split(SPLIT_SBRACKET_RIGHT)[0].split(SPLIT_SBRACKET_LEFT)
-            searchID = split[0] + MINUS + split[1]
-        }
-        /*
-        String cmd = String.format("jobHost=`bjobs -f %s  | grep exec_host | cut -d \"/\" -f 1 | cut -d \"=\" -f 2`; ssh %s@${jobHost: 1} 'cat /opt/torque/spool/spool/*'%s'*'", id, user, searchID)
-        ExecutionResult executionResult = executionService.execute(cmd)
-        if (executionResult.successful)
-            return executionResult.resultLines.toArray(new String[0])*/
-        return new String[0]
-    }
 
     @Override
     String parseJobID(String commandOutput) {
