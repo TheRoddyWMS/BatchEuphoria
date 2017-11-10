@@ -39,11 +39,11 @@ class BEJobID implements Comparable<BEJobID> {
         return !BEFakeJobID.isFakeJobID(this.getId()) && getId() != null && getId() != "none"
     }
 
-    public String getId() {
+    String getId() {
         return this.id
     }
 
-    public String getShortID() {
+    String getShortID() {
         return getId()
     }
 
