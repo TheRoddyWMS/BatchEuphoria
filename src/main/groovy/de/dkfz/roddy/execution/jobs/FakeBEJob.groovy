@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
 
@@ -16,11 +17,11 @@ import groovy.transform.CompileStatic
 class FakeBEJob extends BEJob {
 
     FakeBEJob(BEFakeJobID jobID) {
-        super(jobID, 'Fakejob', null, null, "", null, [], [:], null)
+        super(jobID, 'Fakejob', null, null, "", null, [], [:], null, JobLog.none())
     }
 
     FakeBEJob() {
-        super(null, 'Fakejob', null, null, "", null, [], [:], null)
+        super(null, 'Fakejob', null, null, "", null, [], [:], null, JobLog.none())
     }
 
     FakeBEJob(InfoObject context) {
