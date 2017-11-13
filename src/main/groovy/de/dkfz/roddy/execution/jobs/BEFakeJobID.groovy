@@ -6,12 +6,13 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.core.InfoObject;
+import java.util.regex.Pattern
+
+import static de.dkfz.roddy.execution.jobs.BEFakeJobID.FakeJobReason.values
 
 /**
  * Created by heinold on 23.02.17.
  */
-//public class BEFakeJobID extends BEJobID {
 class BEFakeJobID extends BEJobID.FakeJobID {
     /**
      * Various reasons why a job was not executed and is a fake job.
@@ -22,19 +23,19 @@ class BEFakeJobID extends BEJobID.FakeJobID {
         UNDEFINED,
     }
 
-    private FakeJobReason fakeJobReason;
-    private long nanotime;
-    private boolean isArray;
+    private FakeJobReason fakeJobReason
+    private long nanotime
+    private boolean isArray
 
     BEFakeJobID(FakeJobReason fakeJobReason, boolean isArray = false) {
-        super(nextUnknownID(fakeJobReason.toString() + "-"));
-        this.fakeJobReason = fakeJobReason;
-        this.isArray = isArray;
-        nanotime = System.nanoTime();
+        super(nextUnknownID(fakeJobReason.toString() + "-"))
+        this.fakeJobReason = fakeJobReason
+        this.isArray = isArray
+        nanotime = System.nanoTime()
     }
 
     BEFakeJobID() {
-        this(FakeJobReason.UNDEFINED, false);
+        this(FakeJobReason.UNDEFINED, false)
     }
 
     /**
@@ -43,26 +44,27 @@ class BEFakeJobID extends BEJobID.FakeJobID {
      * @return
      */
     @Override
-    public boolean isValidID() {
-        return false;
+    boolean isValidID() {
+        return false
     }
 
     @Override
-    public String getId() {
-        return String.format("%s.%s", getShortID(), fakeJobReason.name());
+    String toString() {
+        return getShortID()
     }
 
-    @Override
-    public String getShortID() {
-        return String.format("0x%08X%s", nanotime, isArray ? "[]" : "");
+    private final static List<Pattern> patterns = values().collect { enumVal ->
+        return Pattern.compile('^' + enumVal.name() + '-\\d+')
     }
 
-    @Override
-    public String toString() {
-        return getShortID();
+    boolean isFakeJobID() {
+        isFakeJobID(this.id)
     }
 
-    public static boolean isFakeJobID(String jobID) {
-        return jobID.startsWith("0x");
+    static boolean isFakeJobID(String id) {
+        return patterns.find { pat ->
+            pat.matcher(id)
+        } as Boolean
     }
+
 }
