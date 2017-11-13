@@ -295,6 +295,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getJobIdVariable()
 
+    abstract String getJobNameVariable()
+
     abstract String getQueueVariable()
 
     abstract String getJobArrayIndexVariable()

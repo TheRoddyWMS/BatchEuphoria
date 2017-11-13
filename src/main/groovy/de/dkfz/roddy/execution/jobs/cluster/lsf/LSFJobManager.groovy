@@ -357,7 +357,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                     }
                 }
             }
-        }else{
+        } else {
             logger.warning("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
             throw new Exception("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
         }
@@ -373,6 +373,42 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         })
         cacheLock.unlock()
     }
+
+    @Override
+    String getJobIdVariable() {
+        return "LSB_JOBID"
+    }
+
+    @Override
+    String getJobNameVariable() {
+        return "LSB_JOBNAME"
+    }
+
+    @Override
+    String getQueueVariable() {
+        return 'LSB_QUEUE'
+    }
+
+    @Override
+    String getJobArrayIndexVariable() {
+        return "LSB_JOBINDEX"
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
+    }
+
 
     static LocalDateTime parseTime(String str) {
         def datePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
