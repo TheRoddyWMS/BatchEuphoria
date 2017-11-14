@@ -128,11 +128,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        throw new NotImplementedException()
-    }
-
-    @Override
     String getNodeFileVariable() {
         throw new NotImplementedException()
     }

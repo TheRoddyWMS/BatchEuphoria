@@ -390,11 +390,6 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        return "LSB_JOBINDEX"
-    }
-
-    @Override
     String getNodeFileVariable() {
         return "LSB_HOSTS"
     }

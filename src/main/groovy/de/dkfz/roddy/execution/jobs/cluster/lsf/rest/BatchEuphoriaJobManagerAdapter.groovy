@@ -44,11 +44,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        return "LSB_JOBINDEX"
-    }
-
-    @Override
     String getNodeFileVariable() {
         return "LSB_HOSTS"
     }

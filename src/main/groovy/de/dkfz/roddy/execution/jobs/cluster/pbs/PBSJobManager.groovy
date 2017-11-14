@@ -462,11 +462,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        return "PBS_ARRAYID"
-    }
-
-    @Override
     String getNodeFileVariable() {
         return "PBS_NODEFILE"
     }
