@@ -6,13 +6,17 @@
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
+import groovy.transform.CompileStatic
 
 /**
  */
+@CompileStatic
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
     public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName())
@@ -30,17 +34,17 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 //    DirectCommand createCommand(GenericJobInfo jobInfo) {
 //        return null
 //    }
-//
+
     @Override
     DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
-        return null
+        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
     }
 
 //    @Override
 //    BEJobID createJobID(BEJob job, String jobResult) {
 //        return new DirectCommandID(jobResult, job)
 //    }
-//
+
 //    @Override
 //    ProcessingParameters convertResourceSet(ResourceSet resourceSet) {
 //        return null
@@ -48,9 +52,9 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 //
 //    @Override
 //    ProcessingParameters parseProcessingCommands(String pCmd) {
-//        return new ProcessingParameters([:])
+//        return new ProcessingParameters(LinkedHashMultimap.create())
 //    }
-//
+
 //    @Override
 //    public ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID) {
 //        return null;
@@ -133,17 +137,35 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     String getJobIdVariable() {
-        return null
+        return ""
     }
 
     @Override
     String getQueueVariable() {
-        return ''
+        return ""
     }
 
     @Override
     String getJobArrayIndexVariable() {
-        return null
+        return ""
+    }
+
+//    @Override
+    String getSpecificJobIDIdentifier() {
+        logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
+        return '"$$"'
+    }
+
+//    @Override
+    String getSpecificJobArrayIndexIdentifier() {
+        logger.severe("BEJob arrays are not supported in " + getClass().getName())
+        return "0"
+    }
+
+//    @Override
+    String getSpecificJobScratchIdentifier() {
+        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
+        return '/data/roddyScratch/$$'
     }
 
     @Override
@@ -186,36 +208,41 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
-        jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]
+        (jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]) as Map<BEJob, JobState>
     }
 
 //    @Override
 //    DirectCommand createCommand(BEJob job, File tool, List<String> dependencies) {
-//        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
+
 //    }
-//
+
     @Override
     BEJobResult runJob(BEJob job) {
         // Some of the parent jobs are in a bad state!
-        Command command = createCommand(job, job.tool, [])
+        Command command = createCommand(job, job.tool, [], [:])
         BEJobResult jobResult
         BEJobID jobID
+        ExecutionResult res
         boolean successful = false
 
         /** For direct execution, there might be parent jobs, which  failed or were aborted. Don't start, if this is the case.  **/
-        if (job.parentJobs.findAll { BEJob pJob -> !(pJob.getJobState() == JobState.COMPLETED_SUCCESSFUL || pJob.getJobState() == JobState.UNKNOWN) }) {
-            jobID = new BEFakeJobID(job, BEFakeJobID.FakeJobReason.NOT_EXECUTED)
+        if (job.parentJobs.findAll {
+            BEJob pJob = it as BEJob
+            !(pJob.getJobState() == JobState.COMPLETED_SUCCESSFUL || pJob.getJobState() == JobState.UNKNOWN)
+        }
+        ) {
+            jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
             command.setExecutionID(jobID)
         } else {
-            def res = executionService.execute(command)
-            jobID = createJobID(job, parseJobID(res.processID))
+            res = executionService.execute(command)
+            jobID = new BEJobID(parseJobID(res.processID))
             successful = res.successful
             if (!successful)
                 logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
         }
 
         command.setExecutionID(jobID)
-        jobResult = new BEJobResult(command, jobID, successful, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+        jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
 
         return jobResult
@@ -223,7 +250,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        return null
+        return new ProcessingParameters(LinkedHashMultimap.create())
     }
 
     @Override
