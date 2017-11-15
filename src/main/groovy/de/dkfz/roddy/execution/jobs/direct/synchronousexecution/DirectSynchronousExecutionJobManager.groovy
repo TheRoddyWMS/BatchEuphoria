@@ -140,29 +140,16 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return ""
     }
 
-//    @Override
-//    String getQueueVariable() {
-//        return ""
-//    }
-
-    @Override
-    String getJobArrayIndexVariable() {
-        return ""
-    }
-
-//    @Override
     String getSpecificJobIDIdentifier() {
         logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
         return '"$$"'
     }
 
-//    @Override
     String getSpecificJobArrayIndexIdentifier() {
         logger.severe("BEJob arrays are not supported in " + getClass().getName())
         return "0"
     }
 
-//    @Override
     String getSpecificJobScratchIdentifier() {
         logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
         return '/data/roddyScratch/$$'
