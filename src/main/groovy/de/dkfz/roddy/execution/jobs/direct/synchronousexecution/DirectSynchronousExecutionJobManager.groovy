@@ -140,10 +140,10 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return ""
     }
 
-    @Override
-    String getQueueVariable() {
-        return ""
-    }
+//    @Override
+//    String getQueueVariable() {
+//        return ""
+//    }
 
     @Override
     String getJobArrayIndexVariable() {
@@ -166,6 +166,15 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     String getSpecificJobScratchIdentifier() {
         logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
         return '/data/roddyScratch/$$'
+    }
+
+    String getJobNameVariable() {
+        return '$'
+    }
+
+    @Override
+    String getQueueVariable() {
+        return ''
     }
 
     @Override

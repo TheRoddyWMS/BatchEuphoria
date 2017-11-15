@@ -164,33 +164,6 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         return job.runResult
     }
 
-    /**
-     * Called by the execution service after a command was executed.
-     */
-    @Override
-    BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
-        BEJobResult jobResult
-        if (res.successful) {
-            String rawId = res.resultLines[0].find("<[0-9]*>")
-            if (rawId == null)
-                throw new BEException("Could not parse raw ID from: '${res.resultLines[0]}'")
-            String exID = rawId.substring(1, rawId.length() - 1)
-            def job = command.getJob()
-            BEJobID jobID = new BEJobID(exID)
-            job.resetJobID(jobID)
-            command.setExecutionID(jobID)
-            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
-        } else {
-            def job = command.getJob()
-            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
-            logger.postAlwaysInfo("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
-            throw new BEException("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
-        }
-        return jobResult
-    }
-
     @Override
     boolean getDefaultForHoldJobsEnabled() { return false }
 
@@ -315,11 +288,9 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                     String[] split = line.split("<")
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
-                    if (logger.isVerbosityHigh()) {
-                        logger.info("QStat Job line: " + line)
-                        logger.info("	Entry in arr[" + ID + "]: " + split[ID])
-                        logger.info("    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE])
-                    }
+                    logger.info(["QStat BEJob line: " + line,
+                                 "	Entry in arr[" + ID + "]: " + split[ID],
+                                 "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
                     String[] idSplit = split[ID].split("[.]")
                     //(idSplit.length <= 1) continue;
@@ -386,7 +357,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                     }
                 }
             }
-        }else{
+        } else {
             logger.warning("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
             throw new Exception("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
         }
@@ -402,6 +373,37 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         })
         cacheLock.unlock()
     }
+
+    @Override
+    String getJobIdVariable() {
+        return "LSB_JOBID"
+    }
+
+    @Override
+    String getJobNameVariable() {
+        return "LSB_JOBNAME"
+    }
+
+    @Override
+    String getQueueVariable() {
+        return 'LSB_QUEUE'
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return "LSB_HOSTS"
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return "LSB_SUB_HOST"
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return "LSB_SUBCWD"
+    }
+
 
     static LocalDateTime parseTime(String str) {
         def datePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
@@ -604,7 +606,11 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
 
     @Override
     String parseJobID(String commandOutput) {
-        return commandOutput
+        String result = commandOutput.find("<[0-9]+>")
+        if (result == null)
+            throw new BEException("Could not parse raw ID from: '${commandOutput}'")
+        String exID = result.substring(1, result.length() - 1)
+        return exID
     }
 
     @Override
