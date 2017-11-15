@@ -285,19 +285,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.jobIDIdentifier = jobIDIdentifier
     }
 
-    String getJobArrayIndexIdentifier() {
-        return jobArrayIndexIdentifier
-    }
-
-    void setJobArrayIndexIdentifier(String jobArrayIndexIdentifier) {
-        this.jobArrayIndexIdentifier = jobArrayIndexIdentifier
-    }
-
     abstract String getJobIdVariable()
 
-    abstract String getQueueVariable()
+    abstract String getJobNameVariable()
 
-    abstract String getJobArrayIndexVariable()
+    abstract String getQueueVariable()
 
     abstract String getNodeFileVariable()
 

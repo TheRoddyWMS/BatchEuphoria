@@ -452,13 +452,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    String getQueueVariable() {
-        return 'PBS_QUEUE'
+    String getJobNameVariable() {
+        return "PBS_JOBNAME"
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        return "PBS_ARRAYID"
+    String getQueueVariable() {
+        return 'PBS_QUEUE'
     }
 
     @Override

@@ -34,8 +34,13 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        return "LSB_JOBINDEX"
+    String getJobNameVariable() {
+        return "LSB_JOBNAME"
+    }
+
+    @Override
+    String getQueueVariable() {
+        return 'LSB_QUEUE'
     }
 
     @Override
@@ -149,11 +154,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
 
     @Override
     String getStringForRunningJob() {
-        throw new NotImplementedException()
-    }
-
-    @Override
-    String getQueueVariable() {
         throw new NotImplementedException()
     }
 

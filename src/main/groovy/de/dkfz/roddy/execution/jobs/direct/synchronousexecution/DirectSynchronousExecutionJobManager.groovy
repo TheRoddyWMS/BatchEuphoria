@@ -118,13 +118,13 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    String getQueueVariable() {
-        return ''
+    String getJobNameVariable() {
+        return '$'
     }
 
     @Override
-    String getJobArrayIndexVariable() {
-        throw new NotImplementedException()
+    String getQueueVariable() {
+        return ''
     }
 
     @Override
