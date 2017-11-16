@@ -55,16 +55,13 @@ public class DirectCommand extends Command {
         StringBuilder commandString = new StringBuilder();
 
         StringBuilder parameterBuilder = new StringBuilder();
-        parameters.each {
-            String pName, String val ->
-                //TODO Code dedup with PBSCommand
-                if (val.contains(DOLLAR_LEFTBRACE) && val.contains(BRACE_RIGHT)) {
-                    val = val.replace(DOLLAR_LEFTBRACE, "#{"); // Replace variable names so they can be passed to qsub.
-                }
-                parameterBuilder << " ${pName}=${val}";
-        }
 
-//        parameterBuilder << StringConstants.WHITESPACE << PARM_WRAPPED_SCRIPT << command;
+        // Taken from PBSCommand. Really needs to be unified!
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            parameterBuilder << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << " PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
+        } else {
+            parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
+        }
 
         //TODO Log handling
 

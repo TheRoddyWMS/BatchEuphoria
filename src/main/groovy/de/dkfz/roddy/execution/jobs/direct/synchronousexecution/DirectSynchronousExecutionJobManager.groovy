@@ -6,55 +6,78 @@
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import groovy.transform.CompileStatic
 
 /**
  */
+@CompileStatic
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
-    public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName());
+    public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName())
 
-    public DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
-        super(executionService, parms);
+    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+        super(executionService, parms)
     }
 
     @Override
-    public void createUpdateDaemonThread(int interval) {
+    void createUpdateDaemonThread(int interval) {
         //Not necessary, a command / job knows its state in local execution
     }
 
+//    @Override
+//    DirectCommand createCommand(GenericJobInfo jobInfo) {
+//        return null
+//    }
+
     @Override
-    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
-        return null;
+    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
+        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
+    }
+
+//    @Override
+//    BEJobID createJobID(BEJob job, String jobResult) {
+//        return new DirectCommandID(jobResult, job)
+//    }
+
+//    @Override
+//    ProcessingParameters convertResourceSet(ResourceSet resourceSet) {
+//        return null
+//    }
+//
+//    @Override
+//    ProcessingParameters parseProcessingCommands(String pCmd) {
+//        return new ProcessingParameters(LinkedHashMultimap.create())
+//    }
+
+//    @Override
+//    public ProcessingCommands getProcessingCommandsFromConfiguration(Configuration configuration, String toolID) {
+//        return null;
+//    }
+
+//    @Override
+//    ProcessingParameters extractProcessingCommandsFromToolScript(File file) {
+//        return null
+//    }
+//
+    @Override
+    BEJob parseToJob(String commandString) {
+        return null
     }
 
     @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        return null;
+    GenericJobInfo parseGenericJobInfo(String command) {
+        return null
     }
 
     @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        return null;
-    }
-
-    @Override
-    public BEJob parseToJob(String commandString) {
-        return null;
-    }
-
-    @Override
-    public GenericJobInfo parseGenericJobInfo(String command) {
-        return null;
-    }
-
-    @Override
-    public BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
-        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()");
+    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
+        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()")
     }
 
 //    @Override
@@ -73,51 +96,65 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 //    }
 
     @Override
-    public void updateJobStatus() {
+    void updateJobStatus() {
 
     }
 
     @Override
-    public void queryJobAbortion(List<BEJob> executedJobs) {
+    void queryJobAbortion(List<BEJob> executedJobs) {
 
     }
 
     @Override
-    public void addJobStatusChangeListener(BEJob job) {
+    void addJobStatusChangeListener(BEJob job) {
 
     }
 
     @Override
-    public String getLogFileWildcard(BEJob job) {
-        return "*";
+    String getLogFileWildcard(BEJob job) {
+        return "*"
     }
 
     @Override
-    public boolean compareJobIDs(String jobID, String id) {
-        return jobID.equals(id);
+    boolean compareJobIDs(String jobID, String id) {
+        return jobID.equals(id)
     }
 
     @Override
-    public String getStringForQueuedJob() {
-        return null;
+    String getStringForQueuedJob() {
+        return null
     }
 
     @Override
-    public String getStringForJobOnHold() {
-        return null;
+    String getStringForJobOnHold() {
+        return null
     }
 
     @Override
-    public String getStringForRunningJob() {
-        return null;
+    String getStringForRunningJob() {
+        return null
     }
 
     @Override
     String getJobIdVariable() {
-        return '$'
+        return ""
     }
 
-    @Override
+    String getSpecificJobIDIdentifier() {
+        logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
+        return '"$$"'
+    }
+
+    String getSpecificJobArrayIndexIdentifier() {
+        logger.severe("BEJob arrays are not supported in " + getClass().getName())
+        return "0"
+    }
+
+    String getSpecificJobScratchIdentifier() {
+        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
+        return '/data/roddyScratch/$$'
+    }
+
     String getJobNameVariable() {
         return '$'
     }
@@ -129,91 +166,137 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     String getNodeFileVariable() {
-        throw new NotImplementedException()
+        return null
     }
 
     @Override
     String getSubmitHostVariable() {
-        throw new NotImplementedException()
+        return null
     }
 
     @Override
     String getSubmitDirectoryVariable() {
-        return "PWD"
-    }
-
-    @Override
-    public String[] peekLogFile(BEJob job) {
-        return new String[0];
+        return null
     }
 
 //    @Override
-//    public void queryJobAbortion(List executedJobs,BEExecutionService executionService) {
-//        TODO something with kill
+//    String getSpecificJobIDIdentifier() {
+//        logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
+//        return '"$$"'
+//    }
+
+//    @Override
+//    String getSpecificJobArrayIndexIdentifier() {
+//        logger.severe("BEJob arrays are not supported in " + getClass().getName())
+//        return "0"
+//    }
+
+//    @Override
+//    String getSpecificJobScratchIdentifier() {
+//        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
+//        return '/data/roddyScratch/$$'
 //    }
 
     @Override
-    public Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
-        jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: []
+    String[] peekLogFile(BEJob job) {
+        return new String[0]
     }
 
     @Override
-    public DirectCommand createCommand(BEJob job, File tool, List<String> parentJobs, Map<String, String> parameters) {
-        return new DirectCommand(this, job, tool.getName(), null, parameters(), null, null, parentJobs, tool.getAbsolutePath(), new File("/tmp"));
-    }
-
-    @Override
-    public BEJobResult runJob(BEJob job) {
-        return null;
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
+        (jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]) as Map<BEJob, JobState>
     }
 
 //    @Override
-//    public DirectCommand createCommand(BEJob job, ExecutionContext run, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
-//        return new DirectCommand(job, run, jobName, processingCommands, parameters, dependencies, arraySettings, tool.getAbsolutePath());
+//    DirectCommand createCommand(BEJob job, File tool, List<String> dependencies) {
+
 //    }
 
     @Override
-    public boolean executesWithoutJobSystem() {
-        return true;
+    BEJobResult runJob(BEJob job) {
+        // Some of the parent jobs are in a bad state!
+        Command command = createCommand(job, job.tool, [], [:])
+        BEJobResult jobResult
+        BEJobID jobID
+        ExecutionResult res
+        boolean successful = false
+
+        /** For direct execution, there might be parent jobs, which  failed or were aborted. Don't start, if this is the case.  **/
+        if (job.parentJobs.findAll {
+            BEJob pJob = it as BEJob
+            !(pJob.getJobState() == JobState.COMPLETED_SUCCESSFUL || pJob.getJobState() == JobState.UNKNOWN)
+        }
+        ) {
+            jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
+            command.setExecutionID(jobID)
+        } else {
+            res = executionService.execute(command)
+            jobID = new BEJobID(parseJobID(res.processID))
+            successful = res.successful
+            if (!successful)
+                logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
+        }
+
+        command.setExecutionID(jobID)
+        jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+        job.setRunResult(jobResult)
+
+        return jobResult
     }
 
     @Override
-    public String parseJobID(String commandOutput) {
-        return commandOutput;
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        return new ProcessingParameters(LinkedHashMultimap.create())
     }
-    //    @Override
-//    public DirectCommand createCommand(BEJob job, ExecutionContext run, String jobName, List<ProcessingCommands> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies, List<String> arraySettings) {
+
+    @Override
+    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
+        return null
+    }
+
+    @Override
+    boolean executesWithoutJobSystem() {
+        return true
+    }
+
+    @Override
+    String parseJobID(String commandOutput) {
+        return commandOutput
+    }
+
+    @Override
+    String getSubmissionCommand() {
+        return null
+    }
+
+//    @Override
+//    File getLoggingDirectoryForJob(BEJob job) {
+//        return executionService.queryWorkingDirectory()
+//    }
 //
-//    }
-
     @Override
-    public String getSubmissionCommand() {
-        return null;
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
+        return null
     }
 
     @Override
-    public Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
-        return null;
+    Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
+        return null
     }
 
     @Override
-    public Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null;
+    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
+        return null
     }
 
     @Override
-    public Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
-        return null;
+    Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+        return null
     }
 
     @Override
-    public Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-        return null;
-    }
-
-    @Override
-    public Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
-        return null;
+    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+        return null
     }
 
     @Override

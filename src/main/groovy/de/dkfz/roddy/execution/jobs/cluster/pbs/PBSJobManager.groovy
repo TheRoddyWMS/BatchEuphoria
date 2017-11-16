@@ -441,7 +441,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return PBS_JOBSTATE_RUNNING
     }
 
-//    @Override
     String getStringForCompletedJob() {
         return PBS_JOBSTATE_COMPLETED_UNKNOWN
     }
