@@ -24,7 +24,7 @@ import java.util.Map
 class SGECommand extends PBSCommand {
 
     SGECommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
-        super(parentManager, job, id, processingCommands, parameters, tags, arrayIndices, dependencyIDs, command, loggingDirectory)
+        super(parentManager, job, id, processingCommands, parameters, tags, arrayIndices, dependencyIDs, command)
     }
 
     @Override

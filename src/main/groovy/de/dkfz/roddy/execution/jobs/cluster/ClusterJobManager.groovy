@@ -42,13 +42,13 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     @Override
     int waitForJobsToFinish() {
         logger.info("The user requested to wait for all jobs submitted by this process to finish.")
-        List<String> ids = new LinkedList<>()
+        List<BEJobID> ids = new LinkedList<>()
         synchronized (listOfCreatedCommands) {
             for (Object _command : listOfCreatedCommands) {
                 PBSCommand command = (PBSCommand) _command
                 if (command.getJob() instanceof FakeBEJob)
                     continue
-                ids.add(command.getExecutionID().getShortID())
+                ids.add(command.getExecutionID())
             }
         }
 
@@ -56,10 +56,10 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         while (isRunning) {
 
             isRunning = false
-            Map<String, JobState> stringJobStateMap = queryJobStatusById(ids, true)
-            for (String s : stringJobStateMap.keySet()) {
+            Map<BEJobID, JobState> stringJobStateMap = queryJobStatusById(ids, true)
+            for (BEJobID s : stringJobStateMap.keySet()) {
                 if (stringJobStateMap.get(s) != null)
-                    logger.info(s + " = " + stringJobStateMap.get(s))
+                    logger.info(s.id + " = " + stringJobStateMap.get(s))
             }
             for (JobState js : stringJobStateMap.values()) {
                 if (js == null) //Only one job needs to be active.

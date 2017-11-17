@@ -540,15 +540,15 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
 
-        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
             it.getJobID()
         }, false)
-        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
     }
 
     @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
-        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         String qStatCommand = PBS_COMMAND_QUERY_STATES_FULL
         if (isTrackingOfUserJobsEnabled)
             qStatCommand += " -u $userIDForQueries "
@@ -652,8 +652,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    private Map<String, GenericJobInfo> processQstatOutput(List<String> resultLines) {
-        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+    private Map<BEJobID, GenericJobInfo> processQstatOutput(List<String> resultLines) {
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         Map<String, Map<String, String>> qstatReaderResult = this.readQstatOutput(resultLines.join("\n"))
 
         qstatReaderResult.each { it ->
@@ -713,7 +713,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 if (jobResult.get("etime"))  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
                     catchExceptionAndLog { gj.setEligibleTime(parseTime(jobResult.get("etime"))) }
 
-                return queriedExtendedStates.put(it.getKey(), gj)
+                return queriedExtendedStates.put(new BEJobID(it.getKey()), gj)
 
         }
 

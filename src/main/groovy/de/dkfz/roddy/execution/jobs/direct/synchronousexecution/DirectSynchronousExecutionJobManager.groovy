@@ -32,7 +32,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
-        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
+        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath())
     }
 
     @Override
@@ -129,12 +129,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return null
     }
 
-
-    @Override
-    String[] peekLogFile(BEJob job) {
-        return new String[0]
-    }
-
     @Override
     Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
         (jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]) as Map<BEJob, JobState>
@@ -213,7 +207,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    Map<BEJobID, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
         return null;
     }
 

@@ -361,7 +361,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
 //            allStates[allStates.find { Job job, JobState state -> job.jobID == id }?.key] = status
 //        }
         allStates.putAll((Map<BEJobID, JobState>) allStatesTemp.collectEntries {
-            new MapEntry(it.key, (JobState) it.value[0])
+            new MapEntry(new BEJobID(it.key), (JobState) it.value[0])
         })
         cacheLock.unlock()
     }

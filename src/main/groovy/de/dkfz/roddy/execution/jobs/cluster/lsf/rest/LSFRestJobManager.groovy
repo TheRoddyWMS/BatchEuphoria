@@ -362,7 +362,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * Retrieve job status for given job ids
      * @param list of job ids
      */
-    Map<String, JobState> getJobStats(List<String> jobIds) {
+    Map<BEJobID, JobState> getJobStats(List<BEJobID> jobIds) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
@@ -370,19 +370,19 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             logger.info("status code: " + result.statusCode + " result:" + result.body)
-            Map<String, JobState> resultStates = [:]
+            Map<BEJobID, JobState> resultStates = [:]
             res.getProperty("pseudoJob").each { NodeChild element ->
                 String jobId = null
                 if (jobIds) {
                     jobId = jobIds.find {
-                        it.equalsIgnoreCase(element.getProperty("jobId").toString())
+                        it.id.equalsIgnoreCase(element.getProperty("jobId").toString())
                     }
                 } else {
                     jobId = element.getProperty("jobId").toString()
                 }
 
                 if (jobId) {
-                    resultStates.put(jobId, parseJobState(element.getProperty("jobStatus").toString()))
+                    resultStates.put(new BEJobID(jobId), parseJobState(element.getProperty("jobStatus").toString()))
                 }
             }
             return resultStates
@@ -505,29 +505,29 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
         return getJobStats(jobIds)
     }
 
     @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
         return getJobStats(null)
     }
 
     @Override
     Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
 
-        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
-            it.getJobID().toString()
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
+            it.getJobID()
         }, false)
-        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID().getId() == it.key }, (GenericJobInfo) it.value] }
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
     }
 
 
     @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
         List<BEJob> jobs = []
-        Map<String, GenericJobInfo> queriedExtendedStates = [:]
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (String id : jobIds) {
             Map.Entry<String, BEJob> job = jobStatusListeners.find { it.key == id }
             if (job)
@@ -536,7 +536,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (jobs.size() != 0) {
             getJobDetails(jobs)
             for (BEJob job : jobs) {
-                queriedExtendedStates.put(job.getJobID().getId(), job.getJobInfo())
+                queriedExtendedStates.put(job.getJobID(), job.getJobInfo())
             }
         }
         return queriedExtendedStates

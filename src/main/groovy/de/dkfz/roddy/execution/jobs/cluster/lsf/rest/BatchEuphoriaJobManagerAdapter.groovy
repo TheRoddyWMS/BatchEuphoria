@@ -29,6 +29,11 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
+    LSFCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs) {
+        return null
+    }
+
+    @Override
     String getJobIdVariable() {
         return "LSB_JOBID"
     }
