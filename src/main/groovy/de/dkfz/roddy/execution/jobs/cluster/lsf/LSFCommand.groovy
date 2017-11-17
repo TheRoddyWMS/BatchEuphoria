@@ -26,19 +26,12 @@ class LSFCommand extends Command {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
 
-    public static final String PARM_LOGPATH = " -eo "
-    public static final String PARM_OUTPATH = " -oo "
     public static final String BSUB = "bsub"
     public static final String PARM_DEPENDS = " -ti -w "  // -ti: Immediate orphan job termination for jobs with failed dependencies.
     public static final String PARM_MAIL = " -u "
     public static final String PARM_VARIABLES = " -env "
     public static final String PARM_JOBNAME = " -J "
     public static final String PARM_GROUPLIST = " -G"
-
-    /**
-     * The bsub log directoy where all output is put
-     */
-    protected File loggingDirectory
 
     /**
      * The command which should be called
@@ -62,12 +55,10 @@ class LSFCommand extends Command {
      * @param command
      * @param filesToCheck
      */
-    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command) {
         super(parentManager, job, id, parameters, tags)
         this.processingParameters = processingParameters
         this.command = command
-        assert (null != loggingDirectory)
-        this.loggingDirectory = loggingDirectory
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 
@@ -78,7 +69,7 @@ class LSFCommand extends Command {
 
     }
 
-    private String getLoggingParameter(JobLog jobLog) {
+    static String getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
             return "-o /dev/null"
         } else if (!jobLog.error) {
@@ -119,10 +110,21 @@ class LSFCommand extends Command {
     String toString() {
 
         String email = parentJobManager.getUserEmail()
-        String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
-        String accountName = parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
+
+        List<String> parameters = []
+        parameters << assembleResources()
+        parameters << ("${PARM_JOBNAME} ${id}" as String)
+        if (holdJobsOnStart) parameters << "-H"
+        parameters << getAdditionalCommandParameters()
+        parameters << ("-cwd ${getWorkingDirectory()}" as String)
+        parameters << getLoggingParameter(job.jobLog)
+        if (email) parameters << getEmailParameter(email)
+        if (groupList && groupList != "UNDEFINED") parameters << getGroupListString(groupList)
+        parameters << assembleProcessingCommands()
+        parameters << prepareParentJobs(job.getParentJobIDs())
+        parameters << assembleVariableExportString()
 
         StringBuilder bsubCall = new StringBuilder(EMPTY)
 
@@ -130,25 +132,8 @@ class LSFCommand extends Command {
             bsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
         }
 
-        bsubCall << BSUB << assembleResources() << PARM_JOBNAME << id
-
-        if (holdJobsOnStart) bsubCall << " -H "
-
-        bsubCall << getAdditionalCommandParameters()
-
-        bsubCall << "-cwd " << getWorkingDirectory()
-
-        bsubCall << getLoggingParameter(job.jobLog)
-
-        if (email) bsubCall << getEmailParameter(email)
-
-        if (groupList && groupList != "UNDEFINED") bsubCall << getGroupListString(groupList)
-
-        bsubCall << assembleProcessingCommands()
-
-        bsubCall << prepareParentJobs(job.getParentJobIDs())
-
-        bsubCall << assembleVariableExportString()
+        bsubCall << BSUB
+        bsubCall << " ${parameters.join(" ")} "
 
         if (job.getTool()) {
             bsubCall << " " << job.getTool().getAbsolutePath()
@@ -158,14 +143,14 @@ class LSFCommand extends Command {
     }
 
 
-    StringBuilder assembleResources() {
+    String assembleResources() {
         StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
         if (job.resourceSet.isCoresSet()) {
             int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
             resources.append(" affinity[core(${cores})]")
         }
         resources.append("\' ")
-        return resources
+        return resources.toString()
     }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.

@@ -71,7 +71,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     PBSCommand createCommand(BEJob job) {
-        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
+        return new PBSCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override
@@ -687,8 +687,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
                 gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
 
-                gj.setOutFile(jobResult.get("Output_Path"))
-                gj.setErrorFile(jobResult.get("Error_Path"))
+                gj.setOutFile(getQstatFile(jobResult.get("Output_Path")))
+                gj.setErrorFile(getQstatFile(jobResult.get("Error_Path")))
                 gj.setUser(jobResult.get("euser"))
                 gj.setExecutionHosts(jobResult.get("exec_host"))
                 gj.setSubmissionHost(jobResult.get("submit_host"))
@@ -718,6 +718,18 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         return queriedExtendedStates
+    }
+
+    private static File getQstatFile(String s) {
+        if (!s) {
+            return null
+        } else if (s.startsWith("/")) {
+            return new File(s)
+        } else if (s =~ /^[\w-]:\//) {
+            return new File(s.replaceAll(/^[\w-]:/, ""))
+        } else {
+            return null
+        }
     }
 
     @Override

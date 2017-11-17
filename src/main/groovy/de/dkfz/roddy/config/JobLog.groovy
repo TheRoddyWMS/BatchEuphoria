@@ -45,9 +45,9 @@ class JobLog {
         this.error = err
     }
     public String getOut() {
-        out.path
+        out?.path
     }
     public String getError() {
-        error.path
+        error?.path
     }
 }

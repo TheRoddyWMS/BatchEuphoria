@@ -128,7 +128,7 @@ abstract class Command {
     }
 
 
-    StringBuilder assembleProcessingCommands() {
+    String assembleProcessingCommands() {
         StringBuilder bsubCall = new StringBuilder()
         for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
             if (!(pcmd instanceof ProcessingParameters)) continue
@@ -137,7 +137,7 @@ abstract class Command {
                 continue
             bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
         }
-        return bsubCall
+        return bsubCall.toString()
     }
 
     public static final String escapeBash(final String input) {

@@ -13,14 +13,11 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.BatchEuphoriaJobManagerAdapter
 import de.dkfz.roddy.tools.*
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.locks.ReentrantLock
-
-import static de.dkfz.roddy.StringConstants.*
 
 /**
  * Factory for the management of LSF cluster systems.
@@ -41,7 +38,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -a -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots delimiter='<'\""
+            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file delimiter='<'\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String  LSF_LOGFILE_WILDCARD = "*.o"
 
@@ -133,7 +130,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.loggingDirectory)
+        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override
@@ -448,8 +445,9 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
             jobInfo.setPendReason(!jobResult[23].toString().equals("-") ? jobResult[23] : null)
             jobInfo.setExecCwd(!jobResult[24].toString().equals("-") ? jobResult[24] : null)
-            jobInfo.setOutFile(!jobResult[25].toString().equals("-") ? jobResult[25] : null)
-            jobInfo.setInFile(!jobResult[26].toString().equals("-") ? jobResult[26] : null)
+            jobInfo.setOutFile(getBjobsFile(jobResult[25], job, "out"))
+            jobInfo.setErrorFile(getBjobsFile(jobResult[30], job, "err"))
+            jobInfo.setInFile(!jobResult[26].toString().equals("-") ? new File(jobResult[26]) : null)
             jobInfo.setResourceReq(!jobResult[27].toString().equals("-") ? jobResult[27] : null)
             jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
             job.setJobInfo(jobInfo)
@@ -460,6 +458,16 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                 catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear())) }
             if (!jobResult[15].toString().equals("-"))
                 catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear())) }
+    }
+
+    private File getBjobsFile(String s, BEJob job, String type) {
+        if (!s || s == "-") {
+            return null
+        } else if (executionService.execute("stat -c %F ${Command.escapeBash(s)}").firstLine == "directory") {
+            return new File(s, "${job.jobID.id}.${type}")
+        } else {
+            return new File(s)
+        }
     }
 
 

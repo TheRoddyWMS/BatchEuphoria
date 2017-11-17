@@ -33,9 +33,9 @@ class GenericJobInfo {
     String submissionHost;
     String priority;
 
-    String outFile;
-    String inFile;
-    String errorFile
+    File outFile
+    File inFile
+    File errorFile
 
     String user;
     String userGroup;

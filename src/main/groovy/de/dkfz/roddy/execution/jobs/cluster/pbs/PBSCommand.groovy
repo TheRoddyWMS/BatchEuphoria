@@ -46,11 +46,6 @@ class PBSCommand extends Command {
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
     /**
-     * The qsub log directoy where all output is put
-     */
-    protected File loggingDirectory
-
-    /**
      * The command which should be called
      */
     protected String command
@@ -72,11 +67,10 @@ class PBSCommand extends Command {
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command) {
         super(parentManager, job, id, parameters, tags)
         this.processingParameters = processingParameters
         this.command = command
-        this.loggingDirectory = loggingDirectory
         this.arrayIndices = arrayIndices ?: new LinkedList<String>()
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
@@ -147,37 +141,29 @@ class PBSCommand extends Command {
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
+        List<String> parameters = []
+        parameters << ("${PARM_JOBNAME} ${id}" as String)
+        if (holdJobsOnStart) parameters << "-h"
+        if (accountName) parameters << ("${PARM_ACCOUNT} ${accountName}" as String)
+        parameters << getAdditionalCommandParameters()
+        parameters << ("-w ${getWorkingDirectory()}" as String)
+        parameters << getLoggingParameter(job.jobLog)
+        if (isArray) parameters << assembleArraySettings()
+        if (email) parameters << getEmailParameter(email)
+        if (groupList && groupList != "UNDEFINED") parameters << getGroupListString(groupList)
+        if (umask) parameters << getUmaskString(umask)
+        parameters << assembleProcessingCommands()
+        parameters << assembleDependencyString()
+        parameters << assembleVariableExportString()
+
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
             qsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
         }
 
-        qsubCall << QSUB << PARM_JOBNAME << id
-
-        if (holdJobsOnStart) qsubCall << " -h "
-
-        if (accountName) qsubCall << PARM_ACCOUNT << accountName << " "
-
-        qsubCall << getAdditionalCommandParameters()
-
-        qsubCall << "-w " << getWorkingDirectory()
-
-        qsubCall << getLoggingParameter(job.jobLog)
-
-        if (isArray) qsubCall << assembleArraySettings()
-
-        if (email) qsubCall << getEmailParameter(email)
-
-        if (groupList && groupList != "UNDEFINED") qsubCall << getGroupListString(groupList)
-
-        if (umask) qsubCall << getUmaskString(umask)
-
-        qsubCall << assembleProcessingCommands()
-
-        qsubCall << assembleDependencyString()
-
-        qsubCall << assembleVariableExportString()
+        qsubCall << QSUB
+        qsubCall << " ${parameters.join(" ")} "
 
         if (job.getTool()) {
             qsubCall << " " << job.getTool().getAbsolutePath()
@@ -186,7 +172,7 @@ class PBSCommand extends Command {
         return qsubCall
     }
 
-    StringBuilder assembleArraySettings() {
+    String assembleArraySettings() {
         StringBuilder qsubCall = new StringBuilder(" -t ")
         StringBuilder sbArrayIndices = new StringBuilder("")
         //TODO Make a second list of array indices, which is valid for job submission. The current translation with the help of counting is not optimal!
@@ -200,7 +186,7 @@ class PBSCommand extends Command {
             i++
         }
         qsubCall << sbArrayIndices.toString()[0..-2]
-        return qsubCall
+        return qsubCall.toString()
     }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.

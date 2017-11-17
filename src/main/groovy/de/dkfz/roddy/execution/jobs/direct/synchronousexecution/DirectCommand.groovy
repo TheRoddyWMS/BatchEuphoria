@@ -26,18 +26,16 @@ public class DirectCommand extends Command {
     private final List<String> arrayIndices;
     private final List<String> dependencyIDs;
     private final String command;
-    private final File loggingDirectory
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
 
-    DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
+    DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command) {
         super(parentManager, job, id, parameters, tags)
         //, processingCommands, tool, parameters, dependencies, arraySettings);
         this.processingParameters = processingParameters;
         this.arrayIndices = arrayIndices;
         this.dependencyIDs = dependencyIDs;
         this.command = command;
-        this.loggingDirectory = loggingDirectory
     }
 
     /**

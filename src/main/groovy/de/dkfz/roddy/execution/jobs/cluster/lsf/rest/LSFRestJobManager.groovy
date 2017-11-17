@@ -8,10 +8,12 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.*
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -255,16 +257,14 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             resources.append(" affinity[core(${cores})]")
         }
         resources.append("' ")
-        StringBuilder logging = new StringBuilder("")
-        if(job.getWorkingDirectory()) logging.append("-cwd ${job.getWorkingDirectory()}")
-        if (job.loggingDirectory) logging.append("-oo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
-        if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
+        String logging = LSFCommand.getLoggingParameter(job.jobLog)
+        String cwd = job.getWorkingDirectory() ? "-cwd ${job.getWorkingDirectory()} " : ""
 
         String parentJobs = ""
         if (job.parentJobIDs) {
             parentJobs = prepareParentJobs(job.parentJobIDs)
         }
-        return logging + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs
+        return logging + cwd + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs
     }
 
     /**
@@ -436,8 +436,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
         jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
         jobInfo.setPriority(jobDetails.getProperty("priority").toString())
-        jobInfo.setOutFile(jobDetails.getProperty("outFile").toString())
-        jobInfo.setInFile(jobDetails.getProperty("inFile").toString())
+        jobInfo.setOutFile(new File(jobDetails.getProperty("outFile").toString()))
+        jobInfo.setInFile(new File(jobDetails.getProperty("inFile").toString()))
         jobInfo.setResourceReq(jobDetails.getProperty("resReq").toString())
         jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
         jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())

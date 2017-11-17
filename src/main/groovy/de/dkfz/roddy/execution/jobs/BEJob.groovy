@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
 class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
-    private static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
+
     protected JobType jobType = JobType.STANDARD
 
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
@@ -95,10 +95,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     // Now come some job / command specific settings
     //////////////////////////////////////////////////////////////
 
-    /**
-     * The custom job log directory. If it is not set, the job manager default will be used (if supported)
-     */
-    protected File loggingDirectory
     protected File workingDirectory
 
     /**
@@ -135,6 +131,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.jobManager = jobManager
         assert jobLog : "jobLog not set"
         this.jobLog = jobLog
+        //TODO add working dir??
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
@@ -218,22 +215,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return parentJobs.collect { it.getJobID() }
     }
 
-
-    void setLoggingDirectory(File loggingDirectory) {
-        this.loggingDirectory = loggingDirectory
-    }
-
-    File getLoggingDirectory() {
-        if (this.loggingDirectory)
-            return this.loggingDirectory
-        else
-            return jobManager.getDefaultLoggingDirectory()
-    }
-
-    void setWorkingDirectory(File workingDirectory) {
-        this.workingDirectory = workingDirectory
-    }
-
     File getWorkingDirectory() {
         return this.workingDirectory
     }
@@ -308,6 +289,4 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     int compareTo(BEJob o) {
         return this.jobID.compareTo(o.jobID)
     }
-
-
 }

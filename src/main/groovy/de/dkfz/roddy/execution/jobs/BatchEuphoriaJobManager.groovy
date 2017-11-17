@@ -55,6 +55,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private Boolean isHoldJobsEnabled = null
 
+    private File defaultLoggingDirectory
+
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         this.executionService = executionService
 
@@ -328,10 +330,15 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getSubmissionCommand()
 
+
+    // ???
     File getDefaultLoggingDirectory() {
-        return executionService.queryWorkingDirectory()
+        return defaultLoggingDirectory
     }
 
+    void setDefaultLoggingDirectory(File file) {
+        this.defaultLoggingDirectory = file
+    }
 
     abstract JobState parseJobState(String stateString)
 
