@@ -51,12 +51,11 @@ class LSFCommand extends Command {
      *
      * @param id
      * @param parameters
-     * @param arrayIndices
      * @param command
      * @param filesToCheck
      */
-    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command) {
-        super(parentManager, job, id, parameters, tags)
+    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
+        super(parentManager, job, id, parameters)
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()

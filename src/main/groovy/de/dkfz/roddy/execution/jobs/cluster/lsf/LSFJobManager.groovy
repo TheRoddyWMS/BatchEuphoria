@@ -11,7 +11,6 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.BatchEuphoriaJobManagerAdapter
 import de.dkfz.roddy.tools.*
 
 import java.time.Duration
@@ -25,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock
  *
  */
 @groovy.transform.CompileStatic
-class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
+class LSFJobManager extends AbstractLSFJobManager {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFJobManager.class.getSimpleName())
 
@@ -38,71 +37,22 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -a -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file delimiter='<'\""
+            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency delimiter='<'\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String  LSF_LOGFILE_WILDCARD = "*.o"
 
     protected Map<BEJobID, JobState> allStates = [:]
     private static final ReentrantLock cacheLock = new ReentrantLock()
 
-    protected Map<BEJobID, BEJob> jobStatusListeners = [:]
-
-    private static ExecutionResult cachedExecutionResult
-
     protected String getQueryCommand() {
         return LSF_COMMAND_QUERY_STATES
     }
 
     @Override
-    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
-
-        if (allStates == null || forceUpdate)
-            updateJobStatus(forceUpdate)
-
-        Map<BEJobID, JobState> queriedStates = jobIds.collectEntries { BEJobID jobId -> [jobId, JobState.UNKNOWN] }
-
-        for (BEJobID jobId in jobIds) {
-            JobState state
-            cacheLock.lock()
-            state = allStates[jobId]
-            cacheLock.unlock()
-            if (state) queriedStates[jobId] = state
-        }
-
-        return queriedStates
-    }
-
-    @Override
-    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
-
-        if (allStates == null || forceUpdate)
-            updateJobStatus(forceUpdate)
-
-        Map<BEJobID, JobState> queriedStates = [:]
-        cacheLock.lock()
-        queriedStates.putAll(allStates)
-        cacheLock.unlock()
-
-        return queriedStates
-    }
-
-    @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-
-        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
-            it.getJobID()
-        }, false)
-        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value] }
-    }
-
-    @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        updateJobStatus()
         for (BEJobID id : jobIds) {
-            Map.Entry<BEJobID, BEJob> job = jobStatusListeners.find { it.key == id }
-            if (job)
-                queriedExtendedStates.put(job.getKey(), job.getValue().getJobInfo())
+            queriedExtendedStates.put(id,getJobInfo(id))
         }
         return queriedExtendedStates
     }
@@ -130,7 +80,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
+        return new LSFCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override
@@ -149,7 +99,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
             } else {
                 allStates[job.jobID] = JobState.FAILED
             }
-            jobStatusListeners.put(job.jobID, job)
+            addJobStatusChangeListener(job)
         } finally {
             cacheLock.unlock()
         }
@@ -201,70 +151,38 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    BEJob parseToJob(String commandString) {
-//        return null
-        GenericJobInfo jInfo = parseGenericJobInfo(commandString)
-        //BEJob job = new BEJob(jInfo.getJobName(), jInfo.getTool(), null, "", null, [], jInfo.getParameters(), null, jInfo.getParentJobIDs().collect {
-        //      new BEJobID(null, job)
-        //  } as List<de.dkfz.roddy.execution.jobs.BEJobDependencyID>, this);
-
-        //Autmatically get the status of the job and if it is planned or running add it as a job status listener.
-//        String shortID = job.getJobID()
-//        job.setJobState(queryJobStatus(Arrays.asList(shortID)).get(shortID))
-//        if (job.getJobState().isPlannedOrRunning()) addJobStatusChangeListener(job)
-
-        return null
-    }
-
-    @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
         return new LSFCommandParser(commandString).toGenericJobInfo();
     }
 
-    @Override
-    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
-        return null
+    protected Map<BEJobID, JobState> getJobStates(List<BEJobID> jobIDs) {
+        runBjobs(jobIDs).collectEntries { BEJobID jobID, String[] value->
+            JobState js = parseJobState(value[getPositionOfJobState()])
+            if (logger.isVerbosityHigh())
+                logger.postAlwaysInfo("   Extracted jobState: " + js.toString())
+            [(jobID): js]
+        } as Map<BEJobID, JobState>
+
     }
 
-    @Override
-    /**
-     * Queries the jobs states.
-     *
-     * @return
-     */
-    void updateJobStatus() {
-        updateJobStatus(false)
-    }
-
-    protected void updateJobStatus(boolean forceUpdate) {
-
+    private Map<BEJobID, String[]> runBjobs(List<BEJobID> jobIDs) {
         if (!executionService.isAvailable())
             return
 
         String queryCommand = getQueryCommand()
 
-        if (queryOnlyStartedJobs && listOfCreatedCommands.size() < 10) {
-            for (Object _l : listOfCreatedCommands) {
-                LSFCommand listOfCreatedCommand = (LSFCommand) _l
-                queryCommand += " " + listOfCreatedCommand.getJob().getJobID()
-            }
+        if (jobIDs && listOfCreatedCommands.size() < 10) {
+            queryCommand += " " + jobIDs*.id.join(" ")
         }
+
         if (isTrackingOfUserJobsEnabled)
             queryCommand += " -u $userIDForQueries "
 
 
-        Map<String, List> allStatesTemp = [:]
-        ExecutionResult er
-        List<String> resultLines = new LinkedList<String>()
-        cacheLock.lock()
+        ExecutionResult er = executionService.execute(queryCommand.toString())
+        List<String> resultLines = er.resultLines
 
-        if (forceUpdate || cachedExecutionResult == null || cachedExecutionResult.getAgeInSeconds() > 30) {
-            cachedExecutionResult = executionService.execute(queryCommand)
-        }
-        er = cachedExecutionResult
-        resultLines.addAll(er.resultLines)
-
-        cacheLock.unlock()
+        Map<BEJobID, String[]> result = [:]
 
         if (er.successful) {
             if (resultLines.size() >= 1) {
@@ -284,86 +202,15 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
                                  "	Entry in arr[" + ID + "]: " + split[ID],
                                  "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
-                    String[] idSplit = split[ID].split("[.]")
-                    //(idSplit.length <= 1) continue;
-                    String id = idSplit[0]
-                    JobState js = parseJobState(split[JOBSTATE])
-                    allStatesTemp.put(id, [js, split])
-
-                    if (logger.isVerbosityHigh())
-                        logger.postAlwaysInfo("   Extracted jobState: " + js.toString())
+                    result.put(new BEJobID(split[ID]), split)
                 }
             }
 
-            // I don't currently know, if the jslisteners are used.
-            //Create a local cache of jobstate logfile entries.
-            Map<String, JobState> map = [:]
-            List<BEJob> removejobs = new LinkedList<>()
-            synchronized (jobStatusListeners) {
-                for (String id : jobStatusListeners.keySet()) {
-                    if (allStatesTemp.get(id)) {
-                        JobState js = (JobState) allStatesTemp.get(id)[0]
-                        BEJob job = jobStatusListeners.get(id)
-                        setJobInfoForJobDetails(job, (String[]) allStatesTemp.get(id)[1])
-                        logger.severe("id:" + id + " jobstate: " + js.toString() + " jobInfo: " + job.getJobInfo().toString())
-                        if (js == JobState.UNKNOWN) {
-                            // If the jobState is unknown and the job is not running anymore it is counted as failed.
-                            job.setJobState(JobState.FAILED)
-                            removejobs.add(job)
-                            continue
-                        }
-
-                        if (JobState._isPlannedOrRunning(js)) {
-                            job.setJobState(js)
-                            continue
-                        }
-
-                        if (job.getJobState() == JobState.FAILED)
-                            continue
-                        //Do not query jobs again if their status is already final. TODO Remove final jobs from listener list?
-
-                        if (js == null || js == JobState.UNKNOWN) {
-                            //Read from jobstate logfile.
-                            try {
-//                            ExecutionContext executionContext = job.getExecutionContext()
-//                            if (!map.containsKey(executionContext))
-//                                map.put(executionContext, executionContext.readJobStateLogFile())
-
-                                JobState jobsCurrentState = null
-                                if (job.getRunResult() != null) {
-                                    jobsCurrentState = map.get(job.getRunResult().getJobID().getId())
-                                } else { //Search within entries.
-                                    map.each { String s, JobState v ->
-                                        if (s.startsWith(id)) {
-                                            jobsCurrentState = v
-                                            return
-                                        }
-                                    }
-                                }
-                                js = jobsCurrentState
-                            } catch (Exception ex) {
-                                logger.severe("Could not read out job jobState from file")
-                            }
-                        }
-                        job.setJobState(js)
-                    }
-                }
-            }
         } else {
             logger.warning("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-            throw new Exception("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            throw new BEException("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
         }
-        cacheLock.lock()
-        allStates.clear()
-//        allStatesTemp.each { String id, JobState status ->
-        // The list is empty. We need to store the states for all found jobs by id again.
-        // Queries will then use the id.
-//            allStates[allStates.find { Job job, JobState state -> job.jobID == id }?.key] = status
-//        }
-        allStates.putAll((Map<BEJobID, JobState>) allStatesTemp.collectEntries {
-            new MapEntry(new BEJobID(it.key), (JobState) it.value[0])
-        })
-        cacheLock.unlock()
+        return result
     }
 
     @Override
@@ -407,64 +254,64 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param job
      * @param jobDetails -
      */
-    void setJobInfoForJobDetails(BEJob job, String[] jobDetails) {
+    private GenericJobInfo getJobInfo(BEJobID jobID) {
+        String[] jobDetails = runBjobs([jobID]).get(jobID)
         GenericJobInfo jobInfo
 
-        if (job.getJobInfo() != null) {
-            jobInfo = job.getJobInfo()
-        } else {
-            jobInfo = new GenericJobInfo(jobDetails[1], job.getTool(), jobDetails[0], job.getParameters(), job.parentJobIDs*.id)
-        }
+        List<String> dependIDs = jobDetails[32].tokenize(/&/).collect { it.find(/\d+/) }
+        jobInfo = new GenericJobInfo(jobDetails[1], new File(jobDetails[31]), jobDetails[0], null, dependIDs)
+
         String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
 
-            String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
-            Duration runTime = catchExceptionAndLog { !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null }
-            BufferValue swap = catchExceptionAndLog { !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null }
-            BufferValue memory = catchExceptionAndLog { !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null }
-            Duration runLimit = catchExceptionAndLog { !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null }
-            Integer nodes = catchExceptionAndLog { !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null }
+        String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
+        Duration runTime = catchExceptionAndLog { !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null }
+        BufferValue swap = catchExceptionAndLog { !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null }
+        BufferValue memory = catchExceptionAndLog { !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null }
+        Duration runLimit = catchExceptionAndLog { !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null }
+        Integer nodes = catchExceptionAndLog { !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null }
 
-            ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
-            jobInfo.setUsedResources(usedResources)
+        ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
+        jobInfo.setUsedResources(usedResources)
 
-            ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
-            jobInfo.setAskedResources(askedResources)
+        ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
+        jobInfo.setAskedResources(askedResources)
 
-            jobInfo.setUser(!jobResult[3].toString().equals("-") ? jobResult[3] : null)
-            jobInfo.setDescription(!jobResult[5].toString().equals("-") ? jobResult[5] : null)
-            jobInfo.setProjectName(!jobResult[6].toString().equals("-") ? jobResult[6] : null)
-            jobInfo.setJobGroup(!jobResult[7].toString().equals("-") ? jobResult[7] : null)
-            jobInfo.setPriority(!jobResult[8].toString().equals("-") ? jobResult[8] : null)
-            jobInfo.setPidStr(!jobResult[9].toString().equals("-") ? jobResult[9] : null)
-            jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
-            jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
-            jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
-            catchExceptionAndLog { jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null) }
-            jobInfo.setRunTime(runTime)
-            jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
-            jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
-            jobInfo.setPendReason(!jobResult[23].toString().equals("-") ? jobResult[23] : null)
-            jobInfo.setExecCwd(!jobResult[24].toString().equals("-") ? jobResult[24] : null)
-            jobInfo.setOutFile(getBjobsFile(jobResult[25], job, "out"))
-            jobInfo.setErrorFile(getBjobsFile(jobResult[30], job, "err"))
-            jobInfo.setInFile(!jobResult[26].toString().equals("-") ? new File(jobResult[26]) : null)
-            jobInfo.setResourceReq(!jobResult[27].toString().equals("-") ? jobResult[27] : null)
-            jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
-            job.setJobInfo(jobInfo)
+        jobInfo.setUser(!jobResult[3].toString().equals("-") ? jobResult[3] : null)
+        jobInfo.setDescription(!jobResult[5].toString().equals("-") ? jobResult[5] : null)
+        jobInfo.setProjectName(!jobResult[6].toString().equals("-") ? jobResult[6] : null)
+        jobInfo.setJobGroup(!jobResult[7].toString().equals("-") ? jobResult[7] : null)
+        jobInfo.setPriority(!jobResult[8].toString().equals("-") ? jobResult[8] : null)
+        jobInfo.setPidStr(!jobResult[9].toString().equals("-") ? jobResult[9] : null)
+        jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
+        jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
+        jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
+        catchExceptionAndLog { jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null) }
+        jobInfo.setRunTime(runTime)
+        jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
+        jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
+        jobInfo.setPendReason(!jobResult[23].toString().equals("-") ? jobResult[23] : null)
+        jobInfo.setExecCwd(!jobResult[24].toString().equals("-") ? jobResult[24] : null)
+        jobInfo.setOutFile(getBjobsFile(jobResult[25],jobID , "out"))
+        jobInfo.setErrorFile(getBjobsFile(jobResult[30], jobID, "err"))
+        jobInfo.setInFile(!jobResult[26].toString().equals("-") ? new File(jobResult[26]) : null)
+        jobInfo.setResourceReq(!jobResult[27].toString().equals("-") ? jobResult[27] : null)
+        jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
 
-            if (!jobResult[13].toString().equals("-"))
-                catchExceptionAndLog { jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear())) }
-            if (!jobResult[14].toString().equals("-"))
-                catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear())) }
-            if (!jobResult[15].toString().equals("-"))
-                catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear())) }
+        if (!jobResult[13].toString().equals("-"))
+            catchExceptionAndLog { jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear())) }
+        if (!jobResult[14].toString().equals("-"))
+            catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear())) }
+        if (!jobResult[15].toString().equals("-"))
+            catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear())) }
+
+        return jobInfo
     }
 
-    private File getBjobsFile(String s, BEJob job, String type) {
+    private File getBjobsFile(String s, BEJobID jobID, String type) {
         if (!s || s == "-") {
             return null
         } else if (executionService.execute("stat -c %F ${Command.escapeBash(s)}").firstLine == "directory") {
-            return new File(s, "${job.jobID.id}.${type}")
+            return new File(s, "${jobID.getId()}.${type}")
         } else {
             return new File(s)
         }
@@ -510,33 +357,6 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false) {
-
-        if (allStates == null || forceUpdate)
-            updateJobStatus(forceUpdate)
-
-        Map<BEJob, JobState> queriedStates = jobs.collectEntries { BEJob job -> [job, JobState.UNKNOWN] }
-
-        for (BEJob job in jobs) {
-            JobState state
-            if (job.jobState == JobState.ABORTED)
-                state = JobState.ABORTED
-            else {
-                cacheLock.lock()
-                try {
-                    state = allStates[job.getJobID()]
-                } finally {
-                    cacheLock.unlock()
-                }
-            }
-            if (state) queriedStates[job] = state
-        }
-
-        return queriedStates
-    }
-
-
-    @Override
     void queryJobAbortion(List<BEJob> executedJobs) {
         logger.always("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}")
         def executionResult = executionService.execute("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
@@ -546,13 +366,6 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
         } else {
             logger.warning("Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}")
             throw new BEException("Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}")
-        }
-    }
-
-    @Override
-    void addJobStatusChangeListener(BEJob job) {
-        synchronized (jobStatusListeners) {
-            jobStatusListeners.put(job.getJobID(), job)
         }
     }
 

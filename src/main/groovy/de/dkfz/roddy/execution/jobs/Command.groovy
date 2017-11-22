@@ -44,11 +44,6 @@ abstract class Command {
      */
     public final LinkedHashMap<String, String> parameters = [:]
 
-    /**
-     * A list of named tags for the command object
-     */
-    private final Map<String, Object> commandTags = [:]
-
     protected final BatchEuphoriaJobManager parentJobManager
 
     /**
@@ -60,9 +55,8 @@ abstract class Command {
      * @param parameters       Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
      * @param commandTags
      */
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
+    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters) {
         this.parentJobManager = parentJobManager
-        this.commandTags.putAll(commandTags ?: [:])
         this.parameters.putAll(parameters ?: [:])
         this.creatingJob = job
         this.id = id
@@ -94,18 +88,6 @@ abstract class Command {
 
     final String getFormattedID() {
         return String.format("command:0x%08X", id)
-    }
-
-    boolean hasTag(String tagID) {
-        return commandTags.containsKey(tagID)
-    }
-
-    Object getTag(String tagID) {
-        return commandTags[tagID]
-    }
-
-    Map<String, Object> getTags() {
-        return commandTags
     }
 
     protected final String getWorkingDirectory(){

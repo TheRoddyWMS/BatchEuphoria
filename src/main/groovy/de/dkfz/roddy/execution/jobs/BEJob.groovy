@@ -22,8 +22,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
 
-    protected JobType jobType = JobType.STANDARD
-
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
 
     /**
@@ -161,15 +159,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this
     }
 
-    protected void setJobType(JobType jobType) {
-        this.jobType = jobType
-    }
-
-    //TODO Create a runArray method which returns several job results with proper array ids.
-    JR run() {
-
-    }
-
     boolean isFakeJob() {
         getJobID().toString()
         if (this instanceof FakeBEJob)
@@ -185,10 +174,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     void addProcessingParameters(ProcessingParameters processingParameters) {
         if (processingParameters == null) return
         this.processingParameters.add(processingParameters)
-    }
-
-    JobType getJobType() {
-        return jobType
     }
 
     Map<String, String> getParameters() {
@@ -254,9 +239,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     void setJobState(JobState js) {
-        if (jobType == JobType.ARRAY_HEAD)
-            return
-        JobState old = this.currentJobState
         this.currentJobState = js
     }
 

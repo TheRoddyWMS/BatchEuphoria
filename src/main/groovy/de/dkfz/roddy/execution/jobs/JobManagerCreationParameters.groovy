@@ -14,13 +14,18 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class JobManagerCreationParameters {
 
+    public static final int JOBMANAGER_DEFAULT_UPDATEINTERVAL = 300
+    public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true
+    public static final boolean JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY = false
+    public static final boolean JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY = false
+
     boolean strictMode
-    boolean createDaemon = BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_CREATE_DAEMON
-    int updateInterval = BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_UPDATEINTERVAL
+    boolean createDaemon = JOBMANAGER_DEFAULT_CREATE_DAEMON
+    int updateInterval = JOBMANAGER_DEFAULT_UPDATEINTERVAL
 
     String userIdForJobQueries = ""
-    boolean trackUserJobsOnly = BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
-    boolean trackOnlyStartedJobs = BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
+    boolean trackUserJobsOnly = JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
+    boolean trackOnlyStartedJobs = JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
 
     String userGroup
     String userAccount

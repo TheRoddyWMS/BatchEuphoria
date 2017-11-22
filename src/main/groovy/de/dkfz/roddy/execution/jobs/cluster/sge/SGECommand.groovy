@@ -23,8 +23,8 @@ import java.util.Map
 @CompileStatic
 class SGECommand extends PBSCommand {
 
-    SGECommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
-        super(parentManager, job, id, processingCommands, parameters, tags, arrayIndices, dependencyIDs, command)
+    SGECommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingCommands, Map<String, String> parameters, List<String> dependencyIDs, String command, File loggingDirectory) {
+        super(parentManager, job, id, processingCommands, parameters, dependencyIDs, command)
     }
 
     @Override
@@ -65,11 +65,6 @@ class SGECommand extends PBSCommand {
     @Override
     String getDependencyIDSeparator() {
         return ","
-    }
-
-    @Override
-    String getArrayDependencyParameterName() {
-        return "-hold_jid_ad"
     }
 
     @Override

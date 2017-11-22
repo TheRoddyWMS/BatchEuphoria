@@ -30,9 +30,7 @@ class PBSCommand extends Command {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSCommand.class.name)
 
     public static final String NONE = "none"
-    public static final String NONE_ARR = "none[]"
     public static final String AFTEROK = "afterok"
-    public static final String AFTEROK_ARR = "afterokarray"
     public static final String QSUB = "qsub"
     public static final String PARM_ACCOUNT = " -A "
     public static final String PARM_JOBNAME = " -N "
@@ -50,11 +48,6 @@ class PBSCommand extends Command {
      */
     protected String command
 
-    /**
-     * Provide a lower and upper array index to make this qsub job an array job
-     */
-    protected List<String> arrayIndices
-
     protected List<String> dependencyIDs
 
     protected final List<ProcessingParameters> processingParameters
@@ -63,20 +56,14 @@ class PBSCommand extends Command {
      *
      * @param id
      * @param parameters
-     * @param arrayIndices
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command) {
-        super(parentManager, job, id, parameters, tags)
+    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
+        super(parentManager, job, id, parameters)
         this.processingParameters = processingParameters
         this.command = command
-        this.arrayIndices = arrayIndices ?: new LinkedList<String>()
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
-    }
-
-    boolean getIsArray() {
-        return arrayIndices != null && arrayIndices.size() > 0
     }
 
     String getJoinLogParameter() {
@@ -120,10 +107,6 @@ class PBSCommand extends Command {
         return COLON
     }
 
-    protected String getArrayDependencyParameterName() {
-        return AFTEROK_ARR
-    }
-
     protected String getAdditionalCommandParameters() {
         return ""
     }
@@ -148,7 +131,6 @@ class PBSCommand extends Command {
         parameters << getAdditionalCommandParameters()
         parameters << ("-w ${getWorkingDirectory()}" as String)
         parameters << getLoggingParameter(job.jobLog)
-        if (isArray) parameters << assembleArraySettings()
         if (email) parameters << getEmailParameter(email)
         if (groupList && groupList != "UNDEFINED") parameters << getGroupListString(groupList)
         if (umask) parameters << getUmaskString(umask)
@@ -172,22 +154,6 @@ class PBSCommand extends Command {
         return qsubCall
     }
 
-    String assembleArraySettings() {
-        StringBuilder qsubCall = new StringBuilder(" -t ")
-        StringBuilder sbArrayIndices = new StringBuilder("")
-        //TODO Make a second list of array indices, which is valid for job submission. The current translation with the help of counting is not optimal!
-        int i = 1 //TODO Think if pbs arrays should always start with one?
-        for (String ai in arrayIndices) {
-            if (ai.isNumber())
-                sbArrayIndices << ai.toInteger()
-            else
-                sbArrayIndices << i
-            sbArrayIndices << StringConstants.COMMA
-            i++
-        }
-        qsubCall << sbArrayIndices.toString()[0..-2]
-        return qsubCall.toString()
-    }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     String assembleVariableExportString() {

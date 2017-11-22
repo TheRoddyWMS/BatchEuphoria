@@ -32,7 +32,7 @@ import java.time.Duration
  *
  * Created by heinold on 27.03.17.
  */
-@CompileStatic
+//@CompileStatic
 class BEIntegrationTestStarter {
 
     static LoggerWrapper log = LoggerWrapper.getLogger(BEIntegrationTestStarter)

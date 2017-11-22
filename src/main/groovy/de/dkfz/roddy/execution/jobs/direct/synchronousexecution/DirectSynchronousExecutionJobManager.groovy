@@ -26,18 +26,12 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    void createUpdateDaemonThread(int interval) {
+    protected void createUpdateDaemonThread(int interval) {
         //Not necessary, a command / job knows its state in local execution
     }
 
-    @Override
-    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
-        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath())
-    }
-
-    @Override
-    BEJob parseToJob(String commandString) {
-        return null
+    DirectCommand createCommand(BEJob job) {
+        return new DirectCommand(this, job, [])
     }
 
     @Override
@@ -46,13 +40,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
-        throw new RuntimeException("Not implemented yet! " + this.getClass().getName() + ".convertToArrayResult()")
-    }
-
-    @Override
-    void updateJobStatus() {
-
+    protected Map<BEJobID, JobState> getJobStates(List<BEJobID> jobIDs) {
+        return [:]
     }
 
     @Override
@@ -95,11 +84,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return '"$$"'
     }
 
-    String getSpecificJobArrayIndexIdentifier() {
-        logger.severe("BEJob arrays are not supported in " + getClass().getName())
-        return "0"
-    }
-
     String getSpecificJobScratchIdentifier() {
         logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
         return '/data/roddyScratch/$$'
@@ -137,7 +121,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     @Override
     BEJobResult runJob(BEJob job) {
         // Some of the parent jobs are in a bad state!
-        Command command = createCommand(job, job.tool, [], [:])
+        Command command = createCommand(job)
         BEJobResult jobResult
         BEJobID jobID
         ExecutionResult res
@@ -192,28 +176,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
-        return null
-    }
-
-    @Override
-    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null;
-    }
-
-    @Override
-    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate) {
-        return null;
-    }
-
-    @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-        return null;
-    }
-
-    @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds, boolean forceUpdate) {
-        return null;
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+        return [:]
     }
 
     @Override

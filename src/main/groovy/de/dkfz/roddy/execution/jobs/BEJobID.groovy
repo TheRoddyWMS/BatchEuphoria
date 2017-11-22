@@ -8,7 +8,6 @@ package de.dkfz.roddy.execution.jobs
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
-import groovy.transform.Immutable
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -18,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong
  * JobIDs are born with the JobResults, although JobResults may or may not have a JobID.
  * Jobs don't directly have a JobID. The reference is rather the other way around (see job field of BEJobID).
  */
-@EqualsAndHashCode(includes=["id"])
+@EqualsAndHashCode(includeFields=true, includes=['id'])
 @CompileStatic
 class BEJobID implements Comparable<BEJobID> {
 

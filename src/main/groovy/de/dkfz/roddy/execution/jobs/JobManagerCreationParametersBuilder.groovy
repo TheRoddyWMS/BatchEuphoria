@@ -8,10 +8,10 @@ package de.dkfz.roddy.execution.jobs
 
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_CREATE_DAEMON
-import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_UPDATEINTERVAL
-import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
-import static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
+import static de.dkfz.roddy.execution.jobs.JobManagerCreationParameters.JOBMANAGER_DEFAULT_CREATE_DAEMON
+import static de.dkfz.roddy.execution.jobs.JobManagerCreationParameters.JOBMANAGER_DEFAULT_UPDATEINTERVAL
+import static de.dkfz.roddy.execution.jobs.JobManagerCreationParameters.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
+import static de.dkfz.roddy.execution.jobs.JobManagerCreationParameters.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY
 
 /**
  * Created by heinold on 28.02.17.
