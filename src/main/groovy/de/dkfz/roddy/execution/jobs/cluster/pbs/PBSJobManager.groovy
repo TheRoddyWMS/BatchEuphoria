@@ -9,21 +9,17 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
-import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.tools.*
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Map.Entry
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.locks.ReentrantLock
 import java.util.regex.Matcher
 
 /**
@@ -50,10 +46,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     public static final String PBS_LOGFILE_WILDCARD = "*.o"
     static public final String WITH_DELIMITER = '(?=(%1$s))'
 
-    private static final ReentrantLock cacheLock = new ReentrantLock()
-
-    protected Map<BEJobID, JobState> allStates = [:]
-
     PBSJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
         super(executionService, parms)
         /**
@@ -76,23 +68,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         extractAndSetJobResultFromExecutionResult(command, executionResult)
 
         // job.runResult is set within executionService.execute
-        // logger.severe("Set the job runResult in a better way from runJob itself or so.")
-        cacheLock.lock()
-
-        try {
-            if (executionResult.successful && job.runResult.wasExecuted && job.jobManager.isHoldJobsEnabled()) {
-                allStates[job.jobID] = JobState.HOLD
-            } else if (executionResult.successful && job.runResult.wasExecuted) {
-                allStates[job.jobID] = JobState.QUEUED
-            } else {
-                allStates[job.jobID] = JobState.FAILED
-                logger.severe("PBS call failed with error code ${executionResult.exitCode} and error message:\n\t" + executionResult?.resultLines?.join("\n\t"))
-            }
-            addJobStatusChangeListener(job)
-        } finally {
-            cacheLock.unlock()
-        }
-
+        // TODO Set the job runResult in a better way from runJob itself or so.
+        addToListOfStartedJobs(job)
         return job.runResult
     }
 
@@ -223,13 +200,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
 
-    protected Map<BEJobID, JobState> getJobStates(List<BEJobID> jobIDs) {
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
         if (!executionService.isAvailable())
             return
 
         String queryCommand = getQueryCommand()
 
-        if (jobIDs && listOfCreatedCommands.size() < 10) {
+        if (jobIDs && jobIDs.size() < 10) {
             queryCommand += " " + jobIDs*.id.join(" ")
         }
 
@@ -503,17 +480,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 if (jobResult.get("etime"))  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
                     catchExceptionAndLog { gj.setEligibleTime(parseTime(jobResult.get("etime"))) }
 
-            println it.getKey()
-            println new BEJobID(it.getKey())
-            println new BEJobID(it.getKey()).id
-            println new BEJobID("1") == new BEJobID("2")
-
                 queriedExtendedStates.put(new BEJobID(it.getKey()), gj)
-            println new BEJobID(it.getKey()).hashCode()
-
-
-            println queriedExtendedStates
-
         }
 
         return queriedExtendedStates

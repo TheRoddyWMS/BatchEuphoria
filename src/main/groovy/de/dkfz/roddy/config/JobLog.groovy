@@ -1,5 +1,13 @@
+/*
+ * Copyright (c) 2017 eilslabs.
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ */
 package de.dkfz.roddy.config
 
+import groovy.transform.CompileStatic
+
+@CompileStatic
 class JobLog {
     public static final String JOB_ID = '{JOB_ID}'
 
@@ -19,11 +27,12 @@ class JobLog {
      *
      * NB. On different systems may be written on the execution host or on the submission host.
      * (On LSF files are written on the execution host, on PBS on the submission host)
+     * If you pass a directory on LSF, it should be mounted on both the submission and execution host, otherwise BE won't be able to return the correct path
      * @param log
      * @return
      */
     static JobLog toOneFile(File log) {
-        new JobLog(log, null)
+        new JobLog(log, log)
     }
 
     /**

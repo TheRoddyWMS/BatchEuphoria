@@ -6,7 +6,6 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.Command
@@ -54,13 +53,13 @@ class PBSCommand extends Command {
 
     /**
      *
-     * @param id
+     * @param name
      * @param parameters
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
-        super(parentManager, job, id, parameters)
+    PBSCommand(PBSJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
+        super(parentManager, job, name, parameters)
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
@@ -124,8 +123,9 @@ class PBSCommand extends Command {
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
+        // collect parameters for qsub
         List<String> parameters = []
-        parameters << ("${PARM_JOBNAME} ${id}" as String)
+        parameters << ("${PARM_JOBNAME} ${jobName}" as String)
         if (holdJobsOnStart) parameters << "-h"
         if (accountName) parameters << ("${PARM_ACCOUNT} ${accountName}" as String)
         parameters << getAdditionalCommandParameters()
@@ -138,6 +138,8 @@ class PBSCommand extends Command {
         parameters << assembleDependencyString()
         parameters << assembleVariableExportString()
 
+
+        // create qsub call
         StringBuilder qsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
@@ -203,7 +205,7 @@ class PBSCommand extends Command {
     private String getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
             return "-k"
-        } else if (!jobLog.error) {
+        } else if (jobLog.out == jobLog.error) {
             return "${getJoinLogParameter()} -o ${jobLog.out.replace(JobLog.JOB_ID, '$PBS_JOBID')}"
         } else {
             return "-o ${jobLog.out.replace(JobLog.JOB_ID, '$PBS_JOBID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '$PBS_JOBID')}"

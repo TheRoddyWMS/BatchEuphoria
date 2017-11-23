@@ -22,7 +22,7 @@ class GenericJobInfo {
     ResourceSet usedResources
     String jobName
     File tool
-    String id
+    @Deprecated String id
 
     LocalDateTime submitTime;
     LocalDateTime startTime;

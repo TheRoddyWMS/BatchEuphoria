@@ -49,13 +49,13 @@ class LSFCommand extends Command {
 
     /**
      *
-     * @param id
+     * @param name
      * @param parameters
      * @param command
      * @param filesToCheck
      */
-    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
-        super(parentManager, job, id, parameters)
+    LSFCommand(LSFJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
+        super(parentManager, job, name, parameters)
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
@@ -70,8 +70,8 @@ class LSFCommand extends Command {
 
     static String getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
-            return "-o /dev/null"
-        } else if (!jobLog.error) {
+            return "-o /dev/null" //always set logging because it interacts with mail options
+        } else if (jobLog.out == jobLog.error) {
             return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')}"
         } else {
             return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')} -eo ${jobLog.error.replace(JobLog.JOB_ID, '%J')}"
@@ -112,9 +112,10 @@ class LSFCommand extends Command {
         String groupList = parentJobManager.getUserGroup()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
+        // collect parameters for bsub
         List<String> parameters = []
         parameters << assembleResources()
-        parameters << ("${PARM_JOBNAME} ${id}" as String)
+        parameters << ("${PARM_JOBNAME} ${jobName}" as String)
         if (holdJobsOnStart) parameters << "-H"
         parameters << getAdditionalCommandParameters()
         parameters << ("-cwd ${getWorkingDirectory()}" as String)
@@ -125,6 +126,8 @@ class LSFCommand extends Command {
         parameters << prepareParentJobs(job.getParentJobIDs())
         parameters << assembleVariableExportString()
 
+
+        // create bsub call
         StringBuilder bsubCall = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {

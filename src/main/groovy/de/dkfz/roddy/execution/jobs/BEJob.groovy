@@ -80,11 +80,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     private List<ProcessingParameters> processingParameters = new LinkedList<ProcessingParameters>()
 
     /**
-     * Command object of last execution.
-     */
-    protected transient Command lastCommand
-
-    /**
      * Stores the result when the job was executed.
      */
     private JR runResult
@@ -106,15 +101,11 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     String customQueue
 
     private JobLog jobLog
-    /**
-     * Stores information from the cluster about the job e.g. used resources
-     */
-    GenericJobInfo jobInfo
 
     BatchEuphoriaJobManager jobManager
 
     BEJob(BEJobID jobID, String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Collection<BEJob> parentJobs,
-          Map<String, String> parameters, BatchEuphoriaJobManager jobManager, JobLog jobLog) {
+          Map<String, String> parameters, BatchEuphoriaJobManager jobManager, JobLog jobLog, File workingDirectory) {
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -129,12 +120,12 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.jobManager = jobManager
         assert jobLog : "jobLog not set"
         this.jobLog = jobLog
-        //TODO add working dir??
+        this.workingDirectory = workingDirectory
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
     BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
-        this(jobID, null, null, null, null, null, [], [:], jobManager, JobLog.none())
+        this(jobID, null, null, null, null, null, [], [:], jobManager, JobLog.none(), null)
     }
 
     BEJob addParentJobs(Collection<BEJob> parentJobs) {
@@ -244,10 +235,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     JobState getJobState() {
         return currentJobState != null ? currentJobState : JobState.UNKNOWN
-    }
-
-    Command getLastCommand() {
-        return lastCommand
     }
 
     JobLog getJobLog() {

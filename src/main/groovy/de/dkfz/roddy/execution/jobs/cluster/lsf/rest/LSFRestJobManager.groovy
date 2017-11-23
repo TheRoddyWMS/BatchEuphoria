@@ -54,8 +54,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
     public static Integer HTTP_OK = 200
 
-    protected Map<String, JobState> allStates = [:]
-
     private static String NEW_LINE = "\r\n"
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
@@ -152,18 +150,19 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         logger.postAlwaysInfo("request body:\n" + requestPartsWithHeader.content)
 
-        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
+        Command command = new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
+        RestResult result = restExecutionService.execute(command) as RestResult
         if (result.statusCode == HTTP_OK) {
             def parsedBody = new XmlSlurper().parseText(result.body)
             logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + parsedBody)
             BEJobID jobID = new BEJobID(parsedBody.text())
             job.resetJobID(jobID)
-            BEJobResult jobResult = new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            BEJobResult jobResult = new BEJobResult(command, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             job.setJobState(JobState.UNKNOWN)
-            addJobStatusChangeListener(job)
+            addToListOfStartedJobs(job)
         } else {
-            job.setRunResult(new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
+            job.setRunResult(new BEJobResult(command, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
             throw new BEException("Job ${job.jobName} could not be started. \n Returned status code:${result.statusCode} \n result:${result.body}")
         }
@@ -352,7 +351,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param list of job ids
      */
     @Override
-    Map<BEJobID, JobState> getJobStates(List<BEJobID> jobIds) {
+    Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIds) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
@@ -447,7 +446,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             res.getProperty("history").each { NodeChild jobHistory ->
 
                 String id = ((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id")).toString()
-                setJobInfoForJobHistory(jobList.get(new BEJobID(id)), jobHistory)
+                setJobInfoFromJobHistory(jobList.get(new BEJobID(id)), jobHistory)
             }
 
         } else {
@@ -461,7 +460,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param job
      * @param jobHistory - xml job history
      */
-    private void setJobInfoForJobHistory(GenericJobInfo jobInfo, NodeChild jobHistory) {
+    private void setJobInfoFromJobHistory(GenericJobInfo jobInfo, NodeChild jobHistory) {
 
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
@@ -499,11 +498,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
     @Override
     String getStringForRunningJob() {
-        return null
-    }
-
-    @Override
-    String getQueueVariable() {
         return null
     }
 

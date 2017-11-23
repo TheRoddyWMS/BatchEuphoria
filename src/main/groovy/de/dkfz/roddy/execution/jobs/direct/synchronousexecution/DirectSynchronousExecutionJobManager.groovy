@@ -26,7 +26,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    protected void createUpdateDaemonThread(int interval) {
+    protected void createUpdateDaemonThread() {
         //Not necessary, a command / job knows its state in local execution
     }
 
@@ -40,7 +40,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    protected Map<BEJobID, JobState> getJobStates(List<BEJobID> jobIDs) {
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
         return [:]
     }
 
@@ -50,9 +50,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    void addJobStatusChangeListener(BEJob job) {
-
-    }
+    void addToListOfStartedJobs(BEJob job) {}
 
     @Override
     String getLogFileWildcard(BEJob job) {
@@ -80,7 +78,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     String getSpecificJobIDIdentifier() {
-        logger.severe("BEJob id for " + getClass().getName() + " should be configurable")
+        logger.severe("BEJob jobName for " + getClass().getName() + " should be configurable")
         return '"$$"'
     }
 

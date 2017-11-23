@@ -18,16 +18,6 @@ class JobManagerCreationParametersTest {
 
     @Test
     void testDefaults() {
-
-        "done(11030)&&done(11032)".tokenize(/&/).collect { it.find(/\d+/) }.each {
-            println it
-        }
-        "done(11030)".tokenize(/&/).collect { it.find(/\d+/) }.each {
-            println it
-        }
-        "done(11030) && done(11032)".tokenize(/&/).collect { it.find(/\d+/) }.each {
-            println it
-        }
         def parms = new JobManagerCreationParameters();
         assert parms.trackOnlyStartedJobs == JobManagerCreationParameters.JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY
         assert parms.trackUserJobsOnly == JobManagerCreationParameters.JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY

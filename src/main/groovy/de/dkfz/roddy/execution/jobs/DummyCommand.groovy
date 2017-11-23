@@ -33,6 +33,6 @@ class DummyCommand extends Command {
 
     @Override
     String toString() {
-        return String.format("Command of class %s with id %s and name %s", this.getClass().getName(), getID(), jobName);
+        return String.format("Command of class %s with jobName %s and name %s", this.getClass().getName(), getID(), jobName);
     }
 }

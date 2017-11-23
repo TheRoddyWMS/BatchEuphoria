@@ -23,6 +23,7 @@ import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 
 import java.time.Duration
@@ -32,7 +33,7 @@ import java.time.Duration
  *
  * Created by heinold on 27.03.17.
  */
-//@CompileStatic
+@CompileStatic
 class BEIntegrationTestStarter {
 
     static LoggerWrapper log = LoggerWrapper.getLogger(BEIntegrationTestStarter)
@@ -88,22 +89,23 @@ class BEIntegrationTestStarter {
 
 
     private static void testJobWithPipedScript(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none())
+        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none(), null)
         singleJobTest(jobManager, testJobWithPipedScript)
     }
 
     private static void testJobWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none())
+        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none(), null)
         singleJobTest(jobManager, testJobWithFile)
     }
 
     private static void testMultipleJobsWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none())
-        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager)], ["a": "value"], jobManager, JobLog.none())
-        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager), new BEJob(testJobChild1.runResult.jobID, jobManager)], ["a": "value"], jobManager, JobLog.none())
+        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none(), null)
+        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager)], ["a": "value"], jobManager, JobLog.none(), null)
+        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager), new BEJob(testJobChild1.runResult.jobID, jobManager)], ["a": "value"], jobManager, JobLog.none(), null)
         multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
+    @CompileDynamic
     private static void singleJobTest(BatchEuphoriaJobManager jobManager, BEJob testJob) {
         int maxSleep = 5
         try {
@@ -145,7 +147,6 @@ class BEIntegrationTestStarter {
                 jm.getJobDetails([testJob])
                 jm.updateJobStatistics(jobList)
             }
-            log.always(testJob.getJobInfo().toString())
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
@@ -156,6 +157,7 @@ class BEIntegrationTestStarter {
         }
     }
 
+    @CompileDynamic
     private static void multipleJobsTest(BatchEuphoriaJobManager jobManager, List<BEJob> testJobs) {
         int maxSleep = 5
         try {
@@ -173,8 +175,6 @@ class BEIntegrationTestStarter {
 
             if (jobManager.getClass().name == LSFRestJobManager.name)
                 (jobManager as LSFRestJobManager).updateJobStatistics(testJobs)
-
-            testJobs.each { if (it.getJobInfo() != null) log.always(it.getJobInfo().toString()) }
 
             log.always("Abort jobs.")
             jobManager.queryJobAbortion(testJobs)

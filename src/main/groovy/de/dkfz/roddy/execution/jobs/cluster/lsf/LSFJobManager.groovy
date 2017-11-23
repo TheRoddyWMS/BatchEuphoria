@@ -16,7 +16,6 @@ import de.dkfz.roddy.tools.*
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Factory for the management of LSF cluster systems.
@@ -41,9 +40,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String  LSF_LOGFILE_WILDCARD = "*.o"
 
-    protected Map<BEJobID, JobState> allStates = [:]
-    private static final ReentrantLock cacheLock = new ReentrantLock()
-
     protected String getQueryCommand() {
         return LSF_COMMAND_QUERY_STATES
     }
@@ -52,7 +48,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (BEJobID id : jobIds) {
-            queriedExtendedStates.put(id,getJobInfo(id))
+            queriedExtendedStates.put(id, queryJobInfo(id))
         }
         return queriedExtendedStates
     }
@@ -89,20 +85,8 @@ class LSFJobManager extends AbstractLSFJobManager {
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         // job.runResult is set within executionService.execute
-//        logger.severe("Set the job runResult in a better way from runJob itself or so.")
-        try {
-            cacheLock.lock()
-            if (job.wasExecuted() && job.jobManager.isHoldJobsEnabled()) {
-                allStates[job.jobID] = JobState.HOLD
-            } else if (job.wasExecuted()) {
-                allStates[job.jobID] = JobState.QUEUED
-            } else {
-                allStates[job.jobID] = JobState.FAILED
-            }
-            addJobStatusChangeListener(job)
-        } finally {
-            cacheLock.unlock()
-        }
+        // TODO Set the job runResult in a better way from runJob itself or so.
+        addToListOfStartedJobs(job)
         return job.runResult
     }
 
@@ -155,7 +139,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         return new LSFCommandParser(commandString).toGenericJobInfo();
     }
 
-    protected Map<BEJobID, JobState> getJobStates(List<BEJobID> jobIDs) {
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
         runBjobs(jobIDs).collectEntries { BEJobID jobID, String[] value->
             JobState js = parseJobState(value[getPositionOfJobState()])
             if (logger.isVerbosityHigh())
@@ -171,13 +155,13 @@ class LSFJobManager extends AbstractLSFJobManager {
 
         String queryCommand = getQueryCommand()
 
-        if (jobIDs && listOfCreatedCommands.size() < 10) {
-            queryCommand += " " + jobIDs*.id.join(" ")
-        }
-
+        // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
             queryCommand += " -u $userIDForQueries "
 
+        if (jobIDs && jobIDs.size() < 10) {
+            queryCommand += " " + jobIDs*.id.join(" ")
+        }
 
         ExecutionResult er = executionService.execute(queryCommand.toString())
         List<String> resultLines = er.resultLines
@@ -207,42 +191,12 @@ class LSFJobManager extends AbstractLSFJobManager {
             }
 
         } else {
-            logger.warning("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-            throw new BEException("Job status couldn't be updated. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            String error = "Job status couldn't be updated. \n command: ${queryCommand} \n status code: ${er.exitCode} \n result: ${er.resultLines}"
+            logger.warning(error)
+            throw new BEException(error)
         }
         return result
     }
-
-    @Override
-    String getJobIdVariable() {
-        return "LSB_JOBID"
-    }
-
-    @Override
-    String getJobNameVariable() {
-        return "LSB_JOBNAME"
-    }
-
-    @Override
-    String getQueueVariable() {
-        return 'LSB_QUEUE'
-    }
-
-    @Override
-    String getNodeFileVariable() {
-        return "LSB_HOSTS"
-    }
-
-    @Override
-    String getSubmitHostVariable() {
-        return "LSB_SUB_HOST"
-    }
-
-    @Override
-    String getSubmitDirectoryVariable() {
-        return "LSB_SUBCWD"
-    }
-
 
     static LocalDateTime parseTime(String str) {
         def datePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
@@ -254,7 +208,7 @@ class LSFJobManager extends AbstractLSFJobManager {
      * @param job
      * @param jobDetails -
      */
-    private GenericJobInfo getJobInfo(BEJobID jobID) {
+    private GenericJobInfo queryJobInfo(BEJobID jobID) {
         String[] jobDetails = runBjobs([jobID]).get(jobID)
         GenericJobInfo jobInfo
 

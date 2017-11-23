@@ -26,13 +26,13 @@ abstract class Command {
     private static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
 
     /**
-     * The id of this command.
+     * The job name of this command.
      */
-    protected final String id
+    protected final String jobName
     /**
      * The id which was created upon execution by the job system.
      */
-    protected BEJobID executionID
+    protected BEJobID jobID
 
     /**
      * The job which created this command. Can be null!
@@ -51,31 +51,31 @@ abstract class Command {
      *
      * @param parentJobManager
      * @param job
-     * @param id
+     * @param jobName
      * @param parameters       Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
      * @param commandTags
      */
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters) {
+    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> parameters) {
         this.parentJobManager = parentJobManager
         this.parameters.putAll(parameters ?: [:])
         this.creatingJob = job
-        this.id = id
+        this.jobName = jobName
     }
 
     final void setExecutionID(BEJobID id) {
-        this.executionID = id
+        this.jobID = id
     }
 
     final boolean wasExecuted() {
-        return executionID.isValidID()
+        return jobID.isValidID()
     }
 
     final BEJobID getExecutionID() {
-        return executionID
+        return jobID
     }
 
     final String getID() {
-        return id
+        return this.jobName
     }
 
     void setJob(BEJob job) {
@@ -87,7 +87,7 @@ abstract class Command {
     }
 
     final String getFormattedID() {
-        return String.format("command:0x%08X", id)
+        return String.format("command:0x%08X", this.jobName)
     }
 
     protected final String getWorkingDirectory(){
@@ -106,7 +106,7 @@ abstract class Command {
 
     @Override
     String toString() {
-        return String.format("Command of class %s with id %s", this.getClass().getName(), getID())
+        return String.format("Command of class %s with jobName %s", this.getClass().getName(), getID())
     }
 
 
