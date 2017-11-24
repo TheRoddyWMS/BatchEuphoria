@@ -33,6 +33,11 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         try {
             return closure.call()
         } catch (Exception e) {
+            println "*********************** conversion fail"
+            println e.message
+            println (e.stackTrace.join("\n"))
+            println "*********************** ***************"
+
             logger.warning(e.message)
             logger.warning(e.stackTrace.join("\n"))
         }

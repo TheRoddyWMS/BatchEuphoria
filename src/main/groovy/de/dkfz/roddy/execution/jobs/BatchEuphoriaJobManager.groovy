@@ -144,8 +144,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      */
     abstract GenericJobInfo parseGenericJobInfo(String command)
 
-    @Deprecated BEJobResult convertToArrayResult(BEJob j, BEJobResult r, int i) { null }
-
     private void updateJobsInStartedJobsList() {
         synchronized (startedJobs) {
             Map<BEJobID, JobState> states = queryJobStatesUsingCache(startedJobs.keySet() as List<BEJobID>, true)

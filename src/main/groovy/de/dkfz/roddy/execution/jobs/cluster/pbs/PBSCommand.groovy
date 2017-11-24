@@ -184,9 +184,6 @@ class PBSCommand extends Command {
                 }.collect {
                     it.getId().split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
                 } as LinkedList<String>
-        if (creatingJob.getParentJobIDs().any { it.getId().contains("[].") }) {
-            throw new NotImplementedException()
-        }
         if (tempDependencies.size() > 0) {
             try {
                 qsubCall <<

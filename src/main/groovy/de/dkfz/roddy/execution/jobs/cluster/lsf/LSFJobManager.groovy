@@ -33,10 +33,11 @@ class LSFJobManager extends AbstractLSFJobManager {
     public static final String LSF_JOBSTATE_QUEUED = "PEND"
     public static final String LSF_JOBSTATE_COMPLETED_SUCCESSFUL = "DONE"
     public static final String LSF_JOBSTATE_EXITING = "EXIT"
+    public static final String BJOBS_DELIMITER = "\t"
     public static final String LSF_COMMAND_QUERY_STATES = "bjobs -noheader -a -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency delimiter='<'\""
+            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency delimiter='${BJOBS_DELIMITER}'\""
     public static final String LSF_COMMAND_DELETE_JOBS = "bkill"
     public static final String  LSF_LOGFILE_WILDCARD = "*.o"
 
@@ -179,7 +180,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
                     //TODO Put to a common class, is used multiple times.
                     line = line.replaceAll("\\s+", " ").trim()       //Replace multi white space with single whitespace
-                    String[] split = line.split("<")
+                    String[] split = line.split(BJOBS_DELIMITER)
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
                     logger.info(["QStat BEJob line: " + line,
@@ -205,8 +206,6 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     /**
      * Used by @getJobDetails to set JobInfo
-     * @param job
-     * @param jobDetails -
      */
     private GenericJobInfo queryJobInfo(BEJobID jobID) {
         String[] jobDetails = runBjobs([jobID]).get(jobID)
@@ -215,14 +214,14 @@ class LSFJobManager extends AbstractLSFJobManager {
         List<String> dependIDs = jobDetails[32].tokenize(/&/).collect { it.find(/\d+/) }
         jobInfo = new GenericJobInfo(jobDetails[1], new File(jobDetails[31]), jobDetails[0], null, dependIDs)
 
-        String[] jobResult = jobDetails.each { String property -> if (property.trim() == "-") return "" else property }
+        String[] jobResult = jobDetails.collect { String property -> if (property.trim() == "-") return "" else property }
 
-        String queue = !jobResult[16].toString().equals("-") ? jobResult[16] : null
-        Duration runTime = catchExceptionAndLog { !jobResult[17].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null }
-        BufferValue swap = catchExceptionAndLog { !jobResult[19].toString().equals("-") ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null }
-        BufferValue memory = catchExceptionAndLog { !jobResult[20].toString().equals("-") ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null }
-        Duration runLimit = catchExceptionAndLog { !jobResult[21].toString().equals("-") ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null }
-        Integer nodes = catchExceptionAndLog { !jobResult[29].toString().equals("-") ? jobResult[29].toString() as Integer : null }
+        String queue = jobResult[4] ?: null
+        Duration runTime = catchExceptionAndLog { jobResult[17] ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null }
+        BufferValue swap = catchExceptionAndLog { jobResult[19] ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null }
+        BufferValue memory = catchExceptionAndLog { jobResult[20] ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null }
+        Duration runLimit = catchExceptionAndLog { jobResult[21] ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null }
+        Integer nodes = catchExceptionAndLog { jobResult[29] ? jobResult[29] as Integer : null }
 
         ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
         jobInfo.setUsedResources(usedResources)
@@ -230,39 +229,40 @@ class LSFJobManager extends AbstractLSFJobManager {
         ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
         jobInfo.setAskedResources(askedResources)
 
-        jobInfo.setUser(!jobResult[3].toString().equals("-") ? jobResult[3] : null)
-        jobInfo.setDescription(!jobResult[5].toString().equals("-") ? jobResult[5] : null)
-        jobInfo.setProjectName(!jobResult[6].toString().equals("-") ? jobResult[6] : null)
-        jobInfo.setJobGroup(!jobResult[7].toString().equals("-") ? jobResult[7] : null)
-        jobInfo.setPriority(!jobResult[8].toString().equals("-") ? jobResult[8] : null)
-        jobInfo.setPidStr(!jobResult[9].toString().equals("-") ? jobResult[9] : null)
-        jobInfo.setExitCode(!jobResult[10].toString().equals("-") ? Integer.valueOf(jobResult[10]) : null)
-        jobInfo.setSubmissionHost(!jobResult[11].toString().equals("-") ? jobResult[11] : null)
-        jobInfo.setExecutionHosts(!jobResult[12].toString().equals("-") ? jobResult[12] : null)
-        catchExceptionAndLog { jobInfo.setCpuTime(!jobResult[16].toString().equals("-") ? parseColonSeparatedHHMMSSDuration(jobResult[16].toString()) : null) }
+        jobInfo.setUser(jobResult[3] ?: null)
+        jobInfo.setDescription(jobResult[5] ?: null)
+        jobInfo.setProjectName(jobResult[6] ?: null)
+        jobInfo.setJobGroup(jobResult[7] ?: null)
+        jobInfo.setPriority(jobResult[8] ?: null)
+        jobInfo.setPidStr(jobResult[9] ?: null)
+        jobInfo.setJobState(parseJobState(jobResult[2]))
+        jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult[10] ? Integer.valueOf(jobResult[10]) : null))
+        jobInfo.setSubmissionHost(jobResult[11] ?: null)
+        jobInfo.setExecutionHosts(jobResult[12] ?: null)
+        catchExceptionAndLog { jobInfo.setCpuTime(jobResult[16] ? parseColonSeparatedHHMMSSDuration(jobResult[16]) : null) }
         jobInfo.setRunTime(runTime)
-        jobInfo.setUserGroup(!jobResult[18].toString().equals("-") ? jobResult[18] : null)
-        jobInfo.setCwd(!jobResult[22].toString().equals("-") ? jobResult[22] : null)
-        jobInfo.setPendReason(!jobResult[23].toString().equals("-") ? jobResult[23] : null)
-        jobInfo.setExecCwd(!jobResult[24].toString().equals("-") ? jobResult[24] : null)
+        jobInfo.setUserGroup(jobResult[18] ?: null)
+        jobInfo.setCwd(jobResult[22] ?: null)
+        jobInfo.setPendReason(jobResult[23] ?: null)
+        jobInfo.setExecCwd(jobResult[24] ?: null)
         jobInfo.setOutFile(getBjobsFile(jobResult[25],jobID , "out"))
         jobInfo.setErrorFile(getBjobsFile(jobResult[30], jobID, "err"))
-        jobInfo.setInFile(!jobResult[26].toString().equals("-") ? new File(jobResult[26]) : null)
-        jobInfo.setResourceReq(!jobResult[27].toString().equals("-") ? jobResult[27] : null)
-        jobInfo.setExecHome(!jobResult[28].toString().equals("-") ? jobResult[28] : null)
+        jobInfo.setInFile(jobResult[26] ? new File(jobResult[26]) : null)
+        jobInfo.setResourceReq(jobResult[27] ?: null)
+        jobInfo.setExecHome(jobResult[28] ?: null)
 
-        if (!jobResult[13].toString().equals("-"))
+        if (jobResult[13])
             catchExceptionAndLog { jobInfo.setSubmitTime(parseTime(jobResult[13] + " " + LocalDateTime.now().getYear())) }
-        if (!jobResult[14].toString().equals("-"))
+        if (jobResult[14])
             catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14] + " " + LocalDateTime.now().getYear())) }
-        if (!jobResult[15].toString().equals("-"))
+        if (jobResult[15])
             catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15] + " " + LocalDateTime.now().getYear())) }
 
         return jobInfo
     }
 
     private File getBjobsFile(String s, BEJobID jobID, String type) {
-        if (!s || s == "-") {
+        if (!s) {
             return null
         } else if (executionService.execute("stat -c %F ${Command.escapeBash(s)}").firstLine == "directory") {
             return new File(s, "${jobID.getId()}.${type}")
