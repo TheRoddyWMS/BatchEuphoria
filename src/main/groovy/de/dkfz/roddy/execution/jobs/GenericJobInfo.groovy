@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.config.ResourceSet
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -16,6 +17,7 @@ import java.time.LocalDateTime
  * Created by michael on 06.02.15.
  */
 @CompileStatic
+@ToString(includeNames=true)
 class GenericJobInfo {
 
     ResourceSet askedResources
@@ -33,9 +35,9 @@ class GenericJobInfo {
     String submissionHost;
     String priority;
 
-    File outFile
-    File inFile
-    File errorFile
+    File logFile
+    File errorLogFile
+    File inputFile
 
     String user;
     String userGroup;
@@ -81,56 +83,5 @@ class GenericJobInfo {
         this.id = id
         this.parameters = parameters
         this.parentJobIDs = parentJobIDs
-    }
-
-    @Override
-    public String toString() {
-        return "GenericJobInfo{" +
-                "jobName='" + jobName + '\'' +
-                ", tool='" + tool + '\'' +
-                ", id='" + id + '\'' +
-                ", parameters=" + parameters +
-                ", parentJobIDs=" + parentJobIDs +
-                ", maxMemory=" + usedResources.getMem() +
-                ", maxCpus=" + usedResources.getCores() +
-                ", maxNodes=" + usedResources.getNodes() +
-                ", queue=" + usedResources.getQueue() +
-                ", otherSettings=" + otherSettings +
-                ", user=" + user +
-                ", submissionHost=" + submissionHost +
-                ", executionHosts=" + executionHosts +
-                ", runTime=" + runTime +
-                ", submitTime=" + submitTime +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", cpuTime=" + cpuTime +
-                ", userTime=" + userTime +
-                ", systemTime=" + systemTime +
-                ", pendReason=" + pendReason +
-                ", priority=" + priority +
-                ", userGroup=" + userGroup +
-                ", resourceReq=" + resourceReq +
-                ", execHome=" + execHome +
-                ", execUserName=" + execUserName +
-                ", pidStr=" + pidStr +
-                ", pgidStr=" + pgidStr +
-                ", nthreads=" + usedResources.getNumberOfThreads() +
-                ", swap=" + usedResources.getSwap() +
-                ", exitCode=" + exitCode +
-                ", jobGroup=" + jobGroup +
-                ", description=" + description +
-                ", execCwd=" + execCwd +
-                ", askedHostsStr=" + askedHostsStr +
-                ", cwd=" + cwd +
-                ", projectName=" + projectName +
-                ", outFile=" + outFile +
-                ", inFile=" + inFile +
-                ", timeUserSuspState=" + timeUserSuspState +
-                ", timePendState=" + timePendState +
-                ", timePendSuspState=" + timePendSuspState +
-                ", timeSystemSuspState=" + timeSystemSuspState +
-                ", timeUnknownState=" + timeUnknownState +
-                ", timeOfCalculation=" + timeOfCalculation +
-                '}';
     }
 }

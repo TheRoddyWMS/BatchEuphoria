@@ -8,21 +8,19 @@ package de.dkfz.roddy
 
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
+
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
-import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 
@@ -65,9 +63,9 @@ class BEIntegrationTestStarter {
         log.always("Creating job manager instance for ${option}")
 
         try {
-            jobManager = option.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerCreationParameters)
+            jobManager = option.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerOptions)
                     .newInstance(executionService,
-                    new JobManagerCreationParametersBuilder()
+                    JobManagerOptions.create()
                             .setCreateDaemon(false)
                             .setTrackUserJobsOnly(true)
                             .build()

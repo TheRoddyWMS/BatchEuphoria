@@ -21,7 +21,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName())
 
-    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
@@ -51,26 +51,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     void addToListOfStartedJobs(BEJob job) {}
-
-    @Override
-    String getLogFileWildcard(BEJob job) {
-        return "*"
-    }
-
-    @Override
-    String getStringForQueuedJob() {
-        return null
-    }
-
-    @Override
-    String getStringForJobOnHold() {
-        return null
-    }
-
-    @Override
-    String getStringForRunningJob() {
-        return null
-    }
 
     @Override
     String getJobIdVariable() {
@@ -132,7 +112,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         }
         ) {
             jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
-            command.setExecutionID(jobID)
+            command.setJobID(jobID)
         } else {
             res = executionService.execute(command)
             jobID = new BEJobID(parseJobID(res.processID))
@@ -141,12 +121,15 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
                 logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
         }
 
-        command.setExecutionID(jobID)
+        command.setJobID(jobID)
         jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
 
         return jobResult
     }
+
+    @Override
+    void startHeldJobs(List<BEJob> jobs) { }
 
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
@@ -177,10 +160,4 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         return [:]
     }
-
-    @Override
-    JobState parseJobState(String stateString) {
-        return null
-    }
-
 }

@@ -30,23 +30,14 @@ import java.util.regex.Matcher
 @groovy.transform.CompileStatic
 class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSJobManager.class.getSimpleName())
+    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSJobManager)
 
-    public static final String PBS_JOBSTATE_RUNNING = "R"
-    public static final String PBS_JOBSTATE_HOLD = "H"
-    public static final String PBS_JOBSTATE_SUSPENDED = "S"
-    public static final String PBS_JOBSTATE_QUEUED = "Q"
-    public static final String PBS_JOBSTATE_TRANSFERED = "T"
-    public static final String PBS_JOBSTATE_WAITING = "W"
-    public static final String PBS_JOBSTATE_COMPLETED_UNKNOWN = "C"
-    public static final String PBS_JOBSTATE_EXITING = "E"
-    public static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
-    public static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -f"
-    public static final String PBS_COMMAND_DELETE_JOBS = "qdel"
-    public static final String PBS_LOGFILE_WILDCARD = "*.o"
-    static public final String WITH_DELIMITER = '(?=(%1$s))'
+    private static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
+    private static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -f"
+    private static final String PBS_COMMAND_DELETE_JOBS = "qdel"
+    private static final String WITH_DELIMITER = '(?=(%1$s))'
 
-    PBSJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    PBSJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
         /**
          * General or specific todos for BatchEuphoriaJobManager and PBSJobManager
@@ -82,7 +73,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
 
-    List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
+    private List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
         BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID().shortID }
     }
 
@@ -113,13 +104,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 //        return convertPBSResourceOptionsString(resourceOptions);
 //    }
 
+    @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         assert resourceSet
 
         LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
 
         if (resourceSet.isMemSet()) parameters.put('-l', 'mem=' + resourceSet.getMem().toString(BufferUnit.M))
-        if (resourceSet.isWalltimeSet()) parameters.put('-l', 'walltime=' + resourceSet.getWalltime())
+        if (resourceSet.isWalltimeSet()) parameters.put('-l', 'walltime=' + TimeUnit.fromDuration(resourceSet.walltime))
         if (job?.customQueue) parameters.put('-q', job.customQueue)
         else if (resourceSet.isQueueSet()) parameters.put('-q', resourceSet.getQueue())
 
@@ -148,10 +140,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         return new ProcessingParameters(parameters)
-    }
-
-    String getResourceOptionsPrefix() {
-        return "PBSResourceOptions_"
     }
 
     /**
@@ -195,11 +183,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return new PBSCommandParser(commandString).toGenericJobInfo();
     }
 
-    protected String getQueryCommand() {
+    private String getQueryCommand() {
         return PBS_COMMAND_QUERY_STATES
     }
 
-
+    @Override
     protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
         if (!executionService.isAvailable())
             return
@@ -250,29 +238,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return result
     }
 
-
-    @Override
-    String getStringForQueuedJob() {
-        return PBS_JOBSTATE_QUEUED
-    }
-
-    @Override
-    String getStringForJobOnHold() {
-        return PBS_JOBSTATE_HOLD
-    }
-
-    String getStringForJobSuspended() {
-        return PBS_JOBSTATE_SUSPENDED
-    }
-
-    @Override
-    String getStringForRunningJob() {
-        return PBS_JOBSTATE_RUNNING
-    }
-
-    String getStringForCompletedJob() {
-        return PBS_JOBSTATE_COMPLETED_UNKNOWN
-    }
 
     @Override
     String getJobIdVariable() {
@@ -356,21 +321,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
     }
 
-
-    @Override
-    String getLogFileWildcard(BEJob job) {
-        String id = job.getJobID()
-        String searchID = id
-        if (id == null) return null
-        if (id.contains("[]"))
-            return ""
-        if (id.contains("[")) {
-            String[] split = id.split("\\]")[0].split("\\[")
-            searchID = split[0] + "-" + split[1]
-        }
-        return PBS_LOGFILE_WILDCARD + searchID
-    }
-
     @Override
     String parseJobID(String commandOutput) {
         return commandOutput
@@ -378,7 +328,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     String getSubmissionCommand() {
-        return PBSCommand.QSUB
+        return "qsub"
     }
 
     /**
@@ -409,7 +359,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         } as Map<String, Map<String, String>>
     }
 
-    static LocalDateTime parseTime(String str) {
+    private static LocalDateTime parseTime(String str) {
         def pbsDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
         return LocalDateTime.parse(str, pbsDatePattern)
     }
@@ -454,8 +404,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                 gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
                 gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
 
-                gj.setOutFile(getQstatFile(jobResult.get("Output_Path")))
-                gj.setErrorFile(getQstatFile(jobResult.get("Error_Path")))
+                gj.setLogFile(getQstatFile(jobResult.get("Output_Path")))
+                gj.setErrorLogFile(getQstatFile(jobResult.get("Error_Path")))
                 gj.setUser(jobResult.get("euser"))
                 gj.setExecutionHosts(jobResult.get("exec_host"))
                 gj.setSubmissionHost(jobResult.get("submit_host"))
@@ -498,18 +448,18 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
     }
 
-    @Override
-    JobState parseJobState(String stateString) {
+    protected JobState parseJobState(String stateString) {
+        // http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qstat.htm
         JobState js = JobState.UNKNOWN
-        if (stateString == PBS_JOBSTATE_RUNNING)
+        if (stateString == "R")
             js = JobState.RUNNING
-        if (stateString == PBS_JOBSTATE_HOLD)
+        if (stateString == "H")
             js = JobState.HOLD
-        if (stateString == PBS_JOBSTATE_SUSPENDED)
+        if (stateString == "S")
             js = JobState.SUSPENDED
-        if (stateString == PBS_JOBSTATE_QUEUED || stateString == PBS_JOBSTATE_TRANSFERED || stateString == PBS_JOBSTATE_WAITING)
+        if (stateString in ["Q", "T", "W"])
             js = JobState.QUEUED
-        if (stateString == PBS_JOBSTATE_COMPLETED_UNKNOWN || stateString == PBS_JOBSTATE_EXITING) {
+        if (stateString in ["C", "E"]) {
             js = JobState.COMPLETED_UNKNOWN
         }
 

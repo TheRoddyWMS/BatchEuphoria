@@ -45,8 +45,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private Boolean isHoldJobsEnabled = null
-
     private final Map<BEJobID, BEJob> startedJobs = [:]
     private Thread updateDaemonThread
 
@@ -56,7 +54,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     private Duration cacheUpdateInterval
 
 
-    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
@@ -71,7 +69,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
         this.strictMode = parms.strictMode
-        this.cacheUpdateInterval = Duration.ofSeconds(parms.updateInterval)
+        this.cacheUpdateInterval = parms.updateInterval
 
         if (parms.createDaemon) {
             createUpdateDaemonThread()
@@ -98,18 +96,18 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     /**
      * Called by the execution service after a command was executed.
      */
-    BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+    protected BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
         BEJobResult jobResult
         if (res.successful) {
-            String exID = parseJobID(res.resultLines[0])
+            String exID = parseJobID(res.resultLines.join("\n"))
             def job = command.getJob()
             BEJobID jobID = new BEJobID(exID)
-            command.setExecutionID(jobID)
+            command.setJobID(jobID)
             job.resetJobID(jobID)
             jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             synchronized (cacheStatesLock) {
-                cachedStates.put(jobID, isHoldJobsEnabled ? JobState.HOLD : JobState.QUEUED)
+                cachedStates.put(jobID, isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED)
             }
         } else {
             def job = command.getJob()
@@ -121,11 +119,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return jobResult
     }
 
-    void startHeldJobs(List<BEJob> jobs) {}
+    abstract void startHeldJobs(List<BEJob> jobs)
 
     boolean getDefaultForHoldJobsEnabled() { return false }
 
-    boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
+    boolean isHoldJobsEnabled() { getDefaultForHoldJobsEnabled() }
 
     ProcessingParameters convertResourceSet(BEJob job) {
         return convertResourceSet(job, job.resourceSet)
@@ -143,8 +141,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @return
      */
     abstract GenericJobInfo parseGenericJobInfo(String command)
-
-    @Deprecated BEJobResult convertToArrayResult(BEJob j, BEJobResult r, int i) { null }
 
     private void updateJobsInStartedJobsList() {
         synchronized (startedJobs) {
@@ -262,8 +258,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-    abstract String getLogFileWildcard(BEJob job)
-
     int waitForJobsToFinish() {
         logger.info("The user requested to wait for all jobs submitted by this process to finish.")
         if (!updateDaemonThread) {
@@ -278,12 +272,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             Thread.sleep(cacheUpdateInterval.toMillis())
         }
     }
-
-    abstract String getStringForQueuedJob()
-
-    abstract String getStringForJobOnHold()
-
-    abstract String getStringForRunningJob()
 
     abstract String getJobIdVariable()
 
@@ -334,15 +322,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return false
     }
 
-    abstract String parseJobID(String commandOutput)
+    abstract protected String parseJobID(String commandOutput)
 
     abstract String getSubmissionCommand()
-
-    abstract JobState parseJobState(String stateString)
-
 
     List<String> getEnvironmentVariableGlobs() {
         return Collections.unmodifiableList([])
     }
-
 }

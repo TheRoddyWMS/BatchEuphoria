@@ -11,30 +11,24 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Created by michael on 20.05.14.
  */
 @CompileStatic
 class SGEJobManager extends PBSJobManager {
-    SGEJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
     SGECommand createCommand(BEJob job) {
         return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
-    }
-
-    @Override
-    String getResourceOptionsPrefix() {
-        return "SGEResourceOptions_"
     }
 
     @Override
@@ -48,7 +42,7 @@ class SGEJobManager extends PBSJobManager {
             resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
         }
 //        if (resourceSet.isWalltimeSet()) {
-//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWallTime()))
 //        }
 //        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
 //            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
@@ -71,21 +65,6 @@ class SGEJobManager extends PBSJobManager {
     }
 
     @Override
-    String getStringForQueuedJob() {
-        return "qw"
-    }
-
-    @Override
-    String getStringForJobOnHold() {
-        return "hqw"
-    }
-
-    @Override
-    String getStringForRunningJob() {
-        return "r"
-    }
-
-    @Override
     protected int getPositionOfJobID() {
         return 0
     }
@@ -102,6 +81,26 @@ class SGEJobManager extends PBSJobManager {
         String id = commandOutput.split(StringConstants.SPLIT_WHITESPACE)[2]
         return id
     }
+
+    @Override
+    protected JobState parseJobState(String stateString) {
+        //TODO: add all combinations, see http://www.softpanorama.org/HPC/Grid_engine/Queues/queue_states.shtml
+        JobState js = JobState.UNKNOWN
+        if (stateString == "r")
+            js = JobState.RUNNING
+        if (stateString == "hqw")
+            js = JobState.HOLD
+        if (stateString == "S")
+            js = JobState.SUSPENDED
+        if (stateString in ["qw", "T", "W"])
+            js = JobState.QUEUED
+        if (stateString in ["C", "E"]) {
+            js = JobState.COMPLETED_UNKNOWN
+        }
+
+        return js;
+    }
+
 
     protected List<String> getTestQstat() {
         return Arrays.asList(

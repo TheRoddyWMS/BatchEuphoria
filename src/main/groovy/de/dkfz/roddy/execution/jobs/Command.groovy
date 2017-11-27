@@ -7,9 +7,12 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.config.JobLog
 import groovy.transform.CompileStatic
 
 import java.util.regex.Matcher
+
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * Base class for all types of commands.
@@ -23,7 +26,7 @@ import java.util.regex.Matcher
 @CompileStatic
 abstract class Command {
 
-    private static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
+    protected static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
 
     /**
      * The job name of this command.
@@ -62,7 +65,7 @@ abstract class Command {
         this.jobName = jobName
     }
 
-    final void setExecutionID(BEJobID id) {
+    final void setJobID(BEJobID id) {
         this.jobID = id
     }
 
@@ -70,7 +73,7 @@ abstract class Command {
         return jobID.isValidID()
     }
 
-    final BEJobID getExecutionID() {
+    final BEJobID setJobID() {
         return jobID
     }
 
@@ -90,9 +93,6 @@ abstract class Command {
         return String.format("command:0x%08X", this.jobName)
     }
 
-    protected final String getWorkingDirectory(){
-        return job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT
-    }
 
     /**
      * Local commands are i.e. blocking, whereas PBSCommands are not.
@@ -102,24 +102,6 @@ abstract class Command {
      */
     boolean isBlockingCommand() {
         return false
-    }
-
-    @Override
-    String toString() {
-        return String.format("Command of class %s with jobName %s", this.getClass().getName(), getID())
-    }
-
-
-    String assembleProcessingCommands() {
-        StringBuilder bsubCall = new StringBuilder()
-        for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
-            if (!(pcmd instanceof ProcessingParameters)) continue
-            ProcessingParameters command = (ProcessingParameters) pcmd
-            if (command == null)
-                continue
-            bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
-        }
-        return bsubCall.toString()
     }
 
     public static final String escapeBash(final String input) {

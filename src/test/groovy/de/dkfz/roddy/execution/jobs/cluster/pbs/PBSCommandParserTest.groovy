@@ -7,12 +7,12 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
-import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.TimeUnit
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import groovy.transform.CompileStatic
 import org.junit.BeforeClass
 import org.junit.Test
+
+import java.time.Duration
 
 /**
  * Created by heinold on 04.04.17.
@@ -24,7 +24,7 @@ class PBSCommandParserTest {
 
     @BeforeClass
     static void setup() {
-        testJobManager = new PBSJobManager(null, (new JobManagerCreationParametersBuilder()).setCreateDaemon(false).build())
+        testJobManager = new PBSJobManager(null, JobManagerOptions.create().setCreateDaemon(false).build())
     }
 
     @Test
@@ -55,7 +55,7 @@ class PBSCommandParserTest {
         assert gji.jobName == "r170402_171935425_A100_indelCalling"
         assert gji.askedResources.getCores() == 8
         assert gji.askedResources.getNodes() == 1
-        assert gji.askedResources.getWalltime() == new TimeUnit("02:02:00:00")
+        assert gji.askedResources.getWalltime() == Duration.ofDays(2).plusHours(2)
         assert gji.askedResources.getMem().toLong() == 16384
         assert gji.parameters  == ["PARAMETER_FILE":"/data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/r170402_171935425_A100_indelCalling_1.parameters"]
         assert gji.parentJobIDs == ["120015"]

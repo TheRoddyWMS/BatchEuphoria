@@ -9,7 +9,6 @@ package de.dkfz.roddy.execution.jobs.cluster
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
@@ -23,9 +22,7 @@ import java.time.Duration
 abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
 
-    public static final String CVALUE_ENFORCE_SUBMISSION_TO_NODES="enforceSubmissionToNodes";
-
-    ClusterJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    ClusterJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
@@ -39,7 +36,7 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         return null
     }
 
-    static Duration parseColonSeparatedHHMMSSDuration(String str) {
+    protected static Duration parseColonSeparatedHHMMSSDuration(String str) {
         String[] hhmmss = str.split(":")
         if (hhmmss.size() != 3) {
             throw new BEException("Duration string is not of the format HH+:MM:SS: '${str}'")

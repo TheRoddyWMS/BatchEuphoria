@@ -17,7 +17,7 @@ class ResourceSet {
     private BufferValue mem
     private Integer cores
     private Integer nodes
-    private TimeUnit walltime
+    private Duration walltime
     private Integer nthreads; //Number of currently active threads of a job
     private BufferValue swap; //Total virtual maxMemory (swap) usage of all processes in a job
     /**
@@ -27,16 +27,14 @@ class ResourceSet {
     private String additionalNodeFlag
 
     ResourceSet(BufferValue mem, Integer cores, Integer nodes, Duration walltime, BufferValue storage, String queue, String additionalNodeFlag) {
-        this.mem = mem
-        this.cores = cores
-        this.nodes = nodes
-        this.walltime = walltime ? new TimeUnit(walltime.getSeconds()+"s") : null
-        this.storage = storage
-        this.queue = queue
-        this.additionalNodeFlag = additionalNodeFlag
+        this(null, mem, cores, nodes, walltime, storage, queue, additionalNodeFlag)
     }
 
     ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, TimeUnit walltime, BufferValue storage, String queue, String additionalNodeFlag) {
+        this(size, mem, cores, nodes, walltime?.asDuration(), storage, queue, additionalNodeFlag)
+    }
+
+    ResourceSet(ResourceSetSize size, BufferValue mem, Integer cores, Integer nodes, Duration walltime, BufferValue storage, String queue, String additionalNodeFlag) {
         this.size = size
         this.mem = mem
         this.cores = cores
@@ -87,13 +85,8 @@ class ResourceSet {
         return storage != null
     }
 
-    TimeUnit getWalltime() {
+    Duration getWalltime() {
         return walltime
-    }
-
-    Duration getWalltimeAsDuration() {
-        String[] wt = walltime.toString().split(":")
-        return Duration.ofDays(Long.parseLong(wt[0])).plusHours(Long.parseLong(wt[1])).plusMinutes(Long.parseLong(wt[2])).plusSeconds(Long.parseLong(wt[3]))
     }
 
     boolean isWalltimeSet() {

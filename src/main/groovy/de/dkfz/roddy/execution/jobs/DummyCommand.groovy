@@ -28,7 +28,7 @@ class DummyCommand extends Command {
     DummyCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, boolean isArray) {
         super(parentJobManager, job, "dummy_" + getNextIDCountValue(), null)
         this.jobName = jobName
-        setExecutionID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED))
+        setJobID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED))
     }
 
     @Override

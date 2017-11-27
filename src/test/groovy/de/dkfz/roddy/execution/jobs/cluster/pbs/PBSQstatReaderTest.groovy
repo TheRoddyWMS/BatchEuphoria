@@ -7,10 +7,9 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.TestExecutionService
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
-import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import groovy.transform.CompileStatic
 import org.junit.Test
 import java.lang.reflect.Method
@@ -402,7 +401,7 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
     @Test
     void testReadQstatOutput() throws Exception {
         TestExecutionService executionService = new TestExecutionService("", "")
-        PBSJobManager jm = new PBSJobManager(executionService, new JobManagerCreationParametersBuilder()
+        PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
                 .build())
@@ -420,15 +419,15 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
     @Test
     void testProcessQstatOutput() throws Exception {
         TestExecutionService executionService = new TestExecutionService("", "")
-        PBSJobManager jm = new PBSJobManager(executionService, new JobManagerCreationParametersBuilder()
+        PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
                 .build())
         Method method = jm.getClass().getDeclaredMethod("processQstatOutput", List);
         method.setAccessible(true);
 
-        Map<String, GenericJobInfo> genericJobInfoOutput1 = (Map<String, GenericJobInfo>) method.invoke(jm, [output1])
-        Map<String, GenericJobInfo> genericJobInfoOutput2 = (Map<String, GenericJobInfo>) method.invoke(jm, [output2])
+        Map<BEJobID, GenericJobInfo> genericJobInfoOutput1 = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [output1])
+        Map<BEJobID, GenericJobInfo> genericJobInfoOutput2 = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [output2])
 
         /*
         // print GenericJobInfo

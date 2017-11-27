@@ -42,21 +42,21 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFRestJobManager.class.name);
 
     /*REST RESOURCES*/
-    public static String URI_JOB_SUBMIT = "/jobs/submit"
-    public static String URI_JOB_KILL = "/jobs/kill"
-    public static String URI_JOB_SUSPEND = "/jobs/suspend"
-    public static String URI_JOB_RESUME = "/jobs/resume"
-    public static String URI_JOB_REQUEUE = "/jobs/requeue"
-    public static String URI_JOB_DETAILS = "/jobs/"
-    public static String URI_JOB_BASICS = "/jobs/basicinfo"
-    public static String URI_JOB_HISTORY = "/jobhistory"
-    public static String URI_USER_COMMAND = "/userCmd"
+    private static String URI_JOB_SUBMIT = "/jobs/submit"
+    private static String URI_JOB_KILL = "/jobs/kill"
+    private static String URI_JOB_SUSPEND = "/jobs/suspend"
+    private static String URI_JOB_RESUME = "/jobs/resume"
+    private static String URI_JOB_REQUEUE = "/jobs/requeue"
+    private static String URI_JOB_DETAILS = "/jobs/"
+    private static String URI_JOB_BASICS = "/jobs/basicinfo"
+    private static String URI_JOB_HISTORY = "/jobhistory"
+    private static String URI_USER_COMMAND = "/userCmd"
 
-    public static Integer HTTP_OK = 200
+    private static Integer HTTP_OK = 200
 
     private static String NEW_LINE = "\r\n"
 
-    LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
+    LSFRestJobManager(BEExecutionService restExecutionService, JobManagerOptions parms) {
         super(restExecutionService, parms)
         this.restExecutionService = restExecutionService as RestExecutionService
     }
@@ -76,11 +76,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     @Override
     GenericJobInfo parseGenericJobInfo(String command) {
         return null
-    }
-
-    @Override
-    void queryJobAbortion(List executedJobs) {
-        (executedJobs as List<BEJob>).each { BEJob job -> abortJob(job) }
     }
 
 
@@ -247,7 +242,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             resources.append(" affinity[core(${cores})]")
         }
         resources.append("' ")
-        String logging = LSFCommand.getLoggingParameter(job.jobLog)
+        String logging = LSFCommand.getLoggingParameters(job.jobLog)
         String cwd = job.getWorkingDirectory() ? "-cwd ${job.getWorkingDirectory()} " : ""
 
         String parentJobs = ""
@@ -258,11 +253,12 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     }
 
     /**
-     * Abort given job
-     * @param job
+     * Abort given jobs
+     * @param jobs
      */
-    void abortJob(BEJob job) {
-        submitCommand("bkill ${job.getJobID()}")
+    @Override
+    void queryJobAbortion(List<BEJob> executedJobs) {
+        submitCommand("bkill ${executedJobs*.jobID.join(" ")}")
     }
 
     /**
@@ -277,8 +273,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * Resume given job
      * @param job
      */
-    void resumeJob(BEJob job) {
-        submitCommand("bresume ${job.getJobID()}")
+    void startHeldJobs(List<BEJob> jobs) {
+        submitCommand("bresume ${jobs*.jobID.join(" ")}")
     }
 
     /**
@@ -302,7 +298,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * Generic method to submit any LSF valid command e.g. bstop <job id>
      * @param cmd LSF command
      */
-    public void submitCommand(String cmd) {
+    private void submitCommand(String cmd) {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
         headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
@@ -420,8 +416,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
         jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
         jobInfo.setPriority(jobDetails.getProperty("priority").toString())
-        jobInfo.setOutFile(new File(jobDetails.getProperty("outFile").toString()))
-        jobInfo.setInFile(new File(jobDetails.getProperty("inFile").toString()))
+        jobInfo.setLogFile(new File(jobDetails.getProperty("outFile").toString()))
+        jobInfo.setInputFile(new File(jobDetails.getProperty("inFile").toString()))
         jobInfo.setResourceReq(jobDetails.getProperty("resReq").toString())
         jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
         jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())
@@ -482,26 +478,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    String getLogFileWildcard(BEJob job) {
-        return null
-    }
-
-    @Override
-    String getStringForQueuedJob() {
-        return null
-    }
-
-    @Override
-    String getStringForJobOnHold() {
-        return null
-    }
-
-    @Override
-    String getStringForRunningJob() {
-        return null
-    }
-
-    @Override
     String parseJobID(String commandOutput) {
         return null
     }
@@ -511,7 +487,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         return null
     }
 
-    JobState parseJobState(String stateString) {
+    private JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == "PENDING")
             js = JobState.QUEUED
@@ -526,11 +502,4 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         return js
     }
-
-
-    @Override
-    List<String> getEnvironmentVariableGlobs() {
-        return Collections.unmodifiableList(["LSB_*", "LS_*"])
-    }
-
 }

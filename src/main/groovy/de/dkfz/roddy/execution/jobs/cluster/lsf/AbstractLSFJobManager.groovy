@@ -11,10 +11,8 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
 import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.time.Duration
 
@@ -24,7 +22,7 @@ import java.time.Duration
 @CompileStatic
 abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
 
-    AbstractLSFJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    AbstractLSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
@@ -59,6 +57,11 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList(["LSB_*", "LS_*"])
+    }
+
+    @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
         if (resourceSet.isQueueSet()) {
@@ -69,7 +72,7 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
             resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
         }
         if (resourceSet.isWalltimeSet()) {
-            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltime()))
         }
         if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
             int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1

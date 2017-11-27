@@ -33,7 +33,7 @@ class PBSCommandTest {
         def mapOfParameters = ["a": "a", "b": "b"]
         BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, null, JobLog.none(), null)
         PBSCommand cmd = new PBSCommand(null, job, "jobName", null, mapOfParameters, null, "/tmp/test.sh")
-        String result = cmd.assembleDependencyString()
+        String result = cmd.assembleDependencyString([])
         assert result == ""
     }
 
