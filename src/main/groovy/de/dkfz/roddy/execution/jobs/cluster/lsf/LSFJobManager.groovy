@@ -169,7 +169,6 @@ class LSFJobManager extends AbstractLSFJobManager {
                         continue //Filter out lines which have been missed which do not start with a number.
 
                     //TODO Put to a common class, is used multiple times.
-                    line = line.replaceAll("\\s+", " ").trim()       //Replace multi white space with single whitespace
                     String[] split = line.split(BJOBS_DELIMITER)
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
