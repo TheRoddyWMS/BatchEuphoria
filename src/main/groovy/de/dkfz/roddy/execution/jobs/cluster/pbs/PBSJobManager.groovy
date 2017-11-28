@@ -53,7 +53,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult submitJob(BEJob job) {
         def command = createCommand(job)
         def executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -140,42 +140,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         return new ProcessingParameters(parameters)
-    }
-
-    /**
-     * #PBS -l walltime=8:00:00
-     * #PBS -l nodes=1:ppn=12:lsdf
-     * #PBS -S /bin/bash
-     * #PBS -l mem=3600m
-     * #PBS -m a
-     *
-     * #PBS -l walltime=50:00:00
-     * #PBS -l nodes=1:ppn=6:lsdf
-     * #PBS -l mem=52g
-     * #PBS -m a
-     * @param file
-     * @return
-     */
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        String[] text = RoddyIOHelperMethods.loadTextFile(file)
-
-        List<String> lines = new LinkedList<String>()
-        boolean preambel = true
-        for (String line : text) {
-            if (preambel && !line.startsWith("#PBS"))
-                continue
-            preambel = false
-            if (!line.startsWith("#PBS"))
-                break
-            lines.add(line)
-        }
-
-        StringBuilder processingOptionsStr = new StringBuilder()
-        for (String line : lines) {
-            processingOptionsStr << " " << line.substring(5)
-        }
-        return ProcessingParameters.fromString(processingOptionsStr.toString())
     }
 
     @Override
@@ -311,7 +275,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
 
     @Override
-    void queryJobAbortion(List<BEJob> executedJobs) {
+    void killJobs(List<BEJob> executedJobs) {
         def executionResult = executionService.execute("${PBS_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
         if (executionResult.successful) {
             executedJobs.each { BEJob job -> job.jobState = JobState.ABORTED }

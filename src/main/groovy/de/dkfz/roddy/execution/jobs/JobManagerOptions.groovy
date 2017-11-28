@@ -39,7 +39,6 @@ class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
         trackUserJobsOnly = false
         trackOnlyStartedJobs = false
-        userIdForJobQueries = "123"
         strictMode = true
         updateInterval = Duration.ofMinutes(5)
         createDaemon = false

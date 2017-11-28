@@ -45,7 +45,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    void queryJobAbortion(List<BEJob> executedJobs) {
+    void killJobs(List<BEJob> executedJobs) {
 
     }
 
@@ -97,7 +97,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult submitJob(BEJob job) {
         // Some of the parent jobs are in a bad state!
         Command command = createCommand(job)
         BEJobResult jobResult
@@ -136,10 +136,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         return new ProcessingParameters(LinkedHashMultimap.create())
     }
 
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        return null
-    }
 
     @Override
     boolean executesWithoutJobSystem() {

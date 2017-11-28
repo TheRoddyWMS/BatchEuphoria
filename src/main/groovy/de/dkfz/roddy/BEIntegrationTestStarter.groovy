@@ -112,7 +112,7 @@ class BEIntegrationTestStarter {
             def jobList = [testJob]
 
             // run single job and check status
-            BEJobResult jr = jobManager.runJob(testJob)
+            BEJobResult jr = jobManager.submitJob(testJob)
             /*if (jobManager.isHoldJobsEnabled()) {
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
@@ -128,7 +128,7 @@ class BEIntegrationTestStarter {
                 ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.HOLD, JobState.RUNNING], jobManager)
             }
             log.always("Abort and check again")
-            jobManager.queryJobAbortion(jobList)
+            jobManager.killJobs(jobList)
             // The job abortion might be a valid command but the cluster system might still try to keep the jobs.
             // We cannot handle problems like a stuck cluster, so let's stick to the basic query and see, if the job
             // ends within some seconds.
@@ -164,7 +164,7 @@ class BEIntegrationTestStarter {
 
             // run jobs with dependencies
             log.always("Submit jobs.")
-            testJobs.each { def jr = jobManager.runJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
+            testJobs.each { def jr = jobManager.submitJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
             ensureProperJobStates(maxSleep, testJobs, [jobManager.isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED], jobManager)
 
             log.always("Start held jobs.")
@@ -175,7 +175,7 @@ class BEIntegrationTestStarter {
                 (jobManager as LSFRestJobManager).updateJobStatistics(testJobs)
 
             log.always("Abort jobs.")
-            jobManager.queryJobAbortion(testJobs)
+            jobManager.killJobs(testJobs)
             ensureProperJobStates(maxSleep, testJobs, [JobState.ABORTED, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_SUCCESSFUL], jobManager)
 
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers

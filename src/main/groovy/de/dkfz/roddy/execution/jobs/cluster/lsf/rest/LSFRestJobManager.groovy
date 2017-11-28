@@ -61,31 +61,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         this.restExecutionService = restExecutionService as RestExecutionService
     }
 
-
-    @Override
-    BEJobResult runJob(BEJob job) {
-        submitJob(job)
-        return job.runResult
-    }
-
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        return null
-    }
-
-    @Override
-    GenericJobInfo parseGenericJobInfo(String command) {
-        return null
-    }
-
-
-//    Map<String, JobState> queryJobStatus(List jobs) {
-//        getJobDetails(jobs)
-//        Map<String, JobState> jobStates = [:]
-//        (jobs as BEJob).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
-//        return jobStates
-//    }
-
     /**
      * Submit job
      *
@@ -113,7 +88,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      "\r\n" +
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
      */
-    private void submitJob(BEJob job) {
+    @Override
+    BEJobResult submitJob(BEJob job) {
         List<Header> headers = []
         headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
@@ -161,6 +137,13 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
             throw new BEException("Job ${job.jobName} could not be started. \n Returned status code:${result.statusCode} \n result:${result.body}")
         }
+        return job.runResult
+    }
+
+
+    @Override
+    GenericJobInfo parseGenericJobInfo(String command) {
+        return null
     }
 
     /**
@@ -257,7 +240,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param jobs
      */
     @Override
-    void queryJobAbortion(List<BEJob> executedJobs) {
+    void killJobs(List<BEJob> executedJobs) {
         submitCommand("bkill ${executedJobs*.jobID.join(" ")}")
     }
 

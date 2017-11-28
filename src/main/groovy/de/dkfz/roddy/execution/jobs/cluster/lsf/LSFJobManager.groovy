@@ -74,7 +74,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult submitJob(BEJob job) {
         def command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -101,29 +101,6 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
     }
 
-
-
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        String[] text = RoddyIOHelperMethods.loadTextFile(file)
-
-        List<String> lines = new LinkedList<String>()
-        boolean preambel = true
-        for (String line : text) {
-            if (preambel && !line.startsWith("#LSF"))
-                continue
-            preambel = false
-            if (!line.startsWith("#LSF"))
-                break
-            lines.add(line)
-        }
-
-        StringBuilder processingOptionsStr = new StringBuilder()
-        for (String line : lines) {
-            processingOptionsStr << " " << line.substring(5)
-        }
-        return ProcessingParameters.fromString(processingOptionsStr.toString())
-    }
 
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
@@ -280,7 +257,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    void queryJobAbortion(List<BEJob> executedJobs) {
+    void killJobs(List<BEJob> executedJobs) {
         logger.always("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}")
         def executionResult = executionService.execute("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
 

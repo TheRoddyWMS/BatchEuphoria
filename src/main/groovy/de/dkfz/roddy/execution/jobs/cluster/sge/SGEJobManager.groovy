@@ -59,10 +59,6 @@ class SGEJobManager extends PBSJobManager {
         return new ProcessingParameters(resourceParameters)
     }
 
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        return null
-    }
 
     @Override
     protected int getPositionOfJobID() {
