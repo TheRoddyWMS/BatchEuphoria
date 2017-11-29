@@ -10,6 +10,7 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.LocalExecutionHelper
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 
 /**
@@ -33,7 +34,7 @@ class TestExecutionService implements BEExecutionService {
 
     @Override
     ExecutionResult execute(String command, boolean waitFor = true) {
-        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${Command.escapeBash(command)}")
+        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${BashUtils.strongQuote(command)}")
     }
 
     ExecutionResult executeLocal(String command) {

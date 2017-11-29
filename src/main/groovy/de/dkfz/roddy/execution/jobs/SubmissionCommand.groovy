@@ -7,6 +7,7 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
@@ -55,7 +56,7 @@ abstract class SubmissionCommand extends Command {
         StringBuilder command = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
-            command << "echo " << escapeBash(job.getToolScript()) << " | "
+            command << "echo " << BashUtils.strongQuote(job.getToolScript()) << " | "
         }
 
         command << getSubmissionCommand()

@@ -48,7 +48,7 @@ dependencies {
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
     compile 'com.google.guava:guava:23.0'
-    compile 'com.github.eilslabs:RoddyToolLib:cd6695f4f099485e0ebeff09ffab70fc68582060'
+    compile 'com.github.eilslabs:RoddyToolLib:8e5d134c5be7dd6a3652377252f0b27f6fde8f95'
 }
 
 task writePom {

@@ -103,8 +103,4 @@ abstract class Command {
     boolean isBlockingCommand() {
         return false
     }
-
-    public static final String escapeBash(final String input) {
-        "'${input.replaceAll("'", Matcher.quoteReplacement("'\\''"))}'"
-    }
 }
