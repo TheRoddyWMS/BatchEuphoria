@@ -89,7 +89,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
      */
     @Override
-    BEJobResult submitJob(BEJob job) {
+    protected RestCommand createCommand(BEJob job) {
         List<Header> headers = []
         headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
@@ -121,23 +121,12 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         logger.postAlwaysInfo("request body:\n" + requestPartsWithHeader.content)
 
-        Command command = new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
-        RestResult result = restExecutionService.execute(command) as RestResult
-        if (result.statusCode == HTTP_OK) {
-            def parsedBody = new XmlSlurper().parseText(result.body)
-            logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + parsedBody)
-            BEJobID jobID = new BEJobID(parsedBody.text())
-            job.resetJobID(jobID)
-            BEJobResult jobResult = new BEJobResult(command, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
-            job.setJobState(JobState.UNKNOWN)
-            addToListOfStartedJobs(job)
-        } else {
-            job.setRunResult(new BEJobResult(command, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
-            logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
-            throw new BEException("Job ${job.jobName} could not be started. \n Returned status code:${result.statusCode} \n result:${result.body}")
-        }
-        return job.runResult
+        return new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
+    }
+
+    @Override
+    protected String parseJobID(String commandOutput) {
+            return new XmlSlurper().parseText(commandOutput)
     }
 
 
@@ -240,32 +229,25 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param jobs
      */
     @Override
-    void killJobs(List<BEJob> executedJobs) {
-        submitCommand("bkill ${executedJobs*.jobID.join(" ")}")
+    protected RestResult executeKillJobs(List<BEJobID> jobIDs) {
+        return submitCommand("bkill ${jobIDs*.id.join(" ")}")
     }
 
     /**
      * Suspend given job
      * @param job
-     */
+     * /
     void suspendJob(BEJob job) {
         submitCommand("bstop ${job.getJobID()}")
-    }
+    }*/
 
     /**
      * Resume given job
      * @param job
      */
-    void startHeldJobs(List<BEJob> jobs) {
-        submitCommand("bresume ${jobs*.jobID.join(" ")}")
-    }
-
-    /**
-     * Requeue given job
-     * @param job
-     */
-    void requeueJob(BEJob job) {
-        submitCommand("brequeue ${job.getJobID()}")
+    @Override
+    protected RestResult executeStartHeldJobs(List<BEJobID> jobIDs) {
+        return submitCommand("bresume ${jobIDs*.id.join(" ")}")
     }
 
     /**
@@ -281,22 +263,14 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * Generic method to submit any LSF valid command e.g. bstop <job id>
      * @param cmd LSF command
      */
-    private void submitCommand(String cmd) {
+    private RestResult submitCommand(String cmd) {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
         headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
         String body = "<UserCmd>" +
                 "<cmd>${cmd}</cmd>" +
                 "</UserCmd>"
-        RestResult result = restExecutionService.execute(new RestCommand(URI_USER_COMMAND, body, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
-        if (result.statusCode == 200) {
-            // successful
-            logger.info("status code: " + result.statusCode + " result: " + result.body)
-        } else {
-            //error
-            logger.warning("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
-            throw new BEException("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
-        }
+        return restExecutionService.execute(new RestCommand(URI_USER_COMMAND, body, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
     }
 
     /**
@@ -458,11 +432,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         Map<BEJobID, GenericJobInfo> jobDetailsResult = getJobDetails(jobIds)
         updateJobStatistics(jobDetailsResult)
         return jobDetailsResult
-    }
-
-    @Override
-    String parseJobID(String commandOutput) {
-        return null
     }
 
     @Override

@@ -45,9 +45,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    void killJobs(List<BEJob> executedJobs) {
-
-    }
+    ExecutionResult executeKillJobs(List<BEJobID> executedJobs) { null }
 
     @Override
     void addToListOfStartedJobs(BEJob job) {}
@@ -129,7 +127,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    void startHeldJobs(List<BEJob> jobs) { }
+    ExecutionResult executeStartHeldJobs(List<BEJobID> jobs) { null }
 
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {

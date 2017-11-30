@@ -27,7 +27,8 @@ class SGEJobManager extends PBSJobManager {
         super(executionService, parms)
     }
 
-    SGECommand createCommand(BEJob job) {
+    @Override
+    protected SGECommand createCommand(BEJob job) {
         return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
     }
 

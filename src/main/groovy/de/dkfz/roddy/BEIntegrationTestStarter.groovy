@@ -11,7 +11,6 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
-import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 
@@ -21,7 +20,6 @@ import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 
 import java.time.Duration
@@ -103,7 +101,6 @@ class BEIntegrationTestStarter {
         multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
-    @CompileDynamic
     private static void singleJobTest(BatchEuphoriaJobManager jobManager, BEJob testJob) {
         int maxSleep = 5
         try {
@@ -140,11 +137,8 @@ class BEIntegrationTestStarter {
                 jm.updateJobStatistics(jobList)
             */
             System.sleep(10000)
-            def jm = jobManager as LSFRestJobManager
-            if (jm){
-                jm.getJobDetails([testJob])
-                jm.updateJobStatistics(jobList)
-            }
+            jobManager.queryExtendedJobState([testJob])
+
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
@@ -155,7 +149,6 @@ class BEIntegrationTestStarter {
         }
     }
 
-    @CompileDynamic
     private static void multipleJobsTest(BatchEuphoriaJobManager jobManager, List<BEJob> testJobs) {
         int maxSleep = 5
         try {
@@ -171,8 +164,7 @@ class BEIntegrationTestStarter {
             jobManager.startHeldJobs(testJobs)
             ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
 
-            if (jobManager.getClass().name == LSFRestJobManager.name)
-                (jobManager as LSFRestJobManager).updateJobStatistics(testJobs)
+            jobManager.queryExtendedJobState(testJobs)
 
             log.always("Abort jobs.")
             jobManager.killJobs(testJobs)

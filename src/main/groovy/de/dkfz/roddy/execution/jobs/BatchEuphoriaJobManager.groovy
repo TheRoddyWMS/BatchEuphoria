@@ -77,16 +77,40 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     }
 
 
-    abstract BEJobResult submitJob(BEJob job)
+    BEJobResult submitJob(BEJob job) {
+        Command command = createCommand(job)
+        ExecutionResult executionResult = executionService.execute(command)
+        extractAndSetJobResultFromExecutionResult(command, executionResult)
+        addToListOfStartedJobs(job)
+        return job.runResult
+    }
 
-    abstract void startHeldJobs(List<BEJob> jobs)
+    void startHeldJobs(List<BEJob> heldJobs) {
+        if (!isHoldJobsEnabled()) return
+        if (!heldJobs) return
+
+        ExecutionResult er = executeStartHeldJobs(collectJobIDsFromJobs(heldJobs))
+        if(!er.successful){
+            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+        }
+    }
 
     /**
      * Try to abort a list of jobs
      * @param jobs
      */
-    abstract void killJobs(List<BEJob> jobs)
+    void killJobs(List<BEJob> jobs) {
+        ExecutionResult executionResult = executeKillJobs(collectJobIDsFromJobs(jobs))
 
+        if (executionResult.successful) {
+            jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
+        } else {
+            String error = "Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}"
+            logger.warning(error)
+            throw new BEException(error)
+        }
+    }
 
     /**
      * Queries the status of all jobs in the list.
@@ -242,6 +266,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      */
     abstract GenericJobInfo parseGenericJobInfo(String command)
 
+    protected List<BEJobID> collectJobIDsFromJobs(List<BEJob> jobs) {
+        BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID() }
+    }
+
+
     /**
      * Called by the execution service after a command was executed.
      */
@@ -268,9 +297,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return jobResult
     }
 
+    abstract protected Command createCommand(BEJob job)
     abstract protected String parseJobID(String commandOutput)
-
     abstract protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs)
+    abstract protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs)
+    abstract protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs)
 
     protected void createUpdateDaemonThread() {
         try {
@@ -295,12 +326,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                 JobState js = states.get(id)
                 BEJob job = startedJobs.get(id)
 
-                if (job.getJobState() in [JobState.FAILED, JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN, JobState.ABORTED]){
-                    startedJobs.remove(id)
-                    continue
-                }
-
                 job.setJobState(js)
+
+                if (js in [JobState.FAILED, JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN, JobState.ABORTED]){
+                    startedJobs.remove(id)
+                }
             }
         }
     }

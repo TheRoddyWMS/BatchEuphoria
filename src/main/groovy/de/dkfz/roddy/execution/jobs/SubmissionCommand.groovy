@@ -36,7 +36,7 @@ abstract class SubmissionCommand extends Command {
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
-        // collect parameters for qsub
+        // collect parameters for job submission
         List<String> parameters = []
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
@@ -52,14 +52,14 @@ abstract class SubmissionCommand extends Command {
         parameters << getAdditionalCommandParameters()
 
 
-        // create qsub call
+        // create job submission command call
         StringBuilder command = new StringBuilder(EMPTY)
 
         if (job.getToolScript()) {
             command << "echo " << BashUtils.strongQuote(job.getToolScript()) << " | "
         }
 
-        command << getSubmissionCommand()
+        command << parentJobManager.getSubmissionCommand()
         command << " ${parameters.join(" ")} "
 
         if (job.getTool()) {
@@ -69,7 +69,6 @@ abstract class SubmissionCommand extends Command {
         return command
     }
 
-    abstract protected String getSubmissionCommand()
 
     abstract protected String getJobNameParameter()
     abstract protected String getHoldParameter()
@@ -85,14 +84,14 @@ abstract class SubmissionCommand extends Command {
 
 
     String assembleProcessingCommands() {
-        StringBuilder bsubCall = new StringBuilder()
+        StringBuilder commands = new StringBuilder()
         for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
             if (!(pcmd instanceof ProcessingParameters)) continue
             ProcessingParameters command = (ProcessingParameters) pcmd
             if (command == null)
                 continue
-            bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
+            commands << StringConstants.WHITESPACE << command.getProcessingCommandString()
         }
-        return bsubCall.toString()
+        return commands.toString()
     }
 }

@@ -7,6 +7,12 @@ package de.dkfz.roddy.config
 
 import groovy.transform.CompileStatic
 
+
+/**
+ * This class is used to pass how to write the log output to the BEJob constructor.
+ * You can either have it not write a log file, a log file with combined stdout and stderr or two log files with separate stdout and stderr.
+ *
+ */
 @CompileStatic
 class JobLog {
     public static final String JOB_ID = '{JOB_ID}'

@@ -73,7 +73,7 @@ abstract class Command {
         return jobID.isValidID()
     }
 
-    final BEJobID setJobID() {
+    final BEJobID getJobID() {
         return jobID
     }
 

@@ -23,8 +23,6 @@ class LSFCommand extends SubmissionCommand {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
 
-    public static final String BSUB = "bsub"
-
     /**
      * The command which should be called
      */
@@ -51,11 +49,6 @@ class LSFCommand extends SubmissionCommand {
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
-    }
-
-    @Override
-    protected String getSubmissionCommand() {
-        return "bsub"
     }
 
     @Override

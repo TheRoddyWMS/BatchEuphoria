@@ -48,20 +48,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         logger.rare("parseToJob() is not implemented and will return null.")
     }
 
+    @Override
     protected PBSCommand createCommand(BEJob job) {
         return new PBSCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
-    }
-
-    @Override
-    BEJobResult submitJob(BEJob job) {
-        def command = createCommand(job)
-        def executionResult = executionService.execute(command)
-        extractAndSetJobResultFromExecutionResult(command, executionResult)
-
-        // job.runResult is set within executionService.execute
-        // TODO Set the job runResult in a better way from runJob itself or so.
-        addToListOfStartedJobs(job)
-        return job.runResult
     }
 
     /**
@@ -73,21 +62,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
 
-    private List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID().shortID }
-    }
-
     @Override
-    void startHeldJobs(List<BEJob> heldJobs) {
-        if (!isHoldJobsEnabled()) return
-        if (!heldJobs) return
-        String qrls = "qrls ${collectJobIDsFromJobs(heldJobs).join(" ")}"
-
-        ExecutionResult er = executionService.execute(qrls)
-        if(!er.successful){
-            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-        }
+    protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
+        executionService.execute("qrls ${jobIDs*.id.join(" ")}")
     }
 
 //
@@ -156,14 +133,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if (!executionService.isAvailable())
             return
 
-        String queryCommand = getQueryCommand()
+        StringBuilder queryCommand = new StringBuilder(getQueryCommand())
 
         if (jobIDs && jobIDs.size() < 10) {
-            queryCommand += " " + jobIDs*.id.join(" ")
+            queryCommand << " ${jobIDs*.id.join(" ")} "
         }
 
         if (isTrackingOfUserJobsEnabled)
-            queryCommand += " -u $userIDForQueries "
+            queryCommand << " -u $userIDForQueries "
 
         ExecutionResult er = executionService.execute(queryCommand.toString())
         List<String> resultLines = er.resultLines
@@ -275,14 +252,9 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
 
     @Override
-    void killJobs(List<BEJob> executedJobs) {
-        def executionResult = executionService.execute("${PBS_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
-        if (executionResult.successful) {
-            executedJobs.each { BEJob job -> job.jobState = JobState.ABORTED }
-        } else {
-            logger.always("Need to create a proper fail message for abortion.")
-            throw new ExecutionException("Abortion of job states failed.", null)
-        }
+    ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
+        logger.always("${PBS_COMMAND_DELETE_JOBS} ${jobIDs.join(" ")}")
+        return executionService.execute("${PBS_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}", false)
     }
 
     @Override

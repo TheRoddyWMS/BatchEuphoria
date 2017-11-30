@@ -69,38 +69,14 @@ class LSFJobManager extends AbstractLSFJobManager {
         super(executionService, parms)
     }
 
-    private LSFCommand createCommand(BEJob job) {
+    protected LSFCommand createCommand(BEJob job) {
         return new LSFCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override
-    BEJobResult submitJob(BEJob job) {
-        def command = createCommand(job)
-        ExecutionResult executionResult = executionService.execute(command)
-        extractAndSetJobResultFromExecutionResult(command, executionResult)
-        // job.runResult is set within executionService.execute
-        // TODO Set the job runResult in a better way from runJob itself or so.
-        addToListOfStartedJobs(job)
-        return job.runResult
+    protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
+        executionService.execute("bresume ${jobIDs*.id.join(" ")}")
     }
-
-    private List<String> collectJobIDsFromJobs(List<BEJob> jobs) {
-        jobs.collect { it.runResult?.jobID?.shortID }.findAll { it }
-    }
-
-    @Override
-    void startHeldJobs(List<BEJob> heldJobs) {
-        if (!isHoldJobsEnabled()) return
-        if (!heldJobs) return
-        String qrls = "bresume ${collectJobIDsFromJobs(heldJobs).join(" ")}"
-
-        ExecutionResult er = executionService.execute(qrls)
-        if(!er.successful){
-            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-        }
-    }
-
 
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
@@ -121,14 +97,14 @@ class LSFJobManager extends AbstractLSFJobManager {
         if (!executionService.isAvailable())
             return
 
-        String queryCommand = getQueryCommand()
+        StringBuilder queryCommand = new StringBuilder(getQueryCommand())
 
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
-            queryCommand += " -u $userIDForQueries "
+            queryCommand << " -u $userIDForQueries "
 
         if (jobIDs && jobIDs.size() < 10) {
-            queryCommand += " " + jobIDs*.id.join(" ")
+            queryCommand << " ${jobIDs*.id.join(" ")} "
         }
 
         ExecutionResult er = executionService.execute(queryCommand.toString())
@@ -257,16 +233,9 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    void killJobs(List<BEJob> executedJobs) {
-        logger.always("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}")
-        def executionResult = executionService.execute("${LSF_COMMAND_DELETE_JOBS} ${collectJobIDsFromJobs(executedJobs).join(" ")}", false)
-
-        if (executionResult.successful) {
-            executedJobs.each { BEJob job -> job.jobState = JobState.ABORTED }
-        } else {
-            logger.warning("Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}")
-            throw new BEException("Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}")
-        }
+    protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
+        logger.always("${LSF_COMMAND_DELETE_JOBS} ${jobIDs.join(" ")}")
+        return executionService.execute("${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}", false)
     }
 
     @Override
@@ -280,7 +249,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     String getSubmissionCommand() {
-        return LSFCommand.BSUB
+        return "bsub"
     }
 }
 

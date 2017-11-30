@@ -56,11 +56,6 @@ class PBSCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getSubmissionCommand() {
-        "qsub"
-    }
-
-    @Override
     protected String getJobNameParameter() {
         "-N ${jobName}" as String
     }
@@ -134,8 +129,6 @@ class PBSCommand extends SubmissionCommand {
         return qsubCall
     }
 
-
-    // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     @Override
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
