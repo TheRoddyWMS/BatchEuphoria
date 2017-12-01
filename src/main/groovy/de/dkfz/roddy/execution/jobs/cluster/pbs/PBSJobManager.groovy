@@ -377,8 +377,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             return null
         } else if (s.startsWith("/")) {
             return new File(s)
-        } else if (s =~ /^[\w-]:\//) {
-            return new File(s.replaceAll(/^[\w-]:/, ""))
+        } else if (s =~ /^[\w-]+:\//) {
+            return new File(s.replaceAll(/^[\w-]+:/, ""))
         } else {
             return null
         }
