@@ -18,6 +18,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 
 import static de.dkfz.roddy.StringConstants.*
@@ -142,7 +143,7 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     }
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult runJob(BEJob job) throws TimeoutException {
         def command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -227,11 +228,6 @@ class LSFJobManager extends BatchEuphoriaJobManagerAdapter {
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
         return new LSFCommandParser(commandString).toGenericJobInfo();
-    }
-
-    @Override
-    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
-        return null
     }
 
     @Override

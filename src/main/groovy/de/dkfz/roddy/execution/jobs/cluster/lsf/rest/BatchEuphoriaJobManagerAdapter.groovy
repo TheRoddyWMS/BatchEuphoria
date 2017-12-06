@@ -17,6 +17,7 @@ import groovy.transform.CompileStatic
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.time.Duration
+import java.util.concurrent.TimeoutException
 
 /**
  * Created by kaercher on 22.03.17.
@@ -59,7 +60,7 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
     }
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult runJob(BEJob job) throws TimeoutException {
         throw new NotImplementedException()
     }
 
@@ -106,10 +107,6 @@ class BatchEuphoriaJobManagerAdapter extends ClusterJobManager<LSFCommand> {
         throw new NotImplementedException()
     }
 
-    @Override
-    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
-        throw new NotImplementedException()
-    }
     // needed
     @Override
     void updateJobStatus() {

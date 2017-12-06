@@ -134,7 +134,7 @@ abstract class Command {
         return bsubCall
     }
 
-    public static final String escapeBash(final String input) {
+    protected static final String escapeBash(final String input) {
         "'${input.replaceAll("'", Matcher.quoteReplacement("'\\''"))}'"
     }
 }

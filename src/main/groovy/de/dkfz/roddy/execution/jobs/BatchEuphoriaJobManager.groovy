@@ -13,6 +13,8 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
+import java.util.concurrent.TimeoutException
+
 /**
  * Basic factory and manager class for BEJob and Command management
  * Currently supported are qsub via PBS or SGE. Other cluster systems or custom job submission / execution system are possible.
@@ -132,7 +134,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param job
      * @return
      */
-    abstract BEJobResult runJob(BEJob job)
+    abstract BEJobResult runJob(BEJob job) throws TimeoutException
 
     /**
      * Called by the execution service after a command was executed.
@@ -140,7 +142,12 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
         BEJobResult jobResult
         if (res.successful) {
-            String exID = parseJobID(res.resultLines[0])
+            String exID
+            try {
+                exID = parseJobID(res.resultLines[0])
+            } catch (BEException ex) {
+                throw new BEException("Full input was: '${res.resultLines.join("\n")}", ex)
+            }
             def job = command.getJob()
             BEJobID jobID = new BEJobID(exID)
             command.setExecutionID(jobID)
@@ -189,8 +196,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract BEJob parseToJob(String commandString)
 
     abstract GenericJobInfo parseGenericJobInfo(String command)
-
-    abstract BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex)
 
     abstract void updateJobStatus()
 
