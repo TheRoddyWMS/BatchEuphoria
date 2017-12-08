@@ -22,6 +22,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Map.Entry
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import java.util.regex.Matcher
 
@@ -89,7 +90,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult runJob(BEJob job) throws TimeoutException {
         def command = createCommand(job)
         def executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -266,11 +267,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
         return new PBSCommandParser(commandString).toGenericJobInfo();
-    }
-
-    @Override
-    BEJobResult convertToArrayResult(BEJob arrayChildJob, BEJobResult parentJobsResult, int arrayIndex) {
-        return null
     }
 
     private static final ReentrantLock cacheLock = new ReentrantLock()

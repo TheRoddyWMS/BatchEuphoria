@@ -27,6 +27,7 @@ import org.apache.http.protocol.HTTP
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeoutException
 
 /**
  * REST job manager for cluster systems.
@@ -65,7 +66,7 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
 
     @Override
-    BEJobResult runJob(BEJob job) {
+    BEJobResult runJob(BEJob job) throws TimeoutException {
         submitJob(job)
         return job.runResult
     }
