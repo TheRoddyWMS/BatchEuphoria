@@ -19,7 +19,6 @@ import de.dkfz.roddy.tools.*
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.ExecutionException
 import java.util.regex.Matcher
 
 /**
@@ -136,7 +135,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         StringBuilder queryCommand = new StringBuilder(getQueryCommand())
 
         if (jobIDs && jobIDs.size() < 10) {
-            queryCommand << " ${jobIDs*.id.join(" ")} "
+            queryCommand << " "<< jobIDs*.id.join(" ")
         }
 
         if (isTrackingOfUserJobsEnabled)
@@ -253,8 +252,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        logger.always("${PBS_COMMAND_DELETE_JOBS} ${jobIDs.join(" ")}")
-        return executionService.execute("${PBS_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}", false)
+        StringBuilder killJobsCommand = new StringBuilder(PBS_COMMAND_DELETE_JOBS)
+        killJobsCommand << " " << jobIDs*.id.join(" ")
+        logger.always(killJobsCommand.toString())
+        return executionService.execute(killJobsCommand.toString(), false)
     }
 
     @Override
