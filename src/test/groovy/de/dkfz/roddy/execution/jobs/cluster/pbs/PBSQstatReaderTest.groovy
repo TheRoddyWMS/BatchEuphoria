@@ -7,10 +7,9 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.TestExecutionService
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
-import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import groovy.transform.CompileStatic
 import org.junit.Test
 import java.lang.reflect.Method
@@ -270,7 +269,6 @@ Job Id: 14973745.tbi-pbs-ng.inet.dkfz-heidelberg.de
 
 
     final static String output2 = """
-otptest@tbi-pbs3:~> qstat -f 14973826 14973827
 Job Id: 14973826.tbi-pbs-ng.inet.dkfz-heidelberg.de
     Job_Name = r170623_111000536_XI061_9EP29_snvDeepAnnotation
     Job_Owner = otproddy@tbi-pbs4.inet.dkfz-heidelberg.de
@@ -403,7 +401,7 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
     @Test
     void testReadQstatOutput() throws Exception {
         TestExecutionService executionService = new TestExecutionService("", "")
-        PBSJobManager jm = new PBSJobManager(executionService, new JobManagerCreationParametersBuilder()
+        PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
                 .build())
@@ -415,21 +413,21 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
         Map<String, Map<String, String>> qstatReaderResultOutput2 = (Map<String, Map<String, String>>) method.invoke(jm, output2)
 
         assert qstatReaderResultOutput1.size() == 4
-        assert qstatReaderResultOutput2.size() == 1
+        assert qstatReaderResultOutput2.size() == 2
     }
 
     @Test
     void testProcessQstatOutput() throws Exception {
         TestExecutionService executionService = new TestExecutionService("", "")
-        PBSJobManager jm = new PBSJobManager(executionService, new JobManagerCreationParametersBuilder()
+        PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
                 .build())
         Method method = jm.getClass().getDeclaredMethod("processQstatOutput", List);
         method.setAccessible(true);
 
-        Map<String, GenericJobInfo> genericJobInfoOutput1 = (Map<String, GenericJobInfo>) method.invoke(jm, [output1])
-        Map<String, GenericJobInfo> genericJobInfoOutput2 = (Map<String, GenericJobInfo>) method.invoke(jm, [output2])
+        Map<BEJobID, GenericJobInfo> genericJobInfoOutput1 = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [output1])
+        Map<BEJobID, GenericJobInfo> genericJobInfoOutput2 = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [output2])
 
         /*
         // print GenericJobInfo
@@ -455,6 +453,6 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
         }*/
 
         assert genericJobInfoOutput1.size() == 4
-        assert genericJobInfoOutput2.size() == 1
+        assert genericJobInfoOutput2.size() == 2
     }
 }

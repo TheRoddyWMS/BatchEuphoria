@@ -12,6 +12,8 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.*
+import de.dkfz.roddy.execution.jobs.cluster.lsf.AbstractLSFJobManager
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -27,7 +29,6 @@ import org.apache.http.protocol.HTTP
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeoutException
 
 /**
  * REST job manager for cluster systems.
@@ -35,71 +36,30 @@ import java.util.concurrent.TimeoutException
  * Created by kaercher on 22.03.17.
  */
 @CompileStatic
-class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
+class LSFRestJobManager extends AbstractLSFJobManager {
 
     protected final RestExecutionService restExecutionService
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFRestJobManager.class.name);
 
     /*REST RESOURCES*/
-    public static String URI_JOB_SUBMIT = "/jobs/submit"
-    public static String URI_JOB_KILL = "/jobs/kill"
-    public static String URI_JOB_SUSPEND = "/jobs/suspend"
-    public static String URI_JOB_RESUME = "/jobs/resume"
-    public static String URI_JOB_REQUEUE = "/jobs/requeue"
-    public static String URI_JOB_DETAILS = "/jobs/"
-    public static String URI_JOB_BASICS = "/jobs/basicinfo"
-    public static String URI_JOB_HISTORY = "/jobhistory"
-    public static String URI_USER_COMMAND = "/userCmd"
+    private static String URI_JOB_SUBMIT = "/jobs/submit"
+    private static String URI_JOB_KILL = "/jobs/kill"
+    private static String URI_JOB_SUSPEND = "/jobs/suspend"
+    private static String URI_JOB_RESUME = "/jobs/resume"
+    private static String URI_JOB_REQUEUE = "/jobs/requeue"
+    private static String URI_JOB_DETAILS = "/jobs/"
+    private static String URI_JOB_BASICS = "/jobs/basicinfo"
+    private static String URI_JOB_HISTORY = "/jobhistory"
+    private static String URI_USER_COMMAND = "/userCmd"
 
-    public static Integer HTTP_OK = 200
-
-    protected Map<String, JobState> allStates = [:]
-
-    protected Map<String, BEJob> jobStatusListeners = [:]
+    private static Integer HTTP_OK = 200
 
     private static String NEW_LINE = "\r\n"
 
-    LSFRestJobManager(BEExecutionService restExecutionService, JobManagerCreationParameters parms) {
+    LSFRestJobManager(BEExecutionService restExecutionService, JobManagerOptions parms) {
         super(restExecutionService, parms)
         this.restExecutionService = restExecutionService as RestExecutionService
     }
-
-
-    @Override
-    BEJobResult runJob(BEJob job) throws TimeoutException {
-        submitJob(job)
-        return job.runResult
-    }
-
-
-
-    @Override
-    void updateJobStatus() {
-
-    }
-
-
-    @Override
-    void queryJobAbortion(List executedJobs) {
-        (executedJobs as List<BEJob>).each { BEJob job -> abortJob(job) }
-    }
-
-
-    @Override
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
-        getJobDetails(jobs)
-        Map<BEJob, JobState> jobStates = [:]
-        jobs.each { BEJob job -> jobStates.put(job, job.getJobState()) }
-        return jobStates
-    }
-
-
-//    Map<String, JobState> queryJobStatus(List jobs) {
-//        getJobDetails(jobs)
-//        Map<String, JobState> jobStates = [:]
-//        (jobs as BEJob).each { BEJob job -> jobStates.put(job.getJobID().toString(), job.getJobState()) }
-//        return jobStates
-//    }
 
     /**
      * Submit job
@@ -128,7 +88,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      "\r\n" +
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
      */
-    private void submitJob(BEJob job) {
+    @Override
+    protected RestCommand createCommand(BEJob job) {
         List<Header> headers = []
         headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
@@ -160,21 +121,18 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
         logger.postAlwaysInfo("request body:\n" + requestPartsWithHeader.content)
 
-        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
-        if (result.statusCode == HTTP_OK) {
-            def parsedBody = new XmlSlurper().parseText(result.body)
-            logger.postAlwaysInfo("status code: " + result.statusCode + " result:" + parsedBody)
-            BEJobID jobID = new BEJobID(parsedBody.text())
-            job.resetJobID(jobID)
-            BEJobResult jobResult = new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
-            job.setJobState(JobState.UNKNOWN)
-            jobStatusListeners.put(job.getJobID().getId(), job)
-        } else {
-            job.setRunResult(new BEJobResult(job.lastCommand, job, result, job.tool, job.parameters, job.parentJobs as List<BEJob>))
-            logger.postAlwaysInfo("status code: " + result.statusCode + " result: " + result.body)
-            throw new BEException("Job ${job.jobName} could not be started. \n Returned status code:${result.statusCode} \n result:${result.body}")
-        }
+        return new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
+    }
+
+    @Override
+    protected String parseJobID(String commandOutput) {
+            return new XmlSlurper().parseText(commandOutput)
+    }
+
+
+    @Override
+    GenericJobInfo parseGenericJobInfo(String command) {
+        return null
     }
 
     /**
@@ -256,48 +214,40 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             resources.append(" affinity[core(${cores})]")
         }
         resources.append("' ")
-
-        StringBuilder logging = new StringBuilder("")
-        if (job.loggingDirectory) logging.append("-oo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.o%J ")
-        if (job.loggingDirectory) logging.append("-eo ${job.loggingDirectory}/${job.getJobName() ? job.getJobName() : "%J"}.e%J ")
+        String logging = LSFCommand.getLoggingParameters(job.jobLog)
+        String cwd = job.getWorkingDirectory() ? "-cwd ${job.getWorkingDirectory()} " : ""
 
         String parentJobs = ""
         if (job.parentJobIDs) {
             parentJobs = prepareParentJobs(job.parentJobIDs)
         }
-        return logging + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs
+        return logging + cwd + resources + envParams + StringConstants.WHITESPACE + ((ProcessingParameters) convertResourceSet(job)).processingCommandString + parentJobs
     }
 
     /**
-     * Abort given job
-     * @param job
+     * Abort given jobs
+     * @param jobs
      */
-    void abortJob(BEJob job) {
-        submitCommand("bkill ${job.getJobID()}")
+    @Override
+    protected RestResult executeKillJobs(List<BEJobID> jobIDs) {
+        return submitCommand("bkill ${jobIDs*.id.join(" ")}")
     }
 
     /**
      * Suspend given job
      * @param job
-     */
+     * /
     void suspendJob(BEJob job) {
         submitCommand("bstop ${job.getJobID()}")
-    }
+    }*/
 
     /**
      * Resume given job
      * @param job
      */
-    void resumeJob(BEJob job) {
-        submitCommand("bresume ${job.getJobID()}")
-    }
-
-    /**
-     * Requeue given job
-     * @param job
-     */
-    void requeueJob(BEJob job) {
-        submitCommand("brequeue ${job.getJobID()}")
+    @Override
+    protected RestResult executeStartHeldJobs(List<BEJobID> jobIDs) {
+        return submitCommand("bresume ${jobIDs*.id.join(" ")}")
     }
 
     /**
@@ -305,38 +255,31 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param jobs
      * @return comma separated list of job ids
      */
-    private String prepareURLWithParam(List<BEJob> jobs) {
-        return BEJob.jobsWithUniqueValidJobId(jobs).collect { it.jobID }.join(",")
+    private String prepareURLWithParam(List<BEJobID> jobIDs) {
+        return BEJob.uniqueValidJobIDs(jobIDs).collect { it.id }.join(",")
     }
 
     /**
      * Generic method to submit any LSF valid command e.g. bstop <job id>
      * @param cmd LSF command
      */
-    public void submitCommand(String cmd) {
+    private RestResult submitCommand(String cmd) {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml "))
         headers.add(new BasicHeader("Accept", "text/plain,application/xml,text/xml,multipart/mixed"))
         String body = "<UserCmd>" +
                 "<cmd>${cmd}</cmd>" +
                 "</UserCmd>"
-        RestResult result = restExecutionService.execute(new RestCommand(URI_USER_COMMAND, body, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
-        if (result.statusCode == 200) {
-            // successful
-            logger.info("status code: " + result.statusCode + " result: " + result.body)
-        } else {
-            //error
-            logger.warning("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
-            throw new BEException("Job command couldn't executed. \n status code: ${result.statusCode} \n result: ${result.body}")
-        }
+        return restExecutionService.execute(new RestCommand(URI_USER_COMMAND, body, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
     }
 
     /**
      * Updates job information for given jobs
      * @param jobList
      */
-    void getJobDetails(List<BEJob> jobList) {
+    private Map<BEJobID,GenericJobInfo> getJobDetails(List<BEJobID> jobList) {
         List<Header> headers = []
+        Map<BEJobID,GenericJobInfo> jobDetailsResult = [:]
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
@@ -345,13 +288,10 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("job").each { NodeChild element ->
-                BEJob job = jobList.find {
-                    it.getJobID().toString().equalsIgnoreCase(element.getProperty("jobId").toString())
-                }
-
-                setJobInfoForJobDetails(job, element)
-                job.setJobState(parseJobState(element.getProperty("jobStatus").toString()))
+                jobDetailsResult.put(new BEJobID(element.getProperty("jobId").toString()),setJobInfoForJobDetails(element))
             }
+
+            return jobDetailsResult
 
         } else {
             logger.warning("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
@@ -363,7 +303,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * Retrieve job status for given job ids
      * @param list of job ids
      */
-    Map<String, JobState> getJobStats(List<String> jobIds) {
+    @Override
+    Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIds) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
@@ -371,19 +312,19 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             logger.info("status code: " + result.statusCode + " result:" + result.body)
-            Map<String, JobState> resultStates = [:]
+            Map<BEJobID, JobState> resultStates = [:]
             res.getProperty("pseudoJob").each { NodeChild element ->
                 String jobId = null
                 if (jobIds) {
                     jobId = jobIds.find {
-                        it.equalsIgnoreCase(element.getProperty("jobId").toString())
+                        it.id.equalsIgnoreCase(element.getProperty("jobId").toString())
                     }
                 } else {
                     jobId = element.getProperty("jobId").toString()
                 }
 
                 if (jobId) {
-                    resultStates.put(jobId, parseJobState(element.getProperty("jobStatus").toString()))
+                    resultStates.put(new BEJobID(jobId), parseJobState(element.getProperty("jobStatus").toString()))
                 }
             }
             return resultStates
@@ -398,14 +339,9 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param job
      * @param jobDetails - XML job details
      */
-    private void setJobInfoForJobDetails(BEJob job, NodeChild jobDetails) {
-        GenericJobInfo jobInfo
+    private GenericJobInfo setJobInfoForJobDetails(NodeChild jobDetails) {
 
-        if (job.getJobInfo() != null) {
-            jobInfo = job.getJobInfo()
-        } else {
-            jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), job.getTool(), jobDetails.getProperty("jobId").toString(), job.getParameters(), job.getParentJobIDsAsString())
-        }
+        GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), jobDetails.getProperty("jobId").toString(), null, null)
 
         String queue = jobDetails.getProperty("queue").toString()
         BufferValue swap = jobDetails.getProperty("swap") ? catchExceptionAndLog { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
@@ -437,35 +373,33 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
         jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
         jobInfo.setPriority(jobDetails.getProperty("priority").toString())
-        jobInfo.setOutFile(jobDetails.getProperty("outFile").toString())
-        jobInfo.setInFile(jobDetails.getProperty("inFile").toString())
+        jobInfo.setLogFile(new File(jobDetails.getProperty("outFile").toString()))
+        jobInfo.setInputFile(new File(jobDetails.getProperty("inFile").toString()))
         jobInfo.setResourceReq(jobDetails.getProperty("resReq").toString())
         jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
         jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())
         jobInfo.setAskedHostsStr(jobDetails.getProperty("askedHostsStr").toString())
-        job.setJobInfo(jobInfo)
+
+        return jobInfo
     }
 
     /**
      * Get the time history for each given job
      * @param jobList
      */
-    void updateJobStatistics(List<BEJob> jobList) {
+    private void updateJobStatistics(Map<BEJobID, GenericJobInfo> jobList) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-        def result = restExecutionService.execute(new RestCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
+        def result = restExecutionService.execute(new RestCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList.keySet() as List), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("history").each { NodeChild jobHistory ->
 
-                BEJob job = jobList.find {
-                    it.getJobID().toString().equalsIgnoreCase((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString())
-                }
-
-                setJobInfoForJobHistory(job, jobHistory)
+                String id = ((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id")).toString()
+                setJobInfoFromJobHistory(jobList.get(new BEJobID(id)), jobHistory)
             }
 
         } else {
@@ -479,13 +413,8 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
      * @param job
      * @param jobHistory - xml job history
      */
-    void setJobInfoForJobHistory(BEJob job, NodeChild jobHistory) {
-        GenericJobInfo jobInfo
+    private void setJobInfoFromJobHistory(GenericJobInfo jobInfo, NodeChild jobHistory) {
 
-        if (job.getJobInfo() != null)
-            jobInfo = job.getJobInfo()
-        else
-            jobInfo = new GenericJobInfo((jobHistory.getProperty("jobSummary") as GPathResult).getProperty("jobName").toString(), job.getTool(), (jobHistory.getProperty("jobSummary") as GPathResult).getProperty("id").toString(), job.getParameters(), job.getParentJobIDsAsString())
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
         jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString() + " " + LocalDateTime.now().getYear(), lsfDatePattern) : null)
@@ -495,56 +424,22 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
         jobInfo.setTimeUnknownState(timeSummary.getProperty("unknownTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("unknownTime").toString())), 0) : null)
         jobInfo.setTimeSystemSuspState(timeSummary.getProperty("ssuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ssuspTime").toString())), 0) : null)
         jobInfo.setRunTime(timeSummary.getProperty("runTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("runTime").toString())), 0) : null)
-        job.setJobInfo(jobInfo)
+
     }
 
     @Override
-    void addJobStatusChangeListener(BEJob job) {
-        synchronized (jobStatusListeners) {
-            jobStatusListeners.put(job.getJobID().getId(), job)
-        }
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+        Map<BEJobID, GenericJobInfo> jobDetailsResult = getJobDetails(jobIds)
+        updateJobStatistics(jobDetailsResult)
+        return jobDetailsResult
     }
 
     @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false) {
-        return getJobStats(jobIds)
+    String getSubmissionCommand() {
+        return null
     }
 
-    @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false) {
-        return getJobStats(null)
-    }
-
-    @Override
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-
-        Map<String, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect {
-            it.getJobID().toString()
-        }, false)
-        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries { Map.Entry<String, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID().getId() == it.key }, (GenericJobInfo) it.value] }
-    }
-
-
-    @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
-        List<BEJob> jobs = []
-        Map<String, GenericJobInfo> queriedExtendedStates = [:]
-        for (String id : jobIds) {
-            Map.Entry<String, BEJob> job = jobStatusListeners.find { it.key == id }
-            if (job)
-                jobs.add(job.value)
-        }
-        if (jobs.size() != 0) {
-            getJobDetails(jobs)
-            for (BEJob job : jobs) {
-                queriedExtendedStates.put(job.getJobID().getId(), job.getJobInfo())
-            }
-        }
-        return queriedExtendedStates
-    }
-
-
-    JobState parseJobState(String stateString) {
+    private JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == "PENDING")
             js = JobState.QUEUED
@@ -559,11 +454,4 @@ class LSFRestJobManager extends BatchEuphoriaJobManagerAdapter {
 
         return js
     }
-
-
-    @Override
-    List<String> getEnvironmentVariableGlobs() {
-        return Collections.unmodifiableList(["LSB_*", "LS_*"])
-    }
-
 }

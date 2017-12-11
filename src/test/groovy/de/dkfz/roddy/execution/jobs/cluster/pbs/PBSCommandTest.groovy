@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.jobs.BEJob
@@ -30,9 +31,9 @@ class PBSCommandTest {
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
         def mapOfParameters = ["a": "a", "b": "b"]
-        BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, null)
-        PBSCommand cmd = new PBSCommand(null, job, "id", null, mapOfParameters, null, null, null, "/tmp/test.sh", null)
-        String result = cmd.assembleDependencyString()
+        BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, null, JobLog.none(), null)
+        PBSCommand cmd = new PBSCommand(null, job, "jobName", null, mapOfParameters, null, "/tmp/test.sh")
+        String result = cmd.assembleDependencyString([])
         assert result == ""
     }
 

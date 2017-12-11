@@ -6,6 +6,8 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.BEException
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 
 import java.util.concurrent.atomic.AtomicLong
@@ -19,8 +21,6 @@ import java.util.concurrent.atomic.AtomicLong
 class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
     private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
-
-    protected JobType jobType = JobType.STANDARD
 
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
 
@@ -80,11 +80,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     private List<ProcessingParameters> processingParameters = new LinkedList<ProcessingParameters>()
 
     /**
-     * Command object of last execution.
-     */
-    protected transient Command lastCommand
-
-    /**
      * Stores the result when the job was executed.
      */
     private JR runResult
@@ -93,10 +88,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     // Now come some job / command specific settings
     //////////////////////////////////////////////////////////////
 
-    /**
-     * The custom job log directory. If it is not set, the job manager default will be used (if supported)
-     */
-    protected File loggingDirectory
+    protected File workingDirectory
 
     /**
      * Set this, to have use a custom account for the job. (If supported by the target job manager)
@@ -108,15 +100,12 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
      */
     String customQueue
 
-    /**
-     * Stores information from the cluster about the job e.g. used resources
-     */
-    GenericJobInfo jobInfo
+    private JobLog jobLog
 
     BatchEuphoriaJobManager jobManager
 
     BEJob(BEJobID jobID, String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Collection<BEJob> parentJobs,
-          Map<String, String> parameters, BatchEuphoriaJobManager jobManager) {
+          Map<String, String> parameters, BatchEuphoriaJobManager jobManager, JobLog jobLog, File workingDirectory) {
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -124,16 +113,19 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.toolScript = toolScript
         // FakeJobs have neither tool nor toolScript set.
         if (tool && toolScript)
-            throw new RuntimeException("A job must have exactly one of tool and toolScript set. Found: tool=${tool}, toolScript=${toolScript}")
+            throw new BEException("A job must have exactly one of tool and toolScript set. Found: tool=${tool}, toolScript=${toolScript}")
         this.toolMD5 = toolMD5
         this.resourceSet = resourceSet
         this.parameters = parameters
         this.jobManager = jobManager
+        assert jobLog : "jobLog not set"
+        this.jobLog = jobLog
+        this.workingDirectory = workingDirectory
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
     BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
-        this(jobID, null, null, null, null, null, [], [:], jobManager)
+        this(jobID, null, null, null, null, null, [], [:], jobManager, JobLog.none(), null)
     }
 
     BEJob addParentJobs(Collection<BEJob> parentJobs) {
@@ -158,15 +150,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this
     }
 
-    protected void setJobType(JobType jobType) {
-        this.jobType = jobType
-    }
-
-    //TODO Create a runArray method which returns several job results with proper array ids.
-    JR run() {
-
-    }
-
     boolean isFakeJob() {
         getJobID().toString()
         if (this instanceof FakeBEJob)
@@ -182,10 +165,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     void addProcessingParameters(ProcessingParameters processingParameters) {
         if (processingParameters == null) return
         this.processingParameters.add(processingParameters)
-    }
-
-    JobType getJobType() {
-        return jobType
     }
 
     Map<String, String> getParameters() {
@@ -212,19 +191,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return parentJobs.collect { it.getJobID() }
     }
 
-    List<String> getParentJobIDsAsString() {
-        return getParentJobIDs().collect { BEJobID jid -> jid.toString() }
-    }
-
-    void setLoggingDirectory(File loggingDirectory) {
-        this.loggingDirectory = loggingDirectory
-    }
-
-    File getLoggingDirectory() {
-        if (this.loggingDirectory)
-            return this.loggingDirectory
-        else
-            return jobManager.getDefaultLoggingDirectory()
+    File getWorkingDirectory() {
+        return this.workingDirectory
     }
 
     void resetJobID(BEJobID jobID) {
@@ -234,11 +202,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     void resetJobID() {
         resetJobID(new BEJobID())
-    }
-
-    void resetJobID(String jobId) {
-        assert (null != jobId)
-        resetJobID(new BEJobID(jobId))
     }
 
 
@@ -262,36 +225,11 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return resourceSet
     }
 
-    protected File _logFile = null
-    /**
-     * Returns the path to an existing log file.
-     * If no logfile exists this returns null.
-     *
-     * @return
-     */
-    public synchronized File getLogFile() {
-//        if (_logFile == null)
-//            _logFile = this.getExecutionContext().getRuntimeService().getLogFileForJob(this);
-//        return _logFile;
-    }
-
-    public boolean hasLogFile() {
-//        if (getJobState().isPlannedOrRunning())
-//            return false;
-//        if (_logFile == null)
-//            return this.getExecutionContext().getRuntimeService().hasLogFileForJob(this);
-//        return true;
-        return false
-    }
-
     String getJobName() {
         return jobName
     }
 
     void setJobState(JobState js) {
-        if (jobType == JobType.ARRAY_HEAD)
-            return
-        JobState old = this.currentJobState
         this.currentJobState = js
     }
 
@@ -299,8 +237,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return currentJobState != null ? currentJobState : JobState.UNKNOWN
     }
 
-    Command getLastCommand() {
-        return lastCommand
+    JobLog getJobLog() {
+        return jobLog
     }
 
     @Override
@@ -320,6 +258,4 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     int compareTo(BEJob o) {
         return this.jobID.compareTo(o.jobID)
     }
-
-
 }

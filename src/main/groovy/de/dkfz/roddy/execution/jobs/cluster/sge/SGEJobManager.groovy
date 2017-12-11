@@ -11,56 +11,25 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 /**
  * Created by michael on 20.05.14.
  */
 @CompileStatic
 class SGEJobManager extends PBSJobManager {
-    SGEJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
-//    @Override
-//    SGECommand createCommand(GenericJobInfo jobInfo) {
-//        throw new NotImplementedException()
-//    }
-//
-//    SGECommand createCommand(BEJob job, List<ProcessingParameters> ProcessingParameters, String command, Map<String, String> parameters, Map<String, Object> tags, List<String> dependencies, File logDirectory) {
-//        SGECommand sgeCommand = new SGECommand(this, job, job.jobID.toString(), ProcessingParameters, parameters, tags, null, dependencies, command, logDirectory)
-//        return sgeCommand
-//    }
-
     @Override
-    SGECommand createCommand(BEJob job, String jobName, List<ProcessingParameters> ProcessingParameters, File tool, Map<String, String> parameters, List<String> dependencies) {
-        throw new NotImplementedException()
-    }
-
-    SGECommand createCommand(BEJob job) {
-        return new SGECommand(this, job, job.jobName, [], job.parameters, [:], [], job.parentJobIDsAsString, job.tool?.getAbsolutePath() ?: job.getToolScript(), job.getLoggingDirectory())
-    }
-//    @Override
-//    public void addSpecificSettingsToConfiguration(Configuration configuration) {
-//        configuration.getConfigurationValues().add(new ConfigurationValue("RODDY_JOBID", "${JOB_ID-}"));
-//        configuration.getConfigurationValues().add(new ConfigurationValue("RODDY_SCRATCH", "/tmp/roddyScratch/${JOB_ID}"));
-//        configuration.getConfigurationValues().add(new ConfigurationValue("RODDY_AUTOCLEANUP_SCRATCH", "true"));
-//    }
-
-//    @Override
-//    ProcessingParameters parseProcessingParameters(String processingString) {
-//        return convertPBSResourceOptionsString(processingString)
-//    }
-
-    @Override
-    String getResourceOptionsPrefix() {
-        return "SGEResourceOptions_"
+    protected SGECommand createCommand(BEJob job) {
+        return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
     }
 
     @Override
@@ -74,7 +43,7 @@ class SGEJobManager extends PBSJobManager {
             resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
         }
 //        if (resourceSet.isWalltimeSet()) {
-//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWalltimeAsDuration()))
+//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWallTime()))
 //        }
 //        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
 //            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
@@ -91,41 +60,7 @@ class SGEJobManager extends PBSJobManager {
         return new ProcessingParameters(resourceParameters)
     }
 
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        return null
-    }
 
-    @Override
-    String getStringForQueuedJob() {
-        return "qw"
-    }
-
-    @Override
-    String getStringForJobOnHold() {
-        return "hqw"
-    }
-
-    @Override
-    String getStringForRunningJob() {
-        return "r"
-    }
-
-//    @Override
-//    String getSpecificJobIDIdentifier() {
-//        return "JOB_ID"
-//    }
-//
-//    @Override
-//    String getSpecificJobArrayIndexIdentifier() {
-//        return PBS_ARRAYID
-//    }
-
-//    @Override
-//    String getSpecificJobScratchIdentifier() {
-//        return '/tmp/roddyScratch/${JOB_ID}'
-//    }
-//
     @Override
     protected int getPositionOfJobID() {
         return 0
@@ -143,6 +78,26 @@ class SGEJobManager extends PBSJobManager {
         String id = commandOutput.split(StringConstants.SPLIT_WHITESPACE)[2]
         return id
     }
+
+    @Override
+    protected JobState parseJobState(String stateString) {
+        //TODO: add all combinations, see http://www.softpanorama.org/HPC/Grid_engine/Queues/queue_states.shtml
+        JobState js = JobState.UNKNOWN
+        if (stateString == "r")
+            js = JobState.RUNNING
+        if (stateString == "hqw")
+            js = JobState.HOLD
+        if (stateString == "S")
+            js = JobState.SUSPENDED
+        if (stateString in ["qw", "T", "W"])
+            js = JobState.QUEUED
+        if (stateString in ["C", "E"]) {
+            js = JobState.COMPLETED_UNKNOWN
+        }
+
+        return js;
+    }
+
 
     protected List<String> getTestQstat() {
         return Arrays.asList(

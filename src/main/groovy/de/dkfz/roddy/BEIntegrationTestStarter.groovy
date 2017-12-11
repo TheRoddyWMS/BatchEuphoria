@@ -6,22 +6,20 @@
 
 package de.dkfz.roddy
 
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
-import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.LSFRestJobManager
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParametersBuilder
+
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BEJobResult
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
-import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
 import java.time.Duration
@@ -63,9 +61,9 @@ class BEIntegrationTestStarter {
         log.always("Creating job manager instance for ${option}")
 
         try {
-            jobManager = option.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerCreationParameters)
+            jobManager = option.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerOptions)
                     .newInstance(executionService,
-                    new JobManagerCreationParametersBuilder()
+                    JobManagerOptions.create()
                             .setCreateDaemon(false)
                             .setTrackUserJobsOnly(true)
                             .build()
@@ -87,19 +85,19 @@ class BEIntegrationTestStarter {
 
 
     private static void testJobWithPipedScript(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager)
+        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none(), null)
         singleJobTest(jobManager, testJobWithPipedScript)
     }
 
     private static void testJobWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager)
+        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none(), null)
         singleJobTest(jobManager, testJobWithFile)
     }
 
     private static void testMultipleJobsWithFile(BatchEuphoriaJobManager jobManager) {
-        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager)
-        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager)], ["a": "value"], jobManager)
-        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager), new BEJob(testJobChild1.runResult.jobID, jobManager)], ["a": "value"], jobManager)
+        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, JobLog.none(), null)
+        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager)], ["a": "value"], jobManager, JobLog.none(), null)
+        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [new BEJob(testParent.runResult.jobID, jobManager), new BEJob(testJobChild1.runResult.jobID, jobManager)], ["a": "value"], jobManager, JobLog.none(), null)
         multipleJobsTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
@@ -111,7 +109,7 @@ class BEIntegrationTestStarter {
             def jobList = [testJob]
 
             // run single job and check status
-            BEJobResult jr = jobManager.runJob(testJob)
+            BEJobResult jr = jobManager.submitJob(testJob)
             /*if (jobManager.isHoldJobsEnabled()) {
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
@@ -127,7 +125,7 @@ class BEIntegrationTestStarter {
                 ensureProperJobStates(maxSleep, jobList, [JobState.QUEUED, JobState.HOLD, JobState.RUNNING], jobManager)
             }
             log.always("Abort and check again")
-            jobManager.queryJobAbortion(jobList)
+            jobManager.killJobs(jobList)
             // The job abortion might be a valid command but the cluster system might still try to keep the jobs.
             // We cannot handle problems like a stuck cluster, so let's stick to the basic query and see, if the job
             // ends within some seconds.
@@ -139,12 +137,8 @@ class BEIntegrationTestStarter {
                 jm.updateJobStatistics(jobList)
             */
             System.sleep(10000)
-            def jm = jobManager as LSFRestJobManager
-            if (jm){
-                jm.getJobDetails([testJob])
-                jm.updateJobStatistics(jobList)
-            }
-            log.always(testJob.getJobInfo().toString())
+            jobManager.queryExtendedJobState([testJob])
+
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
@@ -163,20 +157,17 @@ class BEIntegrationTestStarter {
 
             // run jobs with dependencies
             log.always("Submit jobs.")
-            testJobs.each { def jr = jobManager.runJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
+            testJobs.each { def jr = jobManager.submitJob(it); log.postAlwaysInfo("Started ${jr.jobID.id}") }
             ensureProperJobStates(maxSleep, testJobs, [jobManager.isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED], jobManager)
 
             log.always("Start held jobs.")
             jobManager.startHeldJobs(testJobs)
             ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.RUNNING, JobState.COMPLETED_UNKNOWN, JobState.HOLD], jobManager)
 
-            if (jobManager.getClass().name == LSFRestJobManager.name)
-                (jobManager as LSFRestJobManager).updateJobStatistics(testJobs)
-
-            testJobs.each { if (it.getJobInfo() != null) log.always(it.getJobInfo().toString()) }
+            jobManager.queryExtendedJobState(testJobs)
 
             log.always("Abort jobs.")
-            jobManager.queryJobAbortion(testJobs)
+            jobManager.killJobs(testJobs)
             ensureProperJobStates(maxSleep, testJobs, [JobState.ABORTED, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_SUCCESSFUL], jobManager)
 
             // Should we offer a method to remove held jobs created with a specific prefix? There could e.g. leftovers

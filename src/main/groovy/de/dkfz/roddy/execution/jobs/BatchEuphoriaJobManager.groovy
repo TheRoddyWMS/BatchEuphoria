@@ -13,6 +13,9 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
+import java.time.Duration
+import java.time.LocalDateTime
+
 import java.util.concurrent.TimeoutException
 
 /**
@@ -26,18 +29,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName())
 
-    public static final int JOBMANAGER_DEFAULT_UPDATEINTERVAL = 300
-    public static final boolean JOBMANAGER_DEFAULT_CREATE_DAEMON = true
-    public static final boolean JOBMANAGER_DEFAULT_TRACKUSERJOBSONLY = false
-    public static final boolean JOBMANAGER_DEFAULT_TRACKSTARTEDJOBSONLY = false
-
     protected final BEExecutionService executionService
-
-    protected Thread updateDaemonThread
-
-    protected boolean closeThread
-
-    protected List<C> listOfCreatedCommands = new LinkedList<>()
 
     protected boolean isTrackingOfUserJobsEnabled
 
@@ -55,9 +47,16 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private Boolean isHoldJobsEnabled = null
+    private final Map<BEJobID, BEJob> startedJobs = [:]
+    private Thread updateDaemonThread
 
-    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    private Map<BEJobID, JobState> cachedStates = [:]
+    private final Object cacheStatesLock = new Object()
+    private LocalDateTime lastCacheUpdate
+    private Duration cacheUpdateInterval
+
+
+    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
@@ -72,132 +71,48 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
         this.strictMode = parms.strictMode
+        this.cacheUpdateInterval = parms.updateInterval
 
-        //Create a daemon thread which automatically calls queryJobStatus from time to time...
-        try {
-            if (parms.createDaemon) {
-                int interval = parms.updateInterval
-                createUpdateDaemonThread(interval)
-            }
-        } catch (Exception ex) {
-            logger.severe("Creating the command factory daemon failed for some reason. BE will not be able to query the job system.", ex)
+        if (parms.createDaemon) {
+            createUpdateDaemonThread()
         }
     }
 
-    void createUpdateDaemonThread(int interval) {
 
-        if (updateDaemonThread != null) {
-            closeThread = true
-            try {
-                updateDaemonThread.join()
-            } catch (InterruptedException e) {
-                e.printStackTrace()
-            }
-            updateDaemonThread = null
+    BEJobResult submitJob(BEJob job) throws TimeoutException {
+        Command command = createCommand(job)
+        ExecutionResult executionResult = executionService.execute(command)
+        extractAndSetJobResultFromExecutionResult(command, executionResult)
+        addToListOfStartedJobs(job)
+        return job.runResult
+    }
+
+    void startHeldJobs(List<BEJob> heldJobs) {
+        if (!isHoldJobsEnabled()) return
+        if (!heldJobs) return
+
+        ExecutionResult er = executeStartHeldJobs(collectJobIDsFromJobs(heldJobs))
+        if(!er.successful){
+            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
         }
-
-        updateDaemonThread = Thread.startDaemon("Command factory update daemon.", {
-            while (!closeThread) {
-                updateJobStatus()
-                try {
-                    Thread.sleep(interval * 1000)
-                } catch (InterruptedException e) {
-                    e.printStackTrace()
-                }
-            }
-        })
-    }
-
-    abstract C createCommand(BEJob job, String jobName, List<ProcessingParameters> processingParameters, File tool, Map<String, String> parameters, List<String> parentJobs)
-
-    C createCommand(BEJob job, File tool, List<String> parentJobs, Map<String, String> parameters) {
-        C c = (C) createCommand(job, job.jobName, job.getListOfProcessingParameters(), tool, parameters, parentJobs)
-        c.setJob(job)
-        return c
-    }
-
-    void setTrackingOfUserJobsEnabled(boolean trackingOfUserJobsEnabled) {
-        isTrackingOfUserJobsEnabled = trackingOfUserJobsEnabled
-    }
-
-    void setQueryOnlyStartedJobs(boolean queryOnlyStartedJobs) {
-        this.queryOnlyStartedJobs = queryOnlyStartedJobs
-    }
-
-    void setUserIDForQueries(String userIDForQueries) {
-        this.userIDForQueries = userIDForQueries
     }
 
     /**
-     * Shortcut to runJob with runDummy = false
-     *
-     * @param job
-     * @return
+     * Try to abort a list of jobs
+     * @param jobs
      */
-    abstract BEJobResult runJob(BEJob job) throws TimeoutException
+    void killJobs(List<BEJob> jobs) {
+        ExecutionResult executionResult = executeKillJobs(collectJobIDsFromJobs(jobs))
 
-    /**
-     * Called by the execution service after a command was executed.
-     */
-    BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
-        BEJobResult jobResult
-        if (res.successful) {
-            String exID
-            try {
-                exID = parseJobID(res.resultLines[0])
-            } catch (BEException ex) {
-                throw new BEException("Full input was: '${res.resultLines.join("\n")}", ex)
-            }
-            def job = command.getJob()
-            BEJobID jobID = new BEJobID(exID)
-            command.setExecutionID(jobID)
-            job.resetJobID(jobID)
-            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
+        if (executionResult.successful) {
+            jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
         } else {
-            def job = command.getJob()
-            jobResult = new BEJobResult(command, job, res, false, job.tool, job.parameters, job.parentJobs as List<BEJob>)
-            job.setRunResult(jobResult)
-            logger.postAlwaysInfo("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
-            throw new BEException("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
+            String error = "Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}"
+            logger.warning(error)
+            throw new BEException(error)
         }
-        return jobResult
     }
-
-    void startHeldJobs(List<BEJob> jobs) {}
-
-    boolean getDefaultForHoldJobsEnabled() { return false }
-
-    boolean isHoldJobsEnabled() { return isHoldJobsEnabled ?: getDefaultForHoldJobsEnabled() }
-
-    ProcessingParameters convertResourceSet(BEJob job) {
-        return convertResourceSet(job, job.resourceSet)
-    }
-
-    abstract ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet)
-
-    abstract ProcessingParameters extractProcessingParametersFromToolScript(File file)
-
-    List<C> getListOfCreatedCommands() {
-        List<C> newList = new LinkedList<>()
-        synchronized (listOfCreatedCommands) {
-            newList.addAll(listOfCreatedCommands)
-        }
-        return newList
-    }
-
-    /**
-     * Tries to reverse assemble job information out of an executed command.
-     * The format should be [id], [command, i.e. qsub...]
-     *
-     * @param commandString
-     * @return
-     */
-    abstract BEJob parseToJob(String commandString)
-
-    abstract GenericJobInfo parseGenericJobInfo(String command)
-
-    abstract void updateJobStatus()
 
     /**
      * Queries the status of all jobs in the list.
@@ -209,7 +124,13 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobs
      * @return
      */
-    abstract Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false)
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false) {
+        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobs*.jobID, forceUpdate)
+        return jobs.collectEntries { BEJob job ->
+            [job, job.jobState == JobState.ABORTED ? JobState.ABORTED :
+             result[job.jobID] ?: JobState.UNKNOWN]
+        }
+    }
 
     /**
      * Queries the status of all jobs in the list.
@@ -221,14 +142,19 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobIds
      * @return
      */
-    abstract Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate = false)
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
+        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobIds, forceUpdate)
+        return jobIds.collectEntries { BEJobID jobId -> [jobId, result[jobId] ?: JobState.UNKNOWN] }
+    }
 
     /**
      * Queries the status of all jobs.
      *
      * @return
      */
-    abstract Map<String, JobState> queryJobStatusAll(boolean forceUpdate = false)
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+        return queryJobStatesUsingCache(null, forceUpdate)
+    }
 
     /**
      * Will be used to gather extended information about a job like:
@@ -237,10 +163,15 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * - The used walltime
      *
      * @param jobs
-     * @param forceUpdate
      * @return
      */
-    abstract Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate)
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs) {
+
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect { it.getJobID() })
+        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries {
+            Map.Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value]
+        }
+    }
 
     /**
      * Will be used to gather extended information about a job like:
@@ -249,45 +180,32 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * - The used walltime
      *
      * @param jobIds
-     * @param forceUpdate
      * @return
      */
-    abstract Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate)
+    abstract Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds)
 
-    /**
-     * Try to abort a range of jobs
-     * @param executedJobs
-     */
-    abstract void queryJobAbortion(List<BEJob> executedJobs)
 
-    abstract void addJobStatusChangeListener(BEJob job)
-
-    abstract String getLogFileWildcard(BEJob job)
-
-    abstract boolean compareJobIDs(String jobID, String id)
-
-    void addCommandToList(C pbsCommand) {
-        synchronized (listOfCreatedCommands) {
-            listOfCreatedCommands.add(pbsCommand)
+    void addToListOfStartedJobs(BEJob job) {
+        if (updateDaemonThread) {
+            synchronized (startedJobs) {
+                startedJobs.put(job.getJobID(), job)
+            }
         }
     }
 
     int waitForJobsToFinish() {
-        return 0
-    }
-
-    abstract String getStringForQueuedJob()
-
-    abstract String getStringForJobOnHold()
-
-    abstract String getStringForRunningJob()
-
-    String getJobIDIdentifier() {
-        return jobIDIdentifier
-    }
-
-    void setJobIDIdentifier(String jobIDIdentifier) {
-        this.jobIDIdentifier = jobIDIdentifier
+        logger.info("The user requested to wait for all jobs submitted by this process to finish.")
+        if (!updateDaemonThread) {
+            throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
+        }
+        while(true) {
+            synchronized (startedJobs) {
+                if (startedJobs.isEmpty()) {
+                    return 0
+                }
+            }
+            Thread.sleep(cacheUpdateInterval.toMillis())
+        }
     }
 
     abstract String getJobIdVariable()
@@ -302,73 +220,136 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getSubmitDirectoryVariable()
 
-    void setUserEmail(String userEmail) {
-        this.userEmail = userEmail
+    List<String> getEnvironmentVariableGlobs() {
+        return Collections.unmodifiableList([])
     }
+
+
+    boolean getDefaultForHoldJobsEnabled() { return false }
+
+    boolean isHoldJobsEnabled() { getDefaultForHoldJobsEnabled() }
 
     String getUserEmail() {
         return userEmail
-    }
-
-    void setUserMask(String userMask) {
-        this.userMask = userMask
     }
 
     String getUserMask() {
         return userMask
     }
 
-    void setUserGroup(String userGroup) {
-        this.userGroup = userGroup
-    }
-
     String getUserGroup() {
         return userGroup
-    }
-
-    void setUserAccount(String userAccount) {
-        this.userAccount = userAccount
     }
 
     String getUserAccount() {
         return userAccount
     }
 
-    /**
-     * Tries to get the log for a running job.
-     * Returns an empty array, if the job's jobState is not RUNNING
-     *
-     * @param job
-     * @return
-     */
-    abstract String[] peekLogFile(BEJob job)
-
-    String getLogFileName(BEJob p) {
-        return p.getJobName() + ".o" + p.getJobID()
-    }
-
-    String getLogFileName(Command command) {
-        return command.getJob().getJobName() + ".o" + command.getExecutionID().getId()
-    }
 
     boolean executesWithoutJobSystem() {
         return false
     }
 
-    abstract String parseJobID(String commandOutput)
 
     abstract String getSubmissionCommand()
 
-    File getDefaultLoggingDirectory() {
-        return executionService.queryWorkingDirectory()
+    ProcessingParameters convertResourceSet(BEJob job) {
+        return convertResourceSet(job, job.resourceSet)
+    }
+
+    abstract ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet)
+
+    /**
+     * Tries to reverse assemble job information out of an executed command.
+     * The format should be [id], [command, i.e. qsub...]
+     *
+     * @param commandString
+     * @return
+     */
+    abstract GenericJobInfo parseGenericJobInfo(String command)
+
+    protected List<BEJobID> collectJobIDsFromJobs(List<BEJob> jobs) {
+        BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID() }
     }
 
 
-    abstract JobState parseJobState(String stateString)
-
-
-    List<String> getEnvironmentVariableGlobs() {
-        return Collections.unmodifiableList([])
+    /**
+     * Called by the execution service after a command was executed.
+     */
+    protected BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+        BEJobResult jobResult
+        if (res.successful) {
+            String exID
+            try {
+                exID = parseJobID(res.resultLines.join("\n"))
+            } catch (BEException ex) {
+                throw new BEException("Full input was: '${res.resultLines.join("\n")}", ex)
+            }
+            def job = command.getJob()
+            BEJobID jobID = new BEJobID(exID)
+            command.setJobID(jobID)
+            job.resetJobID(jobID)
+            jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
+            synchronized (cacheStatesLock) {
+                cachedStates.put(jobID, isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED)
+            }
+        } else {
+            def job = command.getJob()
+            jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            job.setRunResult(jobResult)
+            logger.postAlwaysInfo("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
+            throw new BEException("Job ${job.jobName?:"NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
+        }
+        return jobResult
     }
 
+    abstract protected Command createCommand(BEJob job)
+    abstract protected String parseJobID(String commandOutput)
+    abstract protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs)
+    abstract protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs)
+    abstract protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs)
+
+    protected void createUpdateDaemonThread() {
+        try {
+            updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
+                updateJobsInStartedJobsList()
+                try {
+                    Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10*1000))
+                } catch (InterruptedException e) {
+                    e.printStackTrace()
+                }
+            })
+        } catch (Exception ex) {
+            logger.severe("Creating the job state update daemon failed. BE will not be able to query the job system.", ex)
+        }
+    }
+
+    private void updateJobsInStartedJobsList() {
+        synchronized (startedJobs) {
+            Map<BEJobID, JobState> states = queryJobStatesUsingCache(startedJobs.keySet() as List<BEJobID>, true)
+
+            for (BEJobID id : startedJobs.keySet()) {
+                JobState js = states.get(id)
+                BEJob job = startedJobs.get(id)
+
+                job.setJobState(js)
+
+                if (js in [JobState.FAILED, JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN, JobState.ABORTED]){
+                    startedJobs.remove(id)
+                }
+            }
+        }
+    }
+
+    private Map<BEJobID, JobState> queryJobStatesUsingCache(List<BEJobID> jobIDs, boolean forceUpdate) {
+        if (forceUpdate || lastCacheUpdate == null || cacheUpdateInterval == Duration.ZERO ||
+                Duration.between(lastCacheUpdate, LocalDateTime.now()) > cacheUpdateInterval) {
+            synchronized (cacheStatesLock) {
+                cachedStates = queryJobStates(jobIDs)
+            }
+            lastCacheUpdate = LocalDateTime.now()
+        }
+        return new HashMap(cachedStates)
+    }
 }

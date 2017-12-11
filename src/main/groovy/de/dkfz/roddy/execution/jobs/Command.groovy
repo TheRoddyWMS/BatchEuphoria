@@ -7,9 +7,12 @@
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.config.JobLog
 import groovy.transform.CompileStatic
 
 import java.util.regex.Matcher
+
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * Base class for all types of commands.
@@ -23,14 +26,16 @@ import java.util.regex.Matcher
 @CompileStatic
 abstract class Command {
 
+    protected static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
+
     /**
-     * The id of this command.
+     * The job name of this command.
      */
-    protected final String id
+    protected final String jobName
     /**
      * The id which was created upon execution by the job system.
      */
-    protected BEJobID executionID
+    protected BEJobID jobID
 
     /**
      * The job which created this command. Can be null!
@@ -42,11 +47,6 @@ abstract class Command {
      */
     public final LinkedHashMap<String, String> parameters = [:]
 
-    /**
-     * A list of named tags for the command object
-     */
-    private final Map<String, Object> commandTags = [:]
-
     protected final BatchEuphoriaJobManager parentJobManager
 
     /**
@@ -54,32 +54,31 @@ abstract class Command {
      *
      * @param parentJobManager
      * @param job
-     * @param id
+     * @param jobName
      * @param parameters       Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
      * @param commandTags
      */
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
+    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> parameters) {
         this.parentJobManager = parentJobManager
-        this.commandTags.putAll(commandTags ?: [:])
         this.parameters.putAll(parameters ?: [:])
         this.creatingJob = job
-        this.id = id
+        this.jobName = jobName
     }
 
-    final void setExecutionID(BEJobID id) {
-        this.executionID = id
+    final void setJobID(BEJobID id) {
+        this.jobID = id
     }
 
     final boolean wasExecuted() {
-        return executionID.isValidID()
+        return jobID.isValidID()
     }
 
-    final BEJobID getExecutionID() {
-        return executionID
+    final BEJobID getJobID() {
+        return jobID
     }
 
     final String getID() {
-        return id
+        return this.jobName
     }
 
     void setJob(BEJob job) {
@@ -91,20 +90,9 @@ abstract class Command {
     }
 
     final String getFormattedID() {
-        return String.format("command:0x%08X", id)
+        return String.format("command:0x%08X", this.jobName)
     }
 
-    boolean hasTag(String tagID) {
-        return commandTags.containsKey(tagID)
-    }
-
-    Object getTag(String tagID) {
-        return commandTags[tagID]
-    }
-
-    Map<String, Object> getTags() {
-        return commandTags
-    }
 
     /**
      * Local commands are i.e. blocking, whereas PBSCommands are not.
@@ -114,27 +102,5 @@ abstract class Command {
      */
     boolean isBlockingCommand() {
         return false
-    }
-
-    @Override
-    String toString() {
-        return String.format("Command of class %s with id %s", this.getClass().getName(), getID())
-    }
-
-
-    StringBuilder assembleProcessingCommands() {
-        StringBuilder bsubCall = new StringBuilder()
-        for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
-            if (!(pcmd instanceof ProcessingParameters)) continue
-            ProcessingParameters command = (ProcessingParameters) pcmd
-            if (command == null)
-                continue
-            bsubCall << StringConstants.WHITESPACE << command.getProcessingCommandString()
-        }
-        return bsubCall
-    }
-
-    protected static final String escapeBash(final String input) {
-        "'${input.replaceAll("'", Matcher.quoteReplacement("'\\''"))}'"
     }
 }

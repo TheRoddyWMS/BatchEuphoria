@@ -14,8 +14,6 @@ import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
-import java.util.concurrent.TimeoutException
-
 /**
  */
 @CompileStatic
@@ -23,23 +21,17 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName())
 
-    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
     @Override
-    void createUpdateDaemonThread(int interval) {
+    protected void createUpdateDaemonThread() {
         //Not necessary, a command / job knows its state in local execution
     }
 
-    @Override
-    DirectCommand createCommand(BEJob job, String jobName, List<ProcessingParameters> processingCommands, File tool, Map<String, String> parameters, List<String> dependencies) {
-        return new DirectCommand(this, job, tool.getName(), null, job.getParameters(), null, null, dependencies, tool.getAbsolutePath(), new File("/tmp"))
-    }
-
-    @Override
-    BEJob parseToJob(String commandString) {
-        return null
+    DirectCommand createCommand(BEJob job) {
+        return new DirectCommand(this, job, [])
     }
 
     @Override
@@ -48,48 +40,29 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    void updateJobStatus() {
-
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
+        return [:]
     }
 
     @Override
-    void queryJobAbortion(List<BEJob> executedJobs) {
-
-    }
+    ExecutionResult executeKillJobs(List<BEJobID> executedJobs) { null }
 
     @Override
-    void addJobStatusChangeListener(BEJob job) {
-
-    }
-
-    @Override
-    String getLogFileWildcard(BEJob job) {
-        return "*"
-    }
-
-    @Override
-    boolean compareJobIDs(String jobID, String id) {
-        return jobID.equals(id)
-    }
-
-    @Override
-    String getStringForQueuedJob() {
-        return null
-    }
-
-    @Override
-    String getStringForJobOnHold() {
-        return null
-    }
-
-    @Override
-    String getStringForRunningJob() {
-        return null
-    }
+    void addToListOfStartedJobs(BEJob job) {}
 
     @Override
     String getJobIdVariable() {
         return ""
+    }
+
+    String getSpecificJobIDIdentifier() {
+        logger.severe("BEJob jobName for " + getClass().getName() + " should be configurable")
+        return '"$$"'
+    }
+
+    String getSpecificJobScratchIdentifier() {
+        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
+        return '/data/roddyScratch/$$'
     }
 
     String getJobNameVariable() {
@@ -117,19 +90,14 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    String[] peekLogFile(BEJob job) {
-        return new String[0]
-    }
-
-    @Override
     Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
         (jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]) as Map<BEJob, JobState>
     }
 
     @Override
-    BEJobResult runJob(BEJob job) throws TimeoutException {
+    BEJobResult submitJob(BEJob job) {
         // Some of the parent jobs are in a bad state!
-        Command command = createCommand(job, job.tool, [], [:])
+        Command command = createCommand(job)
         BEJobResult jobResult
         BEJobID jobID
         ExecutionResult res
@@ -142,7 +110,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         }
         ) {
             jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
-            command.setExecutionID(jobID)
+            command.setJobID(jobID)
         } else {
             res = executionService.execute(command)
             jobID = new BEJobID(parseJobID(res.processID))
@@ -151,7 +119,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
                 logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
         }
 
-        command.setExecutionID(jobID)
+        command.setJobID(jobID)
         jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
 
@@ -159,14 +127,13 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
+    ExecutionResult executeStartHeldJobs(List<BEJobID> jobs) { null }
+
+    @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         return new ProcessingParameters(LinkedHashMultimap.create())
     }
 
-    @Override
-    ProcessingParameters extractProcessingParametersFromToolScript(File file) {
-        return null
-    }
 
     @Override
     boolean executesWithoutJobSystem() {
@@ -184,33 +151,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate) {
-        return null
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+        return [:]
     }
-
-    @Override
-    Map<String, JobState> queryJobStatusAll(boolean forceUpdate) {
-        return null
-    }
-
-    @Override
-    Map<String, JobState> queryJobStatusById(List<String> jobIds, boolean forceUpdate) {
-        return null
-    }
-
-    @Override
-    Map<String, BEJob> queryExtendedJobState(List<BEJob> jobs, boolean forceUpdate) {
-        return null
-    }
-
-    @Override
-    Map<String, GenericJobInfo> queryExtendedJobStateById(List<String> jobIds, boolean forceUpdate) {
-        return null
-    }
-
-    @Override
-    JobState parseJobState(String stateString) {
-        return null
-    }
-
 }

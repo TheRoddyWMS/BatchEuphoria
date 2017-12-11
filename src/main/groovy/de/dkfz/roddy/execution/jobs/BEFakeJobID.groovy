@@ -25,12 +25,10 @@ class BEFakeJobID extends BEJobID.FakeJobID {
 
     private FakeJobReason fakeJobReason
     private long nanotime
-    private boolean isArray
 
     BEFakeJobID(FakeJobReason fakeJobReason, boolean isArray = false) {
         super(nextUnknownID(fakeJobReason.toString() + "-"))
         this.fakeJobReason = fakeJobReason
-        this.isArray = isArray
         nanotime = System.nanoTime()
     }
 

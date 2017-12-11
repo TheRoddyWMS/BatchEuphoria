@@ -6,14 +6,12 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
+import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.tools.LoggerWrapper
-
-import static de.dkfz.roddy.StringConstants.COLON
-import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * This class is used to create and execute bsub commands
@@ -21,23 +19,9 @@ import static de.dkfz.roddy.StringConstants.EMPTY
  * Created by kaercher on 12.04.17.
  */
 @groovy.transform.CompileStatic
-class LSFCommand extends Command {
+class LSFCommand extends SubmissionCommand {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
-
-    public static final String PARM_LOGPATH = " -eo "
-    public static final String PARM_OUTPATH = " -oo "
-    public static final String BSUB = "bsub"
-    public static final String PARM_DEPENDS = " -ti -w "  // -ti: Immediate orphan job termination for jobs with failed dependencies.
-    public static final String PARM_MAIL = " -u "
-    public static final String PARM_VARIABLES = " -env "
-    public static final String PARM_JOBNAME = " -J "
-    public static final String PARM_GROUPLIST = " -G"
-
-    /**
-     * The bsub log directoy where all output is put
-     */
-    protected File loggingDirectory
 
     /**
      * The command which should be called
@@ -55,112 +39,80 @@ class LSFCommand extends Command {
 
     /**
      *
-     * @param id
+     * @param name
      * @param parameters
-     * @param arrayIndices
      * @param command
      * @param filesToCheck
      */
-    LSFCommand(LSFJobManager parentManager, BEJob job, String id, List<ProcessingParameters> processingParameters, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
-        super(parentManager, job, id, parameters, tags)
+    LSFCommand(LSFJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
+        super(parentManager, job, name, parameters)
         this.processingParameters = processingParameters
         this.command = command
-        assert (null != loggingDirectory)
-        this.loggingDirectory = loggingDirectory
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 
-
-    String getEmailParameter(String address) {
-
-        return PARM_MAIL + address
-
-    }
-
-    String getLoggingParameter() {
-        StringBuilder logging = new StringBuilder(EMPTY)
-        logging << (PARM_OUTPATH + " ${loggingDirectory}/${id ? id : "%J"}.o%J ")
-        logging << (PARM_LOGPATH + " ${loggingDirectory}/${id ? id : "%J"}.e%J ")
-        return logging
-    }
-
-    String getGroupListString(String groupList) {
-        return PARM_GROUPLIST + groupList
-    }
-
-
-    String getVariablesParameter() {
-        return PARM_VARIABLES
-    }
-
-    protected String getDependencyOptionSeparator() {
-        return COLON
-    }
-
-    protected String getDependencyIDSeparator() {
-        return COLON
-    }
-
-
-    protected String getAdditionalCommandParameters() {
-        return ""
-    }
-
-
-    protected String getDependsSuperParameter() {
-        PARM_DEPENDS
+    @Override
+    String getJobNameParameter() {
+        "-J ${jobName}" as String
     }
 
     @Override
-    String toString() {
-
-        String email = parentJobManager.getUserEmail()
-        String umask = parentJobManager.getUserMask()
-        String groupList = parentJobManager.getUserGroup()
-        String accountName = parentJobManager.getUserAccount()
-        boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
-
-        StringBuilder bsubCall = new StringBuilder(EMPTY)
-
-        if (job.getToolScript()) {
-            bsubCall << "echo " << escapeBash(job.getToolScript()) << " | "
-        }
-
-        bsubCall << BSUB << assembleResources() << PARM_JOBNAME << id
-
-        if (holdJobsOnStart) bsubCall << " -H "
-
-        bsubCall << getAdditionalCommandParameters()
-
-        if (loggingDirectory) bsubCall << getLoggingParameter()
-
-        if (email) bsubCall << getEmailParameter(email)
-
-        if (groupList && groupList != "UNDEFINED") bsubCall << getGroupListString(groupList)
-
-        bsubCall << assembleProcessingCommands()
-
-        bsubCall << prepareParentJobs(job.getParentJobIDs())
-
-        bsubCall << assembleVariableExportString()
-
-        if (job.getTool()) {
-            bsubCall << " " << job.getTool().getAbsolutePath()
-        }
-
-        return bsubCall
+    protected String getHoldParameter() {
+        return "-H"
     }
 
-
-    StringBuilder assembleResources() {
-        StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
-        if (job.resourceSet.isCoresSet()) {
-            int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
-            resources.append(" affinity[core(${cores})]")
-        }
-        resources.append("\' ")
-        return resources
+    @Override
+    protected String getAccountParameter(String account) {
+        return ""
     }
+
+    @Override
+    protected String getWorkingDirectory() {
+        return "-cwd ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
+    }
+
+    @Override
+    protected String getLoggingParameter(JobLog jobLog) {
+        getLoggingParameters(jobLog)
+    }
+
+    static getLoggingParameters(JobLog jobLog) {
+        if (!jobLog.out && !jobLog.error) {
+            return "-o /dev/null" //always set logging because it interacts with mail options
+        } else if (jobLog.out == jobLog.error) {
+            return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')}"
+        } else {
+            return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')} -eo ${jobLog.error.replace(JobLog.JOB_ID, '%J')}"
+        }
+    }
+
+    @Override
+    protected String getEmailParameter(String address) {
+        return address ? "-u ${address}" : ""
+    }
+
+    @Override
+    String getGroupListParameter(String groupList) {
+        return " -G" + groupList
+    }
+
+    @Override
+    protected String getUmaskString(String umask) {
+        return ""
+    }
+
+    @Override
+    protected String assembleDependencyString(List<BEJobID> jobIds) {
+        List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
+        if (validJobIds.size() > 0) {
+            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
+            // -ti: Immediate orphan job termination for jobs with failed dependencies.
+            return "-ti -w  \"${joinedParentJobs}\" "
+        } else {
+            return ""
+        }
+    }
+
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     /**
@@ -173,9 +125,10 @@ class LSFCommand extends Command {
      *
      * * @return    a String of '-env "[all|none](, varName[=varValue](, varName[=varValue])*)?"'
      */
+    @Override
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
-        qsubCall << getVariablesParameter() << "\""
+        qsubCall << "-env " << "\""
         if (copyExecutionEnvironment) {
             qsubCall << "all"
         } else {
@@ -206,35 +159,13 @@ class LSFCommand extends Command {
         return qsubCall
     }
 
-
-    /**
-     * Prepare parent jobs is part of @prepareExtraParams
-     * @param job ids
-     * @return part of parameter area
-     */
-    private String prepareParentJobs(List<BEJobID> jobIds) {
-        List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
-        if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
-            return " ${dependsSuperParameter} \"${joinedParentJobs}\" "
-        } else {
-            return ""
+    protected String getAdditionalCommandParameters() {
+        StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
+        if (job.resourceSet.isCoresSet()) {
+            int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
+            resources.append(" affinity[core(${cores})]")
         }
+        resources.append("\' ")
+        return resources.toString()
     }
-
-
-    private String prepareToolScript(BEJob job) {
-        String toolScript
-        if (job.getToolScript() != null && job.getToolScript().length() > 0) {
-            toolScript = job.getToolScript()
-        } else {
-            if (job.getTool() != null) toolScript = job.getTool().getAbsolutePath()
-        }
-        if (toolScript) {
-            return toolScript
-        } else {
-            return ""
-        }
-    }
-
 }
