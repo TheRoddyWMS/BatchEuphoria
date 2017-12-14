@@ -45,7 +45,18 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    ExecutionResult executeKillJobs(List<BEJobID> executedJobs) { null }
+    ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
+        String command = "kill -s SIGKILL ${jobIDs*.id.join(" ")}"
+        logger.always(command)
+        return executionService.execute(command, false)
+    }
+
+    @Override
+    protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
+        String command = "kill -s SIGCONT ${jobIDs*.id.join(" ")}"
+        logger.always(command)
+        return executionService.execute(command, false)
+    }
 
     @Override
     void addToListOfStartedJobs(BEJob job) {}
@@ -53,16 +64,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     @Override
     String getJobIdVariable() {
         return ""
-    }
-
-    String getSpecificJobIDIdentifier() {
-        logger.severe("BEJob jobName for " + getClass().getName() + " should be configurable")
-        return '"$$"'
-    }
-
-    String getSpecificJobScratchIdentifier() {
-        logger.severe("BEJob scratch for " + getClass().getName() + " should be configurable")
-        return '/data/roddyScratch/$$'
     }
 
     String getJobNameVariable() {
@@ -125,9 +126,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
         return jobResult
     }
-
-    @Override
-    ExecutionResult executeStartHeldJobs(List<BEJobID> jobs) { null }
 
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {

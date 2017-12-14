@@ -33,7 +33,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     private static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
     private static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -f"
-    private static final String PBS_COMMAND_DELETE_JOBS = "qdel"
     private static final String WITH_DELIMITER = '(?=(%1$s))'
 
     PBSJobManager(BEExecutionService executionService, JobManagerOptions parms) {
@@ -53,7 +52,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     /**
-     * For BPS, we enable hold jobs by default.
+     * For PBS, we enable hold jobs by default.
      * If it is not enabled, we might run into the problem, that job dependencies cannot be
      * resolved early enough due to timing problems.
      * @return
@@ -63,8 +62,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        executionService.execute("qrls ${jobIDs*.id.join(" ")}")
+        String command = "qrls ${jobIDs*.id.join(" ")}"
+        return executionService.execute(command, false)
     }
+
+
 
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
@@ -164,7 +166,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return result
     }
 
-
     @Override
     String getJobIdVariable() {
         return "PBS_JOBID"
@@ -235,13 +236,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return queriedExtendedStates
     }
 
-
     @Override
     ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        StringBuilder killJobsCommand = new StringBuilder(PBS_COMMAND_DELETE_JOBS)
-        killJobsCommand << " " << jobIDs*.id.join(" ")
-        logger.always(killJobsCommand.toString())
-        return executionService.execute(killJobsCommand.toString(), false)
+        String command = "qdel ${jobIDs*.id.join(" ")}"
+        return executionService.execute(command, false)
     }
 
     @Override

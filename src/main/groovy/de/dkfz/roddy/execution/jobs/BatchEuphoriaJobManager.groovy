@@ -87,14 +87,21 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return job.runResult
     }
 
-    void startHeldJobs(List<BEJob> heldJobs) {
+    /**
+     * Resume given job
+     * @param job
+     */
+    void startHeldJobs(List<BEJob> heldJobs) throws BEException {
         if (!isHoldJobsEnabled()) return
         if (!heldJobs) return
-
-        ExecutionResult er = executeStartHeldJobs(collectJobIDsFromJobs(heldJobs))
-        if(!er.successful){
-            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+        List<BEJobID> jobIds = collectJobIDsFromJobs(heldJobs)
+        if (jobIds) {
+            ExecutionResult executionResult = executeStartHeldJobs(jobIds)
+            if (!executionResult.successful) {
+                String msg = "Held jobs couldn't be started.\n  status code: ${executionResult.exitCode}\n  result: ${executionResult.resultLines}"
+                logger.warning(msg)
+                throw new BEException(msg)
+            }
         }
     }
 
@@ -103,14 +110,16 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobs
      */
     void killJobs(List<BEJob> jobs) {
-        ExecutionResult executionResult = executeKillJobs(collectJobIDsFromJobs(jobs))
-
-        if (executionResult.successful) {
-            jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
-        } else {
-            String error = "Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}"
-            logger.warning(error)
-            throw new BEException(error)
+        List<BEJobID> jobIds = collectJobIDsFromJobs(jobs)
+        if (jobIds) {
+            ExecutionResult executionResult = executeKillJobs(jobIds)
+            if (executionResult.successful) {
+                jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
+            } else {
+                String msg = "Job couldn't be aborted.\n  status code: ${executionResult.exitCode}\n  result: ${executionResult.resultLines}"
+                logger.warning(msg)
+                throw new BEException(msg)
+            }
         }
     }
 
@@ -183,7 +192,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @return
      */
     abstract Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds)
-
 
     void addToListOfStartedJobs(BEJob job) {
         if (updateDaemonThread) {
@@ -271,7 +279,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     protected List<BEJobID> collectJobIDsFromJobs(List<BEJob> jobs) {
         BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID() }
     }
-
 
     /**
      * Called by the execution service after a command was executed.

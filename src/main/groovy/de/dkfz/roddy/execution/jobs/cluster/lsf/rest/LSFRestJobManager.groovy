@@ -234,16 +234,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     }
 
     /**
-     * Suspend given job
-     * @param job
-     * /
-    void suspendJob(BEJob job) {
-        submitCommand("bstop ${job.getJobID()}")
-    }*/
-
-    /**
-     * Resume given job
-     * @param job
+     * Resume given jobs
+     * @param jobs
      */
     @Override
     protected RestResult executeStartHeldJobs(List<BEJobID> jobIDs) {
