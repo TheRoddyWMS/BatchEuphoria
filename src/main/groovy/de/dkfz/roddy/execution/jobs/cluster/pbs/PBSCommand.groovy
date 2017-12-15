@@ -56,6 +56,11 @@ class PBSCommand extends SubmissionCommand {
     }
 
     @Override
+    protected String getEnvironmentExportString() {
+        return " -V "
+    }
+
+    @Override
     protected String getJobNameParameter() {
         "-N ${jobName}" as String
     }

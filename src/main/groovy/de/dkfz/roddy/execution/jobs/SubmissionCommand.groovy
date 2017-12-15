@@ -38,6 +38,7 @@ abstract class SubmissionCommand extends Command {
 
         // collect parameters for job submission
         List<String> parameters = []
+        parameters << getEnvironmentExportString()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
@@ -69,7 +70,7 @@ abstract class SubmissionCommand extends Command {
         return command
     }
 
-
+    abstract protected String getEnvironmentExportString()
     abstract protected String getJobNameParameter()
     abstract protected String getHoldParameter()
     abstract protected String getAccountParameter(String account)

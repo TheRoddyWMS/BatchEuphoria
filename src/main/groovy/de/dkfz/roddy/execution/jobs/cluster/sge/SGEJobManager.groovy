@@ -25,41 +25,13 @@ import groovy.transform.CompileStatic
 class SGEJobManager extends PBSJobManager {
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
+        parms.getAdditionalOptions()
     }
 
     @Override
     protected SGECommand createCommand(BEJob job) {
         return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
     }
-
-    @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
-//        if (resourceSet.isQueueSet()) {
-//            resourceParameters.put("-q", resourceSet.getQueue())
-//        }
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
-        }
-//        if (resourceSet.isWalltimeSet()) {
-//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWallTime()))
-//        }
-//        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-//            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-//            resourceParameters.put("-n", nodes.toString())
-//        }
-
-        StringBuilder sb = new StringBuilder()
-        sb.append(" -V") //TODO Think if default SGE options should go somewhere else?
-        if (resourceSet.isMemSet()) {
-            resourceParameters.put('-l', 's_data=' + resourceSet.getMem().toString(BufferUnit.G) + 'g')
-        }
-        if (resourceSet.isStorageSet()) {
-        }
-        return new ProcessingParameters(resourceParameters)
-    }
-
 
     @Override
     protected int getPositionOfJobID() {
@@ -98,7 +70,7 @@ class SGEJobManager extends PBSJobManager {
         return js;
     }
 
-
+    @Deprecated
     protected List<String> getTestQstat() {
         return Arrays.asList(
                 "job - ID prior name user jobState submit / start at queue slots ja -task - ID",
@@ -109,5 +81,20 @@ class SGEJobManager extends PBSJobManager {
                 "   1189 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:27 1",
                 "   1191 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1",
                 "   1192 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1")
+    }
+
+    @Override
+    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+        parameters["-pe"] = "serial ${resourceSet.cores}"
+    }
+
+    @Override
+    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters["-l"] = "h_rt=${resourceSet.walltime.toString()}"
+    }
+
+    @Override
+    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters["-l"] = "h_rss=${resourceSet.getMem().toString(BufferUnit.G)}"
     }
 }
