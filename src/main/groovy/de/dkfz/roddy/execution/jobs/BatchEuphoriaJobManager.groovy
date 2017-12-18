@@ -47,7 +47,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private final Map<BEJobID, BEJob> startedJobs = [:]
+    private final Map<BEJobID, BEJob> activeJobs = [:]
     private Thread updateDaemonThread
 
     private Map<BEJobID, JobState> cachedStates = [:]
@@ -195,8 +195,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     void addToListOfStartedJobs(BEJob job) {
         if (updateDaemonThread) {
-            synchronized (startedJobs) {
-                startedJobs.put(job.getJobID(), job)
+            synchronized (activeJobs) {
+                activeJobs.put(job.getJobID(), job)
             }
         }
     }
@@ -207,8 +207,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
         }
         while(true) {
-            synchronized (startedJobs) {
-                if (startedJobs.isEmpty()) {
+            synchronized (activeJobs) {
+                if (activeJobs.isEmpty()) {
                     return 0
                 }
             }
@@ -320,7 +320,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     protected void createUpdateDaemonThread() {
         try {
             updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-                updateJobsInStartedJobsList()
+                updateActiveJobList()
                 try {
                     Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10*1000))
                 } catch (InterruptedException e) {
@@ -332,18 +332,18 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-    private void updateJobsInStartedJobsList() {
-        synchronized (startedJobs) {
-            Map<BEJobID, JobState> states = queryJobStatesUsingCache(startedJobs.keySet() as List<BEJobID>, true)
+    private void updateActiveJobList() {
+        synchronized (activeJobs) {
+            Map<BEJobID, JobState> states = queryJobStatesUsingCache(activeJobs.keySet() as List<BEJobID>, true)
 
-            for (BEJobID id : startedJobs.keySet()) {
+            for (BEJobID id : activeJobs.keySet()) {
                 JobState js = states.get(id)
-                BEJob job = startedJobs.get(id)
+                BEJob job = activeJobs.get(id)
 
                 job.setJobState(js)
 
-                if (js in [JobState.FAILED, JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN, JobState.ABORTED]){
-                    startedJobs.remove(id)
+                if (!js.isPlannedOrRunning()){
+                    activeJobs.remove(id)
                 }
             }
         }
