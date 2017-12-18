@@ -57,6 +57,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
+        assert(executionService)
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly

@@ -117,9 +117,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     @Override
     protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
-        if (!executionService.isAvailable())
-            return
-
         StringBuilder queryCommand = new StringBuilder(getQueryCommand())
 
         if (jobIDs && jobIDs.size() < 10) {
