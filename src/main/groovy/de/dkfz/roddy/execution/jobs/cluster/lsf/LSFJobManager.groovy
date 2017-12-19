@@ -74,11 +74,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        executionService.execute("bresume ${jobIDs*.id.join(" ")}")
-    }
-
-    @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
         return new LSFCommandParser(commandString).toGenericJobInfo();
     }
@@ -234,8 +229,14 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        logger.always("${LSF_COMMAND_DELETE_JOBS} ${jobIDs.join(" ")}")
-        return executionService.execute("${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}", false)
+        String command = "bkill ${jobIDs*.id.join(" ")}"
+        return executionService.execute(command, false)
+    }
+
+    @Override
+    protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
+        String command = "bresume ${jobIDs*.id.join(" ")}"
+        return executionService.execute(command, false)
     }
 
     @Override

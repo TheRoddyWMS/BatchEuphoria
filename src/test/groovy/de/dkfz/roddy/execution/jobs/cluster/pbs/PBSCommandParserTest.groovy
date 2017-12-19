@@ -6,7 +6,10 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import groovy.transform.CompileStatic
 import org.junit.BeforeClass
@@ -24,7 +27,42 @@ class PBSCommandParserTest {
 
     @BeforeClass
     static void setup() {
-        testJobManager = new PBSJobManager(null, JobManagerOptions.create().setCreateDaemon(false).build())
+        testJobManager = new PBSJobManager(new BEExecutionService() {
+            @Override
+            ExecutionResult execute(Command command) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(Command command, boolean waitFor) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command, boolean waitFor) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream) {
+                return null
+            }
+
+            @Override
+            boolean isAvailable() {
+                return false
+            }
+
+            @Override
+            File queryWorkingDirectory() {
+                return null
+            }
+        }, JobManagerOptions.create().setCreateDaemon(false).build())
     }
 
     @Test
