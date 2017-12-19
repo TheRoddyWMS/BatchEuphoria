@@ -62,7 +62,7 @@ class RestExecutionService implements BEExecutionService {
     public boolean isCertAuth = false //true if certificate authentication is used
 
     private String token = ""
-    private LocalDateTime tokenDate
+    private LocalDateTime tokenDate = LocalDateTime.now()
     private String username
     private String password
 
@@ -108,7 +108,6 @@ class RestExecutionService implements BEExecutionService {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
-        this.tokenDate = LocalDateTime.now()
         RestResult result = execute(new RestCommand(RESOURCE_LOGON, body, headers, RestCommand.HttpMethod.HTTPPOST))
         logger.severe("status code: " + result.statusCode)
         if (result.statusCode != 200)
@@ -173,7 +172,7 @@ class RestExecutionService implements BEExecutionService {
                     return this.execute(restCommand)
                 }
             }
-
+            this.tokenDate = LocalDateTime.now()
             return new RestResult(response.getAllHeaders(), result, response.getStatusLine().getStatusCode())
         } finally {
             response.close()
@@ -240,7 +239,7 @@ class RestExecutionService implements BEExecutionService {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
-        this.tokenDate = this.tokenDate ?: LocalDateTime.now()
+
         RestResult result = execute(new RestCommand(RESOURCE_PING, null, headers, RestCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
             throw new BEException("Web service is not available, returned HTTP status code: ${result.statusCode}")
