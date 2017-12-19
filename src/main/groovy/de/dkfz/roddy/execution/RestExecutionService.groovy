@@ -108,13 +108,13 @@ class RestExecutionService implements BEExecutionService {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
+        this.tokenDate = LocalDateTime.now()
         RestResult result = execute(new RestCommand(RESOURCE_LOGON, body, headers, RestCommand.HttpMethod.HTTPPOST))
         logger.severe("status code: " + result.statusCode)
         if (result.statusCode != 200)
             throw new AuthenticationException("Could not authenticate, returned HTTP status code: ${result.statusCode}")
 
         this.token = new XmlSlurper().parseText(result.body).getProperty("token").toString()
-        this.tokenDate = LocalDateTime.now()
         return result
     }
 
@@ -240,7 +240,7 @@ class RestExecutionService implements BEExecutionService {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
-
+        this.tokenDate = this.tokenDate ?: LocalDateTime.now()
         RestResult result = execute(new RestCommand(RESOURCE_PING, null, headers, RestCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
             throw new BEException("Web service is not available, returned HTTP status code: ${result.statusCode}")
