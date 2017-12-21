@@ -110,4 +110,15 @@ class SGEJobManager extends PBSJobManager {
                 "   1191 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1",
                 "   1192 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1")
     }
+
+    @Override
+    String getJobIdVariable() {
+        return "JOBID"
+    }
+
+    @Override
+    String getJobNameVariable() {
+        return "JOB_NAME"
+    }
+
 }
