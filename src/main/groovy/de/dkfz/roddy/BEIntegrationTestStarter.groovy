@@ -10,6 +10,8 @@ import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
+import de.dkfz.roddy.execution.jobs.BEJobID
+import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
@@ -21,6 +23,7 @@ import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
+import sun.nio.fs.GnomeFileTypeDetector
 
 import java.time.Duration
 
@@ -75,9 +78,9 @@ class BEIntegrationTestStarter {
 
         testJobWithPipedScript(jobManager)
 
-        //testJobWithFile(jobManager)
+        testJobWithFile(jobManager)
 
-        //testMultipleJobsWithFile(jobManager)
+        testMultipleJobsWithFile(jobManager)
 
         log.severe("Did not test jobManager.queryExtendedJobState")
         log.severe("Did not test jobManager.waitForJobsToFinish")
@@ -110,7 +113,7 @@ class BEIntegrationTestStarter {
 
             // run single job and check status
             BEJobResult jr = jobManager.submitJob(testJob)
-            /*if (jobManager.isHoldJobsEnabled()) {
+            if (jobManager.isHoldJobsEnabled()) {
                 log.postAlwaysInfo("Started ${jr.jobID.id}")
                 ensureProperJobStates(maxSleep, jobList, [JobState.HOLD], jobManager)
 
@@ -131,14 +134,9 @@ class BEIntegrationTestStarter {
             // ends within some seconds.
             ensureProperJobStates(maxSleep, jobList, [JobState.ABORTED, JobState.COMPLETED_UNKNOWN, JobState.COMPLETED_SUCCESSFUL], jobManager)
 
-            //update time statistics for each job status for given job. At the moment only for LSF
-            def jm = jobManager as LSFRestJobManager
-            if (jm)
-                jm.updateJobStatistics(jobList)
-            */
             System.sleep(10000)
-            jobManager.queryExtendedJobState([testJob])
-
+            Map<BEJob,GenericJobInfo> genericJobInfos = jobManager.queryExtendedJobState([testJob])
+            assert genericJobInfos.get(jr.job).jobName == testJob.jobName
 
             log.always("Finished single job test\n")
         } catch (Exception ex) {
@@ -209,7 +207,7 @@ class BEIntegrationTestStarter {
         IntegrationTestInput testInput = new IntegrationTestInput()
         def cli = new CliBuilder(usage: '-s "server" -a "account" -rs "rest_server" -ra "rest_account" -c [lsf,pbs] ')
         cli.options.addOption("h", "help", false, "Show usage information")
-        cli.options.addOption("c", "cluster", true, "Set the used cluster system e.g. -c pbs. Currently only lsf or pbs")
+        cli.options.addOption("c", "cluster", true, "Set the used cluster system e.g. -c pbs. Currently only lsf, pbs or sge")
         cli.options.addOption("s", "server", true, "Head node of the set cluster system")
         cli.options.addOption("a", "account", true, "User account which has access to the set cluster system")
         cli.options.addOption("ra", "restaccount", true, "REST serivce account (only for LSF REST required)")
