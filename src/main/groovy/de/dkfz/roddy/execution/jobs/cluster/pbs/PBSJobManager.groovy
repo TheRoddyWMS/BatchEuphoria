@@ -251,13 +251,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      */
     private Map<BEJobID, GenericJobInfo> processQstatOutput(List<String> resultLines) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        GPathResult parsedXml
-        try{
-            parsedXml = new XmlSlurper().parseText(resultLines.join("\n"))
-        }catch (Exception exp){
-            logger.postAlwaysInfo("Extended job states couldn't be processed. Result lines: ${resultLines.join("\n")} Exception: ${exp}")
+        if(resultLines.join("\n").isEmpty()){
             return [:]
         }
+        GPathResult parsedXml = new XmlSlurper().parseText(resultLines.join("\n"))
         parsedXml.children().each { it ->
             GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 

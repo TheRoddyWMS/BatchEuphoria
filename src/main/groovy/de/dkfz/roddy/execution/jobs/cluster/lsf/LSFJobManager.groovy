@@ -110,13 +110,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         if (er.successful) {
             if (resultLines.size() >= 1) {
                 String rawJson = resultLines.join("\n")
-                Object parsedJson
-                try{
-                    parsedJson = new JsonSlurper().parseText(rawJson)
-                }catch (Exception exp){
-                    logger.postAlwaysInfo("Extended job states couldn't be processed. Result lines: ${rawJson} Exception: ${exp}")
-                    return [:]
-                }
+                Object parsedJson = new JsonSlurper().parseText(rawJson)
                 List records = (List) parsedJson.getAt("RECORDS")
                 records.each {
                     BEJobID jobID = new BEJobID(it["JOBID"] as String)
