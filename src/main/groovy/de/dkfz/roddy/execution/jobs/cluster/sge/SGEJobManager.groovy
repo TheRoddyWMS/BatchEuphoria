@@ -25,7 +25,6 @@ import groovy.transform.CompileStatic
 class SGEJobManager extends PBSJobManager {
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
-        parms.getAdditionalOptions()
     }
 
     @Override
