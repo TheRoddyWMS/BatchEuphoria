@@ -55,11 +55,14 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     private LocalDateTime lastCacheUpdate
     private Duration cacheUpdateInterval
 
+
+
     boolean requestMemoryIsEnabled
     boolean requestWalltimeIsEnabled
     boolean requestQueueIsEnabled
     boolean requestCoresIsEnabled
     boolean requestStorageIsEnabled
+    boolean enforcePassEnvironmentExportParameter
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         this.executionService = executionService
@@ -79,12 +82,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.cacheUpdateInterval = parms.updateInterval
 
         this.requestMemoryIsEnabled = parms.requestMemoryIsEnabled
-
-        this.requestMemoryIsEnabled = parms.requestMemoryIsEnabled
         this.requestWalltimeIsEnabled = parms.requestWalltimeIsEnabled
         this.requestQueueIsEnabled = parms.requestQueueIsEnabled
         this.requestCoresIsEnabled = parms.requestCoresIsEnabled
         this.requestStorageIsEnabled = parms.requestStorageIsEnabled
+        this.enforcePassEnvironmentExportParameter = parms.enforcePassEnvironmentExportParameter
 
         if (parms.createDaemon) {
             createUpdateDaemonThread()

@@ -26,7 +26,7 @@ class SlurmCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getEnvironmentExportString() {
+    protected String getEnvironmentExportParameter() {
         return null
     }
 

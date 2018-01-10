@@ -35,10 +35,11 @@ abstract class SubmissionCommand extends Command {
         String groupList = parentJobManager.getUserGroup()
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
+        boolean forcePassEnv = parentJobManager.enforcePassEnvironmentExportParameter
 
         // collect parameters for job submission
         List<String> parameters = []
-        parameters << getEnvironmentExportString()
+        if (forcePassEnv) parameters << getEnvironmentExportParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
@@ -70,7 +71,7 @@ abstract class SubmissionCommand extends Command {
         return command
     }
 
-    abstract protected String getEnvironmentExportString()
+    abstract protected String getEnvironmentExportParameter()
     abstract protected String getJobNameParameter()
     abstract protected String getHoldParameter()
     abstract protected String getAccountParameter(String account)

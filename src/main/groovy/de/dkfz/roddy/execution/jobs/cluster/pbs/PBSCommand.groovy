@@ -56,7 +56,7 @@ class PBSCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getEnvironmentExportString() {
+    protected String getEnvironmentExportParameter() {
         return " -V "
     }
 
