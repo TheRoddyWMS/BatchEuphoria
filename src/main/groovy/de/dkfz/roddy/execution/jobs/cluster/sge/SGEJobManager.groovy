@@ -96,4 +96,14 @@ class SGEJobManager extends PBSJobManager {
     void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
         parameters["-l"] = "h_rss=${resourceSet.getMem().toString(BufferUnit.M)}"
     }
+
+    @Override
+    String getJobIdVariable() {
+        return "JOBID"
+    }
+
+    @Override
+    String getJobNameVariable() {
+        return "JOB_NAME"
+    }
 }

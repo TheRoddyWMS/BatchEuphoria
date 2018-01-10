@@ -47,7 +47,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private final Map<BEJobID, BEJob> startedJobs = [:]
+    private final Map<BEJobID, BEJob> activeJobs = [:]
     private Thread updateDaemonThread
 
     private Map<BEJobID, JobState> cachedStates = [:]
@@ -65,6 +65,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean enforcePassEnvironmentExportParameter
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
+        assert(executionService)
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
@@ -102,14 +103,21 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return job.runResult
     }
 
-    void startHeldJobs(List<BEJob> heldJobs) {
+    /**
+     * Resume given job
+     * @param job
+     */
+    void startHeldJobs(List<BEJob> heldJobs) throws BEException {
         if (!isHoldJobsEnabled()) return
         if (!heldJobs) return
-
-        ExecutionResult er = executeStartHeldJobs(collectJobIDsFromJobs(heldJobs))
-        if (!er.successful) {
-            logger.warning("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
-            throw new Exception("Hold jobs couldn't be started. \n status code: ${er.exitCode} \n result: ${er.resultLines}")
+        List<BEJobID> jobIds = collectJobIDsFromJobs(heldJobs)
+        if (jobIds) {
+            ExecutionResult executionResult = executeStartHeldJobs(jobIds)
+            if (!executionResult.successful) {
+                String msg = "Held jobs couldn't be started.\n  status code: ${executionResult.exitCode}\n  result: ${executionResult.resultLines}"
+                logger.warning(msg)
+                throw new BEException(msg)
+            }
         }
     }
 
@@ -118,14 +126,16 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobs
      */
     void killJobs(List<BEJob> jobs) {
-        ExecutionResult executionResult = executeKillJobs(collectJobIDsFromJobs(jobs))
-
-        if (executionResult.successful) {
-            jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
-        } else {
-            String error = "Job couldn't be aborted. \n status code: ${executionResult.exitCode} \n result: ${executionResult.resultLines}"
-            logger.warning(error)
-            throw new BEException(error)
+        List<BEJobID> jobIds = collectJobIDsFromJobs(jobs)
+        if (jobIds) {
+            ExecutionResult executionResult = executeKillJobs(jobIds)
+            if (executionResult.successful) {
+                jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
+            } else {
+                String msg = "Job couldn't be aborted.\n  status code: ${executionResult.exitCode}\n  result: ${executionResult.resultLines}"
+                logger.warning(msg)
+                throw new BEException(msg)
+            }
         }
     }
 
@@ -199,11 +209,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      */
     abstract Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds)
 
-
     void addToListOfStartedJobs(BEJob job) {
         if (updateDaemonThread) {
-            synchronized (startedJobs) {
-                startedJobs.put(job.getJobID(), job)
+            synchronized (activeJobs) {
+                activeJobs.put(job.getJobID(), job)
             }
         }
     }
@@ -213,9 +222,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         if (!updateDaemonThread) {
             throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
         }
-        while (true) {
-            synchronized (startedJobs) {
-                if (startedJobs.isEmpty()) {
+        while(true) {
+            synchronized (activeJobs) {
+                if (activeJobs.isEmpty()) {
                     return 0
                 }
             }
@@ -331,7 +340,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     protected void createUpdateDaemonThread() {
         try {
             updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-                updateJobsInStartedJobsList()
+                updateActiveJobList()
                 try {
                     Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10 * 1000))
                 } catch (InterruptedException e) {
@@ -343,18 +352,18 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-    private void updateJobsInStartedJobsList() {
-        synchronized (startedJobs) {
-            Map<BEJobID, JobState> states = queryJobStatesUsingCache(startedJobs.keySet() as List<BEJobID>, true)
+    private void updateActiveJobList() {
+        synchronized (activeJobs) {
+            Map<BEJobID, JobState> states = queryJobStatesUsingCache(activeJobs.keySet() as List<BEJobID>, true)
 
-            for (BEJobID id : startedJobs.keySet()) {
+            for (BEJobID id : activeJobs.keySet()) {
                 JobState js = states.get(id)
-                BEJob job = startedJobs.get(id)
+                BEJob job = activeJobs.get(id)
 
                 job.setJobState(js)
 
-                if (js in [JobState.FAILED, JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN, JobState.ABORTED]) {
-                    startedJobs.remove(id)
+                if (!js.isPlannedOrRunning()){
+                    activeJobs.remove(id)
                 }
             }
         }

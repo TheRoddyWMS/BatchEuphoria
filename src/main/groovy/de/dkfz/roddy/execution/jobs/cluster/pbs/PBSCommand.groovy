@@ -85,9 +85,9 @@ class PBSCommand extends SubmissionCommand {
         if (!jobLog.out && !jobLog.error) {
             return "-k"
         } else if (jobLog.out == jobLog.error) {
-            return "${joinLogParameter} -o ${jobLog.out.replace(JobLog.JOB_ID, '$PBS_JOBID')}"
+            return "${joinLogParameter} -o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID')}\""
         } else {
-            return "-o ${jobLog.out.replace(JobLog.JOB_ID, '$PBS_JOBID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '$PBS_JOBID')}"
+            return "-o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '\\$PBS_JOBID')}\""
         }
     }
 

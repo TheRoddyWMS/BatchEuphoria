@@ -62,7 +62,7 @@ class RestExecutionService implements BEExecutionService {
     public boolean isCertAuth = false //true if certificate authentication is used
 
     private String token = ""
-    private LocalDateTime tokenDate
+    private LocalDateTime tokenDate = LocalDateTime.now()
     private String username
     private String password
 
@@ -114,7 +114,6 @@ class RestExecutionService implements BEExecutionService {
             throw new AuthenticationException("Could not authenticate, returned HTTP status code: ${result.statusCode}")
 
         this.token = new XmlSlurper().parseText(result.body).getProperty("token").toString()
-        this.tokenDate = LocalDateTime.now()
         return result
     }
 
@@ -173,7 +172,7 @@ class RestExecutionService implements BEExecutionService {
                     return this.execute(restCommand)
                 }
             }
-
+            this.tokenDate = LocalDateTime.now()
             return new RestResult(response.getAllHeaders(), result, response.getStatusLine().getStatusCode())
         } finally {
             response.close()

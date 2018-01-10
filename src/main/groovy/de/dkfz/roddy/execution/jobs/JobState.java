@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * A generic jobState for jobs.
@@ -54,7 +55,7 @@ public enum JobState implements Serializable {
     }
 
     public static boolean _isPlannedOrRunning(JobState jobState) {
-        return jobState == JobState.RUNNING || jobState == JobState.QUEUED || jobState == JobState.HOLD;
+        return Arrays.asList(JobState.RUNNING, JobState.QUEUED, JobState.HOLD, JobState.STARTED, JobState.UNSTARTED).contains(jobState);
     }
 
     public boolean isDummy() {
