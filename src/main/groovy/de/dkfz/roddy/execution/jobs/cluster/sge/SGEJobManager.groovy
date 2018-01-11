@@ -84,17 +84,17 @@ class SGEJobManager extends PBSJobManager {
 
     @Override
     void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
-        parameters["-pe"] = "serial ${resourceSet.cores}"
+        parameters.put("-pe", "serial ${resourceSet.cores}")
     }
 
     @Override
     void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters["-l"] = "h_rt=${resourceSet.walltime.toString()}"
+        parameters.put("-l", "h_rt=${resourceSet.walltime.toString()}")
     }
 
     @Override
     void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters["-l"] = "h_rss=${resourceSet.getMem().toString(BufferUnit.M)}"
+        parameters.put("-l", "h_rss=${resourceSet.getMem().toString(BufferUnit.M)}")
     }
 
     @Override

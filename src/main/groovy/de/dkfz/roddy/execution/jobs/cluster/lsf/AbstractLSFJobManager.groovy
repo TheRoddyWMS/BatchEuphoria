@@ -84,24 +84,24 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
         // If nodes == 1, -n is the amount of cores. If nodes > 1, -n is the amount of cores multiplied by
         // the amount of nodes. In addition, you need to provide a span factor as a resource.
 
-        parameters["-n"] = nodes == 1 ? cores : "${cores * nodes} -R \"span[ptile=${cores}]\""
+        parameters.put("-n", nodes == 1 ? cores : "${cores * nodes} -R \"span[ptile=${cores}]\"")
     }
 
     @Override
     void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
-        parameters['-q'] = queue
+        parameters.put('-q', queue)
     }
 
     @Override
     void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters['-W'] = durationToLSFWallTime(resourceSet.getWalltime())
+        parameters.put('-W', durationToLSFWallTime(resourceSet.getWalltime()))
     }
 
     @Override
     void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
         // LSF does not like the buffer unit at the end and always takes MB
         def memval = resourceSet.getMem().toString(BufferUnit.M)[0 .. -2]
-        parameters["-M"] = "${memval} -R \"rusage[mem=${memval}]\""
+        parameters.put("-M", "${memval} -R \"rusage[mem=${memval}]\"")
     }
 
     @Override

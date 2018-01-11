@@ -376,7 +376,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      * @return
      */
     void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
-        parameters['-q'] = queue
+        parameters.put('-q', queue)
     }
 
     /**
@@ -395,5 +395,4 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
     void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
     }
-
 }
