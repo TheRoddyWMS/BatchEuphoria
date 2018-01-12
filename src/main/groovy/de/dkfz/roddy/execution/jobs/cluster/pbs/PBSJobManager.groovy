@@ -286,14 +286,14 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.priority = jobResult["Priority"]
             gj.userGroup = jobResult["egroup"]
             gj.resourceReq = jobResult["submit_args"]
-            gj.runTime = jobResult["total_runtime"] ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobResult["total_runtime"])), 0) } : null
-            gj.cpuTime = jobResult["resources_used.cput"] ? catchExceptionAndLog { parseColonSeparatedHHMMSSDuration(jobResult["resources_used.cput"]) } : null
+            gj.runTime = jobResult["total_runtime"] ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobResult["total_runtime"])), 0) } : (Duration)null
+            gj.cpuTime = jobResult["resources_used.cput"] ? catchExceptionAndLog { parseColonSeparatedHHMMSSDuration(jobResult["resources_used.cput"]) } : (Duration)null
             gj.server = jobResult["server"]
             gj.umask = jobResult["umask"]
             gj.jobState = parseJobState(jobResult["job_state"])
-            gj.exitCode = jobResult["exit_status"] ? catchExceptionAndLog { Integer.valueOf(jobResult["exit_status"]) } : null
+            gj.exitCode = jobResult["exit_status"] ? catchExceptionAndLog { Integer.valueOf(jobResult["exit_status"]) } : (Integer)null
             gj.account = jobResult["Account_Name"]
-            gj.startCount = jobResult["start_count"] ? catchExceptionAndLog { Integer.valueOf(jobResult["start_count"]) } : null
+            gj.startCount = jobResult["start_count"] ? catchExceptionAndLog { Integer.valueOf(jobResult["start_count"]) } : (Integer)null
 
             if (jobResult["qtime"]) // The time that the job entered the current queue.
                     catchExceptionAndLog { gj.setSubmitTime(parseTime(jobResult["qtime"])) }

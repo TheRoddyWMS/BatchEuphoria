@@ -84,7 +84,7 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
         // If nodes == 1, -n is the amount of cores. If nodes > 1, -n is the amount of cores multiplied by
         // the amount of nodes. In addition, you need to provide a span factor as a resource.
 
-        parameters.put("-n", nodes == 1 ? cores : "${cores * nodes} -R \"span[ptile=${cores}]\"")
+        parameters.put("-n", nodes == 1 ? "" + cores : "${cores * nodes} -R \"span[ptile=${cores}]\"")
     }
 
     @Override

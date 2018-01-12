@@ -35,7 +35,7 @@ class ProcessingParameters implements Serializable {
     static ProcessingParameters fromString(String parameterString) {
         def pattern = Pattern.compile(/(?<optionName>[^\s=]+)(?:[\s+=](?<optionValue>.+?\s*))?/)
         LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
-        parameterString.split(/(^|\s+)(?=-)/).findAll { it != '' }.eachWithIndex{ String option, int i ->
+        parameterString.split(/(^|\s+)(?=-)/).findAll { it != '' }.eachWithIndex { String option, int i ->
             def matcher = pattern.matcher(option)
             if (matcher.matches()) {
                 parameters.put(matcher.group("optionName"), matcher.group("optionValue"))
@@ -49,8 +49,10 @@ class ProcessingParameters implements Serializable {
     }
 
     String getProcessingCommandString() {
-        return (parameters.asMap() as Map<String, Collection<String>>).collect { k, vs ->
-            vs.collect { String v ->
+        // Careful with this method. We had one problem where an Integer value was in one of the Collections inside the map.
+        // In this particular case, Groovy said there is something wrong with the Integer [1].
+        (parameters.asMap() as Map<String, Collection<String>>).collect { k, vs ->
+            vs.collect { v ->
                 k + ' ' + v
             }.join(' ')
         }.join(' ')

@@ -79,7 +79,8 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
-        runBjobs(jobIDs).collectEntries { BEJobID jobID, String[] value->
+        if (!jobIDs) return [:]
+        runBjobs(jobIDs).collectEntries { BEJobID jobID, String[] value ->
             JobState js = parseJobState(value[getPositionOfJobState()])
             if (logger.isVerbosityHigh())
                 logger.postAlwaysInfo("   Extracted jobState: " + js.toString())
@@ -186,7 +187,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setCwd(jobResult[22] ?: null)
         jobInfo.setPendReason(jobResult[23] ?: null)
         jobInfo.setExecCwd(jobResult[24] ?: null)
-        jobInfo.setLogFile(getBjobsFile(jobResult[25],jobID , "out"))
+        jobInfo.setLogFile(getBjobsFile(jobResult[25], jobID, "out"))
         jobInfo.setErrorLogFile(getBjobsFile(jobResult[30], jobID, "err"))
         jobInfo.setInputFile(jobResult[26] ? new File(jobResult[26]) : null)
         jobInfo.setResourceReq(jobResult[27] ?: null)
@@ -197,7 +198,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         if (jobResult[14])
             catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14])) }
         if (jobResult[15])
-            catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15].substring(0, jobResult[15].length()-2))) }
+            catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15].substring(0, jobResult[15].length() - 2))) }
 
         return jobInfo
     }
