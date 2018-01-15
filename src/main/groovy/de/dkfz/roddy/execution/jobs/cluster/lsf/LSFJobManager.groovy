@@ -89,9 +89,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     private Map<BEJobID, String[]> runBjobs(List<BEJobID> jobIDs) {
-        if (!executionService.isAvailable())
-            return
-
         StringBuilder queryCommand = new StringBuilder(getQueryCommand())
 
         // user argument must be passed before the job IDs
