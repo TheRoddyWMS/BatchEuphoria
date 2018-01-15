@@ -6,7 +6,9 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -44,4 +46,40 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         return Duration.parse(String.format("PT%sH%sM%sS", hhmmss))
     }
 
+    @Override
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        assert resourceSet
+
+        LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
+
+        createDefaultManagerParameters(parameters)
+
+        if (requestMemoryIsEnabled && resourceSet.isMemSet())
+            createMemoryParameter(parameters, resourceSet)
+
+        if (requestWalltimeIsEnabled && resourceSet.isWalltimeSet())
+            createWalltimeParameter(parameters, resourceSet)
+
+        if (requestQueueIsEnabled && resourceSet.isQueueSet())
+            createQueueParameter(parameters, resourceSet.getQueue())
+
+        if (requestQueueIsEnabled && job?.customQueue)
+            createQueueParameter(parameters, job.customQueue)
+
+        if (requestCoresIsEnabled && resourceSet.isCoresSet() || resourceSet.isNodesSet())
+            createComputeParameter(resourceSet, parameters)
+
+        if (requestStorageIsEnabled && resourceSet.isStorageSet())
+            createStorageParameters(parameters, resourceSet)
+
+        return new ProcessingParameters(parameters)
+    }
+
+    abstract void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters)
+
+    abstract void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters)
+    abstract void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue)
+    abstract void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+    abstract void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+    abstract void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
 }

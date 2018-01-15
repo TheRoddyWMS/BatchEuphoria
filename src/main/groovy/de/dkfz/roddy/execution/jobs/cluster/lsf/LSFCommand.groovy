@@ -52,6 +52,12 @@ class LSFCommand extends SubmissionCommand {
     }
 
     @Override
+    protected String getEnvironmentExportParameter() {
+        // TODO Is this really not supported?
+        return ""
+    }
+
+    @Override
     String getJobNameParameter() {
         "-J ${jobName}" as String
     }
@@ -160,12 +166,6 @@ class LSFCommand extends SubmissionCommand {
     }
 
     protected String getAdditionalCommandParameters() {
-        StringBuilder resources = new StringBuilder(" -R \'select[type==any] ")
-        if (job.resourceSet.isCoresSet()) {
-            int cores = job.resourceSet.isCoresSet() ? job.resourceSet.getCores() : 1
-            resources.append(" affinity[core(${cores})]")
-        }
-        resources.append("\' ")
-        return resources.toString()
+        ""
     }
 }

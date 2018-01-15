@@ -29,12 +29,49 @@ class JobManagerOptions {
     String userEmail
     String userMask
 
+    /**
+     * Request memory per job
+     */
+    boolean requestMemoryIsEnabled
+
+    /**
+     * Request walltime per job
+     */
+    boolean requestWalltimeIsEnabled
+
+    /**
+     * Request queue for a job
+     */
+    boolean requestQueueIsEnabled
+
+    /**
+     * Request cores per job (also effects node request)
+     */
+    boolean requestCoresIsEnabled
+
+    /**
+     * Request storage per job
+     */
+    boolean requestStorageIsEnabled
+
+    /**
+     * Tell the job manager to pass the current environment or fall back to the underlying job systems default settings.
+     */
+    boolean enforcePassEnvironmentExportParameter
+
+    Map<String, String> additionalOptions
+
     static JobManagerOptionsBuilder create() {
         new JobManagerOptionsBuilder()
     }
+
+    Map<String, String> getAdditionalOptions() {
+        // Never return a null map.
+        return additionalOptions ?: (new LinkedHashMap<String, String>() as Map<String, String>)
+    }
 }
 
-@Builder(builderStrategy=ExternalStrategy, forClass=JobManagerOptions, prefix = "set")
+@Builder(builderStrategy = ExternalStrategy, forClass = JobManagerOptions, prefix = "set")
 class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
         trackUserJobsOnly = false
@@ -42,5 +79,12 @@ class JobManagerOptionsBuilder {
         strictMode = true
         updateInterval = Duration.ofMinutes(5)
         createDaemon = false
+        requestMemoryIsEnabled = true
+        requestWalltimeIsEnabled = true
+        requestQueueIsEnabled = true
+        requestCoresIsEnabled = true
+        requestStorageIsEnabled = false  // Defaults to false, not supported now.
+        enforcePassEnvironmentExportParameter = true  // Sometimes true, sometimes false in the job system. But we can forcibly enable it.
+        additionalOptions = [:]
     }
 }

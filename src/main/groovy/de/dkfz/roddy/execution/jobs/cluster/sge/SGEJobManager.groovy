@@ -33,35 +33,6 @@ class SGEJobManager extends PBSJobManager {
     }
 
     @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
-//        if (resourceSet.isQueueSet()) {
-//            resourceParameters.put("-q", resourceSet.getQueue())
-//        }
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceParameters.put("-M", memo.substring(0, memo.toString().length() - 1))
-        }
-//        if (resourceSet.isWalltimeSet()) {
-//            resourceParameters.put("-W", durationToLSFWallTime(resourceSet.getWallTime()))
-//        }
-//        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-//            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-//            resourceParameters.put("-n", nodes.toString())
-//        }
-
-        StringBuilder sb = new StringBuilder()
-        sb.append(" -V") //TODO Think if default SGE options should go somewhere else?
-        if (resourceSet.isMemSet()) {
-            resourceParameters.put('-l', 's_data=' + resourceSet.getMem().toString(BufferUnit.G) + 'g')
-        }
-        if (resourceSet.isStorageSet()) {
-        }
-        return new ProcessingParameters(resourceParameters)
-    }
-
-
-    @Override
     protected int getPositionOfJobID() {
         return 0
     }
@@ -98,7 +69,7 @@ class SGEJobManager extends PBSJobManager {
         return js;
     }
 
-
+    @Deprecated
     protected List<String> getTestQstat() {
         return Arrays.asList(
                 "job - ID prior name user jobState submit / start at queue slots ja -task - ID",
@@ -112,6 +83,21 @@ class SGEJobManager extends PBSJobManager {
     }
 
     @Override
+    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+        parameters.put("-pe", "serial ${resourceSet.cores}")
+    }
+
+    @Override
+    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters.put("-l", "h_rt=${resourceSet.walltime.toString()}")
+    }
+
+    @Override
+    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters.put("-l", "h_rss=${resourceSet.getMem().toString(BufferUnit.M)}")
+    }
+
+    @Override
     String getJobIdVariable() {
         return "JOBID"
     }
@@ -120,5 +106,4 @@ class SGEJobManager extends PBSJobManager {
     String getJobNameVariable() {
         return "JOB_NAME"
     }
-
 }

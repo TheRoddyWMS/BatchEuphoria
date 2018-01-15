@@ -61,30 +61,51 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
         return Collections.unmodifiableList(["LSB_*", "LS_*"])
     }
 
-    @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        LinkedHashMultimap<String, String> resourceParameters = LinkedHashMultimap.create()
-        if (resourceSet.isQueueSet()) {
-            resourceParameters.put('-q', resourceSet.getQueue())
-        }
-        if (resourceSet.isMemSet()) {
-            String memo = resourceSet.getMem().toString(BufferUnit.M)
-            resourceParameters.put('-M', memo.substring(0, memo.toString().length() - 1))
-        }
-        if (resourceSet.isWalltimeSet()) {
-            resourceParameters.put('-W', durationToLSFWallTime(resourceSet.getWalltime()))
-        }
-        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            resourceParameters.put('-n', nodes.toString())
-        }
-        return new ProcessingParameters(resourceParameters)
-    }
-
     private String durationToLSFWallTime(Duration wallTime) {
         if (wallTime) {
             return String.valueOf(wallTime.toMinutes())
         }
         return null
+    }
+
+    @Override
+    void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters) {
+
+    }
+
+    @Override
+    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+        int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
+        int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
+
+        // The -n parameter is the amount of SLOTS!
+
+        // If you use > 1 nodes and > 1 cores it is a bit more complicated than let's say in PBS
+        // If nodes == 1, -n is the amount of cores. If nodes > 1, -n is the amount of cores multiplied by
+        // the amount of nodes. In addition, you need to provide a span factor as a resource.
+
+        parameters.put("-n", nodes == 1 ? "" + cores : "${cores * nodes} -R \"span[ptile=${cores}]\"")
+    }
+
+    @Override
+    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
+        parameters.put('-q', queue)
+    }
+
+    @Override
+    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters.put('-W', durationToLSFWallTime(resourceSet.getWalltime()))
+    }
+
+    @Override
+    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        // LSF does not like the buffer unit at the end and always takes MB
+        def memval = resourceSet.getMem().toString(BufferUnit.M)[0 .. -2]
+        parameters.put("-M", "${memval} -R \"rusage[mem=${memval}]\"")
+    }
+
+    @Override
+    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+
     }
 }

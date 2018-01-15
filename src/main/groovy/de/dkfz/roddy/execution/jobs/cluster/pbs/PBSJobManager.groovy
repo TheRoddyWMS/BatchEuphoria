@@ -40,10 +40,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         /**
          * General or specific todos for BatchEuphoriaJobManager and PBSJobManager
          */
-        logger.rare("Need to find a way to properly get the job state for a completed job. Neither tracejob, nor qstat -f are a good way. qstat -f only works for 'active' jobs. Lists with long active lists are not default.")
-        logger.rare("Set logfile location, parameter file and job state log file on job creation (or override a method).")
-        logger.rare("Allow enabling and disabling of options for resource arbitration for defective job managers.")
-        logger.rare("parseToJob() is not implemented and will return null.")
     }
 
     @Override
@@ -64,46 +60,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
         String command = "qrls ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
-    }
-
-
-
-    @Override
-    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        assert resourceSet
-
-        LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
-
-        if (resourceSet.isMemSet()) parameters.put('-l', 'mem=' + resourceSet.getMem().toString(BufferUnit.M))
-        if (resourceSet.isWalltimeSet()) parameters.put('-l', 'walltime=' + TimeUnit.fromDuration(resourceSet.walltime))
-        if (job?.customQueue) parameters.put('-q', job.customQueue)
-        else if (resourceSet.isQueueSet()) parameters.put('-q', resourceSet.getQueue())
-
-        if (resourceSet.isCoresSet() || resourceSet.isNodesSet()) {
-            int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
-            int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
-            // Currently not active
-            String enforceSubmissionNodes = ''
-            if (!enforceSubmissionNodes) {
-                String pVal = 'nodes=' << nodes << ':ppn=' << cores
-                if (resourceSet.isAdditionalNodeFlagSet()) {
-                    pVal << ':' << resourceSet.getAdditionalNodeFlag()
-                }
-                parameters.put("-l", pVal)
-            } else {
-                String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
-                nodesArr.each {
-                    String node ->
-                        parameters.put('-l', 'nodes=' + node + ':ppn=' + resourceSet.getCores())
-                }
-            }
-        }
-
-        if (resourceSet.isStorageSet()) {
-            parameters.put('-l', 'mem=' + resourceSet.getMem() + 'g')
-        }
-
-        return new ProcessingParameters(parameters)
     }
 
     @Override
@@ -293,60 +249,60 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         qstatReaderResult.each { it ->
                 Map<String, String> jobResult = it.getValue()
-                GenericJobInfo gj = new GenericJobInfo(jobResult.get("Job_Name"), null, it.getKey(), null, jobResult.get("depend") ? jobResult.get("depend").find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
+            GenericJobInfo gj = new GenericJobInfo(jobResult["Job_Name"], null, it.getKey(), null, jobResult["depend"] ? jobResult["depend"].find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
-                BufferValue mem = null
-                Integer cores
-                Integer nodes
-                TimeUnit walltime = null
-                String additionalNodeFlag
+            BufferValue mem = null
+            Integer cores
+            Integer nodes
+            TimeUnit walltime = null
+            String additionalNodeFlag
 
-                if (jobResult.get("Resource_List.mem"))
-                    mem = catchExceptionAndLog { new BufferValue(Integer.valueOf(jobResult.get("Resource_List.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("Resource_List.mem")[-2])) }
-                if (jobResult.get("Resource_List.nodect"))
-                    nodes = catchExceptionAndLog { Integer.valueOf(jobResult.get("Resource_List.nodect")) }
-                if (jobResult.get("Resource_List.nodes"))
-                    cores = catchExceptionAndLog { Integer.valueOf(jobResult.get("Resource_List.nodes").find("ppn=.*").find(/(\d+)/)) }
-                if (jobResult.get("Resource_List.nodes"))
-                    additionalNodeFlag = catchExceptionAndLog { jobResult.get("Resource_List.nodes").find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
-                if (jobResult.get("Resource_List.walltime"))
-                    walltime = catchExceptionAndLog { new TimeUnit(jobResult.get("Resource_List.walltime")) }
+            if (jobResult["Resource_List.mem"])
+                mem = catchExceptionAndLog { new BufferValue(Integer.valueOf(jobResult["Resource_List.mem"].find(/(\d+)/)), BufferUnit.valueOf(jobResult["Resource_List.mem"][-2])) }
+            if (jobResult["Resource_List.nodect"])
+                nodes = catchExceptionAndLog { Integer.valueOf(jobResult["Resource_List.nodect"]) }
+            if (jobResult["Resource_List.nodes"])
+                cores = catchExceptionAndLog { Integer.valueOf(jobResult["Resource_List.nodes"].find("ppn=.*").find(/(\d+)/)) }
+            if (jobResult["Resource_List.nodes"])
+                additionalNodeFlag = catchExceptionAndLog { jobResult["Resource_List.nodes"].find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
+            if (jobResult["Resource_List.walltime"])
+                walltime = catchExceptionAndLog { new TimeUnit(jobResult["Resource_List.walltime"]) }
 
-                BufferValue usedMem = null
-                TimeUnit usedWalltime = null
-                if (jobResult.get("resources_used.mem"))
-                    catchExceptionAndLog { usedMem = new BufferValue(Integer.valueOf(jobResult.get("resources_used.mem").find(/(\d+)/)), BufferUnit.valueOf(jobResult.get("resources_used.mem")[-2]))  }
-                if (jobResult.get("resources_used.walltime"))
-                    catchExceptionAndLog { usedWalltime = new TimeUnit(jobResult.get("resources_used.walltime")) }
+            BufferValue usedMem = null
+            TimeUnit usedWalltime = null
+            if (jobResult["resources_used.mem"])
+                catchExceptionAndLog { usedMem = new BufferValue(Integer.valueOf(jobResult["resources_used.mem"].find(/(\d+)/)), BufferUnit.valueOf(jobResult["resources_used.mem"][-2]))  }
+            if (jobResult["resources_used.walltime"])
+                catchExceptionAndLog { usedWalltime = new TimeUnit(jobResult["resources_used.walltime"]) }
 
-                gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult.get("queue"), additionalNodeFlag))
-                gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult.get("queue"), null))
+            gj.askedResources = new ResourceSet(null, mem, cores, nodes, walltime, null, jobResult["queue"], additionalNodeFlag)
+            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, jobResult["queue"], null))
 
-                gj.setLogFile(getQstatFile(jobResult.get("Output_Path")))
-                gj.setErrorLogFile(getQstatFile(jobResult.get("Error_Path")))
-                gj.setUser(jobResult.get("euser"))
-                gj.setExecutionHosts(jobResult.get("exec_host"))
-                gj.setSubmissionHost(jobResult.get("submit_host"))
-                gj.setPriority(jobResult.get("Priority"))
-                gj.setUserGroup(jobResult.get("egroup"))
-                gj.setResourceReq(jobResult.get("submit_args"))
-                gj.setRunTime(jobResult.get("total_runtime") ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobResult.get("total_runtime"))), 0) } : null)
-                gj.setCpuTime(jobResult.get("resources_used.cput") ? catchExceptionAndLog { parseColonSeparatedHHMMSSDuration(jobResult.get("resources_used.cput")) } : null)
-                gj.setServer(jobResult.get("server"))
-                gj.setUmask(jobResult.get("umask"))
-                gj.setJobState(parseJobState(jobResult.get("job_state")))
-                gj.setExitCode(jobResult.get("exit_status") ? catchExceptionAndLog { Integer.valueOf(jobResult.get("exit_status")) } : null)
-                gj.setAccount(jobResult.get("Account_Name"))
-                gj.setStartCount(jobResult.get("start_count") ? catchExceptionAndLog { Integer.valueOf(jobResult.get("start_count")) } : null)
+            gj.logFile = getQstatFile(jobResult["Output_Path"])
+            gj.errorLogFile = getQstatFile(jobResult["Error_Path"])
+            gj.user = jobResult["euser"]
+            gj.executionHosts = jobResult["exec_host"]
+            gj.submissionHost = jobResult["submit_host"]
+            gj.priority = jobResult["Priority"]
+            gj.userGroup = jobResult["egroup"]
+            gj.resourceReq = jobResult["submit_args"]
+            gj.runTime = jobResult["total_runtime"] ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobResult["total_runtime"])), 0) } : (Duration)null
+            gj.cpuTime = jobResult["resources_used.cput"] ? catchExceptionAndLog { parseColonSeparatedHHMMSSDuration(jobResult["resources_used.cput"]) } : (Duration)null
+            gj.server = jobResult["server"]
+            gj.umask = jobResult["umask"]
+            gj.jobState = parseJobState(jobResult["job_state"])
+            gj.exitCode = jobResult["exit_status"] ? catchExceptionAndLog { Integer.valueOf(jobResult["exit_status"]) } : (Integer)null
+            gj.account = jobResult["Account_Name"]
+            gj.startCount = jobResult["start_count"] ? catchExceptionAndLog { Integer.valueOf(jobResult["start_count"]) } : (Integer)null
 
-                if (jobResult.get("qtime")) // The time that the job entered the current queue.
-                    catchExceptionAndLog { gj.setSubmitTime(parseTime(jobResult.get("qtime"))) }
-                if (jobResult.get("start_time")) // The timepoint the job was started.
-                    catchExceptionAndLog { gj.setStartTime(parseTime(jobResult.get("start_time"))) }
-                if (jobResult.get("comp_time"))  // The timepoint the job was completed.
-                    catchExceptionAndLog { gj.setEndTime(parseTime(jobResult.get("comp_time"))) }
-                if (jobResult.get("etime"))  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
-                    catchExceptionAndLog { gj.setEligibleTime(parseTime(jobResult.get("etime"))) }
+            if (jobResult["qtime"]) // The time that the job entered the current queue.
+                    catchExceptionAndLog { gj.setSubmitTime(parseTime(jobResult["qtime"])) }
+                if (jobResult["start_time"]) // The timepoint the job was started.
+                    catchExceptionAndLog { gj.setStartTime(parseTime(jobResult["start_time"])) }
+                if (jobResult["comp_time"])  // The timepoint the job was completed.
+                    catchExceptionAndLog { gj.setEndTime(parseTime(jobResult["comp_time"])) }
+                if (jobResult["etime"])  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
+                    catchExceptionAndLog { gj.setEligibleTime(parseTime(jobResult["etime"])) }
 
                 queriedExtendedStates.put(new BEJobID(it.getKey()), gj)
         }
@@ -389,4 +345,54 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         return Collections.unmodifiableList(["PBS_*"])
     }
 
+    void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters) {
+
+    }
+
+    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+        int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
+        int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
+        // Currently not active
+        String enforceSubmissionNodes = ''
+        if (!enforceSubmissionNodes) {
+            String pVal = 'nodes=' << nodes << ':ppn=' << cores
+            if (resourceSet.isAdditionalNodeFlagSet()) {
+                pVal << ':' << resourceSet.getAdditionalNodeFlag()
+            }
+            parameters.put("-l", pVal)
+        } else {
+            String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
+            nodesArr.each {
+                String node ->
+                    parameters.put('-l', 'nodes=' + node + ':ppn=' + resourceSet.getCores())
+            }
+        }
+    }
+
+    /**
+     * Valid for GE, PBS, LSF
+     * @param parameters
+     * @param queue
+     * @return
+     */
+    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
+        parameters.put('-q', queue)
+    }
+
+    /**
+     * Valid only for PBS
+     * @param parameters
+     * @param resourceSet
+     * @return
+     */
+    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters.put('-l', 'walltime=' + TimeUnit.fromDuration(resourceSet.walltime))
+    }
+
+    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+        parameters.put('-l', 'mem=' + resourceSet.getMem().toString(BufferUnit.M))
+    }
+
+    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+    }
 }
