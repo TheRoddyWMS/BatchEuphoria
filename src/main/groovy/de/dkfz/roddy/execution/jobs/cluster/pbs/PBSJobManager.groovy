@@ -37,8 +37,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSJobManager)
 
     private static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
-
-    private static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -x -f"
+    private static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -x -f "
     private static final String PBS_COMMAND_DELETE_JOBS = "qdel"
     private static final String WITH_DELIMITER = '(?=(%1$s))'
 
@@ -254,8 +253,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if(resultLines.join("\n").isEmpty()){
             return [:]
         }
-        GPathResult parsedXml = new XmlSlurper().parseText(resultLines.join("\n"))
-        parsedXml.children().each { it ->
+        List<GPathResult> parsedJobs = resultLines.collect {new XmlSlurper().parseText(it)}
+        parsedJobs.each { it ->
             GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
             BufferValue mem = null
