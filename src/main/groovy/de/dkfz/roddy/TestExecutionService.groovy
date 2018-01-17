@@ -34,7 +34,10 @@ class TestExecutionService implements BEExecutionService {
 
     @Override
     ExecutionResult execute(String command, boolean waitFor = true) {
-        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${BashUtils.strongQuote(command)}")
+        //println command
+        def r = LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${BashUtils.strongQuote(command)}")
+        //println r.resultLines.join("\n")
+        return r
     }
 
     ExecutionResult executeLocal(String command) {
