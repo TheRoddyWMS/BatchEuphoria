@@ -14,6 +14,12 @@ import static de.dkfz.roddy.StringConstants.EMPTY
 
 @CompileStatic
 abstract class SubmissionCommand extends Command {
+
+    /**
+     *  Should the local environment during the submission be copied to the execution hosts?
+     */
+    private boolean copyExecutionEnvironment = true
+
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
      *
@@ -27,6 +33,14 @@ abstract class SubmissionCommand extends Command {
         super(parentJobManager, job, jobName, parameters)
     }
 
+    /**
+     * The JobManager can force the passing of the environment to the execution host.
+     * @return
+     */
+    boolean getPassLocalEnvironment() {
+        return copyExecutionEnvironment || parentJobManager.enforcePassEnvironment
+    }
+
     @Override
     String toString() {
 
@@ -35,11 +49,10 @@ abstract class SubmissionCommand extends Command {
         String groupList = parentJobManager.getUserGroup()
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
-        boolean forcePassEnv = parentJobManager.enforcePassEnvironmentExportParameter
 
         // collect parameters for job submission
         List<String> parameters = []
-        if (forcePassEnv) parameters << getEnvironmentExportParameter()
+        if (passLocalEnvironment) parameters << getEnvironmentExportParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)

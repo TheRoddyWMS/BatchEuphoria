@@ -30,11 +30,6 @@ class LSFCommand extends SubmissionCommand {
 
     protected List<String> dependencyIDs
 
-    /**
-     *
-     */
-    public boolean copyExecutionEnvironment = true
-
     protected final List<ProcessingParameters> processingParameters
 
     /**
@@ -135,7 +130,7 @@ class LSFCommand extends SubmissionCommand {
     String assembleVariableExportString() {
         StringBuilder qsubCall = new StringBuilder()
         qsubCall << "-env " << "\""
-        if (copyExecutionEnvironment) {
+        if (passLocalEnvironment) {
             qsubCall << "all"
         } else {
             qsubCall << "none"

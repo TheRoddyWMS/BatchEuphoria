@@ -57,7 +57,7 @@ class JobManagerOptions {
     /**
      * Tell the job manager to pass the current environment or fall back to the underlying job systems default settings.
      */
-    boolean enforcePassEnvironmentExportParameter
+    boolean enforcePassEnvironment
 
     Map<String, String> additionalOptions
 
@@ -84,7 +84,7 @@ class JobManagerOptionsBuilder {
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        enforcePassEnvironmentExportParameter = true  // Sometimes true, sometimes false in the job system. But we can forcibly enable it.
+        enforcePassEnvironment = true  // Sometimes true, sometimes false in the job system. But we can forcibly enable it.
         additionalOptions = [:]
     }
 }
