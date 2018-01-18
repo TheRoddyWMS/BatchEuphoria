@@ -61,7 +61,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     String getJobIdVariable() {
-        return ""
+        return '$'
     }
 
     String getJobNameVariable() {
