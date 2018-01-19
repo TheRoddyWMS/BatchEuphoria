@@ -132,33 +132,33 @@ class LSFCommand extends SubmissionCommand {
 
         if (passLocalEnvironment.isPresent()) {
             if (passLocalEnvironment.get()) {
-                environmentStrings.add("all")
+                environmentStrings << "all"
             } else {
-                environmentStrings.add("none")
+                environmentStrings << "none"
             }
         } // According to the docs (Version 10.1.0), undefined means "all".
 
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
             // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
             // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
-            environmentStrings.add("CONFIG_FILE=" + job.parameters["CONFIG_FILE"])
-            environmentStrings.add("PARAMETER_FILE=" + job.parameters["PARAMETER_FILE"])
+            environmentStrings << "CONFIG_FILE=" + job.parameters["CONFIG_FILE"]
+            environmentStrings << "PARAMETER_FILE=" + job.parameters["PARAMETER_FILE"]
 
             if (job.parameters.containsKey("debugWrapInScript")) {
-                environmentStrings.add("debugWrapInScript=" + job.parameters["debugWrapInScript"])
+                environmentStrings << "debugWrapInScript=" + job.parameters["debugWrapInScript"]
             }
         } else {
             if (!parameters.isEmpty()) {
-                environmentStrings.addAll(parameters.collect { key, value ->
+                environmentStrings += parameters.collect { key, value ->
                     if (null == value)
                         key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
                     else
                         "${key}=${value}"     // sets value to value
-                } as List)
+                } as List
             }
         }
 
-        return "\"" + environmentStrings.join(", ") + "\""
+        return '"' + environmentStrings.join(", ") + '"'
     }
 
     protected String getAdditionalCommandParameters() {
