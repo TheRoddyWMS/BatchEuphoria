@@ -118,7 +118,7 @@ class LSFCommand extends SubmissionCommand {
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     /**
      * Compose the -env parameter of bsub. This supports the 'none' and 'all' parameters to clean the bsub environment or to copy the full
-     * environment during submission to the execution host. This depends on whether the `copyExecutionEnvironment` field is set (default=true). Also
+     * environment during submission to the execution host. This depends on whether the `passEnvironment` field is set (default=true). Also
      * copying specific variables (just use variable name pointing to null value in the `parameters` hash) and setting to a specific value are
      * supported.
      *

@@ -18,7 +18,7 @@ abstract class SubmissionCommand extends Command {
     /**
      *  Should the local environment during the submission be copied to the execution hosts?
      */
-    private boolean copyExecutionEnvironment = true
+    private Optional<Boolean> passEnvironment = Optional.empty()
 
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
@@ -34,11 +34,24 @@ abstract class SubmissionCommand extends Command {
     }
 
     /**
-     * The JobManager can force the passing of the environment to the execution host.
+     * JobManager and SubmissionCommand together determine, whether the environment should be passed.
+     *
+     * * If the Command value is set to true or false, the JobManager value is overruled.
+     * * If the Command value is not set, the JobManager value is the fallback.
+     * * If neither of JobManager and Command is defined, return false.
+     *
      * @return
      */
     boolean getPassLocalEnvironment() {
-        return copyExecutionEnvironment || parentJobManager.enforcePassEnvironment
+        if (passEnvironment.present) {
+            return passEnvironment.get()
+        } else {
+            if (parentJobManager.passEnvironment.present) {
+                return parentJobManager.passEnvironment.get()
+            } else {
+                return false
+            }
+        }
     }
 
     @Override
