@@ -65,7 +65,7 @@ abstract class SubmissionCommand extends Command {
 
         // collect parameters for job submission
         List<String> parameters = []
-        parameters << " " + getEnvironmentExportParameter() + " "
+        parameters << getEnvironmentExportParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
