@@ -62,7 +62,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean requestQueueIsEnabled
     boolean requestCoresIsEnabled
     boolean requestStorageIsEnabled
-    boolean enforcePassEnvironmentExportParameter
+    Optional<Boolean> passEnvironment = Optional.empty()
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         assert(executionService)
@@ -87,7 +87,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.requestQueueIsEnabled = parms.requestQueueIsEnabled
         this.requestCoresIsEnabled = parms.requestCoresIsEnabled
         this.requestStorageIsEnabled = parms.requestStorageIsEnabled
-        this.enforcePassEnvironmentExportParameter = parms.enforcePassEnvironmentExportParameter
+        this.passEnvironment = parms.passEnvironment
 
         if (parms.createDaemon) {
             createUpdateDaemonThread()

@@ -57,7 +57,13 @@ class PBSCommand extends SubmissionCommand {
 
     @Override
     protected String getEnvironmentExportParameter() {
-        return " -V "
+        if (passLocalEnvironment.isPresent()) {
+            if (passLocalEnvironment.get())
+                return "-V"
+            else
+                return ""
+        } else
+            return ""
     }
 
     @Override

@@ -30,11 +30,6 @@ class LSFCommand extends SubmissionCommand {
 
     protected List<String> dependencyIDs
 
-    /**
-     *
-     */
-    public boolean copyExecutionEnvironment = true
-
     protected final List<ProcessingParameters> processingParameters
 
     /**
@@ -53,7 +48,7 @@ class LSFCommand extends SubmissionCommand {
 
     @Override
     protected String getEnvironmentExportParameter() {
-        // TODO Is this really not supported?
+        // Part of the variable export string. See assembleVariableExportString().
         return ""
     }
 
@@ -123,46 +118,47 @@ class LSFCommand extends SubmissionCommand {
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     /**
      * Compose the -env parameter of bsub. This supports the 'none' and 'all' parameters to clean the bsub environment or to copy the full
-     * environment during submission to the execution host. This depends on whether the `copyExecutionEnvironment` field is set (default=true). Also
+     * environment during submission to the execution host. This depends on whether the `passEnvironment` field is set (default=true). Also
      * copying specific variables (just use variable name pointing to null value in the `parameters` hash) and setting to a specific value are
      * supported.
      *
      * Note that variable quoting is left to the client code. The whole -env parameter-value is quoted with ".
      *
-     * * @return    a String of '-env "[all|none](, varName[=varValue](, varName[=varValue])*)?"'
+     * * @return    a String of '-env "[all|none|](, varName[=varValue](, varName[=varValue])*)?"'
      */
     @Override
     String assembleVariableExportString() {
-        StringBuilder qsubCall = new StringBuilder()
-        qsubCall << "-env " << "\""
-        if (copyExecutionEnvironment) {
-            qsubCall << "all"
-        } else {
-            qsubCall << "none"
-        }
+        List<String> environmentStrings = new LinkedList<>()
+
+        if (passLocalEnvironment.isPresent()) {
+            if (passLocalEnvironment.get()) {
+                environmentStrings << "all"
+            } else {
+                environmentStrings << "none"
+            }
+        } // According to the docs (Version 10.1.0), undefined means "all".
 
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
             // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
             // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
-            qsubCall << ", CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ", PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
+            environmentStrings << "CONFIG_FILE=" + job.parameters["CONFIG_FILE"]
+            environmentStrings << "PARAMETER_FILE=" + job.parameters["PARAMETER_FILE"]
 
             if (job.parameters.containsKey("debugWrapInScript")) {
-                qsubCall << ", " << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
+                environmentStrings << "debugWrapInScript=" + job.parameters["debugWrapInScript"]
             }
         } else {
             if (!parameters.isEmpty()) {
-                qsubCall << ", " << parameters.collect { key, value ->
+                environmentStrings += parameters.collect { key, value ->
                     if (null == value)
                         key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
                     else
                         "${key}=${value}"     // sets value to value
-                }.join(", ")
+                } as List
             }
         }
 
-        qsubCall << "\""
-
-        return qsubCall
+        return '"' + environmentStrings.join(", ") + '"'
     }
 
     protected String getAdditionalCommandParameters() {

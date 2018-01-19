@@ -26,5 +26,6 @@ class JobManagerOptionsTest {
         assert parms.strictMode == true
         assert parms.updateInterval == Duration.ofMinutes(5)
         assert parms.createDaemon == false
+        assert !parms.passEnvironment.isPresent()
     }
 }

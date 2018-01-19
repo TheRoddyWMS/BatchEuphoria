@@ -14,6 +14,12 @@ import static de.dkfz.roddy.StringConstants.EMPTY
 
 @CompileStatic
 abstract class SubmissionCommand extends Command {
+
+    /**
+     *  Should the local environment during the submission be copied to the execution hosts?
+     */
+    private Optional<Boolean> passEnvironment = Optional.empty()
+
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
      *
@@ -27,6 +33,27 @@ abstract class SubmissionCommand extends Command {
         super(parentJobManager, job, jobName, parameters)
     }
 
+    /**
+     * JobManager and SubmissionCommand together determine, whether the environment should be passed.
+     *
+     * * If the Command value is set to true or false, the JobManager value is overruled.
+     * * If the Command value is not set, the JobManager value is the fallback.
+     * * If neither of JobManager and Command is defined, return false.
+     *
+     * @return
+     */
+    Optional<Boolean> getPassLocalEnvironment() {
+        if (passEnvironment.present) {
+            return passEnvironment
+        } else {
+            if (parentJobManager.passEnvironment.present) {
+                return parentJobManager.passEnvironment
+            } else {
+                return Optional.empty()
+            }
+        }
+    }
+
     @Override
     String toString() {
 
@@ -35,11 +62,10 @@ abstract class SubmissionCommand extends Command {
         String groupList = parentJobManager.getUserGroup()
         String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
-        boolean forcePassEnv = parentJobManager.enforcePassEnvironmentExportParameter
 
         // collect parameters for job submission
         List<String> parameters = []
-        if (forcePassEnv) parameters << getEnvironmentExportParameter()
+        parameters << getEnvironmentExportParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
