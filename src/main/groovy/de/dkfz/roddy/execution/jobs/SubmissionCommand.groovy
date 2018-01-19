@@ -42,14 +42,14 @@ abstract class SubmissionCommand extends Command {
      *
      * @return
      */
-    boolean getPassLocalEnvironment() {
+    Optional<Boolean> getPassLocalEnvironment() {
         if (passEnvironment.present) {
-            return passEnvironment.get()
+            return passEnvironment
         } else {
             if (parentJobManager.passEnvironment.present) {
-                return parentJobManager.passEnvironment.get()
+                return parentJobManager.passEnvironment
             } else {
-                return false
+                return Optional.empty()
             }
         }
     }
@@ -65,7 +65,7 @@ abstract class SubmissionCommand extends Command {
 
         // collect parameters for job submission
         List<String> parameters = []
-        if (passLocalEnvironment) parameters << getEnvironmentExportParameter()
+        parameters << " " + getEnvironmentExportParameter() + " "
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
