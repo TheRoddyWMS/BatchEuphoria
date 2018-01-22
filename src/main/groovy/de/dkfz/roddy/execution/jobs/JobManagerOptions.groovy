@@ -84,7 +84,7 @@ class JobManagerOptionsBuilder {
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        passEnvironment = Optional.empty()
+        passEnvironment = Optional.of(true)  // TODO
         additionalOptions = [:]
     }
 }
