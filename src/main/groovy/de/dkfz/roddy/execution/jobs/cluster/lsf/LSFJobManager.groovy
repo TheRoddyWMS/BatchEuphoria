@@ -79,7 +79,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
-        if (!jobIDs) return [:]
         runBjobs(jobIDs).collectEntries { BEJobID jobID, String[] value ->
             JobState js = parseJobState(value[getPositionOfJobState()])
             if (logger.isVerbosityHigh())
