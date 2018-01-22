@@ -5,14 +5,15 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
+import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 
 class SubmissionCommandTest extends Specification {
 
-    def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<Boolean> passEnvironment) {
+    def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<PassVars> passEnvironment) {
         return new SubmissionCommand(jobManager, null, null, [:]) {
 
             {
-                this.passEnvironment = passEnvironment
+                super.passEnvironment = passEnvironment
             }
 
             @Override
@@ -116,14 +117,10 @@ class SubmissionCommandTest extends Specification {
         }
     }
 
-    def makeJobManager(final Optional<Boolean> passEnvironment) {
+    def makeJobManager(final Optional<PassVars> passEnvironment) {
         return new BatchEuphoriaJobManager<SubmissionCommand>(
                 makeExecutionService(),
                 JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
-
-            { // instance initializer
-                this.passEnvironment = passEnvironment
-            }
 
             @Override
             Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List jobIds) {
@@ -206,20 +203,20 @@ class SubmissionCommandTest extends Specification {
         when:
         def cmd = makeSubmissionCommand(makeJobManager(Optional.empty()), Optional.empty())
         then:
-        cmd.getPassLocalEnvironment() == false
+        cmd.getPassLocalEnvironment() == PassVars.Requested
     }
 
     def "GetPassLocalEnvironment_JobPrecedenceOverJobManager"() {
         when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(false)), Optional.of(true))
+        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(PassVars.All)), Optional.of(PassVars.None))
         then:
-        cmd.getPassLocalEnvironment() == false
+        cmd.getPassLocalEnvironment() == PassVars.None
     }
 
     def "GetPassLocalEnvironment_JobManagerAsFallback"() {
         when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(true)), Optional.empty())
+        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(PassVars.None)), Optional.empty())
         then:
-        cmd.getPassLocalEnvironment() == true
+        cmd.getPassLocalEnvironment() == PassVars.None
     }
 }

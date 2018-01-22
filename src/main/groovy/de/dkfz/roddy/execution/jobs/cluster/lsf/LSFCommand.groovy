@@ -12,6 +12,7 @@ import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.tools.LoggerWrapper
+import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 
 /**
  * This class is used to create and execute bsub commands
@@ -130,7 +131,11 @@ class LSFCommand extends SubmissionCommand {
     String assembleVariableExportString() {
         List<String> environmentStrings = []
 
-        if (passLocalEnvironment) {
+        if (passLocalEnvironment == PassVars.None) {
+            if (!parameters.isEmpty())
+                logger.warning("passLocalEnvironment is set to 'None' but you still request the passing of variables: ${parameters}")
+            return ""
+        } else if (passLocalEnvironment == PassVars.All) {
             environmentStrings << "all"
         }
         // According to the bsub man-page (Version 10.1.0), undefined means only the explicitly added parameters.

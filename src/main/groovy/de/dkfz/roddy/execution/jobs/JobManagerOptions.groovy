@@ -57,7 +57,7 @@ class JobManagerOptions {
     /**
      * Tell the job manager to pass the current environment or fall back to the underlying job systems default settings.
      */
-    Optional<Boolean> passEnvironment
+    Optional<SubmissionCommand.PassEnvironmentVariables> passEnvironment
 
     Map<String, String> additionalOptions
 
@@ -84,7 +84,7 @@ class JobManagerOptionsBuilder {
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        passEnvironment = Optional.empty()
+        passEnvironment = Optional.of(SubmissionCommand.PassEnvironmentVariables.All)   // TODO: Remove quickfix as soon as cluster is fixed.
         additionalOptions = [:]
     }
 }

@@ -16,9 +16,24 @@ import static de.dkfz.roddy.StringConstants.EMPTY
 abstract class SubmissionCommand extends Command {
 
     /**
-     *  Should the local environment during the submission be copied to the execution hosts?
+     * Environment variables can be passed from the submission host to the execution host. There are three options
+     * (e.g. implemented in LSF):
+     *
+     * 1. None: Do not pass any local variables. Create a fresh new environment remotely.
+     * 2. Requested: Pass only the requested variables.
+     * 3. All: Pass the full local environment. Variables can still be overwritten.
      */
-    protected Optional<Boolean> passEnvironment = Optional.empty()
+    enum PassEnvironmentVariables {
+        None,
+        Requested,
+        All
+    }
+
+    /**
+     *  Should the local environment during the submission be copied to the execution hosts?
+     *  This is an Optional, because the actual value will be calculated from both the Job/Command comfiguration and the JobManager.
+     */
+    protected Optional<PassEnvironmentVariables> passEnvironment = Optional.empty()
 
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
@@ -38,14 +53,16 @@ abstract class SubmissionCommand extends Command {
      *
      * JobManager and SubmissionCommand together determine, whether the environment should be passed.
      *
-     * * If the Command value is set to true or false, the JobManager value is overruled.
+     * * The Command has precedence of the JobManager value.
      * * If the Command value is not set, the JobManager value is the fallback.
-     * * If neither of JobManager and Command is defined, return false.
+     * * If neither of JobManager and Command is defined, return only copy the requested variables to remote.
      *
      * @return
      */
-    Boolean getPassLocalEnvironment() {
-        passEnvironment.orElse(parentJobManager.passEnvironment.orElse(false))
+    PassEnvironmentVariables getPassLocalEnvironment() {
+        passEnvironment.
+                orElse(parentJobManager.passEnvironment.
+                        orElse(PassEnvironmentVariables.Requested))
     }
 
     @Override
