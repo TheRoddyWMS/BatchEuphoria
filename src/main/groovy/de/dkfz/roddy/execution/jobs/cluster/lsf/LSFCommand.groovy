@@ -128,15 +128,12 @@ class LSFCommand extends SubmissionCommand {
      */
     @Override
     String assembleVariableExportString() {
-        List<String> environmentStrings = new LinkedList<>()
+        List<String> environmentStrings = []
 
-        if (passLocalEnvironment.isPresent()) {
-            if (passLocalEnvironment.get()) {
-                environmentStrings << "all"
-            } else {
-                environmentStrings << "none"
-            }
-        } // According to the docs (Version 10.1.0), undefined means "all".
+        if (passLocalEnvironment) {
+            environmentStrings << "all"
+        }
+        // According to the bsub man-page (Version 10.1.0), undefined means only the explicitly added parameters.
 
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
             // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
@@ -158,7 +155,7 @@ class LSFCommand extends SubmissionCommand {
             }
         }
 
-        return '"' + environmentStrings.join(", ") + '"'
+        return "-env \"" + environmentStrings.join(", ") + "\""
     }
 
     protected String getAdditionalCommandParameters() {
