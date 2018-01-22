@@ -2,8 +2,8 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.io.NoNoExecutionService
 import spock.lang.Specification
 
 class SubmissionCommandTest extends Specification {
@@ -77,9 +77,48 @@ class SubmissionCommandTest extends Specification {
         }
     }
 
+    BEExecutionService makeExecutionService() {
+        return new BEExecutionService() {
+            @Override
+            ExecutionResult execute(Command command) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(Command command, boolean waitFor) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command, boolean waitFor) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream) {
+                return null
+            }
+
+            @Override
+            boolean isAvailable() {
+                return false
+            }
+
+            @Override
+            File queryWorkingDirectory() {
+                return null
+            }
+        }
+    }
+
     def makeJobManager(final Optional<Boolean> passEnvironment) {
         return new BatchEuphoriaJobManager<SubmissionCommand>(
-                new NoNoExecutionService(),
+                makeExecutionService(),
                 JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
 
             { // instance initializer
