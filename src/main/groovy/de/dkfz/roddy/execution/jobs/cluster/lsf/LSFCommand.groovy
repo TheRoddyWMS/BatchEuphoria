@@ -155,7 +155,10 @@ class LSFCommand extends SubmissionCommand {
             }
         }
 
-        return "-env \"" + environmentStrings.join(", ") + "\""
+        if (environmentStrings.empty)
+            return ""
+        else
+            return "-env \"" + environmentStrings.join(", ") + "\""
     }
 
     protected String getAdditionalCommandParameters() {
