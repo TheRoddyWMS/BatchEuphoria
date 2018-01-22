@@ -84,7 +84,9 @@ class JobManagerOptionsBuilder {
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        passEnvironment = Optional.of(true)  // TODO
+        // TODO: The following is a quickfix for the LSF -env problem. Change back to the commented version, when the cluster is fixed.
+        // passEnvironment = Optional.empty()
+        passEnvironment = Optional.of(true)
         additionalOptions = [:]
     }
 }
