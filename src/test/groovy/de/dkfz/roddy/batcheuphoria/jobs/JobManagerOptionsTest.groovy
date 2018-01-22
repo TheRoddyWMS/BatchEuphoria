@@ -26,6 +26,8 @@ class JobManagerOptionsTest {
         assert parms.strictMode == true
         assert parms.updateInterval == Duration.ofMinutes(5)
         assert parms.createDaemon == false
-        assert !parms.passEnvironment.isPresent()
+        // TODO: The following is a quickfix for the LSF -env problem. Change back to the commented version, when the cluster is fixed.
+        // assert !parms.passEnvironment.isPresent()
+        assert parms.passEnvironment.isPresent()
     }
 }
