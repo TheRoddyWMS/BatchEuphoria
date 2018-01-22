@@ -62,7 +62,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean requestQueueIsEnabled
     boolean requestCoresIsEnabled
     boolean requestStorageIsEnabled
-    Optional<Boolean> passEnvironment = Optional.empty()
+    // TODO: This is a quickfix for the LSF -env problem. Change back to the commented version, when the cluster is fixed.
+    // Optional<Boolean> passEnvironment = Optional.empty()
+    Optional<Boolean> passEnvironment = Optional.of(true)
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         assert(executionService)
