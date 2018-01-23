@@ -47,6 +47,7 @@ class DirectCommand extends Command {
         return toBashCommandString()
     }
 
+    @Override
     String toBashCommandString() {
 
         StringBuilder commandString = new StringBuilder()

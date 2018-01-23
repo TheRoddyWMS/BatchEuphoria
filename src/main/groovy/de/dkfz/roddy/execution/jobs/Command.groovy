@@ -97,4 +97,6 @@ abstract class Command {
     boolean isBlockingCommand() {
         return false
     }
+
+    abstract String toBashCommandString()
 }

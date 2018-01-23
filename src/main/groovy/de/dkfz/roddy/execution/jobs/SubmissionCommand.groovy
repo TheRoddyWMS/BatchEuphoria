@@ -5,7 +5,6 @@
  */
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.tools.BashUtils
@@ -73,6 +72,7 @@ abstract class SubmissionCommand extends Command {
         return toBashCommandString()
     }
 
+    @Override
     String toBashCommandString() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
