@@ -6,18 +6,18 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
+import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.logging.Level
 
 import static de.dkfz.roddy.StringConstants.COLON
-import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 
 /**
  * This class is used to create and execute qsub commands
@@ -134,11 +134,9 @@ class PBSCommand extends SubmissionCommand {
     String assembleVariableExportParameters() {
         List<String> parameterStrings = []
 
-        if (passLocalEnvironment == PassVars.None) {
-            if (!parameters.isEmpty())
-                logger.warning("passLocalEnvironment is set to 'None' but you still request the passing of variables: ${parameters}")
-            return ""
-        } else if (passLocalEnvironment == PassVars.All) {
+        if (passLocalEnvironment == PassVars.None && !parameters.isEmpty())
+            throw new BEException("passLocalEnvironment is set to 'None' but you still request the passing of variables: ${parameters}")
+        else if (passLocalEnvironment == PassVars.All) {
             parameterStrings << "-V"
         }
 

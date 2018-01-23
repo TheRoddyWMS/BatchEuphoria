@@ -6,13 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.StringConstants
-import de.dkfz.roddy.config.JobLog
 import groovy.transform.CompileStatic
-
-import java.util.regex.Matcher
-
-import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * Base class for all types of commands.

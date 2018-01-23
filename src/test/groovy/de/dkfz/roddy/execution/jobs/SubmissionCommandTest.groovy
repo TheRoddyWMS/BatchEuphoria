@@ -1,5 +1,6 @@
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
@@ -10,7 +11,7 @@ import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables a
 class SubmissionCommandTest extends Specification {
 
     def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<PassVars> passEnvironment) {
-        return new SubmissionCommand(jobManager, null, null, [:]) {
+        return new SubmissionCommand(jobManager, null, null, [:] as Map<String,String>) {
 
             {
                 super.passEnvironment = passEnvironment
@@ -62,7 +63,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String assembleVariableExportParameters() {
+            protected String assembleVariableExportParameters() throws BEException {
                 return null
             }
 

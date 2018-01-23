@@ -5,6 +5,7 @@
  */
 package de.dkfz.roddy.execution.jobs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.tools.BashUtils
@@ -65,9 +66,14 @@ abstract class SubmissionCommand extends Command {
                         orElse(PassEnvironmentVariables.Requested))
     }
 
+    @Deprecated
     @Override
     String toString() {
+        // TODO To string shouldn't be used for such specific things. Try search in Idea for calls to this method!
+        return toBashCommandString()
+    }
 
+    String toBashCommandString() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
@@ -116,7 +122,7 @@ abstract class SubmissionCommand extends Command {
     abstract protected String getGroupListParameter(String groupList)
     abstract protected String getUmaskString(String umask)
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
-    abstract protected String assembleVariableExportParameters()
+    abstract protected String assembleVariableExportParameters() throws BEException
     abstract protected String getAdditionalCommandParameters()//?
 
 
