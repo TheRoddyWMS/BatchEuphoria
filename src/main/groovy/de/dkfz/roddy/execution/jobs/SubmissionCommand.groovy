@@ -122,7 +122,7 @@ abstract class SubmissionCommand extends Command {
     abstract protected String getGroupListParameter(String groupList)
     abstract protected String getUmaskString(String umask)
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
-    abstract protected String assembleVariableExportParameters() throws BEException
+    abstract protected String assembleVariableExportParameters()
     abstract protected String getAdditionalCommandParameters()//?
 
 
