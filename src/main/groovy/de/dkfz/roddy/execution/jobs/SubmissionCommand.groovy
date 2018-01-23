@@ -53,9 +53,9 @@ abstract class SubmissionCommand extends Command {
      *
      * JobManager and SubmissionCommand together determine, whether the environment should be passed.
      *
-     * * The Command has precedence of the JobManager value.
+     * * The Command has precedence over the JobManager value.
      * * If the Command value is not set, the JobManager value is the fallback.
-     * * If neither of JobManager and Command is defined, return only copy the requested variables to remote.
+     * * If neither JobManager nor Command are defined, only copy the requested variables to remote.
      *
      * @return
      */
@@ -76,7 +76,7 @@ abstract class SubmissionCommand extends Command {
 
         // collect parameters for job submission
         List<String> parameters = []
-        parameters << getEnvironmentExportParameter()
+        parameters << assembleVariableExportParameters()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
@@ -87,7 +87,6 @@ abstract class SubmissionCommand extends Command {
         parameters << getUmaskString(umask)
         parameters << assembleProcessingCommands()
         parameters << assembleDependencyString(creatingJob.parentJobIDs)
-        parameters << assembleVariableExportString()
         parameters << getAdditionalCommandParameters()
 
 
@@ -108,7 +107,6 @@ abstract class SubmissionCommand extends Command {
         return command
     }
 
-    abstract protected String getEnvironmentExportParameter()
     abstract protected String getJobNameParameter()
     abstract protected String getHoldParameter()
     abstract protected String getAccountParameter(String account)
@@ -118,7 +116,7 @@ abstract class SubmissionCommand extends Command {
     abstract protected String getGroupListParameter(String groupList)
     abstract protected String getUmaskString(String umask)
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
-    abstract protected String assembleVariableExportString()
+    abstract protected String assembleVariableExportParameters()
     abstract protected String getAdditionalCommandParameters()//?
 
 

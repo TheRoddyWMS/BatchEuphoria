@@ -17,11 +17,6 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String getEnvironmentExportParameter() {
-                return null
-            }
-
-            @Override
             protected String getJobNameParameter() {
                 return null
             }
@@ -67,7 +62,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String assembleVariableExportString() {
+            protected String assembleVariableExportParameters() {
                 return null
             }
 

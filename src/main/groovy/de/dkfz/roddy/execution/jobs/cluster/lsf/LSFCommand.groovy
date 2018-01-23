@@ -48,12 +48,6 @@ class LSFCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getEnvironmentExportParameter() {
-        // Part of the variable export string. See assembleVariableExportString().
-        return ""
-    }
-
-    @Override
     String getJobNameParameter() {
         "-J ${jobName}" as String
     }
@@ -128,7 +122,7 @@ class LSFCommand extends SubmissionCommand {
      * * @return    a String of '-env "[all|none|](, varName[=varValue](, varName[=varValue])*)?"'
      */
     @Override
-    String assembleVariableExportString() {
+    String assembleVariableExportParameters() {
         List<String> environmentStrings = []
 
         if (passLocalEnvironment == PassVars.None) {
@@ -141,6 +135,7 @@ class LSFCommand extends SubmissionCommand {
         // According to the bsub man-page (Version 10.1.0), undefined means only the explicitly added parameters.
 
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            // TODO: Clarify relation between Job and Command w.r.t. parameters. Then get rid of Roddy-specific code here.
             // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
             // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
             environmentStrings << "CONFIG_FILE=" + job.parameters["CONFIG_FILE"]
@@ -149,16 +144,14 @@ class LSFCommand extends SubmissionCommand {
             if (job.parameters.containsKey("debugWrapInScript")) {
                 environmentStrings << "debugWrapInScript=" + job.parameters["debugWrapInScript"]
             }
-        } else {
-            if (!parameters.isEmpty()) {
-                environmentStrings += parameters.collect { key, value ->
-                    if (null == value)
-                        key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
-                    else
-                        "${key}=${value}"     // sets value to value
-                } as List
-            }
         }
+
+        environmentStrings += parameters.collect { key, value ->
+            if (null == value)
+                key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
+            else
+                "${key}=${value}"     // sets value to value
+        } as List
 
         if (environmentStrings.empty)
             return ""

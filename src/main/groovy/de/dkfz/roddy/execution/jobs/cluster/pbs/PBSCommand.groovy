@@ -17,6 +17,7 @@ import de.dkfz.roddy.tools.LoggerWrapper
 import java.util.logging.Level
 
 import static de.dkfz.roddy.StringConstants.COLON
+import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 
 /**
  * This class is used to create and execute qsub commands
@@ -53,14 +54,6 @@ class PBSCommand extends SubmissionCommand {
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
-    }
-
-    @Override
-    protected String getEnvironmentExportParameter() {
-        if (passLocalEnvironment)
-            return "-V"
-        else
-            return ""
     }
 
     @Override
@@ -138,22 +131,44 @@ class PBSCommand extends SubmissionCommand {
     }
 
     @Override
-    String assembleVariableExportString() {
-        StringBuilder qsubCall = new StringBuilder()
+    String assembleVariableExportParameters() {
+        List<String> parameterStrings = []
 
-        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
-            qsubCall << "-v " << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
-
-            if (job.parameters.containsKey("debugWrapInScript")) {
-                qsubCall << "," << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
-            }
-            qsubCall << "\""
-
-        } else {
-            qsubCall << "-v " << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(",") << "\""
+        if (passLocalEnvironment == PassVars.None) {
+            if (!parameters.isEmpty())
+                logger.warning("passLocalEnvironment is set to 'None' but you still request the passing of variables: ${parameters}")
+            return ""
+        } else if (passLocalEnvironment == PassVars.All) {
+            parameterStrings << "-V"
         }
 
-        return qsubCall
+        List<String> environmentStrings = []
+
+        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
+            // TODO: Clarify relation between Job and Command w.r.t. parameters. Then get rid of Roddy-specific code here.
+            // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
+            // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
+            environmentStrings << "CONFIG_FILE=" + job.parameters["CONFIG_FILE"]
+            environmentStrings << "PARAMETER_FILE=" + job.parameters["PARAMETER_FILE"]
+
+            if (job.parameters.containsKey("debugWrapInScript")) {
+                environmentStrings << "debugWrapInScript=" + job.parameters["debugWrapInScript"]
+            }
+        }
+
+        environmentStrings += parameters.collect { key, value ->
+            if (null == value)
+                key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
+            else
+                "${key}=${value}"     // sets value to value
+        } as List
+
+        if (environmentStrings.empty)
+            return parameterStrings
+        else {
+            parameterStrings << "-v \"" + environmentStrings.join(",") + "\""
+            return parameterStrings.join(" ")
+        }
     }
 
     String getDependencyParameterName() {
