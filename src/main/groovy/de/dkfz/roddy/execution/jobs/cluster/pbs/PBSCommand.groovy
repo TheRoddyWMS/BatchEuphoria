@@ -12,7 +12,6 @@ import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.logging.Level
@@ -45,12 +44,12 @@ class PBSCommand extends SubmissionCommand {
     /**
      *
      * @param name
-     * @param parameters
+     * @param environmentVariables
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
-        super(parentManager, job, name, parameters)
+    PBSCommand(PBSJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+        super(parentManager, job, name, environmentVariables)
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
@@ -134,27 +133,20 @@ class PBSCommand extends SubmissionCommand {
     String assembleVariableExportParameters() {
         List<String> parameterStrings = []
 
-        if (passLocalEnvironment == PassVars.None && !parameters.isEmpty())
-            throw new BEException("passLocalEnvironment is set to 'None' but you still request the passing of variables: ${parameters}")
-        else if (passLocalEnvironment == PassVars.All) {
+        if (passLocalEnvironment)
             parameterStrings << "-V"
-        }
 
-        List<String> environmentStrings = []
-
-        environmentStrings += parameters.collect { key, value ->
+        List<String> environmentStrings = parameters.collect { key, value ->
             if (null == value)
-                key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
+                "${key}"              // returning just the variable name makes qsub take the value form the qsub-commands execution environment
             else
                 "${key}=${value}"     // sets value to value
-        } as List
+        } as List<String>
 
-        if (environmentStrings.empty)
-            return parameterStrings
-        else {
+        if (!environmentStrings.empty)
             parameterStrings << "-v \"" + environmentStrings.join(",") + "\""
-            return parameterStrings.join(" ")
-        }
+
+        return parameterStrings.join(" ")
     }
 
     String getDependencyParameterName() {

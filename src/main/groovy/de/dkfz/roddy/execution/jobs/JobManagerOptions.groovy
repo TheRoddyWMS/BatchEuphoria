@@ -55,9 +55,9 @@ class JobManagerOptions {
     boolean requestStorageIsEnabled
 
     /**
-     * Tell the job manager to pass the current environment or fall back to the underlying job systems default settings.
+     * Should the manager pass the current (local) environment to the execution host? By default this is 'None'
      */
-    Optional<SubmissionCommand.PassEnvironmentVariables> passEnvironment
+    Optional<Boolean> passEnvironment
 
     Map<String, String> additionalOptions
 
@@ -86,7 +86,7 @@ class JobManagerOptionsBuilder {
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
         // TODO: The following is a quickfix for the LSF -env problem. Change back to the commented version, when the cluster is fixed.
         // passEnvironment = Optional.empty()
-        passEnvironment = Optional.of(SubmissionCommand.PassEnvironmentVariables.All)   // TODO: Remove quickfix as soon as cluster is fixed.
+        passEnvironment = Optional.of(true)   // TODO: Remove quickfix as soon as cluster is fixed.
         additionalOptions = [:]
     }
 }

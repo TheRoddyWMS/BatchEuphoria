@@ -3,119 +3,14 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
-import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 
 class SubmissionCommandTest extends Specification {
 
-    def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<PassVars> passEnvironment) {
-        return new SubmissionCommand(jobManager, null, null, [:] as Map<String,String>) {
-
-            {
-                super.passEnvironment = passEnvironment
-            }
-
-            @Override
-            protected String getJobNameParameter() {
-                return null
-            }
-
-            @Override
-            protected String getHoldParameter() {
-                return null
-            }
-
-            @Override
-            protected String getAccountParameter(String account) {
-                return null
-            }
-
-            @Override
-            protected String getWorkingDirectory() {
-                return null
-            }
-
-            @Override
-            protected String getLoggingParameter(JobLog jobLog) {
-                return null
-            }
-
-            @Override
-            protected String getEmailParameter(String address) {
-                return null
-            }
-
-            @Override
-            protected String getGroupListParameter(String groupList) {
-                return null
-            }
-
-            @Override
-            protected String getUmaskString(String umask) {
-                return null
-            }
-
-            @Override
-            protected String assembleDependencyString(List<BEJobID> jobIds) {
-                return null
-            }
-
-            @Override
-            protected String assembleVariableExportParameters() throws BEException {
-                return null
-            }
-
-            @Override
-            protected String getAdditionalCommandParameters() {
-                return null
-            }
-        }
-    }
-
-    BEExecutionService makeExecutionService() {
-        return new BEExecutionService() {
-            @Override
-            ExecutionResult execute(Command command) {
-                return null
-            }
-
-            @Override
-            ExecutionResult execute(Command command, boolean waitFor) {
-                return null
-            }
-
-            @Override
-            ExecutionResult execute(String command) {
-                return null
-            }
-
-            @Override
-            ExecutionResult execute(String command, boolean waitFor) {
-                return null
-            }
-
-            @Override
-            ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream) {
-                return null
-            }
-
-            @Override
-            boolean isAvailable() {
-                return false
-            }
-
-            @Override
-            File queryWorkingDirectory() {
-                return null
-            }
-        }
-    }
-
-    def makeJobManager(final Optional<PassVars> passEnvironment) {
+    static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager makeJobManager(final Optional<Boolean> passEnvironment) {
         return new BatchEuphoriaJobManager<SubmissionCommand>(
-                makeExecutionService(),
+                TestHelper.makeExecutionService(),
                 JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
 
             @Override
@@ -195,24 +90,88 @@ class SubmissionCommandTest extends Specification {
         }
     }
 
+    def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<Boolean> passEnvironment) {
+        return new SubmissionCommand(jobManager, null, null, [:] as Map<String,String>) {
+
+            {
+                this.setPassEnvironment(passEnvironment)
+            }
+
+            @Override
+            protected String getJobNameParameter() {
+                return null
+            }
+
+            @Override
+            protected String getHoldParameter() {
+                return null
+            }
+
+            @Override
+            protected String getAccountParameter(String account) {
+                return null
+            }
+
+            @Override
+            protected String getWorkingDirectory() {
+                return null
+            }
+
+            @Override
+            protected String getLoggingParameter(JobLog jobLog) {
+                return null
+            }
+
+            @Override
+            protected String getEmailParameter(String address) {
+                return null
+            }
+
+            @Override
+            protected String getGroupListParameter(String groupList) {
+                return null
+            }
+
+            @Override
+            protected String getUmaskString(String umask) {
+                return null
+            }
+
+            @Override
+            protected String assembleDependencyString(List<BEJobID> jobIds) {
+                return null
+            }
+
+            @Override
+            protected String assembleVariableExportParameters() throws BEException {
+                return null
+            }
+
+            @Override
+            protected String getAdditionalCommandParameters() {
+                return null
+            }
+        }
+    }
+
     def "GetPassLocalEnvironment_BothUnset"() {
         when:
         def cmd = makeSubmissionCommand(makeJobManager(Optional.empty()), Optional.empty())
         then:
-        cmd.getPassLocalEnvironment() == PassVars.Requested
+        !cmd.getPassLocalEnvironment()
     }
 
     def "GetPassLocalEnvironment_JobPrecedenceOverJobManager"() {
         when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(PassVars.All)), Optional.of(PassVars.None))
+        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(true)), Optional.of(false))
         then:
-        cmd.getPassLocalEnvironment() == PassVars.None
+        !cmd.getPassLocalEnvironment()
     }
 
     def "GetPassLocalEnvironment_JobManagerAsFallback"() {
         when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(PassVars.None)), Optional.empty())
+        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(true)), Optional.empty())
         then:
-        cmd.getPassLocalEnvironment() == PassVars.None
+        cmd.getPassLocalEnvironment()
     }
 }

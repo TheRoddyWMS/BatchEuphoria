@@ -16,24 +16,10 @@ import static de.dkfz.roddy.StringConstants.EMPTY
 abstract class SubmissionCommand extends Command {
 
     /**
-     * Environment variables can be passed from the submission host to the execution host. There are three options
-     * (e.g. implemented in LSF):
-     *
-     * 1. None: Do not pass any local variables. Create a fresh new environment remotely.
-     * 2. Requested: Pass only the requested variables.
-     * 3. All: Pass the full local environment. Variables can still be overwritten.
-     */
-    enum PassEnvironmentVariables {
-        None,
-        Requested,
-        All
-    }
-
-    /**
      *  Should the local environment during the submission be copied to the execution hosts?
      *  This is an Optional, because the actual value will be calculated from both the Job/Command comfiguration and the JobManager.
      */
-    protected Optional<PassEnvironmentVariables> passEnvironment = Optional.empty()
+    Optional<Boolean> passEnvironment = Optional.empty()
 
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
@@ -41,11 +27,11 @@ abstract class SubmissionCommand extends Command {
      * @param parentJobManager
      * @param job
      * @param jobName
-     * @param parameters Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
+     * @param environmentVariables
      *
      */
-    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> parameters) {
-        super(parentJobManager, job, jobName, parameters)
+    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
+        super(parentJobManager, job, jobName, environmentVariables)
     }
 
     /**
@@ -59,16 +45,16 @@ abstract class SubmissionCommand extends Command {
      *
      * @return
      */
-    PassEnvironmentVariables getPassLocalEnvironment() {
+    Boolean getPassLocalEnvironment() {
         passEnvironment.
                 orElse(parentJobManager.passEnvironment.
-                        orElse(PassEnvironmentVariables.Requested))
+                        orElse(false))
     }
 
     @Deprecated
     @Override
     String toString() {
-        // TODO To string shouldn't be used for such specific things. Try search in Idea for calls to this method!
+        // TODO toString() shouldn't be used for such specific things. Remove explicit calls to get the bash command representation.
         return toBashCommandString()
     }
 
@@ -122,8 +108,17 @@ abstract class SubmissionCommand extends Command {
     abstract protected String getGroupListParameter(String groupList)
     abstract protected String getUmaskString(String umask)
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
-    abstract protected String assembleVariableExportParameters()
     abstract protected String getAdditionalCommandParameters()//?
+
+
+    /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
+     *  If passLocalEnvironment is false, no local variables will be forwarded by default.
+     *  In both cases arbitrary variables can be set to specific values or be declared to be forwarded as defined in the local environment (according
+     *  to the parameters field; null-value parameters are copied as locally defined).
+     *
+     *  @return A set of parameters for the submission command to achieve the requested variable exports.
+     */
+    abstract protected String assembleVariableExportParameters()
 
 
     String assembleProcessingCommands() {

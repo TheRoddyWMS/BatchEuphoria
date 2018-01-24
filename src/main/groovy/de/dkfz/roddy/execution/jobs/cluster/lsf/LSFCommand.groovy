@@ -6,13 +6,11 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.execution.jobs.SubmissionCommand.PassEnvironmentVariables as PassVars
 import de.dkfz.roddy.tools.LoggerWrapper
 
 /**
@@ -37,12 +35,13 @@ class LSFCommand extends SubmissionCommand {
     /**
      *
      * @param name
-     * @param parameters
+     * @param environmentVariables
      * @param command
      * @param filesToCheck
      */
-    LSFCommand(LSFJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
-        super(parentManager, job, name, parameters)
+    LSFCommand(LSFJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters,
+               Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+        super(parentManager, job, name, environmentVariables)
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
@@ -113,37 +112,27 @@ class LSFCommand extends SubmissionCommand {
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     /**
-     * Compose the -env parameter of bsub. This supports the 'none' and 'all' parameters to clean the bsub environment or to copy the full
-     * environment during submission to the execution host. This depends on whether the `passEnvironment` field is set (default=true). Also
-     * copying specific variables (just use variable name pointing to null value in the `parameters` hash) and setting to a specific value are
-     * supported.
+     *  Note that variable quoting is left to the client code. The whole -env parameter-value is quoted with ".
      *
-     * Note that variable quoting is left to the client code. The whole -env parameter-value is quoted with ".
-     *
-     * * @return    a String of '-env "[all|none|](, varName[=varValue](, varName[=varValue])*)?"'
+     * * @return    a String of '{-env {"none", "{all|}(, varName[=varValue](, varName[=varValue])*|}"'
      */
     @Override
     String assembleVariableExportParameters() {
-        List<String> environmentStrings = []
 
-        if (passLocalEnvironment == PassVars.None && !parameters.isEmpty())
-            throw new BEException("passLocalEnvironment is set to 'None' but you still request the passing of variables: ${parameters}")
-        else if (passLocalEnvironment == PassVars.All) {
-            environmentStrings << "all"
-        }
-        // According to the bsub man-page (Version 10.1.0), undefined means only the explicitly added parameters.
-
-        environmentStrings += parameters.collect { key, value ->
+        List<String> environmentStrings = parameters.collect { key, value ->
             if (null == value)
-                key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
+                "${key}"              // returning just the variable name makes bsub take the value form the bsub-commands execution environment
             else
                 "${key}=${value}"     // sets value to value
-        } as List
+        } as List<String>
 
-        if (environmentStrings.empty)
-            return ""
-        else
-            return "-env \"" + environmentStrings.join(", ") + "\""
+        if (passLocalEnvironment) {
+            environmentStrings = ["all"] + environmentStrings
+        } else if (parameters.isEmpty()) {
+            environmentStrings += "none"
+        }
+
+        return "-env \"" + environmentStrings.join(", ") + "\""
     }
 
     protected String getAdditionalCommandParameters() {

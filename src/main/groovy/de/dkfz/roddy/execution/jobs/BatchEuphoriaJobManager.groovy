@@ -62,7 +62,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean requestQueueIsEnabled
     boolean requestCoresIsEnabled
     boolean requestStorageIsEnabled
-    Optional<SubmissionCommand.PassEnvironmentVariables> passEnvironment
+    Optional<Boolean> passEnvironment
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         assert(executionService)

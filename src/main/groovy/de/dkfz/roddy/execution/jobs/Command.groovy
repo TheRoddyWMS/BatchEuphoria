@@ -37,7 +37,8 @@ abstract class Command {
     protected BEJob creatingJob
 
     /**
-     * Parameters for the qsub command
+     * Environment variables to be passed with a specific value or as they are declared in the submission environment.
+     * null-valued parameters correspond to environment variables to be forwarded as locally defined.
      */
     public final LinkedHashMap<String, String> parameters = [:]
 
@@ -49,12 +50,12 @@ abstract class Command {
      * @param parentJobManager
      * @param job
      * @param jobName
-     * @param parameters       Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
+     * @param environmentVariables
      * @param commandTags
      */
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> parameters) {
+    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
         this.parentJobManager = parentJobManager
-        this.parameters.putAll(parameters ?: [:])
+        this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job
         this.jobName = jobName
     }
