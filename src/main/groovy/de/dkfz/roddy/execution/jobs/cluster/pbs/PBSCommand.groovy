@@ -142,18 +142,6 @@ class PBSCommand extends SubmissionCommand {
 
         List<String> environmentStrings = []
 
-        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
-            // TODO: Clarify relation between Job and Command w.r.t. parameters. Then get rid of Roddy-specific code here.
-            // This code is exclusively meant to quickfix Roddy. Remove this branch if Roddy is fixed.
-            // WARNING: Note the additional space before the parameter delimiter! It is necessary for bsub -env but must not be there for qsub in PBS!
-            environmentStrings << "CONFIG_FILE=" + job.parameters["CONFIG_FILE"]
-            environmentStrings << "PARAMETER_FILE=" + job.parameters["PARAMETER_FILE"]
-
-            if (job.parameters.containsKey("debugWrapInScript")) {
-                environmentStrings << "debugWrapInScript=" + job.parameters["debugWrapInScript"]
-            }
-        }
-
         environmentStrings += parameters.collect { key, value ->
             if (null == value)
                 key                   // returning just the variable name make bsub take the value form the *bsub-commands* execution environment
