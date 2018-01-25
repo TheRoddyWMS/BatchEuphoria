@@ -55,7 +55,7 @@ class JobManagerOptions {
     boolean requestStorageIsEnabled
 
     /**
-     * Should the manager pass the current (local) environment to the execution host? By default this is 'None'
+     * Should the manager pass the current (local) environment to the execution host? By default this is 'false'
      */
     Optional<Boolean> passEnvironment
 
