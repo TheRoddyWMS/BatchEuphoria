@@ -40,4 +40,9 @@ class RestCommand extends Command{
         this.requestHeaders = requestHeaders
         this.httpMethod = httpMethod
     }
+
+    @Override
+    String toBashCommandString() {
+        throw new RuntimeException("This method should not be used!")
+    }
 }

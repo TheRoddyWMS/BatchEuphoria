@@ -35,4 +35,9 @@ class DummyCommand extends Command {
     String toString() {
         return String.format("Command of class %s with jobName %s and name %s", this.getClass().getName(), getID(), jobName);
     }
+
+    @Override
+    String toBashCommandString() {
+        throw new RuntimeException("Not implemented!")
+    }
 }

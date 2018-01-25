@@ -26,11 +26,6 @@ class SlurmCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getEnvironmentExportParameter() {
-        return null
-    }
-
-    @Override
     protected String getJobNameParameter() {
         return null
     }
@@ -76,7 +71,7 @@ class SlurmCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String assembleVariableExportString() {
+    protected String assembleVariableExportParameters() {
         return null
     }
 
