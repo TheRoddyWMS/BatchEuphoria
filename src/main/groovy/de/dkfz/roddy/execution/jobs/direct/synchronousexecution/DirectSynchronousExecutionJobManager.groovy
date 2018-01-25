@@ -61,7 +61,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     String getJobIdVariable() {
-        return '$'
+        return BEJob.PARM_JOBCREATIONCOUNTER
     }
 
     String getJobNameVariable() {
@@ -111,14 +111,15 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
             jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
             command.setJobID(jobID)
         } else {
+            jobID = new BEJobID("" + job.jobCreationCounter) // Needs to be set before job.run, because console output will be wrong otherwise.
+            command.job.resetJobID(jobID)
+            command.setJobID(jobID)
             res = executionService.execute(command)
-            jobID = new BEJobID(parseJobID(res.processID))
             successful = res.successful
             if (!successful)
                 logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
         }
 
-        command.setJobID(jobID)
         jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
 

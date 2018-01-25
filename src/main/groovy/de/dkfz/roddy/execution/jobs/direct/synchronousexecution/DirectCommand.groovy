@@ -56,22 +56,22 @@ public class DirectCommand extends Command {
             parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
         }
 
-        //TODO Log handling
+        // Dependencies are ignored. Direct commands are executed in-sync.
+
+        // Processing commands are ignored BE does not offer job scheduling on its own.
 
         //TODO email handling? Better not
 
-        //Dependencies are ignored
+        //TODO Grouplist is ignored
 
-        //Grouplist is ignored
-
-        //Umask is ignored
-
-        //Processing commands are ignored
+        //TODO Umask is ignored
 
         //TODO Command assembly should be part of the file system provider? Maybe there is a need for a local file system provider?
         //This is very linux specific...
-        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command; // << job.configuration.getProcessingToolPath(executionContext, "wrapinScript").getAbsolutePath();
+        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command << " &> ${job.jobLog.out} & wait &> /dev/null";
 
-        return commandString.toString();
+        def str = commandString.toString().replace('{JOB_ID}', "" + job.jobCreationCounter) // Make sure, the logfile name has a proper value.
+
+        return str
     }
 }
