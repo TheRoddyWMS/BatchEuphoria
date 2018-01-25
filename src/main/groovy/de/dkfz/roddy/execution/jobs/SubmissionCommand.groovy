@@ -46,9 +46,7 @@ abstract class SubmissionCommand extends Command {
      * @return
      */
     Boolean getPassLocalEnvironment() {
-        passEnvironment.
-                orElse(parentJobManager.passEnvironment.
-                        orElse(false))
+        passEnvironment.orElse(parentJobManager.passEnvironment)
     }
 
     @Deprecated

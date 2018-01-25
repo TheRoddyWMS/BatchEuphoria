@@ -8,7 +8,7 @@ import spock.lang.Specification
 
 class SubmissionCommandTest extends Specification {
 
-    static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager makeJobManager(final Optional<Boolean> passEnvironment) {
+    static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager makeJobManager(final boolean passEnvironment) {
         return new BatchEuphoriaJobManager<SubmissionCommand>(
                 TestHelper.makeExecutionService(),
                 JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
@@ -154,23 +154,16 @@ class SubmissionCommandTest extends Specification {
         }
     }
 
-    def "GetPassLocalEnvironment_BothUnset"() {
-        when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.empty()), Optional.empty())
-        then:
-        !cmd.getPassLocalEnvironment()
-    }
-
     def "GetPassLocalEnvironment_JobPrecedenceOverJobManager"() {
         when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(true)), Optional.of(false))
+        def cmd = makeSubmissionCommand(makeJobManager(true), Optional.of(false))
         then:
         !cmd.getPassLocalEnvironment()
     }
 
     def "GetPassLocalEnvironment_JobManagerAsFallback"() {
         when:
-        def cmd = makeSubmissionCommand(makeJobManager(Optional.of(true)), Optional.empty())
+        def cmd = makeSubmissionCommand(makeJobManager(true), Optional.empty())
         then:
         cmd.getPassLocalEnvironment()
     }

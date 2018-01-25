@@ -30,7 +30,7 @@ class LSFCommandTest {
 
     @Before
     void setUp() throws Exception {
-        jobManager = new LSFJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().setPassEnvironment(Optional.empty()).build())
+        jobManager = new LSFJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
     }
 
     private BEJob makeJob(Map<String, String> mapOfParameters) {

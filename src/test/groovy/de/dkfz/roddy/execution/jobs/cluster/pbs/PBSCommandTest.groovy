@@ -30,7 +30,7 @@ class PBSCommandTest {
 
     @Before
     void setUp() throws Exception {
-        jobManager = new PBSJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().setPassEnvironment(Optional.empty()).build())
+        jobManager = new PBSJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
     }
 
     private BEJob makeJob(Map<String, String> mapOfParameters) {
