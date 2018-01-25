@@ -17,8 +17,9 @@ abstract class SubmissionCommand extends Command {
 
     /**
      *  Should the local environment during the submission be copied to the execution hosts?
+     *  This is an Optional, because the actual value will be calculated from both the Job/Command comfiguration and the JobManager.
      */
-    private Optional<Boolean> passEnvironment = Optional.empty()
+    Optional<Boolean> passEnvironment = Optional.empty()
 
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
@@ -26,37 +27,37 @@ abstract class SubmissionCommand extends Command {
      * @param parentJobManager
      * @param job
      * @param jobName
-     * @param parameters Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
+     * @param environmentVariables
      *
      */
-    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> parameters) {
-        super(parentJobManager, job, jobName, parameters)
+    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
+        super(parentJobManager, job, jobName, environmentVariables)
     }
 
     /**
+     * Should the local environment be passed?
+     *
      * JobManager and SubmissionCommand together determine, whether the environment should be passed.
      *
-     * * If the Command value is set to true or false, the JobManager value is overruled.
+     * * The Command has precedence over the JobManager value.
      * * If the Command value is not set, the JobManager value is the fallback.
-     * * If neither of JobManager and Command is defined, return false.
+     * * If neither JobManager nor Command are defined, only copy the requested variables to remote.
      *
      * @return
      */
-    Optional<Boolean> getPassLocalEnvironment() {
-        if (passEnvironment.present) {
-            return passEnvironment
-        } else {
-            if (parentJobManager.passEnvironment.present) {
-                return parentJobManager.passEnvironment
-            } else {
-                return Optional.empty()
-            }
-        }
+    Boolean getPassLocalEnvironment() {
+        passEnvironment.orElse(parentJobManager.passEnvironment)
+    }
+
+    @Deprecated
+    @Override
+    String toString() {
+        // TODO toString() shouldn't be used for such specific things. Remove explicit calls to get the bash command representation.
+        return toBashCommandString()
     }
 
     @Override
-    String toString() {
-
+    String toBashCommandString() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
@@ -65,7 +66,7 @@ abstract class SubmissionCommand extends Command {
 
         // collect parameters for job submission
         List<String> parameters = []
-        parameters << getEnvironmentExportParameter()
+        parameters << assembleVariableExportParameters()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getAccountParameter(accountName)
@@ -76,7 +77,6 @@ abstract class SubmissionCommand extends Command {
         parameters << getUmaskString(umask)
         parameters << assembleProcessingCommands()
         parameters << assembleDependencyString(creatingJob.parentJobIDs)
-        parameters << assembleVariableExportString()
         parameters << getAdditionalCommandParameters()
 
 
@@ -97,7 +97,6 @@ abstract class SubmissionCommand extends Command {
         return command
     }
 
-    abstract protected String getEnvironmentExportParameter()
     abstract protected String getJobNameParameter()
     abstract protected String getHoldParameter()
     abstract protected String getAccountParameter(String account)
@@ -107,8 +106,17 @@ abstract class SubmissionCommand extends Command {
     abstract protected String getGroupListParameter(String groupList)
     abstract protected String getUmaskString(String umask)
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
-    abstract protected String assembleVariableExportString()
     abstract protected String getAdditionalCommandParameters()//?
+
+
+    /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
+     *  If passLocalEnvironment is false, no local variables will be forwarded by default.
+     *  In both cases arbitrary variables can be set to specific values or be declared to be forwarded as defined in the local environment (according
+     *  to the parameters field; null-value parameters are copied as locally defined).
+     *
+     *  @return A set of parameters for the submission command to achieve the requested variable exports.
+     */
+    abstract protected String assembleVariableExportParameters()
 
 
     String assembleProcessingCommands() {

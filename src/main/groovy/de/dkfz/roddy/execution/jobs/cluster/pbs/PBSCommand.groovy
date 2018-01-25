@@ -6,10 +6,10 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.tools.LoggerWrapper
@@ -44,26 +44,15 @@ class PBSCommand extends SubmissionCommand {
     /**
      *
      * @param name
-     * @param parameters
+     * @param environmentVariables
      * @param command
      * @param filesToCheck
      */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> parameters, List<String> dependencyIDs, String command) {
-        super(parentManager, job, name, parameters)
+    PBSCommand(PBSJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+        super(parentManager, job, name, environmentVariables)
         this.processingParameters = processingParameters
         this.command = command
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
-    }
-
-    @Override
-    protected String getEnvironmentExportParameter() {
-        if (passLocalEnvironment.isPresent()) {
-            if (passLocalEnvironment.get())
-                return "-V"
-            else
-                return ""
-        } else
-            return ""
     }
 
     @Override
@@ -141,22 +130,23 @@ class PBSCommand extends SubmissionCommand {
     }
 
     @Override
-    String assembleVariableExportString() {
-        StringBuilder qsubCall = new StringBuilder()
+    String assembleVariableExportParameters() {
+        List<String> parameterStrings = []
 
-        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
-            qsubCall << "-v " << "\"" << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << ",PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
+        if (passLocalEnvironment)
+            parameterStrings << "-V"
 
-            if (job.parameters.containsKey("debugWrapInScript")) {
-                qsubCall << "," << "debugWrapInScript=" << job.parameters["debugWrapInScript"]
-            }
-            qsubCall << "\""
+        List<String> environmentStrings = parameters.collect { key, value ->
+            if (null == value)
+                "${key}"              // returning just the variable name makes qsub take the value form the qsub-commands execution environment
+            else
+                "${key}=${value}"     // sets value to value
+        } as List<String>
 
-        } else {
-            qsubCall << "-v " << "\"" << parameters.collect { key, value -> "${key}=${value}" }.join(",") << "\""
-        }
+        if (!environmentStrings.empty)
+            parameterStrings << "-v \"" + environmentStrings.join(",") + "\""
 
-        return qsubCall
+        return parameterStrings.join(" ")
     }
 
     String getDependencyParameterName() {

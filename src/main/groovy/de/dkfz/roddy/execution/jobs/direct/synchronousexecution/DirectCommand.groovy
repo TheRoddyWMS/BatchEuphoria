@@ -20,16 +20,16 @@ import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
  * Roddy waits for the processes to exit.
  */
 @groovy.transform.CompileStatic
-public class DirectCommand extends Command {
+class DirectCommand extends Command {
 
-    private final List<ProcessingParameters> processingParameters;
-    private final String command;
+    private final List<ProcessingParameters> processingParameters
+    private final String command
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
 
     DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, List<ProcessingParameters> processingParameters, @Deprecated String command = null) {
         super(parentManager, job, job.tool.getName(), job.parameters)
-        this.processingParameters = processingParameters;
+        this.processingParameters = processingParameters
         this.command = command ?: job.tool.absolutePath
     }
 
@@ -38,16 +38,21 @@ public class DirectCommand extends Command {
      * @return
      */
     @Override
-    public boolean isBlockingCommand() {
-        return true;
+    boolean isBlockingCommand() {
+        return true
     }
 
     @Override
-    public String toString() {
+    String toString() {
+        return toBashCommandString()
+    }
 
-        StringBuilder commandString = new StringBuilder();
+    @Override
+    String toBashCommandString() {
 
-        StringBuilder parameterBuilder = new StringBuilder();
+        StringBuilder commandString = new StringBuilder()
+
+        StringBuilder parameterBuilder = new StringBuilder()
 
         // Taken from PBSCommand. Really needs to be unified!
         if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {

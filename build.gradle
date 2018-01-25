@@ -29,6 +29,12 @@ def getVersionName() {
 }
 
 
+// Set -Pchecked on the command line to change this compiler parameter.
+if (!project.hasProperty("checked") || !project.checked) {
+    compileJava.options.compilerArgs = ["-Xlint:unchecked"]
+    compileGroovy.options.compilerArgs = ["-Xlint:unchecked"]
+}
+
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
