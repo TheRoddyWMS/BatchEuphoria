@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.BEException
+import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
@@ -136,7 +137,8 @@ class LSFJobManagerSpec extends Specification {
 
         given:
         def parms = JobManagerOptions.create().build()
-        LSFJobManager jm = new LSFJobManager(null,parms)
+        TestExecutionService testExecutionService = new TestExecutionService("test","test")
+        LSFJobManager jm = new LSFJobManager(testExecutionService,parms)
         Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", java.lang.Object)
         method.setAccessible(true)
         Object parsedJson = new JsonSlurper().parseText(result)

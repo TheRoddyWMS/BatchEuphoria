@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.BEException
+import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
@@ -76,7 +77,8 @@ class PBSJobManagerSpec extends Specification {
     void testParseJobDetails() {
         given:
         def parms = JobManagerOptions.create().build()
-        PBSJobManager jm = new PBSJobManager(null, parms)
+        TestExecutionService testExecutionService = new TestExecutionService("test","test")
+        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
         Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
         method.setAccessible(true)
 
