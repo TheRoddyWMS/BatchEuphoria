@@ -16,6 +16,7 @@ import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
+import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
 import java.time.Duration
@@ -30,7 +31,7 @@ class BEIntegrationTest {
     static Properties properties
     static TestExecutionService executionService
     static RestExecutionService restExecutionService
-    static String testScript = "sleep 30s"
+    static String testScript = "ls"
     static File batchEuphoriaTestScript
     static JobLog logFile
     static ResourceSet resourceSet = new ResourceSet(new BufferValue(10, BufferUnit.m), 1, 1, Duration.ofMinutes(1), null, null, null)
@@ -93,11 +94,10 @@ class BEIntegrationTest {
 
         testJobs.each {
             def jr = jobManager.submitJob(it)
-            println "Started ${jr.jobID.id}"
+            println "Job ID: ${jr.jobID.id}"
         }
 
         if (jobManager.isHoldJobsEnabled()) {
-            println "job is on hold"
 
             ensureProperJobStates(maxSleep, testJobs, [JobState.HOLD], jobManager)
 
@@ -109,16 +109,10 @@ class BEIntegrationTest {
         } else {
             ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.HOLD, JobState.RUNNING], jobManager)
         }
-        println "check for Complete now"
 
         jobManager.queryExtendedJobState(testJobs)
 
-        ensureProperJobStates(maxSleep, testJobs, [JobState.RUNNING, JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN], jobManager)
-
-        if (testJobs.get(0).tool) {
-            executionService.execute("rm ${batchEuphoriaTestScript}")
-            executionService.executeLocal("rm ${batchEuphoriaTestScript}")
-        }
+        ensureProperJobStates(maxSleep, testJobs, [JobState.COMPLETED_SUCCESSFUL], jobManager)
 
     }
 
@@ -137,15 +131,13 @@ class BEIntegrationTest {
                 lastStates << status[job]
             }
             if (!allJobsInCorrectState) {
+                assert status.values().join(" ").find(JobState.FAILED.name()) != JobState.FAILED.name()
                 sleep--
-                println "Found job states ${status.values().join(" ")}"
-            }else{
-                println "Found job states ${status.values().join(" ")}"
             }
         }
 
 
-        if (!allJobsInCorrectState)
+        if (!allJobsInCorrectState && !lastStates.join(" ").find(JobState.RUNNING.name()))
             new BEException("Not all jobs ${jobList.collect { it.jobID }.join(" ")} were in the proper state: " +
                     "[${listOfStatesToCheck.join(" ")}], got last states [${lastStates.join(" ")}]. " +
                     "Make sure, that your job system is working properly.")
@@ -172,7 +164,7 @@ class BEIntegrationTest {
 
     @Test
     void testLsfMultipleJobsWithFile() {
-        if (properties."lsf.host" != "" && properties."lsf.user" != "") {
+        if (properties."lsf.host" != "" && properties."lsf.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."lsf.account" as String, properties."lsf.host" as String)
             prepareTestScript()
             testMultipleJobsWithFile(runTestsFor(AvailableClusterSystems.lsf, executionService))
@@ -181,11 +173,10 @@ class BEIntegrationTest {
 
     @Test
     void testLsfJobWithFile() {
-        if (properties."lsf.host" != "" && properties."lsf.user" != "") {
+        if (properties."lsf.host" != "" && properties."lsf.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."lsf.account" as String, properties."lsf.host" as String)
             prepareTestScript()
             testJobWithFile(runTestsFor(AvailableClusterSystems.lsf, executionService))
-
         }
     }
 
@@ -207,21 +198,19 @@ class BEIntegrationTest {
 
     @Test
     void testPbsMultipleJobsWithFile() {
-        if (properties."pbs.host" != "" && properties."pbs.user" != "") {
+        if (properties."pbs.host" != "" && properties."pbs.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."pbs.account" as String, properties."pbs.host" as String)
             prepareTestScript()
             testMultipleJobsWithFile(runTestsFor(AvailableClusterSystems.pbs, executionService))
-
         }
     }
 
     @Test
     void testPbsJobWithFile() {
-        if (properties."pbs.host" != "" && properties."pbs.user" != "") {
+        if (properties."pbs.host" != "" && properties."pbs.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."pbs.account" as String, properties."pbs.host" as String)
             prepareTestScript()
             testJobWithFile(runTestsFor(AvailableClusterSystems.pbs, executionService))
-
         }
     }
 
@@ -244,18 +233,17 @@ class BEIntegrationTest {
 
     @Test
     void testLsfRestMultipleJobsWithFile() {
-        if (![properties."lsf.rest.host" as String, properties."lsf.rest.account" as String, properties."lsf.rest.password" as String, properties."lsf.account" as String, properties."lsf.host" as String]*.isEmpty()) {
+        if (![properties."lsf.rest.host" as String, properties."lsf.rest.account" as String, properties."lsf.rest.password" as String, properties."lsf.account" as String, properties."lsf.host" as String]*.isEmpty() && properties.remoteToolPath != "") {
             restExecutionService = new RestExecutionService(properties."lsf.rest.host" as String, properties."lsf.rest.account" as String, properties."lsf.rest.password" as String)
             executionService = new TestExecutionService(properties."lsf.account" as String, properties."lsf.host" as String)
             prepareTestScript()
             testMultipleJobsWithFile(runTestsFor(AvailableClusterSystems.lsfrest, restExecutionService))
-
         }
     }
 
     @Test
     void testLsfRestJobWithFile() {
-        if (![properties."lsf.rest.host" as String, properties."lsf.rest.account" as String, properties."lsf.rest.password" as String, properties."lsf.account" as String, properties."lsf.host" as String]*.isEmpty()) {
+        if (![properties."lsf.rest.host" as String, properties."lsf.rest.account" as String, properties."lsf.rest.password" as String, properties."lsf.account" as String, properties."lsf.host" as String]*.isEmpty() && properties.remoteToolPath != "") {
             restExecutionService = new RestExecutionService(properties."lsf.rest.host" as String, properties."lsf.rest.account" as String, properties."lsf.rest.password" as String)
             executionService = new TestExecutionService(properties."lsf.account" as String, properties."lsf.host" as String)
             prepareTestScript()
@@ -282,21 +270,19 @@ class BEIntegrationTest {
 
     @Test
     void testSgeMultipleJobsWithFile() {
-        if (properties."sge.host" != "" && properties."sge.user" != "") {
+        if (properties."sge.host" != "" && properties."sge.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."sge.account" as String, properties."sge.host" as String)
             prepareTestScript()
             testMultipleJobsWithFile(runTestsFor(AvailableClusterSystems.sge, executionService))
-
         }
     }
 
     @Test
     void testSgeJobWithFile() {
-        if (properties."sge.host" != "" && properties."sge.user" != "") {
+        if (properties."sge.host" != "" && properties."sge.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."sge.account" as String, properties."sge.host" as String)
             prepareTestScript()
             testJobWithFile(runTestsFor(AvailableClusterSystems.sge, executionService))
-
         }
     }
 
@@ -319,7 +305,7 @@ class BEIntegrationTest {
 
     @Test
     void testSlurmMultipleJobsWithFile() {
-        if (properties."slurm.host" != "" && properties."slurm.user" != "") {
+        if (properties."slurm.host" != "" && properties."slurm.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."slurm.account" as String, properties."slurm.host" as String)
             prepareTestScript()
             testMultipleJobsWithFile(runTestsFor(AvailableClusterSystems.slurm, executionService))
@@ -329,7 +315,7 @@ class BEIntegrationTest {
 
     @Test
     void testSlurmJobWithFile() {
-        if (properties."slurm.host" != "" && properties."slurm.user" != "") {
+        if (properties."slurm.host" != "" && properties."slurm.user" != "" && properties.remoteToolPath != "") {
             executionService = new TestExecutionService(properties."slurm.account" as String, properties."slurm.host" as String)
             prepareTestScript()
             testJobWithFile(runTestsFor(AvailableClusterSystems.slurm, executionService))
