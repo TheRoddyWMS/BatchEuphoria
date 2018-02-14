@@ -23,24 +23,24 @@ class BEJobResult implements Serializable {
     /**
      * The command which was used to create this result.
      */
-    protected final Command command
+    final Command command
     /**
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
      */
-    protected final BEJob job
+    final BEJob job
     /**
      * The execution result object containing additional details about the execution (exit code and output).
      */
-    protected final ExecutionResult executionResult
+    final ExecutionResult executionResult
     /**
      * The tool which was run for this job.
      */
-    protected final File toolID;
+    final File toolID;
     /**
      * Parameters for the job.
      */
-    protected final Map<String, String> jobParameters;
+    final Map<String, String> jobParameters;
     /**
      * Parent jobs.
      */
@@ -61,32 +61,12 @@ class BEJobResult implements Serializable {
         this.parentJobs = parentJobs;
     }
 
-    public Command getCommand() {
-        return command;
-    }
-
-    public BEJobID getJobID() {
+    BEJobID getJobID() {
         return job.jobID
     }
 
-    public boolean isWasExecuted() {
+    boolean isWasExecuted() {
         return null != executionResult && executionResult.successful
-    }
-
-    public File getToolID() {
-        return toolID;
-    }
-
-    public BEJob getJob() {
-        return job
-    }
-
-    public Map<String, String> getJobParameters() {
-        return jobParameters;
-    }
-
-    public List<BEJob> getParentJobs() {
-        return parentJobs;
     }
 
 }
