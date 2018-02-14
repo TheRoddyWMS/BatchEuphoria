@@ -59,10 +59,20 @@ class JobLog {
         this.out = out
         this.error = err
     }
-    public String getOut() {
+    String getOut() {
         out?.path
     }
-    public String getError() {
+
+    String getOut(String jobID) {
+        out?.path.toString().replace(JOB_ID, jobID)
+    }
+
+    String getError() {
         error?.path
     }
+
+    String getError(String jobID) {
+        error?.path.toString().replace(JOB_ID, jobID)
+    }
+
 }
