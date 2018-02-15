@@ -77,7 +77,7 @@ class PBSJobManagerSpec extends Specification {
     void testParseJobDetails() {
         given:
         def parms = JobManagerOptions.create().build()
-        TestExecutionService testExecutionService = new TestExecutionService("test","test")
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
         Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
         method.setAccessible(true)
@@ -86,8 +86,8 @@ class PBSJobManagerSpec extends Specification {
         Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXmlExample])
 
         then:
-        //TODO jobInfo.get(new BEJobID("15020227")).jobName == "workflow_test"
         jobInfo.size() == 1
+        jobInfo.get(new BEJobID("15020227")).jobName == "workflow_test"
     }
 
     void testParseDuration() {
@@ -115,6 +115,6 @@ class PBSJobManagerSpec extends Specification {
 
         then:
         InvocationTargetException e = thrown(InvocationTargetException)
-        //e.message == "Duration string is not of the format HH+:MM:SS: '02:42'"
+        e.targetException.message == "Duration string is not of the format HH+:MM:SS: '02:42'"
     }
 }

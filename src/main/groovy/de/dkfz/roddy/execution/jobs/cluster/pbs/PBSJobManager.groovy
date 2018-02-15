@@ -253,8 +253,10 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         if(resultLines.join("\n").isEmpty()){
             return [:]
         }
-        List<GPathResult> parsedJobs = resultLines.collect {new XmlSlurper().parseText(it)}
-        parsedJobs.each { it ->
+
+        GPathResult parsedJobs = new XmlSlurper().parseText(resultLines.last())
+
+        parsedJobs.children().each { it ->
             GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
             BufferValue mem = null
