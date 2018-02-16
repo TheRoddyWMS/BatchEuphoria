@@ -250,7 +250,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      */
     private Map<BEJobID, GenericJobInfo> processQstatOutput(List<String> resultLines) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        if(resultLines.join("\n").isEmpty()){
+        if (resultLines.isEmpty()) {
             return [:]
         }
 

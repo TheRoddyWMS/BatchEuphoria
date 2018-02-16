@@ -73,7 +73,7 @@ class LSFJobManagerSpec extends Specification {
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         LSFJobManager jm = new LSFJobManager(testExecutionService, parms)
-        Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", java.lang.Object)
+        Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", Map)
         method.setAccessible(true)
         Object parsedJson = new JsonSlurper().parseText(result)
         List records = (List) parsedJson.getAt("RECORDS")

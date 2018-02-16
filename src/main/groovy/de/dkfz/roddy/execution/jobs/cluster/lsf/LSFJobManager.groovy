@@ -12,7 +12,6 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.*
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 import java.time.Duration
@@ -30,7 +29,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFJobManager.class.getSimpleName())
 
 
-    private static final String BJOBS_DELIMITER = "\t"
     private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
@@ -45,7 +43,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (BEJobID id : jobIds) {
-            Object jobDetails = runBjobs([id]).get(id)
+            Map<String, Object> jobDetails = runBjobs([id]).get(id)
             queriedExtendedStates.put(id, queryJobInfo(jobDetails))
         }
         return queriedExtendedStates
@@ -91,7 +89,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     }
 
-    private Map<BEJobID, Object> runBjobs(List<BEJobID> jobIDs) {
+    private Map<BEJobID, Map<String, Object>> runBjobs(List<BEJobID> jobIDs) {
         StringBuilder queryCommand = new StringBuilder(getQueryCommand())
 
         // user argument must be passed before the job IDs
@@ -105,7 +103,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         ExecutionResult er = executionService.execute(queryCommand.toString())
         List<String> resultLines = er.resultLines
 
-        Map<BEJobID, Object> result = [:]
+        Map<BEJobID, Map<String, Object>> result = [:]
 
         if (er.successful) {
             if (resultLines.size() >= 1) {
@@ -118,29 +116,8 @@ class LSFJobManager extends AbstractLSFJobManager {
                     logger.info(["QStat BEJob line: " + it,
                                  "	Entry in arr[ID]: " + jobID,
                                  "   Entry in arr[STAT]: " + jobState].join("\n"))
-                    result.put(jobID, it)
+                    result.put(jobID, it as Map<String, Object>)
                 }
-
-/*
-                for (String line : resultLines) {
-                    line = line.trim()
-                    if (line.length() == 0) continue
-                    if (!RoddyConversionHelperMethods.isInteger(line.substring(0, 1)))
-                        continue //Filter out lines which have been missed which do not start with a number.
-
-                    Object parsedJson = new JsonSlurper().parseText(line)
-                    List records = (List) parsedJson.getAt("RECORDS")
-                    Object jobResult = records.get(0)
-                    BEJobID jobID = new BEJobID(jobResult["JOBID"] as String)
-
-                    String[] split = line.split(BJOBS_DELIMITER)
-                    final int ID = getPositionOfJobID()
-                    final int JOBSTATE = getPositionOfJobState()
-                    logger.info(["QStat BEJob line: " + line,
-                                 "	Entry in arr[" + ID + "]: " + split[ID],
-                                 "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
-                    TODO result.put(new BEJobID(split[ID]), new JsonSlurper().parseText(line))
-                }*/
             }
 
         } else {
@@ -163,64 +140,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     /**
      * Used by @getJobDetails to set JobInfo
      */
-/*    private GenericJobInfo queryJobInfo(BEJobID jobID) {
-        GenericJobInfo jobInfo
-
-        List<String> dependIDs = jobDetails[32].tokenize(/&/).collect { it.find(/\d+/) }
-        jobInfo = new GenericJobInfo(jobDetails[1], new File(jobDetails[31]), jobDetails[0], null, dependIDs)
-
-        String[] jobResult = jobDetails.collect { String property -> if (property.trim() == "-") return "" else property }
-
-        String queue = jobResult[4] ?: null
-        Duration runTime = catchExceptionAndLog { jobResult[17] ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[17].find("\\d+")))) : null }
-        BufferValue swap = catchExceptionAndLog { jobResult[19] ? new BufferValue(jobResult[19].find("\\d+"), BufferUnit.m) : null }
-        BufferValue memory = catchExceptionAndLog { jobResult[20] ? new BufferValue(jobResult[20].find("\\d+"), BufferUnit.m) : null }
-        Duration runLimit = catchExceptionAndLog { jobResult[21] ? Duration.ofSeconds(Math.round(Double.parseDouble(jobResult[21].find("\\d+")))) : null }
-        Integer nodes = catchExceptionAndLog { jobResult[29] ? jobResult[29] as Integer : null }
-
-        ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
-        jobInfo.setUsedResources(usedResources)
-
-        ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
-        jobInfo.setAskedResources(askedResources)
-
-        jobInfo.setUser(jobResult[3] ?: null)
-        jobInfo.setDescription(jobResult[5] ?: null)
-        jobInfo.setProjectName(jobResult[6] ?: null)
-        jobInfo.setJobGroup(jobResult[7] ?: null)
-        jobInfo.setPriority(jobResult[8] ?: null)
-        jobInfo.setPidStr(jobResult[9] ?: null)
-        jobInfo.setJobState(parseJobState(jobResult[2]))
-        jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult[10] ? Integer.valueOf(jobResult[10]) : null))
-        jobInfo.setSubmissionHost(jobResult[11] ?: null)
-        jobInfo.setExecutionHosts(jobResult[12] ?: null)
-        catchExceptionAndLog { jobInfo.setCpuTime(jobResult[16] ? parseColonSeparatedHHMMSSDuration(jobResult[16]) : null) }
-        jobInfo.setRunTime(runTime)
-        jobInfo.setUserGroup(jobResult[18] ?: null)
-        jobInfo.setCwd(jobResult[22] ?: null)
-        jobInfo.setPendReason(jobResult[23] ?: null)
-        jobInfo.setExecCwd(jobResult[24] ?: null)
-        jobInfo.setLogFile(getBjobsFile(jobResult[25], jobID, "out"))
-        jobInfo.setErrorLogFile(getBjobsFile(jobResult[30], jobID, "err"))
-        jobInfo.setInputFile(jobResult[26] ? new File(jobResult[26]) : null)
-        jobInfo.setResourceReq(jobResult[27] ?: null)
-        jobInfo.setExecHome(jobResult[28] ?: null)
-
-        if (jobResult[13])
-            catchExceptionAndLog { jobInfo.setSubmitTime(parseTime(jobResult[13])) }
-        if (jobResult[14])
-            catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult[14])) }
-        if (jobResult[15])
-            catchExceptionAndLog { jobInfo.setEndTime(parseTime(jobResult[15].substring(0, jobResult[15].length() - 2))) }
-
-        return jobInfo
-    }
-*/
-
-    /**
-     * Used by @getJobDetails to set JobInfo
-     */
-    private GenericJobInfo queryJobInfo(Object jobResult) {
+    private GenericJobInfo queryJobInfo(Map<String, Object> jobResult) {
 
         GenericJobInfo jobInfo
         BEJobID jobID = new BEJobID(jobResult["JOBID"] as String)
@@ -295,24 +215,9 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
     }
 
-    protected int getPositionOfJobID() {
-        return 0
-    }
-
-    /**
-     * Return the position of the status string within a stat result line. This changes if -u USERNAME is used!
-     *
-     * @return
-     */
-    protected int getPositionOfJobState() {
-        if (isTrackingOfUserJobsEnabled)
-            return 2
-        return 2
-    }
-
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "bkill ${jobIDs*.id.join(" ")}"
+        String command = "${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 
@@ -337,98 +242,3 @@ class LSFJobManager extends AbstractLSFJobManager {
         return "bsub"
     }
 }
-
-/*
-//REST RESOURCES
-static {
-
-    URI_JOB_SUBMIT = "/jobs/submit"
-    URI_JOB_KILL = "/jobs/kill"
-    URI_JOB_SUSPEND = "/jobs/suspend"
-    URI_JOB_RESUME = "/jobs/resume"
-    URI_JOB_REQUEUE = "/jobs/requeue"
-    URI_JOB_DETAILS = "/jobs/"
-    URI_JOB_HISTORY = "/jobhistory"
-    URI_USER_COMMAND = "/userCmd"
-}
-
-//PARAMETERS
-enum Rest_Resources {
-
-    URI_JOB_SUBMIT ("/jobs/submit"),
-    URI_JOB_KILL ("/jobs/kill"),
-    URI_JOB_SUSPEND ("/jobs/suspend"),
-    URI_JOB_RESUME ("/jobs/resume"),
-    URI_JOB_REQUEUE ("/jobs/requeue"),
-    URI_JOB_DETAILS ("/jobs/"),
-    URI_JOB_HISTORY ("/jobhistory"),
-    URI_USER_COMMAND ("/userCmd"),
-
-    final String value
-
-    Rest_Resources(String value) {
-        this.value = value
-    }
-
-    String getValue() {
-        return this.value
-    }
-
-    String toString(){
-        value
-    }
-
-    String getKey() {
-        name()
-    }
-}
-
-//PARAMETERS
-enum Parameters {
-
-
-    COMMANDTORUN("COMMANDTORUN"),
-    EXTRA_PARAMS ("EXTRA_PARAMS"),
-    MAX_MEMORY ("MAX_MEM"),
-    MAX_NUMBER_CPU ("MAX_NUM_CPU"),
-    MIN_NUMBER_CPU ("MIN_NUM_CPU"),
-    PROC_PRE_HOST ("PROC_PRE_HOST"),
-    EXTRA_RES ("EXTRA_RES"),
-    RUN_LIMIT_MINUTE ("RUNLIMITMINUTE"),
-    RERUNABLE ("RERUNABLE"),
-    JOB_NAME ("JOB_NAME"),
-    APP_PROFILE ("APP_PROFILE"),
-    PROJECT_NAME ("PRJ_NAME"),
-    RES_ID ("RES_ID"),
-    LOGIN_SHELL ("LOGIN_SHELL"),
-    QUEUE ("QUEUE"),
-    INPUT_FILE ("INPUT_FILE"),
-    OUTPUT_FILE ("OUTPUT_FILE"),
-    ERROR_FILE ("ERROR_FILE"),
-
-    final String value
-
-    Parameters(String value) {
-
-        this.value = value
-    }
-
-
-    String getValue() {
-
-        return this.value
-    }
-
-
-    String toString(){
-
-        value
-    }
-
-
-    String getKey() {
-
-        name()
-    }
-}
- */
