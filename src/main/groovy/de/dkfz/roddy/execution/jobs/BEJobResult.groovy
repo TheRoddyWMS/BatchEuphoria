@@ -65,6 +65,10 @@ class BEJobResult implements Serializable {
         return job.jobID
     }
 
+    List<String> resultLines() {
+        return executionResult.resultLines
+    }
+
     boolean isWasExecuted() {
         return null != executionResult && executionResult.successful
     }
