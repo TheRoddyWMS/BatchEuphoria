@@ -17,7 +17,7 @@ import java.lang.reflect.Modifier
 class ClusterJobManagerSpec extends Specification {
 
     private static Method prepareLogger(LoggerWrapper loggerWrapper) {
-        Method method = ClusterJobManager.class.getDeclaredMethod("catchExceptionAndLog", Closure)
+        Method method = ClusterJobManager.class.getDeclaredMethod("catchAndLogExceptions", Closure)
         method.setAccessible(true)
 
         Field f = ClusterJobManager.class.getDeclaredField("logger")

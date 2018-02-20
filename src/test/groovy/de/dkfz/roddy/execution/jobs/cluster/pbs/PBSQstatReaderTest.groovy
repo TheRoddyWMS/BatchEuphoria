@@ -416,43 +416,4 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
         assert qstatReaderResultOutput2.size() == 2
     }
 
-    @Test
-    void testProcessQstatOutput() throws Exception {
-        TestExecutionService executionService = new TestExecutionService("", "")
-        PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
-                .setCreateDaemon(false)
-                .setTrackUserJobsOnly(true)
-                .build())
-        Method method = jm.getClass().getDeclaredMethod("processQstatOutput", List);
-        method.setAccessible(true);
-
-        Map<BEJobID, GenericJobInfo> genericJobInfoOutput1 = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [output1])
-        Map<BEJobID, GenericJobInfo> genericJobInfoOutput2 = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [output2])
-
-        /*
-        // print GenericJobInfo
-        genericJobInfoOutput1.each { Map.Entry<String,GenericJobInfo> it ->
-            GenericJobInfo gj = it.value
-            println "JobName: "+gj.getJobName()
-            println "Parent IDs: "+gj.getParentJobIDs()
-            println "queue: "+gj.getAskedResources().getQueue()
-            println "output Path: "+gj.getOutFile()
-            println "resources: "+gj.getAskedResources()
-            println "exec host: " +gj.getExecutionHosts()
-            println "sub host: " +gj.getSubmissionHost()
-            println "resource req: " +gj.getResourceReq()
-            println "runtime: " +gj.getRunTime()
-            println "cpu time: " +gj.getCpuTime()
-            println "user group: " +gj.getUserGroup()
-            println "user: " +gj.getUser()
-            println "umask: " +gj.getUmask()
-            println "server: " +gj.getServer()
-            println "resource asked - walltime: " +gj.askedResources.walltime
-            println "resource used - walltime: " +gj.usedResources.walltime
-            println "priority: " +gj.getPriority() +"\n"
-        }*/
-
-        assert genericJobInfoOutput1.size() == 4
-        assert genericJobInfoOutput2.size() == 2
-    }
 }

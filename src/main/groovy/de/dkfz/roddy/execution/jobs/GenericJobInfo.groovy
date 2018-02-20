@@ -31,7 +31,7 @@ class GenericJobInfo {
     LocalDateTime endTime;
     LocalDateTime eligibleTime; // when all conditions like job dependencies full filled, it is qu
 
-    String executionHosts;
+    List<String> executionHosts;
     String submissionHost;
     String priority;
 
@@ -57,7 +57,7 @@ class GenericJobInfo {
     String pendReason;
     String execHome;
     String execUserName;
-    String pidStr;
+    List<String> pidStr;
     String pgidStr; // Currently active process group ID in a job.
     Integer exitCode; // UNIX exit status of the job
     String jobGroup;
