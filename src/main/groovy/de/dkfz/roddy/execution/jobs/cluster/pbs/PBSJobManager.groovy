@@ -19,11 +19,8 @@ import groovy.util.slurpersupport.GPathResult
 
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.regex.Matcher
 
 /**
@@ -110,7 +107,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     String[] split = line.split(" ")
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
-                    logger.info(["QStat BEJob line: " + line,
+                    if (logger.isVerbosityMedium())
+                        logger.postAlwaysInfo(["QStat BEJob line: " + line,
                                  "	Entry in arr[" + ID + "]: " + split[ID],
                                  "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
@@ -118,7 +116,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
                     JobState js = parseJobState(split[JOBSTATE])
                     result.put(jobID, js)
-                    logger.info("   Extracted jobState: " + js.toString())
                 }
             }
         }
@@ -240,7 +237,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
     }
 
     private static LocalDateTime parseTime(String str) {
-        return catchExceptionAndLog {Instant.ofEpochSecond(Long.valueOf(str)).atZone(ZoneId.systemDefault()).toLocalDateTime()}
+        return catchAndLogExceptions {Instant.ofEpochSecond(Long.valueOf(str)).atZone(ZoneId.systemDefault()).toLocalDateTime()}
     }
 
     /**
@@ -266,22 +263,22 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             String additionalNodeFlag
 
             if (it["Resource_List"]["mem"])
-                mem = catchExceptionAndLog { new BufferValue(Integer.valueOf((it["Resource_List"]["mem"] as String).find(/(\d+)/)), BufferUnit.valueOf((it["Resource_List"]["mem"] as String)[-2])) }
+                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf((it["Resource_List"]["mem"] as String).find(/(\d+)/)), BufferUnit.valueOf((it["Resource_List"]["mem"] as String)[-2])) }
             if (it["Resource_List"]["nodect"])
-                nodes = catchExceptionAndLog { Integer.valueOf(it["Resource_List"]["nodect"] as String) }
+                nodes = catchAndLogExceptions { Integer.valueOf(it["Resource_List"]["nodect"] as String) }
             if (it["Resource_List"]["nodes"])
-                cores = catchExceptionAndLog { Integer.valueOf((it["Resource_List"]["nodes"] as String).find("ppn=.*").find(/(\d+)/)) }
+                cores = catchAndLogExceptions { Integer.valueOf((it["Resource_List"]["nodes"] as String).find("ppn=.*").find(/(\d+)/)) }
             if (it["Resource_List"]["nodes"])
-                additionalNodeFlag = catchExceptionAndLog { (it["Resource_List"]["nodes"] as String).find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
+                additionalNodeFlag = catchAndLogExceptions { (it["Resource_List"]["nodes"] as String).find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
             if (it["Resource_List"]["walltime"])
-                walltime = catchExceptionAndLog { new TimeUnit(it["Resource_List"]["walltime"] as String) }
+                walltime = catchAndLogExceptions { new TimeUnit(it["Resource_List"]["walltime"] as String) }
 
             BufferValue usedMem = null
             TimeUnit usedWalltime = null
             if (it["resources_used"]["mem"])
-                catchExceptionAndLog { usedMem = new BufferValue(Integer.valueOf((it["resources_used"]["mem"] as String).find(/(\d+)/)), BufferUnit.valueOf((it["resources_used"]["mem"] as String)[-2]))  }
+                catchAndLogExceptions { usedMem = new BufferValue(Integer.valueOf((it["resources_used"]["mem"] as String).find(/(\d+)/)), BufferUnit.valueOf((it["resources_used"]["mem"] as String)[-2]))  }
             if (it["resources_used"]["walltime"])
-                catchExceptionAndLog { usedWalltime = new TimeUnit(it["resources_used"]["walltime"] as String) }
+                catchAndLogExceptions { usedWalltime = new TimeUnit(it["resources_used"]["walltime"] as String) }
 
             gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String, additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String, null))
@@ -289,19 +286,19 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.setLogFile(getQstatFile(it["Output_Path"] as String))
             gj.setErrorLogFile(getQstatFile(it["Error_Path"] as String))
             gj.setUser(it["euser"] as String)
-            gj.setExecutionHosts(it["exec_host"] as String)
+            gj.setExecutionHosts([it["exec_host"] as String])
             gj.setSubmissionHost(it["submit_host"] as String)
             gj.setPriority(it["Priority"] as String)
             gj.setUserGroup(it["egroup"] as String)
             gj.setResourceReq(it["submit_args"] as String)
-            gj.setRunTime(it["total_runtime"] ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
-            gj.setCpuTime(it["resources_used"]["cput"] ? catchExceptionAndLog { parseColonSeparatedHHMMSSDuration(it["resources_used"]["cput"] as String) } : null)
+            gj.setRunTime(it["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
+            gj.setCpuTime(it["resources_used"]["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(it["resources_used"]["cput"] as String) } : null)
             gj.setServer(it["server"] as String)
             gj.setUmask(it["umask"] as String)
             gj.setJobState(parseJobState(it["job_state"] as String))
-            gj.setExitCode(it["exit_status"] ? catchExceptionAndLog { Integer.valueOf(it["exit_status"] as String) }: null )
+            gj.setExitCode(it["exit_status"] ? catchAndLogExceptions { Integer.valueOf(it["exit_status"] as String) }: null )
             gj.setAccount(it["Account_Name"] as String)
-            gj.setStartCount(it["start_count"] ? catchExceptionAndLog { Integer.valueOf(it["start_count"] as String) } : null)
+            gj.setStartCount(it["start_count"] ? catchAndLogExceptions { Integer.valueOf(it["start_count"] as String) } : null)
 
             if (it["qtime"]) // The time that the job entered the current queue.
                 gj.setSubmitTime(parseTime(it["qtime"] as String))

@@ -336,30 +336,38 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), jobDetails.getProperty("jobId").toString(), null, null)
 
         String queue = jobDetails.getProperty("queue").toString()
-        BufferValue swap = jobDetails.getProperty("swap") ? catchExceptionAndLog { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
-        BufferValue memory = jobDetails.getProperty("mem") ? catchExceptionAndLog { new BufferValue(jobDetails.getProperty("mem").toString(), BufferUnit.m) } : null
-        Duration runLimit = jobDetails.getProperty("runLimit") ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
-        Integer numProcessors = catchExceptionAndLog { jobDetails.getProperty("numProcessors").toString() as Integer }
-        Integer numberOfThreads = catchExceptionAndLog { jobDetails.getProperty("nthreads").toString() as Integer }
+        BufferValue swap = jobDetails.getProperty("swap") ? catchAndLogExceptions { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
+        BufferValue memory = catchAndLogExceptions {
+            String unit = (jobDetails.getProperty("mem") as String).find("[a-zA-Z]+")
+            BufferUnit bufferUnit
+            if (unit == "Gbytes")
+                bufferUnit = BufferUnit.g
+            else
+                bufferUnit = BufferUnit.m
+            jobDetails.getProperty("mem") ? new BufferValue((jobDetails.getProperty("mem") as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
+        }
+        Duration runLimit = jobDetails.getProperty("runLimit") ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
+        Integer numProcessors = catchAndLogExceptions { jobDetails.getProperty("numProcessors").toString() as Integer }
+        Integer numberOfThreads = catchAndLogExceptions { jobDetails.getProperty("nthreads").toString() as Integer }
         ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
-        DateTimeFormatter lsfDatePattern = catchExceptionAndLog { DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH) }
+        DateTimeFormatter lsfDatePattern = catchAndLogExceptions { DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH) }
         jobInfo.setUser(jobDetails.getProperty("user").toString())
         jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
         jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? catchExceptionAndLog { LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? catchExceptionAndLog { LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? catchExceptionAndLog { LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts").toString())
+        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts") as String ? (jobDetails.getProperty("exHosts") as String).split(":").toList() : null)
         jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
         jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
         jobInfo.setDescription(jobDetails.getProperty("description").toString())
         jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
-        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? catchExceptionAndLog { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
+        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
         jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
-        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? catchExceptionAndLog { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
-        jobInfo.setPidStr(jobDetails.getProperty("pidStr").toString())
+        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? catchAndLogExceptions { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
+        jobInfo.setPidStr(jobDetails.getProperty("pidStr") as String ? (jobDetails.getProperty("pidStr") as String).split(",").toList() : null)
         jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
         jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
         jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())

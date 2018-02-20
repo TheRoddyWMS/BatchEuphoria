@@ -113,7 +113,8 @@ class LSFJobManager extends AbstractLSFJobManager {
                 records.each {
                     BEJobID jobID = new BEJobID(it["JOBID"] as String)
                     String jobState = it["STAT"]
-                    logger.info(["QStat BEJob line: " + it,
+                    if (logger.isVerbosityMedium())
+                        logger.postAlwaysInfo(["Bjobs BEJob line: " + it,
                                  "	Entry in arr[ID]: " + jobID,
                                  "   Entry in arr[STAT]: " + jobState].join("\n"))
                     result.put(jobID, it as Map<String, Object>)
@@ -149,19 +150,25 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String, new File(jobResult["COMMAND"] as String), jobResult["JOBID"] as String, null, dependIDs)
 
         String queue = jobResult["QUEUE"] ?: null
-        Duration runTime = catchExceptionAndLog {
+        Duration runTime = catchAndLogExceptions {
             jobResult["RUN_TIME"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUN_TIME"] as String) : null
         }
-        BufferValue swap = catchExceptionAndLog {
+        BufferValue swap = catchAndLogExceptions {
             jobResult["SWAP"] ? new BufferValue((jobResult["SWAP"] as String).find("\\d+"), BufferUnit.m) : null
         }
-        BufferValue memory = catchExceptionAndLog {
-            jobResult["MAX_MEM"] ? new BufferValue((jobResult["MAX_MEM"] as String).find("\\d+"), BufferUnit.m) : null
+        BufferValue memory = catchAndLogExceptions {
+            String unit = (jobResult["MAX_MEM"] as String).find("[a-zA-Z]+")
+            BufferUnit bufferUnit
+            if (unit == "Gbytes")
+                bufferUnit = BufferUnit.g
+            else
+                bufferUnit = BufferUnit.m
+            jobResult["MAX_MEM"] ? new BufferValue((jobResult["MAX_MEM"] as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
         }
-        Duration runLimit = catchExceptionAndLog {
+        Duration runLimit = catchAndLogExceptions {
             jobResult["RUNTIMELIMIT"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUNTIMELIMIT"] as String) : null
         }
-        Integer nodes = catchExceptionAndLog { jobResult["SLOTS"] ? jobResult["SLOTS"] as Integer : null }
+        Integer nodes = catchAndLogExceptions { jobResult["SLOTS"] ? jobResult["SLOTS"] as Integer : null }
 
         ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
         jobInfo.setUsedResources(usedResources)
@@ -174,12 +181,12 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setProjectName(jobResult["PROJ_NAME"] as String ?: null)
         jobInfo.setJobGroup(jobResult["JOB_GROUP"] as String ?: null)
         jobInfo.setPriority(jobResult["JOB_PRIORITY"] as String ?: null)
-        jobInfo.setPidStr(jobResult["PIDS"] as String ?: null)
+        jobInfo.setPidStr(jobResult["PIDS"] as String ? (jobResult["PIDS"] as String).split(",").toList() : null)
         jobInfo.setJobState(parseJobState(jobResult["STAT"] as String))
         jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["EXIT_CODE"] ? Integer.valueOf(jobResult["EXIT_CODE"] as String) : null))
         jobInfo.setSubmissionHost(jobResult["FROM_HOST"] as String ?: null)
-        jobInfo.setExecutionHosts(jobResult["EXEC_HOST"] as String ?: null)
-        catchExceptionAndLog {
+        jobInfo.setExecutionHosts(jobResult["EXEC_HOST"] as String ? (jobResult["EXEC_HOST"] as String).split(":").toList() : null)
+        catchAndLogExceptions {
             jobInfo.setCpuTime(jobResult["CPU_USED"] ? parseColonSeparatedHHMMSSDuration(jobResult["CPU_USED"] as String) : null)
         }
         jobInfo.setRunTime(runTime)
@@ -194,11 +201,11 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setExecHome(jobResult["EXEC_HOME"] as String ?: null)
 
         if (jobResult["SUBMIT_TIME"])
-            catchExceptionAndLog { jobInfo.setSubmitTime(parseTime(jobResult["SUBMIT_TIME"] as String)) }
+            catchAndLogExceptions { jobInfo.setSubmitTime(parseTime(jobResult["SUBMIT_TIME"] as String)) }
         if (jobResult["START_TIME"])
-            catchExceptionAndLog { jobInfo.setStartTime(parseTime(jobResult["START_TIME"] as String)) }
+            catchAndLogExceptions { jobInfo.setStartTime(parseTime(jobResult["START_TIME"] as String)) }
         if (jobResult["FINISH_TIME"])
-            catchExceptionAndLog {
+            catchAndLogExceptions {
                 jobInfo.setEndTime(parseTime((jobResult["FINISH_TIME"] as String).substring(0, (jobResult["FINISH_TIME"] as String).length() - 2)))
             }
 
