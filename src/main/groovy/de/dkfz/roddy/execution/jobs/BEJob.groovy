@@ -252,10 +252,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    boolean wasExecuted() {
-        return runResult != null && runResult.wasExecuted
-    }
-
     @Override
     int compareTo(BEJob o) {
         return this.jobID.compareTo(o.jobID)

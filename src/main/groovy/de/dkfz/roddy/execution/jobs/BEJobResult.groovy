@@ -36,15 +36,15 @@ class BEJobResult implements Serializable {
     /**
      * The tool which was run for this job.
      */
-    final File toolID;
+    final File toolID
     /**
      * Parameters for the job.
      */
-    final Map<String, String> jobParameters;
+    final Map<String, String> jobParameters
     /**
      * Parent jobs.
      */
-    public transient final List<BEJob> parentJobs;
+    public transient final List<BEJob> parentJobs
 
     // Compatibility constructor. Does nothing, leaves responsibility in sub class.
     protected BEJobResult() {
@@ -52,24 +52,24 @@ class BEJobResult implements Serializable {
     }
 
     BEJobResult(Command command, BEJob job, ExecutionResult executionResult, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
-        this.command = command;
+        this.command = command
         assert (null != job)
-        this.job = job;
+        this.job = job
         this.executionResult = executionResult
-        this.toolID = toolID;
-        this.jobParameters = jobParameters;
-        this.parentJobs = parentJobs;
+        this.toolID = toolID
+        this.jobParameters = jobParameters
+        this.parentJobs = parentJobs
     }
 
     BEJobID getJobID() {
         return job.jobID
     }
 
-    List<String> resultLines() {
-        return executionResult.resultLines
+    Optional<List<String>> getResultLines() {
+        return Optional.of(executionResult).map { it.resultLines }
     }
 
-    boolean isWasExecuted() {
+    boolean isSuccessful() {
         return null != executionResult && executionResult.successful
     }
 
