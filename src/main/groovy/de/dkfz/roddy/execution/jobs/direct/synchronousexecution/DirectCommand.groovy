@@ -54,12 +54,7 @@ class DirectCommand extends Command {
 
         StringBuilder parameterBuilder = new StringBuilder()
 
-        // Taken from PBSCommand. Really needs to be unified!
-        if (job.parameters.containsKey("CONFIG_FILE") && job.parameters.containsKey("PARAMETER_FILE")) {
-            parameterBuilder << "CONFIG_FILE=" << job.parameters["CONFIG_FILE"] << " PARAMETER_FILE=" << job.parameters["PARAMETER_FILE"]
-        } else {
-            parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
-        }
+        parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
 
         // Dependencies are ignored. Direct commands are executed in-sync.
 
