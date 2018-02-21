@@ -28,7 +28,7 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         super(executionService, parms)
     }
 
-    protected static <T> T catchExceptionAndLog(final Closure<T> closure) {
+    protected static <T> T catchAndLogExceptions(final Closure<T> closure) {
         try {
             return closure.call()
         } catch (Exception e) {
