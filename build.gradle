@@ -28,6 +28,7 @@ def getVersionName() {
     return grgit.describe() + dirtySuffix
 }
 
+rootProject.version = getVersionName()
 
 // Set -Pchecked on the command line to change this compiler parameter.
 if (!project.hasProperty("checked") || !project.checked) {
@@ -58,19 +59,20 @@ dependencies {
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
     compile 'com.google.guava:guava:23.0'
-    compile 'com.github.eilslabs:RoddyToolLib:develop-SNAPSHOT'
+    // compile 'com.github.eilslabs:RoddyToolLib:develop-SNAPSHOT'
+    compile 'com.github.eilslabs:RoddyToolLib:0.0.3'
 }
 
 task writePom {
     doLast {
         pom {
             project {
-                version getVersionName()
+                version rootProject.version
                 inceptionYear '2017'
                 licenses {
                     license {
                         name 'MIT License'
-                        url 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/develop/LICENSE'
+                        url 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/master/LICENSE'
                         distribution 'repo'
                     }
                 }
@@ -80,10 +82,19 @@ task writePom {
 }
 
 jar {
+    version = getVersionName()
+
+    manifest {
+        attributes("Implementation-Vendor": "German Cancer Research Center (DKFZ)")
+        attributes("Implementation-Title": baseName)
+        attributes 'Implementation-Version': rootProject.version
+    }
+
     dependsOn writePom
     into("META-INF/maven/$project.group/$project.name") {
         from "$buildDir/pom.xml"
     }
+
 }
 
 task listJars {
