@@ -90,6 +90,36 @@ class PBSJobManagerSpec extends Specification {
         jobInfo.get(new BEJobID("15020227")).jobName == "workflow_test"
     }
 
+
+
+    void "processQstatOutput, replace placeholder PBS_JOBID in logFile and errorLogFile with job id "() {
+        given:
+        String rawXMLOutput='''
+        <Data>
+            <Job>
+                <Job_Id>15976927.testServer</Job_Id>
+                <Output_Path>/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.o$PBS_JOBID</Output_Path>
+                <Error_Path>tbi-pbs:/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e$PBS_JOBID</Error_Path>
+            </Job>
+        </Data>
+    '''
+
+        def parms = JobManagerOptions.create().build()
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
+        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
+        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
+        method.setAccessible(true)
+
+        when:
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXMLOutput])
+
+        then:
+        jobInfo.size() == 1
+        jobInfo.get(new BEJobID("15976927")).logFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.o15976927"
+        jobInfo.get(new BEJobID("15976927")).errorLogFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e15976927"
+    }
+
+
     void testParseDuration() {
         given:
         Method method = ClusterJobManager.class.getDeclaredMethod("parseColonSeparatedHHMMSSDuration", String)

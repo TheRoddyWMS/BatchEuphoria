@@ -254,7 +254,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         GPathResult parsedJobs = new XmlSlurper().parseText(resultLines.last())
 
         parsedJobs.children().each { it ->
-            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
+            String jobId = (it["Job_Id"] as String).split("\\.")[0]
+            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, jobId, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
             BufferValue mem = null
             Integer cores
@@ -282,9 +283,8 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
             gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String, additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String, null))
-
-            gj.setLogFile(getQstatFile(it["Output_Path"] as String))
-            gj.setErrorLogFile(getQstatFile(it["Error_Path"] as String))
+            gj.setLogFile(getQstatFile((it["Output_Path"] as String).replace("\$PBS_JOBID", jobId)))
+            gj.setErrorLogFile(getQstatFile((it["Error_Path"] as String).replace("\$PBS_JOBID", jobId)))
             gj.setUser(it["euser"] as String)
             gj.setExecutionHosts([it["exec_host"] as String])
             gj.setSubmissionHost(it["submit_host"] as String)
