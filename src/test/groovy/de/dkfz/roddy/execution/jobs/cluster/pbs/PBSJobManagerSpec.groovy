@@ -74,7 +74,31 @@ class PBSJobManagerSpec extends Specification {
     </Data>
     '''
 
-    void testParseJobDetails() {
+    void "processQstatOutput, qstat with empty XML output"() {
+
+        given:
+        String rawXMLOutput ='''
+        <Data>
+            <Job>
+                <Job_Id>15020227.testServer</Job_Id>
+            </Job>
+        </Data>
+        '''
+        def parms = JobManagerOptions.create().build()
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
+        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
+        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
+        method.setAccessible(true)
+
+        when:
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXMLOutput])
+
+        then:
+        jobInfo.size() == 1
+    }
+
+    void "processQstatOutput, qstat with XML output"() {
+
         given:
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
@@ -90,7 +114,8 @@ class PBSJobManagerSpec extends Specification {
         jobInfo.get(new BEJobID("15020227")).jobName == "workflow_test"
     }
 
-    void testParseDuration() {
+    void "parseColonSeparatedHHMMSSDuration, parse duration"() {
+
         given:
         Method method = ClusterJobManager.class.getDeclaredMethod("parseColonSeparatedHHMMSSDuration", String)
         method.setAccessible(true)
@@ -105,7 +130,8 @@ class PBSJobManagerSpec extends Specification {
         "119:00:00" || Duration.ofHours(119)
     }
 
-    void "testParseDuration fails"() {
+    void "parseColonSeparatedHHMMSSDuration, parse duration fails"() {
+
         given:
         Method method = ClusterJobManager.class.getDeclaredMethod("parseColonSeparatedHHMMSSDuration", String)
         method.setAccessible(true)

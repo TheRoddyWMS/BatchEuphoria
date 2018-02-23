@@ -254,7 +254,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         GPathResult parsedJobs = new XmlSlurper().parseText(resultLines.last())
 
         parsedJobs.children().each { it ->
-            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
+            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String ?: null, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
 
             BufferValue mem = null
             Integer cores
@@ -280,24 +280,24 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             if (it["resources_used"]["walltime"])
                 catchAndLogExceptions { usedWalltime = new TimeUnit(it["resources_used"]["walltime"] as String) }
 
-            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String, additionalNodeFlag))
-            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String, null))
+            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String ?: null, additionalNodeFlag))
+            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String ?: null, null))
 
             gj.setLogFile(getQstatFile(it["Output_Path"] as String))
             gj.setErrorLogFile(getQstatFile(it["Error_Path"] as String))
-            gj.setUser(it["euser"] as String)
-            gj.setExecutionHosts([it["exec_host"] as String])
-            gj.setSubmissionHost(it["submit_host"] as String)
-            gj.setPriority(it["Priority"] as String)
-            gj.setUserGroup(it["egroup"] as String)
-            gj.setResourceReq(it["submit_args"] as String)
+            gj.setUser(it["euser"] as String ?: null)
+            gj.setExecutionHosts(it["exec_host"] as String ? [it["exec_host"] as String] : null)
+            gj.setSubmissionHost(it["submit_host"] as String ?: null)
+            gj.setPriority(it["Priority"] as String ?: null)
+            gj.setUserGroup(it["egroup"] as String ?: null)
+            gj.setResourceReq(it["submit_args"] as String ?: null)
             gj.setRunTime(it["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
             gj.setCpuTime(it["resources_used"]["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(it["resources_used"]["cput"] as String) } : null)
-            gj.setServer(it["server"] as String)
-            gj.setUmask(it["umask"] as String)
+            gj.setServer(it["server"] as String ?: null)
+            gj.setUmask(it["umask"] as String ?: null)
             gj.setJobState(parseJobState(it["job_state"] as String))
             gj.setExitCode(it["exit_status"] ? catchAndLogExceptions { Integer.valueOf(it["exit_status"] as String) }: null )
-            gj.setAccount(it["Account_Name"] as String)
+            gj.setAccount(it["Account_Name"] as String ?: null)
             gj.setStartCount(it["start_count"] ? catchAndLogExceptions { Integer.valueOf(it["start_count"] as String) } : null)
 
             if (it["qtime"]) // The time that the job entered the current queue.

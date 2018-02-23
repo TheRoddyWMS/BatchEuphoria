@@ -105,7 +105,7 @@ class LSFJobManagerSpec extends Specification {
 }
 '''
 
-    void "bjobs JSON output with lists  "() {
+    void "queryJobInfo, bjobs JSON output with lists  "() {
 
         given:
         def parms = JobManagerOptions.create().build()
@@ -124,7 +124,7 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.tool == new File("ls -l")
     }
 
-    void "bjobs JSON output without lists  "() {
+    void "queryJobInfo, bjobs JSON output without lists  "() {
 
         given:
         def parms = JobManagerOptions.create().build()
@@ -141,6 +141,35 @@ class LSFJobManagerSpec extends Specification {
         then:
         jobInfo != null
         jobInfo.tool == new File("ls -l")
+    }
+
+    void "queryJobInfo, bjobs JSON output empty  "() {
+
+        given:
+        String emptyRawJsonOutput= '''
+        {
+            "COMMAND":"bjobs",
+            "JOBS":1,
+            "RECORDS":[
+                {
+                "JOBID":"22005",
+                }
+            ]
+        }
+        '''
+        def parms = JobManagerOptions.create().build()
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
+        LSFJobManager jm = new LSFJobManager(testExecutionService, parms)
+        Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", Map)
+        method.setAccessible(true)
+        Object parsedJson = new JsonSlurper().parseText(emptyRawJsonOutput)
+        List records = (List) parsedJson.getAt("RECORDS")
+
+        when:
+        GenericJobInfo jobInfo = method.invoke(jm, records.get(0))
+
+        then:
+        jobInfo.id == "22005"
     }
 
 }
