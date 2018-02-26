@@ -2,6 +2,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
@@ -29,7 +30,7 @@ class LSFCommandParser {
     String queue
     String otherSettings
     String script
-    String id
+    BEJobID jobID
     Map<String, String> parameters = new LinkedHashMap<>()
     List<String> dependencies = new LinkedList<>()
 
@@ -43,7 +44,7 @@ class LSFCommandParser {
     void parse() {
         commandString = commandString.trim()
         // Get the job id
-        id = commandString.substring(0, commandString.indexOf(","))
+        jobID = new BEJobID(commandString.substring(0, commandString.indexOf(",")))
         // Get rid of the job id
         commandString = commandString.substring(commandString.indexOf(",") + 1).trim()
 
@@ -123,7 +124,7 @@ class LSFCommandParser {
     }
 
     GenericJobInfo toGenericJobInfo() {
-        GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
+        GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), jobID, parameters, dependencies)
         ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
                 cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
                 null, null, null)

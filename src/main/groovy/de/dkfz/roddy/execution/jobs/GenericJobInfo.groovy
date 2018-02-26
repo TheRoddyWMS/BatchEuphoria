@@ -24,7 +24,7 @@ class GenericJobInfo {
     ResourceSet usedResources
     String jobName
     File tool
-    @Deprecated String id
+    BEJobID jobID
 
     LocalDateTime submitTime;
     LocalDateTime startTime;
@@ -77,10 +77,10 @@ class GenericJobInfo {
     LocalDateTime timeOfCalculation;
 
 
-    GenericJobInfo(String jobName, File tool, String id, Map<String, String> parameters, List<String> parentJobIDs) {
+    GenericJobInfo(String jobName, File tool, BEJobID jobID, Map<String, String> parameters, List<String> parentJobIDs) {
         this.jobName = jobName
         this.tool = tool
-        this.id = id
+        this.jobID = jobID
         this.parameters = parameters
         this.parentJobIDs = parentJobIDs
     }
