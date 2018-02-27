@@ -333,7 +333,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      */
     private GenericJobInfo setJobInfoForJobDetails(NodeChild jobDetails) {
 
-        GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), jobDetails.getProperty("jobId").toString(), null, null)
+        GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), new BEJobID(jobDetails.getProperty("jobId").toString()), null, null)
 
         String queue = jobDetails.getProperty("queue").toString()
         BufferValue swap = jobDetails.getProperty("swap") ? catchAndLogExceptions { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null

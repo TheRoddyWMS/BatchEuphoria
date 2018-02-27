@@ -144,10 +144,15 @@ class LSFJobManager extends AbstractLSFJobManager {
     private GenericJobInfo queryJobInfo(Map<String, Object> jobResult) {
 
         GenericJobInfo jobInfo
-        BEJobID jobID = new BEJobID(jobResult["JOBID"] as String)
+        BEJobID jobID
+        try{
+            jobID = new BEJobID(jobResult["JOBID"] as String)
+        }catch (Exception exp){
+            throw new BEException("Job ID '${jobResult["JOBID"]}' could not be transformed to BEJobID ")
+        }
 
         List<String> dependIDs = ((String) jobResult["DEPENDENCY"])? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
-        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobResult["JOBID"] as String, null, dependIDs)
+        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobID, null, dependIDs)
 
         String queue = jobResult["QUEUE"] ?: null
         Duration runTime = catchAndLogExceptions {

@@ -254,7 +254,15 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         GPathResult parsedJobs = new XmlSlurper().parseText(resultLines.last())
 
         parsedJobs.children().each { it ->
-            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String ?: null, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
+            String jobIdRaw = it["Job_Id"] as String
+            BEJobID jobID
+            try{
+                jobID = new BEJobID(jobIdRaw)
+            }catch (Exception exp){
+                throw new BEException("Job ID '${jobIdRaw}' could not be transformed to BEJobID ")
+            } 
+            List<String> jobDependencies = it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null
+            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String ?: null, null, jobID, null, jobDependencies)
 
             BufferValue mem = null
             Integer cores
@@ -280,11 +288,12 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             if (it["resources_used"]["walltime"])
                 catchAndLogExceptions { usedWalltime = new TimeUnit(it["resources_used"]["walltime"] as String) }
 
+
             gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String ?: null, additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String ?: null, null))
 
-            gj.setLogFile(getQstatFile(it["Output_Path"] as String))
-            gj.setErrorLogFile(getQstatFile(it["Error_Path"] as String))
+            gj.setLogFile(getQstatFile((it["Output_Path"] as String).replace("\$PBS_JOBID", jobIdRaw)))
+            gj.setErrorLogFile(getQstatFile((it["Error_Path"] as String).replace("\$PBS_JOBID", jobIdRaw)))
             gj.setUser(it["euser"] as String ?: null)
             gj.setExecutionHosts(it["exec_host"] as String ? [it["exec_host"] as String] : null)
             gj.setSubmissionHost(it["submit_host"] as String ?: null)
@@ -309,7 +318,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             if (it["etime"])  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
                 gj.setEligibleTime(parseTime(it["etime"] as String))
 
-            queriedExtendedStates.put(new BEJobID(it["Job_Id"] as String), gj)
+            queriedExtendedStates.put(jobID, gj)
         }
         return queriedExtendedStates
     }
