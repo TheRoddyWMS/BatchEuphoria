@@ -115,8 +115,8 @@ class PBSJobManagerSpec extends Specification {
 
         then:
         jobInfo.size() == 1
-        jobInfo.get(new BEJobID("15976927")).logFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.o15976927"
-        jobInfo.get(new BEJobID("15976927")).errorLogFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e15976927"
+        jobInfo.get(new BEJobID("15976927")).logFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.o15976927.testServer"
+        jobInfo.get(new BEJobID("15976927")).errorLogFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e15976927.testServer"
     }
 
 
