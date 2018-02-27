@@ -152,7 +152,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
 
         List<String> dependIDs = ((String) jobResult["DEPENDENCY"])? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
-        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobResult["JOBID"] as String, null, dependIDs)
+        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobID, null, dependIDs)
 
         String queue = jobResult["QUEUE"] ?: null
         Duration runTime = catchAndLogExceptions {

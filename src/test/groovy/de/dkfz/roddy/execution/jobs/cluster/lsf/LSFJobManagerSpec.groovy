@@ -169,7 +169,7 @@ class LSFJobManagerSpec extends Specification {
         GenericJobInfo jobInfo = method.invoke(jm, records.get(0))
 
         then:
-        jobInfo.id == "22005"
+        jobInfo.jobID.toString() == "22005"
     }
 
 }

@@ -255,7 +255,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         parsedJobs.children().each { it ->
             String jobIdRaw = it["Job_Id"] as String
-            println jobIdRaw
             BEJobID jobID
             try{
                 jobID = new BEJobID(jobIdRaw)
