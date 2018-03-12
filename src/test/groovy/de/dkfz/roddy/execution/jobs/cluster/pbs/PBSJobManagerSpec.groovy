@@ -87,11 +87,11 @@ class PBSJobManagerSpec extends Specification {
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
+        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", String)
         method.setAccessible(true)
 
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXMLOutput])
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, rawXMLOutput)
 
         then:
         jobInfo.size() == 1
@@ -103,11 +103,11 @@ class PBSJobManagerSpec extends Specification {
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
+        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", String)
         method.setAccessible(true)
 
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXmlExample])
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, rawXmlExample)
 
         then:
         jobInfo.size() == 1
@@ -131,11 +131,11 @@ class PBSJobManagerSpec extends Specification {
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
+        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", String)
         method.setAccessible(true)
 
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXMLOutput])
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, rawXMLOutput)
 
         then:
         jobInfo.size() == 1

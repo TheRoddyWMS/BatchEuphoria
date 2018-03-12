@@ -184,7 +184,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
         }
 
         if (er != null && er.successful) {
-            queriedExtendedStates = this.processQstatOutput(er.resultLines)
+            queriedExtendedStates = this.processQstatOutput(er.resultLines.join("\n"))
         }else{
             logger.postAlwaysInfo("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n result:${er.resultLines}")
             throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n result:${er.resultLines}")
@@ -245,13 +245,13 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    private Map<BEJobID, GenericJobInfo> processQstatOutput(List<String> resultLines) {
+    private Map<BEJobID, GenericJobInfo> processQstatOutput(String result) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        if (resultLines.isEmpty()) {
+        if (result.isEmpty()) {
             return [:]
         }
 
-        GPathResult parsedJobs = new XmlSlurper().parseText(resultLines.last())
+        GPathResult parsedJobs = new XmlSlurper().parseText(result)
 
         parsedJobs.children().each { it ->
             String jobIdRaw = it["Job_Id"] as String
