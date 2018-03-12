@@ -115,7 +115,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         }
 
         if (er != null && er.successful) {
-            queriedExtendedStates = this.processQstatOutputFromXML([er.resultLines.join("")])
+            queriedExtendedStates = this.processQstatOutputFromXML(er.resultLines.join("\n"))
         } else {
             throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n ${qStatCommand.toString()} \n\t result:${er.resultLines.join("\n\t")}")
         }
@@ -171,17 +171,17 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    protected Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(List<String> resultLines) {
+    private Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(String result) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        if (resultLines.isEmpty()) {
+        if (result.isEmpty()) {
             return [:]
         }
 
         GPathResult parsedJobs
         try {
-            parsedJobs = new XmlSlurper().parseText(resultLines.last())
+            parsedJobs = new XmlSlurper().parseText(result)
         } catch (SAXParseException ex) {
-            logger.rare(resultLines.last())
+            logger.rare(result)
             throw ex
         }
 
