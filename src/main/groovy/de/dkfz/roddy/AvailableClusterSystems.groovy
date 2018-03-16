@@ -6,8 +6,10 @@
 
 package de.dkfz.roddy
 
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFJobManager
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.LSFRestJobManager
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.execution.jobs.cluster.sge.SGEJobManager
 import de.dkfz.roddy.execution.jobs.direct.synchronousexecution.DirectSynchronousExecutionJobManager
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import groovy.transform.CompileStatic
@@ -19,7 +21,7 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 enum AvailableClusterSystems {
-    direct(DirectSynchronousExecutionJobManager.class), pbs(PBSJobManager.class), sge("de.dkfz.roddy.execution.jobs.cluster.sge.SGEJobManager"), slurm("de.dkfz.roddy.execution.jobs.cluster.slurm.SlurmJobManager"), lsf(LSFRestJobManager.class)
+    direct(DirectSynchronousExecutionJobManager.class), pbs(PBSJobManager.class), sge(SGEJobManager.class), slurm("de.dkfz.eilslabs.batcheuphoria.execution.cluster.slurm.SlurmJobManager"), lsf(LSFJobManager.class), lsfrest(LSFRestJobManager.class)
 
     final String className
 

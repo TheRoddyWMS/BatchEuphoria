@@ -20,14 +20,16 @@ import groovy.transform.CompileStatic
 @CompileStatic
 abstract class Command {
 
+    protected static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
+
     /**
-     * The id of this command.
+     * The job name of this command.
      */
-    protected final String id
+    protected final String jobName
     /**
      * The id which was created upon execution by the job system.
      */
-    protected BEJobDependencyID executionID
+    protected BEJobID jobID
 
     /**
      * The job which created this command. Can be null!
@@ -35,39 +37,43 @@ abstract class Command {
     protected BEJob creatingJob
 
     /**
-     * Parameters for the qsub command
+     * Environment variables to be passed with a specific value or as they are declared in the submission environment.
+     * null-valued parameters correspond to environment variables to be forwarded as locally defined.
      */
-    protected final Map<String, String> parameters = [:]
-
-    /**
-     * A list of named tags for the command object
-     */
-    private final Map<String, Object> commandTags = [:]
+    public final LinkedHashMap<String, String> parameters = [:]
 
     protected final BatchEuphoriaJobManager parentJobManager
 
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String id, Map<String, String> parameters, Map<String, Object> commandTags) {
+    /**
+     * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
+     *
+     * @param parentJobManager
+     * @param job
+     * @param jobName
+     * @param environmentVariables
+     * @param commandTags
+     */
+    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
         this.parentJobManager = parentJobManager
-        this.commandTags.putAll(commandTags ?: [:])
-        this.parameters.putAll(parameters ?: [:])
+        this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job
-        this.id = id
+        this.jobName = jobName
     }
 
-    final void setExecutionID(BEJobDependencyID id) {
-        this.executionID = id
+    final void setJobID(BEJobID id) {
+        this.jobID = id
     }
 
     final boolean wasExecuted() {
-        return executionID.isValidID()
+        return jobID.isValidID()
     }
 
-    final BEJobDependencyID getExecutionID() {
-        return executionID
+    final BEJobID getJobID() {
+        return jobID
     }
 
     final String getID() {
-        return id
+        return this.jobName
     }
 
     void setJob(BEJob job) {
@@ -79,20 +85,9 @@ abstract class Command {
     }
 
     final String getFormattedID() {
-        return String.format("command:0x%08X", id)
+        return String.format("command:0x%08X", this.jobName)
     }
 
-    boolean hasTag(String tagID) {
-        return commandTags.containsKey(tagID)
-    }
-
-    Object getTag(String tagID) {
-        return commandTags[tagID]
-    }
-
-    Map<String, Object> getTags() {
-        return commandTags
-    }
 
     /**
      * Local commands are i.e. blocking, whereas PBSCommands are not.
@@ -104,8 +99,5 @@ abstract class Command {
         return false
     }
 
-    @Override
-    String toString() {
-        return String.format("Command of class %s with id %s", this.getClass().getName(), getID())
-    }
+    abstract String toBashCommandString()
 }

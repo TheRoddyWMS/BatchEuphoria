@@ -6,13 +6,17 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.TestHelper
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -20,27 +24,58 @@ import org.junit.Test
  */
 @CompileStatic
 class PBSCommandTest {
-    @Test
-    void testToString() throws Exception {
 
+
+    PBSJobManager jobManager
+
+    @Before
+    void setUp() throws Exception {
+        jobManager = new PBSJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
     }
 
-    @Test
-    void testAssembleVariableExportString() throws Exception {
-        def mapOfParameters = ["a": "a", "b": "b"]
-        BEJob job = new BEJob("Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
-        PBSCommand cmd = new PBSCommand(null, job, "id", null, mapOfParameters, null, null, null, "/tmp/test.sh", null)
-        String result = cmd.assembleVariableExportString()
-        assert result.trim() == "-v a=a,b=b"
+    private BEJob makeJob(Map<String, String> mapOfParameters) {
+        BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"), null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, jobManager, JobLog.none(), null)
+        job
     }
 
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
-        def mapOfParameters = ["a": "a", "b": "b"]
-        BEJob job = new BEJob("Test", new File("/tmp/test.sh"),null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), null, mapOfParameters, null, null, null)
-        PBSCommand cmd = new PBSCommand(null, job, "id", null, mapOfParameters, null, null, null, "/tmp/test.sh", null)
-        String result = cmd.assembleDependencyString()
-        assert result == ""
+        def mapOfVars = ["a": "a", "b": "b"]
+        BEJob job = makeJob(mapOfVars)
+        PBSCommand cmd = new PBSCommand(jobManager, makeJob(mapOfVars),
+                "jobName", null, mapOfVars, null, "/tmp/test.sh")
+        assert cmd.assembleDependencyString([]) == ""
     }
 
+    @Test
+    void testAssembleVariableExportParameters_nothing() {
+        PBSCommand cmd = new PBSCommand(jobManager, makeJob([:]),
+                 "jobName", null, [:], null, "/tmp/test.sh")
+        assert cmd.assembleVariableExportParameters() == ""
+    }
+
+    @Test
+    void testAssembleVariableExportParameters_onlyVars() {
+        Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
+        PBSCommand cmd = new PBSCommand(jobManager, makeJob(mapOfVars),
+                "jobName", null, mapOfVars, null, "/tmp/test.sh")
+        assert cmd.assembleVariableExportParameters() == "-v \"a=a,b\""
+    }
+
+    @Test
+    void testAssembleVariableExportParameters_allVars() {
+        PBSCommand cmd = new PBSCommand(jobManager, makeJob([:] as LinkedHashMap<String, String>),
+                "jobName", null, [:], null, "/tmp/test.sh")
+        cmd.passEnvironment = Optional.of(true)
+        assert cmd.assembleVariableExportParameters() == "-V"
+    }
+
+    @Test
+    void testAssembleVariableExportParameters_allVarsAndExplicit() {
+        Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
+        PBSCommand cmd = new PBSCommand(jobManager, makeJob(mapOfVars as LinkedHashMap<String, String>),
+                "jobName", null, mapOfVars, null, "/tmp/test.sh")
+        cmd.passEnvironment = Optional.of(true)
+        assert cmd.assembleVariableExportParameters() == "-V -v \"a=a,b\""
+    }
 }

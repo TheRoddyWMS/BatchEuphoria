@@ -6,10 +6,10 @@
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.ProcessingCommands
 import de.dkfz.roddy.StringConstants
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 
 import static de.dkfz.roddy.StringConstants.BRACE_RIGHT
 import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
@@ -20,24 +20,17 @@ import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
  * Roddy waits for the processes to exit.
  */
 @groovy.transform.CompileStatic
-public class DirectCommand extends Command {
+class DirectCommand extends Command {
 
-    private final List processingCommands;
-    private final List<String> arrayIndices;
-    private final List<String> dependencyIDs;
-    private final String command;
-    private final File loggingDirectory
+    private final List<ProcessingParameters> processingParameters
+    private final String command
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
 
-    public DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, String id, List<ProcessingCommands> processingCommands, Map<String, String> parameters, Map<String, Object> tags, List<String> arrayIndices, List<String> dependencyIDs, String command, File loggingDirectory) {
-        super(parentManager, job, id, parameters, tags)
-        //, processingCommands, tool, parameters, dependencies, arraySettings);
-        this.processingCommands = processingCommands;
-        this.arrayIndices = arrayIndices;
-        this.dependencyIDs = dependencyIDs;
-        this.command = command;
-        this.loggingDirectory = loggingDirectory
+    DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, List<ProcessingParameters> processingParameters, @Deprecated String command = null) {
+        super(parentManager, job, job.tool.getName(), job.parameters)
+        this.processingParameters = processingParameters
+        this.command = command ?: job.tool.absolutePath
     }
 
     /**
@@ -45,45 +38,38 @@ public class DirectCommand extends Command {
      * @return
      */
     @Override
-    public boolean isBlockingCommand() {
-        return true;
+    boolean isBlockingCommand() {
+        return true
     }
 
     @Override
-    public String toString() {
+    String toString() {
+        return toBashCommandString()
+    }
 
-        StringBuilder commandString = new StringBuilder();
+    @Override
+    String toBashCommandString() {
 
-        StringBuilder parameterBuilder = new StringBuilder();
-        parameters.each {
-            String pName, String val ->
-                //TODO Code dedup with PBSCommand
-                if (val.contains(DOLLAR_LEFTBRACE) && val.contains(BRACE_RIGHT)) {
-                    val = val.replace(DOLLAR_LEFTBRACE, "#{"); // Replace variable names so they can be passed to qsub.
-                }
-                parameterBuilder << " ${pName}=${val}";
-        }
+        StringBuilder commandString = new StringBuilder()
 
-//        parameterBuilder << StringConstants.WHITESPACE << PARM_WRAPPED_SCRIPT << command;
+        StringBuilder parameterBuilder = new StringBuilder()
 
-        //TODO Log handling
+        parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
 
-        //TODO Array handling
+        // Dependencies are ignored. Direct commands are executed in-sync.
+
+        // Processing commands are ignored BE does not offer job scheduling on its own.
 
         //TODO email handling? Better not
 
-        //Dependencies are ignored
+        //TODO Grouplist is ignored
 
-        //Grouplist is ignored
-
-        //Umask is ignored
-
-        //Processing commands are ignored
+        //TODO Umask is ignored
 
         //TODO Command assembly should be part of the file system provider? Maybe there is a need for a local file system provider?
         //This is very linux specific...
-        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command; // << job.configuration.getProcessingToolPath(executionContext, "wrapinScript").getAbsolutePath();
+        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command << " &> ${job.jobLog.getOut(job.jobCreationCounter.toString())} & wait &> /dev/null";
 
-        return commandString.toString();
+        return commandString.toString()
     }
 }

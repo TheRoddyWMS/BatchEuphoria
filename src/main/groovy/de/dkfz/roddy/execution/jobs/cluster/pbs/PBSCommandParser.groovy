@@ -6,8 +6,11 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import de.dkfz.roddy.BEException
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
@@ -121,23 +124,17 @@ class PBSCommandParser {
         if (parameters.startsWith("depend")) {
             def deps = parameters[7..-1].split("[:]")
             if (!deps[0].endsWith("afterok"))
-                println "Not supported: " + deps[0]
-            try {
-                dependencies.addAll(deps[1..-1])
-            } catch (Exception ex) {
-                println(parameters)
-                println(ex)
-            }
+                throw new BEException("Not supported: " + deps[0])
+            dependencies += deps[1..-1]
         }
     }
 
     GenericJobInfo toGenericJobInfo() {
         GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), id, parameters, dependencies)
-        if (cores) jInfo.setMaxCpus(cores as Integer)
-        if (nodes) jInfo.setMaxNodes(nodes as Integer)
-        if (memory) jInfo.setMaxMemory(memory as Integer)
-        if (bufferUnit) jInfo.setMemoryBufferUnit(bufferUnit)
-        if (walltime) jInfo.setWalltime(new TimeUnit(walltime))
+        ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
+                cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
+                null, null, null)
+        jInfo.setAskedResources(askedResources)
         return jInfo
     }
 }

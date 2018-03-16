@@ -6,19 +6,19 @@
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution;
 
-import de.dkfz.roddy.execution.jobs.ProcessingCommands;
+import de.dkfz.roddy.execution.jobs.BEJobID;
+import de.dkfz.roddy.execution.jobs.BEJob;
 
 /**
  */
-public class DummyProcessingCommand extends ProcessingCommands {
-    private String text;
+public class DirectCommandID extends BEJobID {
 
-    public DummyProcessingCommand(String text) {
-        this.text = text;
+    protected DirectCommandID(String id) {
+        super(id);
     }
 
     @Override
     public String toString() {
-        return "Dummy: " + text;
+        return "Direct command " + getId();
     }
 }

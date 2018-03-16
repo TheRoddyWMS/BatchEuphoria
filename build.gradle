@@ -1,45 +1,100 @@
+/*
+ * Copyright (c) 2017 eilslabs.
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ */
+
+plugins {
+    id 'org.ajoberstar.grgit' version '1.7.2'
+}
+
 apply plugin: 'groovy'
 apply plugin: 'idea'
-apply plugin:'application'
+apply plugin: 'application'
+apply plugin: 'maven'
 
-group = "de.dkfz.roddy"
+group = "com.github.eilslabs"
 
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
-
 
 /*
  * Gets the version name from the current Git tag. If the current commit is not tagged,
  * this returned string will indicate that. Also if the repository is dirty.
  */
 def getVersionName() {
-    String[] command = ["/usr/bin/env", "git", "-C", "${project.rootDir}", "describe", "--tags", "--dirty"]
-    def process = new ProcessBuilder(command).redirectErrorStream(true).start()
-    def output = process.inputStream.readLines().join("")
-    if (process.waitFor() != 0) {
-        throw new RuntimeException("Command failed with code ${process.exitValue()}: '${command.join(" ")}'\nError output: '${output}'")
-    } else {
-        return output.trim()
-    }
+    def dirtySuffix = grgit.status().isClean() ? '' : '-dirty'
+    return grgit.describe() + dirtySuffix
 }
 
+rootProject.version = getVersionName()
+
+// Set -Pchecked on the command line to change this compiler parameter.
+if (!project.hasProperty("checked") || !project.checked) {
+    compileJava.options.compilerArgs = ["-Xlint:unchecked"]
+    compileGroovy.options.compilerArgs = ["-Xlint:unchecked"]
+}
 
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
 }
 
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
 dependencies {
-    compile 'org.codehaus.groovy:groovy-all:2.4.7'
+    compile 'org.codehaus.groovy:groovy-all:2.4.9'
     testCompile 'junit:junit:4.12'
+    testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+    testRuntime "net.bytebuddy:byte-buddy:1.6.5"
+    testRuntime "org.objenesis:objenesis:2.5.1"
+    testCompile 'com.google.guava:guava:23.0'
     compile 'net.logstash.logback:logstash-logback-encoder:4.7'
-    compile group: 'net.schmizz', name: 'sshj', version: '0.10.0'
     compile group: 'org.apache.commons', name: 'commons-io', version: '1.3.2'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.9'
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
-    compile 'com.github.eilslabs:RoddyToolLib:0.0.1'
+    compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
+    compile 'com.google.guava:guava:23.0'
+    // compile 'com.github.eilslabs:RoddyToolLib:develop-SNAPSHOT'
+    compile 'com.github.eilslabs:RoddyToolLib:0.0.3'
+}
+
+task writePom {
+    doLast {
+        pom {
+            project {
+                version rootProject.version
+                inceptionYear '2017'
+                licenses {
+                    license {
+                        name 'MIT License'
+                        url 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/master/LICENSE'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }.writeTo("$buildDir/pom.xml")
+    }
+}
+
+jar {
+    version = getVersionName()
+
+    manifest {
+        attributes("Implementation-Vendor": "German Cancer Research Center (DKFZ)")
+        attributes("Implementation-Title": baseName)
+        attributes 'Implementation-Version': rootProject.version
+    }
+
+    dependsOn writePom
+    into("META-INF/maven/$project.group/$project.name") {
+        from "$buildDir/pom.xml"
+    }
+
 }
 
 task listJars {
@@ -49,8 +104,8 @@ task listJars {
 }
 
 
-task uberjar(type: Jar,dependsOn:[':compileJava',':compileGroovy']) {
-    from files(sourceSets.main.output.classesDir)
+task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
+    from files(sourceSets.main.output.dirs)
     from configurations.runtime.asFileTree.files.collect { zipTree(it) }
 
     version = getVersionName()
@@ -60,4 +115,9 @@ task uberjar(type: Jar,dependsOn:[':compileJava',':compileGroovy']) {
         attributes 'Implementation-Version': version
     }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
+// Fix Gradle version
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.2.1'
 }

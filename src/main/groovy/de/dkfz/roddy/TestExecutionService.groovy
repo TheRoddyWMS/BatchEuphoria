@@ -7,9 +7,10 @@
 package de.dkfz.roddy
 
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.io.LocalExecutionHelper
 import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.io.ExecutionHelper
 import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 
 /**
@@ -33,11 +34,11 @@ class TestExecutionService implements BEExecutionService {
 
     @Override
     ExecutionResult execute(String command, boolean waitFor = true) {
-        return ExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${command}")
+        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${BashUtils.strongQuote(command)}")
     }
 
     ExecutionResult executeLocal(String command) {
-        return ExecutionHelper.executeCommandWithExtendedResult(command)
+        return LocalExecutionHelper.executeCommandWithExtendedResult(command)
     }
 
     void copyFileToRemote(File file, File remote) {
@@ -52,15 +53,9 @@ class TestExecutionService implements BEExecutionService {
         return null
     }
 
-
     @Override
     boolean isAvailable() {
         return true
-    }
-
-    @Override
-    String handleServiceBasedJobExitStatus(Command command, ExecutionResult res, OutputStream outputStream) {
-        return null
     }
 
     @Override

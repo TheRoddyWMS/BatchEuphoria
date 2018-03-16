@@ -6,100 +6,80 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
-import de.dkfz.roddy.execution.BEExecutionService;
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.FakeBEJob
-import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.JobManagerCreationParameters;
-import de.dkfz.roddy.execution.jobs.JobState
+import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
+import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.LoggerWrapper
+import groovy.transform.CompileStatic
+
+import java.time.Duration
 
 /**
  * A class for processing backends running on a cluster.
  * This mainly defines variables and constants which can be set via the config.
  */
-public abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
+@CompileStatic
+abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
 
-    public static final String CVALUE_ENFORCE_SUBMISSION_TO_NODES="enforceSubmissionToNodes";
-
-    ClusterJobManager(BEExecutionService executionService, JobManagerCreationParameters parms) {
+    ClusterJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
-    @Override
-    int waitForJobsToFinish() {
-        logger.info("The user requested to wait for all jobs submitted by this process to finish.")
-        List<String> ids = new LinkedList<>()
-//        List<ExecutionContext> listOfContexts = new LinkedList<>();
-        synchronized (listOfCreatedCommands) {
-            for (Object _command : listOfCreatedCommands) {
-                PBSCommand command = (PBSCommand) _command
-                if (command.getJob() instanceof FakeBEJob)
-                    continue
-                ids.add(command.getExecutionID().getShortID())
-//                ExecutionContext context = command.getExecutionContext();
-//                if (!listOfContexts.contains(context)) {
-//                    listOfContexts.add(context);
-//                }
-            }
+    protected static <T> T catchAndLogExceptions(final Closure<T> closure) {
+        try {
+            return closure.call()
+        } catch (Exception e) {
+            logger.warning(e.message)
+            logger.warning(e.stackTrace.join("\n"))
         }
-
-        boolean isRunning = true
-        while (isRunning) {
-
-            isRunning = false
-            Map<String, JobState> stringJobStateMap = queryJobStatus(ids, true)
-            if (logger.isVerbosityHigh()) {
-                for (String s : stringJobStateMap.keySet()) {
-                    if (stringJobStateMap.get(s) != null)
-                        System.out.println(s + " = " + stringJobStateMap.get(s))
-                }
-            }
-            for (JobState js : stringJobStateMap.values()) {
-                if (js == null) //Only one job needs to be active.
-                    continue
-
-                if (js.isPlannedOrRunning()) {
-                    isRunning = true
-                    break
-                }
-            }
-            if (isRunning) {
-                try {
-                    logger.info("Waiting for jobs to finish.")
-                    Thread.sleep(5000) //Sleep one minute until the next query.
-                } catch (InterruptedException e) {
-                    e.printStackTrace()
-                }
-            } else {
-                logger.info("Finished waiting")
-            }
-        }
-        int errnousJobs = 0
-//        for (ExecutionContext context : listOfContexts) {
-//            for (BEJob job : context.getExecutedJobs())
-//                if (job.getJobID() != null) errnousJobs++; //Skip null jobs.
-//
-//            Map<String, JobState> statesMap = context.getRuntimeService().readInJobStateLogFile(context);
-//            statesMap.each {
-//                String s, JobState integer ->
-//                    if (integer == 0)
-//                        errnousJobs--;
-//                    else
-//                        logger.info("BEJob " + s + " exited with an error.");
-//            }
-//            int unknown = context.getExecutedJobs().size() - statesMap.size();
-//            if (unknown > 0) {
-//                logger.info("There were " + unknown + " jobs with an unknown jobState.");
-////                for (String s : statesMap.keySet()) {
-////                    logger.info("\t" + s + " => " + statesMap.get(s));
-////                }
-//            }
-//        }
-
-        return errnousJobs
+        return null
     }
 
+    protected static Duration parseColonSeparatedHHMMSSDuration(String str) {
+        String[] hhmmss = str.split(":")
+        if (hhmmss.size() != 3) {
+            throw new BEException("Duration string is not of the format HH+:MM:SS: '${str}'")
+        }
+        return Duration.parse(String.format("PT%sH%sM%sS", hhmmss))
+    }
+
+    @Override
+    ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
+        assert resourceSet
+
+        LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
+
+        createDefaultManagerParameters(parameters)
+
+        if (requestMemoryIsEnabled && resourceSet.isMemSet())
+            createMemoryParameter(parameters, resourceSet)
+
+        if (requestWalltimeIsEnabled && resourceSet.isWalltimeSet())
+            createWalltimeParameter(parameters, resourceSet)
+
+        if (requestQueueIsEnabled && resourceSet.isQueueSet())
+            createQueueParameter(parameters, resourceSet.getQueue())
+
+        if (requestQueueIsEnabled && job?.customQueue)
+            createQueueParameter(parameters, job.customQueue)
+
+        if (requestCoresIsEnabled && resourceSet.isCoresSet() || resourceSet.isNodesSet())
+            createComputeParameter(resourceSet, parameters)
+
+        if (requestStorageIsEnabled && resourceSet.isStorageSet())
+            createStorageParameters(parameters, resourceSet)
+
+        return new ProcessingParameters(parameters)
+    }
+
+    abstract void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters)
+
+    abstract void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters)
+    abstract void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue)
+    abstract void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+    abstract void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+    abstract void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
 }
