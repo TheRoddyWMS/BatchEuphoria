@@ -63,6 +63,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean requestCoresIsEnabled
     boolean requestStorageIsEnabled
     boolean passEnvironment
+    boolean holdJobsIsEnabled
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         assert(executionService)
@@ -88,6 +89,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.requestCoresIsEnabled = parms.requestCoresIsEnabled
         this.requestStorageIsEnabled = parms.requestStorageIsEnabled
         this.passEnvironment = parms.passEnvironment
+        this.holdJobsIsEnabled = Optional.ofNullable(parms.holdJobIsEnabled).orElse(getDefaultForHoldJobsEnabled())
 
         if (parms.createDaemon) {
             createUpdateDaemonThread()
@@ -248,10 +250,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return Collections.unmodifiableList([])
     }
 
+    boolean getDefaultForHoldJobsEnabled() { return true }
 
-    boolean getDefaultForHoldJobsEnabled() { return false }
-
-    boolean isHoldJobsEnabled() { getDefaultForHoldJobsEnabled() }
+    boolean isHoldJobsEnabled() {
+        return holdJobsIsEnabled
+    }
 
     String getUserEmail() {
         return userEmail

@@ -59,6 +59,8 @@ class JobManagerOptions {
      */
     boolean passEnvironment
 
+    Boolean holdJobIsEnabled
+
     Map<String, String> additionalOptions
 
     static JobManagerOptionsBuilder create() {
