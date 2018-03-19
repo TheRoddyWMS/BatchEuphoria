@@ -373,6 +373,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
         jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
         jobInfo.setPriority(jobDetails.getProperty("priority").toString())
+        jobInfo.setQueue(jobDetails.getProperty("queue").toString())
         jobInfo.setLogFile(new File(jobDetails.getProperty("outFile").toString()))
         jobInfo.setInputFile(new File(jobDetails.getProperty("inFile").toString()))
         jobInfo.setResourceReq(jobDetails.getProperty("resReq").toString())

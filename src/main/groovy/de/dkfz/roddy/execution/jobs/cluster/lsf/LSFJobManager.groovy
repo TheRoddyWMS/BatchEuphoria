@@ -186,6 +186,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setProjectName(jobResult["PROJ_NAME"] as String ?: null)
         jobInfo.setJobGroup(jobResult["JOB_GROUP"] as String ?: null)
         jobInfo.setPriority(jobResult["JOB_PRIORITY"] as String ?: null)
+        jobInfo.setQueue(jobResult["QUEUE"] as String ?: null)
         jobInfo.setPidStr(jobResult["PIDS"] as String ? (jobResult["PIDS"] as String).split(",").toList() : null)
         jobInfo.setJobState(parseJobState(jobResult["STAT"] as String))
         jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["EXIT_CODE"] ? Integer.valueOf(jobResult["EXIT_CODE"] as String) : null))

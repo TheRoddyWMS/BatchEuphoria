@@ -34,6 +34,7 @@ class GenericJobInfo {
     List<String> executionHosts;
     String submissionHost;
     String priority;
+    String queue
 
     File logFile
     File errorLogFile

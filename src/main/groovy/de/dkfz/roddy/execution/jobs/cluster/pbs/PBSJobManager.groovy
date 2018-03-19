@@ -298,6 +298,7 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
             gj.setExecutionHosts(it["exec_host"] as String ? [it["exec_host"] as String] : null)
             gj.setSubmissionHost(it["submit_host"] as String ?: null)
             gj.setPriority(it["Priority"] as String ?: null)
+            gj.setQueue(it["queue"] as String ?: null)
             gj.setUserGroup(it["egroup"] as String ?: null)
             gj.setResourceReq(it["submit_args"] as String ?: null)
             gj.setRunTime(it["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
