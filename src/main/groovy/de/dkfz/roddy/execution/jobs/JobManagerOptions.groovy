@@ -16,7 +16,6 @@ import java.time.Duration
 @CompileStatic
 class JobManagerOptions {
 
-    boolean strictMode
     boolean createDaemon
     Duration updateInterval
 
@@ -76,7 +75,6 @@ class JobManagerOptions {
 class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
         trackOnlyStartedJobs = false
-        strictMode = true
         updateInterval = Duration.ofMinutes(5)
         createDaemon = false
         requestMemoryIsEnabled = true
@@ -84,7 +82,7 @@ class JobManagerOptionsBuilder {
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        passEnvironment = false     // Setting this to true should be a concious decision. Therefore the default 'false'.
+        passEnvironment = false     // Setting this to true should be a conscious decision. Therefore the default 'false'.
         additionalOptions = [:]
     }
 }

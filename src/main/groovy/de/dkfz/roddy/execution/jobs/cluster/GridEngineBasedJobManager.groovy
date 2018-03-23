@@ -65,8 +65,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         Map<BEJobID, JobState> result = [:]
 
         if (!er.successful) {
-            if (strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
-                throw new BEException("The execution of ${queryCommand} failed.\n\t" + er.resultLines?.join("\n\t").toString())
+            throw new BEException("The execution of ${queryCommand} failed.\n\t" + er.resultLines?.join("\n\t")?.toString())
         } else {
             if (resultLines.size() > 2) {
 

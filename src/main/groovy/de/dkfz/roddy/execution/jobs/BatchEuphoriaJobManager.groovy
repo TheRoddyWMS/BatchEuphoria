@@ -34,8 +34,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected String userIDForQueries
 
-    protected boolean strictMode
-
     private String userEmail
 
     private String userMask
@@ -73,7 +71,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userGroup = parms.userGroup
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
-        this.strictMode = parms.strictMode
         this.cacheUpdateInterval = parms.updateInterval
 
         this.requestMemoryIsEnabled = parms.requestMemoryIsEnabled
