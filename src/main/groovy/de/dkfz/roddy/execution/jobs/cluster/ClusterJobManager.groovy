@@ -11,8 +11,9 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.time.Duration
 
@@ -22,7 +23,7 @@ import java.time.Duration
  */
 @CompileStatic
 abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName());
+    final static Logger logger = LoggerFactory.getLogger(ClusterJobManager.class)
 
     ClusterJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -32,8 +33,8 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         try {
             return closure.call()
         } catch (Exception e) {
-            logger.warning(e.message)
-            logger.warning(e.stackTrace.join("\n"))
+            logger.warn(e.message)
+            logger.warn(e.stackTrace.join("\n"))
         }
         return null
     }

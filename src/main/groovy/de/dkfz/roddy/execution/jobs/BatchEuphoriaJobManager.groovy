@@ -10,7 +10,6 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
 import java.time.Duration
@@ -26,8 +25,6 @@ import java.util.concurrent.TimeoutException
  */
 @CompileStatic
 abstract class BatchEuphoriaJobManager<C extends Command> {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(BatchEuphoriaJobManager.class.getSimpleName())
 
     protected final BEExecutionService executionService
 
@@ -73,8 +70,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.queryOnlyStartedJobs = parms.trackOnlyStartedJobs
         this.userIDForQueries = parms.userIdForJobQueries
         if (!userIDForQueries && isTrackingOfUserJobsEnabled) {
-            logger.warning("Silently falling back to default job tracking behaviour. The user name was not set properly and the system cannot track the users jobs.")
-            isTrackingOfUserJobsEnabled = false
+            throw new BEException("The user name was not set properly and the system cannot track the users jobs.")
         }
         this.userEmail = parms.userEmail
         this.userGroup = parms.userGroup
@@ -117,7 +113,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             ExecutionResult executionResult = executeStartHeldJobs(jobIds)
             if (!executionResult.successful) {
                 String msg = "Held jobs couldn't be started.\n  status code: ${executionResult.exitCode}\n  result: ${executionResult.resultLines}"
-                logger.warning(msg)
                 throw new BEException(msg)
             }
         }
@@ -135,7 +130,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                 jobs.each { BEJob job -> job.jobState = JobState.ABORTED }
             } else {
                 String msg = "Job couldn't be aborted.\n  status code: ${executionResult.exitCode}\n  result: ${executionResult.resultLines}"
-                logger.warning(msg)
                 throw new BEException(msg)
             }
         }
@@ -220,7 +214,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     }
 
     int waitForJobsToFinish() {
-        logger.info("The user requested to wait for all jobs submitted by this process to finish.")
         if (!updateDaemonThread) {
             throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
         }
@@ -324,7 +317,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             def job = command.getJob()
             jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
-            logger.postAlwaysInfo("Job ${job.jobName ?: "NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
             throw new BEException("Job ${job.jobName ?: "NA"} could not be started. \n Returned status code:${res.exitCode} \n result:${res.resultLines}")
         }
         return jobResult
@@ -341,18 +333,14 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs)
 
     protected void createUpdateDaemonThread() {
-        try {
-            updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-                updateActiveJobList()
-                try {
-                    Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10 * 1000))
-                } catch (InterruptedException e) {
-                    e.printStackTrace()
-                }
-            })
-        } catch (Exception ex) {
-            logger.severe("Creating the job state update daemon failed. BE will not be able to query the job system.", ex)
-        }
+        updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
+            updateActiveJobList()
+            try {
+                Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10 * 1000))
+            } catch (InterruptedException e) {
+                e.printStackTrace()
+            }
+        })
     }
 
     private void updateActiveJobList() {

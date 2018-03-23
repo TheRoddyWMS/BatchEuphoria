@@ -11,7 +11,6 @@ import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.tools.LoggerWrapper
 
 /**
  * This class is used to create and execute bsub commands
@@ -20,8 +19,6 @@ import de.dkfz.roddy.tools.LoggerWrapper
  */
 @groovy.transform.CompileStatic
 class LSFCommand extends SubmissionCommand {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
 
     /**
      * The command which should be called
