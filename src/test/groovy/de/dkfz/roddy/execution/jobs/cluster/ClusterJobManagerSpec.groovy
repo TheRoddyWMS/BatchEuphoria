@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
-import de.dkfz.roddy.tools.LoggerWrapper
+import org.slf4j.Logger
 import spock.lang.Specification
 
 import java.lang.reflect.Field
@@ -16,7 +16,7 @@ import java.lang.reflect.Modifier
 
 class ClusterJobManagerSpec extends Specification {
 
-    private static Method prepareLogger(LoggerWrapper loggerWrapper) {
+    private static Method prepareLogger(Logger logger) {
         Method method = ClusterJobManager.class.getDeclaredMethod("catchAndLogExceptions", Closure)
         method.setAccessible(true)
 
@@ -25,13 +25,13 @@ class ClusterJobManagerSpec extends Specification {
         Field modifiersField = Field.class.getDeclaredField("modifiers");
         modifiersField.setAccessible(true);
         modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
-        f.set(null, loggerWrapper)
+        f.set(null, logger)
         return method
     }
 
     def "test catchExceptionAndLog throws exception"() {
         given:
-        LoggerWrapper logger = Mock(LoggerWrapper)
+        Logger logger = Mock(Logger)
         Method method = prepareLogger(logger)
 
         when:
@@ -39,13 +39,13 @@ class ClusterJobManagerSpec extends Specification {
 
         then:
         result == null
-        1 * logger.warning("123")
-        1 * logger.warning(_)
+        1 * logger.warn("123")
+        1 * logger.warn(_)
     }
 
     def "test catchExceptionAndLog returns value"() {
         given:
-        LoggerWrapper logger = Mock(LoggerWrapper)
+        Logger logger = Mock(Logger)
         Method method = prepareLogger(logger)
 
         when:
@@ -53,6 +53,6 @@ class ClusterJobManagerSpec extends Specification {
 
         then:
         result == "ABC"
-        0 * logger.warning(_)
+        0 * logger.warn(_)
     }
 }

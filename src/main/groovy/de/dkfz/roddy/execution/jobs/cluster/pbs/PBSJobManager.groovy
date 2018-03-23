@@ -31,8 +31,6 @@ import java.util.regex.Matcher
 @groovy.transform.CompileStatic
 class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSJobManager)
-
     private static final String PBS_COMMAND_QUERY_STATES = "qstat -t"
     private static final String PBS_COMMAND_QUERY_STATES_FULL = "qstat -x -f "
     private static final String PBS_COMMAND_DELETE_JOBS = "qdel"
@@ -107,10 +105,6 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
                     String[] split = line.split(" ")
                     final int ID = getPositionOfJobID()
                     final int JOBSTATE = getPositionOfJobState()
-                    if (logger.isVerbosityMedium())
-                        logger.postAlwaysInfo(["QStat BEJob line: " + line,
-                                 "	Entry in arr[" + ID + "]: " + split[ID],
-                                 "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
                     BEJobID jobID = new BEJobID(split[ID])
 
@@ -176,17 +170,11 @@ class PBSJobManager extends ClusterJobManager<PBSCommand> {
 
         qStatCommand += jobIds.collect { it }.join(" ")
 
-        ExecutionResult er
-        try {
-            er = executionService.execute(qStatCommand.toString())
-        } catch (Exception exp) {
-            logger.severe("Could not execute qStat command", exp)
-        }
+        ExecutionResult er = executionService.execute(qStatCommand.toString())
 
         if (er != null && er.successful) {
             queriedExtendedStates = this.processQstatOutput(er.resultLines.join("\n"))
         }else{
-            logger.postAlwaysInfo("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n result:${er.resultLines}")
             throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n result:${er.resultLines}")
         }
         return queriedExtendedStates

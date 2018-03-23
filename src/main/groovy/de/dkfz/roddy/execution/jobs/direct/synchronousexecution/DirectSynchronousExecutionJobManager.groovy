@@ -7,11 +7,11 @@
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
 /**
@@ -19,7 +19,6 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
-    public static final LoggerWrapper logger = LoggerWrapper.getLogger(DirectSynchronousExecutionJobManager.class.getName())
 
     DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -115,7 +114,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
             command.setJobID(jobID)
             res = executionService.execute(command)
             if (!res.successful)
-                logger.sometimes("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
+                throw new BEException("Execution of Job ${jobID} failed with exit code ${res.exitCode} and message ${res.resultLines}")
         }
 
         jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)

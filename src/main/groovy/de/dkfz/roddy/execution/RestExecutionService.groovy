@@ -7,11 +7,10 @@
 package de.dkfz.roddy.execution
 
 import de.dkfz.roddy.BEException
+import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestCommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
-import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import org.apache.commons.io.IOUtils
 import org.apache.commons.text.StringEscapeUtils
@@ -39,6 +38,8 @@ import org.apache.http.ssl.SSLContextBuilder
 import org.apache.http.ssl.SSLContexts
 import org.apache.http.ssl.TrustStrategy
 import org.apache.http.util.EntityUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import javax.net.ssl.HostnameVerifier
@@ -56,8 +57,7 @@ import java.time.LocalDateTime
  */
 @CompileStatic
 class RestExecutionService implements BEExecutionService {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(RestExecutionService.class.name);
+    final Logger logger = LoggerFactory.getLogger(RestExecutionService.class)
 
     public boolean isCertAuth = false //true if certificate authentication is used
 
@@ -109,7 +109,7 @@ class RestExecutionService implements BEExecutionService {
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
         RestResult result = execute(new RestCommand(RESOURCE_LOGON, body, headers, RestCommand.HttpMethod.HTTPPOST))
-        logger.severe("status code: " + result.statusCode)
+        logger.debug("response status: {} ", result.statusCode)
         if (result.statusCode != 200)
             throw new AuthenticationException("Could not authenticate, returned HTTP status code: ${result.statusCode}")
 
@@ -135,6 +135,7 @@ class RestExecutionService implements BEExecutionService {
 
     RestResult execute(RestCommand restCommand) {
         String url = BASE_URL + restCommand.resource
+        logger.debug("request url: {}", url)
         CloseableHttpClient httpClient
         if (isCertAuth) {
             httpClient = createHttpClientWithClientCertAuth()
@@ -146,6 +147,7 @@ class RestExecutionService implements BEExecutionService {
         if (restCommand.httpMethod == RestCommand.HttpMethod.HTTPPOST) {
             httpRequest = new HttpPost(url)
             if (restCommand.requestBody)
+                logger.debug("request body: {}", restCommand.requestBody)
                 httpRequest.setEntity(new StringEntity(restCommand.requestBody, "UTF-8"))
         } else {
             httpRequest = new HttpGet(url)
@@ -155,16 +157,19 @@ class RestExecutionService implements BEExecutionService {
             restCommand.requestHeaders.add(new BasicHeader("Cookie", "platform_token=${token.replaceAll('"', "#quote#")}"))
         }
 
-        if (restCommand.requestHeaders)
+        if (restCommand.requestHeaders) {
+            logger.debug("request headers: {}", restCommand.requestHeaders)
             httpRequest.setHeaders((Header[]) restCommand.requestHeaders.toArray())
+        }
+
 
         CloseableHttpResponse response = httpClient.execute(httpRequest)
 
         try {
-            logger.always("response status: " + response.getStatusLine())
+            logger.debug("response status: {}", response.getStatusLine())
             HttpEntity entity = response.getEntity()
             String result = IOUtils.toString(entity.content)
-            logger.always("response body: " + result)
+            logger.debug("response body: {}", result)
             EntityUtils.consume(entity)
 
             if (response.getStatusLine().statusCode == 403 && !isCertAuth && Duration.between(tokenDate, LocalDateTime.now()).seconds > 60) {

@@ -6,14 +6,11 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFJobManager
-import groovy.util.slurpersupport.GPathResult
 import spock.lang.Specification
 
 import java.lang.reflect.InvocationTargetException
@@ -21,6 +18,7 @@ import java.lang.reflect.Method
 import java.time.Duration
 
 class PBSJobManagerSpec extends Specification {
+    PBSJobManager manager
 
     String rawXmlExample = '''
     <Data>
@@ -74,8 +72,13 @@ class PBSJobManagerSpec extends Specification {
     </Data>
     '''
 
-    void "processQstatOutput, qstat with empty XML output"() {
+    void setup() {
+        JobManagerOptions parms = JobManagerOptions.create().build()
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
+        manager = new PBSJobManager(testExecutionService, parms)
+    }
 
+    void "processQstatOutput, qstat with empty XML output"() {
         given:
         String rawXMLOutput ='''
         <Data>
@@ -84,30 +87,17 @@ class PBSJobManagerSpec extends Specification {
             </Job>
         </Data>
         '''
-        def parms = JobManagerOptions.create().build()
-        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
-        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", String)
-        method.setAccessible(true)
 
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, rawXMLOutput)
+        Map<BEJobID, GenericJobInfo> jobInfo = manager.processQstatOutput(rawXMLOutput)
 
         then:
         jobInfo.size() == 1
     }
 
     void "processQstatOutput, qstat with XML output"() {
-
-        given:
-        def parms = JobManagerOptions.create().build()
-        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
-        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", String)
-        method.setAccessible(true)
-
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, rawXmlExample)
+        Map<BEJobID, GenericJobInfo> jobInfo = manager.processQstatOutput(rawXmlExample)
 
         then:
         jobInfo.size() == 1
@@ -116,7 +106,6 @@ class PBSJobManagerSpec extends Specification {
 
 
     void "processQstatOutput, replace placeholder PBS_JOBID in logFile and errorLogFile with job id "() {
-      
         given:
         String rawXMLOutput='''
         <Data>
@@ -126,16 +115,10 @@ class PBSJobManagerSpec extends Specification {
                 <Error_Path>tbi-pbs:/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e$PBS_JOBID</Error_Path>
             </Job>
         </Data>
-    '''
-
-        def parms = JobManagerOptions.create().build()
-        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
-        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", String)
-        method.setAccessible(true)
+        '''
 
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, rawXMLOutput)
+        Map<BEJobID, GenericJobInfo> jobInfo = manager.processQstatOutput(rawXMLOutput)
 
         then:
         jobInfo.size() == 1

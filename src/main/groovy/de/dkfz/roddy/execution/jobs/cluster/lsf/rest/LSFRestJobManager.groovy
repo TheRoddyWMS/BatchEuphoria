@@ -16,7 +16,6 @@ import de.dkfz.roddy.execution.jobs.cluster.lsf.AbstractLSFJobManager
 import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
@@ -39,7 +38,6 @@ import java.time.format.DateTimeFormatter
 class LSFRestJobManager extends AbstractLSFJobManager {
 
     protected final RestExecutionService restExecutionService
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFRestJobManager.class.name);
 
     /*REST RESOURCES*/
     private static String URI_JOB_SUBMIT = "/jobs/submit"
@@ -118,8 +116,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         ContentWithHeaders requestPartsWithHeader = joinParts(requestParts)
         headers.addAll(requestPartsWithHeader.headers)
-
-        logger.postAlwaysInfo("request body:\n" + requestPartsWithHeader.content)
 
         return new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
     }
@@ -277,7 +273,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("job").each { NodeChild element ->
                 jobDetailsResult.put(new BEJobID(element.getProperty("jobId").toString()),setJobInfoForJobDetails(element))
@@ -286,7 +281,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             return jobDetailsResult
 
         } else {
-            logger.warning("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
             throw new BEException("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
@@ -303,7 +297,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_BASICS, null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            logger.info("status code: " + result.statusCode + " result:" + result.body)
             Map<BEJobID, JobState> resultStates = [:]
             res.getProperty("pseudoJob").each { NodeChild element ->
                 String jobId = null
@@ -321,7 +314,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             }
             return resultStates
         } else {
-            logger.warning("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
             throw new BEException("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
@@ -394,7 +386,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         def result = restExecutionService.execute(new RestCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList.keySet() as List), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("history").each { NodeChild jobHistory ->
 
@@ -403,7 +394,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             }
 
         } else {
-            logger.warning("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
             throw new BEException("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }

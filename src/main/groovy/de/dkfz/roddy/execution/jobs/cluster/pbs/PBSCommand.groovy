@@ -6,15 +6,11 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.tools.LoggerWrapper
-
-import java.util.logging.Level
 
 import static de.dkfz.roddy.StringConstants.COLON
 
@@ -26,7 +22,6 @@ import static de.dkfz.roddy.StringConstants.COLON
 @groovy.transform.CompileStatic
 class PBSCommand extends SubmissionCommand {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSCommand.class.name)
 
     public static final String NONE = "none"
     public static final String AFTEROK = "afterok"
@@ -115,15 +110,11 @@ class PBSCommand extends SubmissionCommand {
                     it.getId().split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
                 } as LinkedList<String>
         if (tempDependencies.size() > 0) {
-            try {
-                qsubCall <<
-                        getDependsSuperParameter() <<
-                        getDependencyParameterName() <<
-                        getDependencyOptionSeparator() <<
-                        tempDependencies.join(getDependencyIDSeparator())
-            } catch (Exception ex) {
-                logger.log(Level.SEVERE, ex.toString())
-            }
+            qsubCall <<
+                    getDependsSuperParameter() <<
+                    getDependencyParameterName() <<
+                    getDependencyOptionSeparator() <<
+                    tempDependencies.join(getDependencyIDSeparator())
         }
 
         return qsubCall
