@@ -1,5 +1,5 @@
 # BatchEuphoria
-[![Build Status - Travis](https://travis-ci.org/eilslabs/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/eilslabs/BatchEuphoria)
+[![Build Status - Travis](https://travis-ci.org/TheRoddyWMS/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/TheRoddyWMS/BatchEuphoria)
 
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
 Currently this library supports the following job schedulers:
@@ -8,7 +8,7 @@ Currently this library supports the following job schedulers:
 * direct execution
 
 ### Dependencies
-* [RoddyToolLib](https://github.com/eilslabs/RoddyToolLib)
+* [RoddyToolLib](https://github.com/TheRoddyWMS/RoddyToolLib)
 
 ## Build
 
