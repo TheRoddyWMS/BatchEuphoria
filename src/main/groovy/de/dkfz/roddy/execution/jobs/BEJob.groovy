@@ -20,8 +20,6 @@ import java.util.concurrent.atomic.AtomicLong
 @groovy.transform.CompileStatic
 class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
-    private static final de.dkfz.roddy.tools.LoggerWrapper logger = de.dkfz.roddy.tools.LoggerWrapper.getLogger(BEJob.class.getSimpleName())
-
     public static final String PARM_JOBCREATIONCOUNTER = "JOB_CREATION_COUNTER"
 
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()

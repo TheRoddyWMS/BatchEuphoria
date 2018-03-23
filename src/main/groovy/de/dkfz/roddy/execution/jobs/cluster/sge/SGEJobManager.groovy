@@ -30,8 +30,6 @@ import java.util.regex.Matcher
 @groovy.transform.CompileStatic
 class SGEJobManager extends GridEngineBasedJobManager<SGECommand> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(SGEJobManager)
-
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }

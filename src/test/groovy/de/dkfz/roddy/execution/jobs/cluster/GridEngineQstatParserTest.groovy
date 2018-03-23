@@ -416,6 +416,7 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
         PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
+                .setUserIdForJobQueries("asdf")
                 .build())
 
         Map<String, Map<String, String>> qstatReaderResultOutput1 = (Map<String, Map<String, String>>) GridEngineBasedJobManager.processQstatOutputFromPlainText(output1)

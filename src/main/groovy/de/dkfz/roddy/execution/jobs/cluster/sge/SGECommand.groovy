@@ -15,10 +15,7 @@ import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
-
-import java.util.logging.Level
 
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.COMMA
@@ -30,8 +27,6 @@ import static de.dkfz.roddy.StringConstants.WHITESPACE
  */
 @CompileStatic
 class SGECommand extends GridEngineBasedCommand {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(SGECommand.class.name)
 
     SGECommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)

@@ -30,8 +30,6 @@ import java.util.regex.Matcher
 @groovy.transform.CompileStatic
 class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSJobManager)
-
     PBSJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }

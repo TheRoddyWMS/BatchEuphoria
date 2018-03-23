@@ -12,12 +12,10 @@ import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
-import org.xml.sax.SAXParseException
 
 import java.time.Duration
 import java.time.Instant
@@ -27,8 +25,6 @@ import java.util.regex.Matcher
 
 @CompileStatic
 abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobManager<C> {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(GridEngineBasedJobManager)
 
     public static final String WITH_DELIMITER = '(?=(%1$s))'
 
@@ -83,10 +79,6 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
                     String[] split = line.split("\\s+")
                     final int ID = getColumnOfJobID()
                     final int JOBSTATE = getColumnOfJobState()
-                    if (logger.isVerbosityMedium())
-                        logger.postAlwaysInfo(["QStat BEJob line: " + line,
-                                               "	Entry in arr[" + ID + "]: " + split[ID],
-                                               "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
                     BEJobID jobID = new BEJobID(split[ID])
 
@@ -107,12 +99,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         if (isTrackingOfUserJobsEnabled)
             qStatCommand += " -u $userIDForQueries "
 
-        ExecutionResult er
-        try {
-            er = executionService.execute(qStatCommand.toString())
-        } catch (Exception exp) {
-            logger.severe("Could not execute qStat command", exp)
-        }
+        ExecutionResult er = executionService.execute(qStatCommand.toString())
 
         if (er != null && er.successful) {
             queriedExtendedStates = this.processQstatOutputFromXML(er.resultLines.join("\n"))
@@ -171,19 +158,13 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    private Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(String result) {
+    protected Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(String result) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         if (result.isEmpty()) {
             return [:]
         }
 
-        GPathResult parsedJobs
-        try {
-            parsedJobs = new XmlSlurper().parseText(result)
-        } catch (SAXParseException ex) {
-            logger.rare(result)
-            throw ex
-        }
+        GPathResult parsedJobs = new XmlSlurper().parseText(result)
 
         for (it in parsedJobs.children()) {
             String jobIdRaw = it["Job_Id"] as String

@@ -26,9 +26,6 @@ import java.time.format.DateTimeFormatter
 @groovy.transform.CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFJobManager.class.getSimpleName())
-
-
     private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
@@ -83,8 +80,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
         runBjobs(jobIDs).collectEntries { BEJobID jobID, Object value ->
             JobState js = parseJobState(value["STAT"] as String)
-            if (logger.isVerbosityHigh())
-                logger.postAlwaysInfo("   Extracted jobState: " + js.toString())
             [(jobID): js]
         } as Map<BEJobID, JobState>
 
@@ -113,18 +108,12 @@ class LSFJobManager extends AbstractLSFJobManager {
                 List records = (List) parsedJson.getAt("RECORDS")
                 records.each {
                     BEJobID jobID = new BEJobID(it["JOBID"] as String)
-                    String jobState = it["STAT"]
-                    if (logger.isVerbosityMedium())
-                        logger.postAlwaysInfo(["Bjobs BEJob line: " + it,
-                                               "	Entry in arr[ID]: " + jobID,
-                                               "   Entry in arr[STAT]: " + jobState].join("\n"))
                     result.put(jobID, it as Map<String, Object>)
                 }
             }
 
         } else {
             String error = "Job status couldn't be updated. \n command: ${queryCommand} \n status code: ${er.exitCode} \n result: ${er.resultLines}"
-            logger.warning(error)
             throw new BEException(error)
         }
         return result

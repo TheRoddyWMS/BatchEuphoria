@@ -13,9 +13,6 @@ import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
-import de.dkfz.roddy.tools.LoggerWrapper
-
-import java.util.logging.Level
 
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.COMMA
@@ -29,8 +26,6 @@ import static de.dkfz.roddy.StringConstants.WHITESPACE
  */
 @groovy.transform.CompileStatic
 class PBSCommand extends GridEngineBasedCommand {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSCommand.class.name)
 
     public static final String NONE = "none"
     public static final String AFTEROK = "afterok"
