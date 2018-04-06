@@ -34,7 +34,14 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
             return closure.call()
         } catch (Exception e) {
             log.warn(e.message)
-            log.warn(e.stackTrace.join("\n"))
+            List<StackTraceElement> stel = []
+            for (StackTraceElement element : e.stackTrace) {
+                stel.add(element)
+                if (element.toString().contains("JobManager")) {
+                    break
+                }
+            }
+            log.warn(stel.join("\n"))
         }
         return null
     }
