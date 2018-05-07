@@ -100,7 +100,7 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
     @Override
     void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
         // LSF does not like the buffer unit at the end and always takes MB
-        def memval = resourceSet.getMem().toString(BufferUnit.M)[0 .. -2]
+        def memval = resourceSet.getMem().toString(BufferUnit.M)[0..-2]
         parameters.put("-M", "${memval} -R \"rusage[mem=${memval}]\"")
     }
 

@@ -126,7 +126,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
     @Override
     protected String parseJobID(String commandOutput) {
-            return new XmlSlurper().parseText(commandOutput)
+        return new XmlSlurper().parseText(commandOutput)
     }
 
 
@@ -175,7 +175,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         String content
         List<Header> headers
     }
-
 
     /**
      * Prepare parent jobs is part of @prepareExtraParams
@@ -269,9 +268,9 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * Updates job information for given jobs
      * @param jobList
      */
-    private Map<BEJobID,GenericJobInfo> getJobDetails(List<BEJobID> jobList) {
+    private Map<BEJobID, GenericJobInfo> getJobDetails(List<BEJobID> jobList) {
         List<Header> headers = []
-        Map<BEJobID,GenericJobInfo> jobDetailsResult = [:]
+        Map<BEJobID, GenericJobInfo> jobDetailsResult = [:]
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
@@ -280,7 +279,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("job").each { NodeChild element ->
-                jobDetailsResult.put(new BEJobID(element.getProperty("jobId").toString()),setJobInfoForJobDetails(element))
+                jobDetailsResult.put(new BEJobID(element.getProperty("jobId").toString()), setJobInfoForJobDetails(element))
             }
 
             return jobDetailsResult
@@ -439,7 +438,18 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         return null
     }
 
-    private JobState parseJobState(String stateString) {
+    @Override
+    String getQueryJobStatesCommand() {
+        return null
+    }
+
+    @Override
+    String getExtendedQueryJobStatesCommand() {
+        return null
+    }
+
+    @Override
+    JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
         if (stateString == "PENDING")
             js = JobState.QUEUED

@@ -60,6 +60,16 @@ class SlurmJobManager extends ClusterJobManager {
     }
 
     @Override
+    String getQueryJobStatesCommand() {
+        return null
+    }
+
+    @Override
+    String getExtendedQueryJobStatesCommand() {
+        return null
+    }
+
+    @Override
     GenericJobInfo parseGenericJobInfo(String command) {
         return null
     }
@@ -71,6 +81,11 @@ class SlurmJobManager extends ClusterJobManager {
 
     @Override
     protected String parseJobID(String commandOutput) {
+        return null
+    }
+
+    @Override
+    protected JobState parseJobState(String stateString) {
         return null
     }
 

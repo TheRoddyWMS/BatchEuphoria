@@ -78,8 +78,12 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     abstract void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters)
 
     abstract void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters)
+
     abstract void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue)
+
     abstract void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+
     abstract void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+
     abstract void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
 }

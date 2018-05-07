@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong
  * JobIDs are born with the JobResults, although JobResults may or may not have a JobID.
  * Jobs don't directly have a JobID. The reference is rather the other way around (see job field of BEJobID).
  */
-@EqualsAndHashCode(includeFields=true, includes=['id'])
+@EqualsAndHashCode(includeFields = true, includes = ['id'])
 @CompileStatic
 class BEJobID implements Comparable<BEJobID> {
 
@@ -50,7 +50,7 @@ class BEJobID implements Comparable<BEJobID> {
     }
 
     String toString() {
-        return(id)
+        return (id)
     }
 
     @Deprecated
@@ -64,7 +64,6 @@ class BEJobID implements Comparable<BEJobID> {
     int compareTo(BEJobID o) {
         return this.id.compareTo(o.id)
     }
-
 
 
 }

@@ -88,7 +88,6 @@ abstract class Command {
         return String.format("command:0x%08X", this.jobName)
     }
 
-
     /**
      * Local commands are i.e. blocking, whereas PBSCommands are not.
      * The default is false.

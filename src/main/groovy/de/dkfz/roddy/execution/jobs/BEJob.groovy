@@ -120,7 +120,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.resourceSet = resourceSet
         this.parameters = parameters
         this.jobManager = jobManager
-        assert jobLog : "jobLog not set"
+        assert jobLog: "jobLog not set"
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))

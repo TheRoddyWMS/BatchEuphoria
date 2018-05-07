@@ -66,8 +66,12 @@ public enum JobState implements Serializable {
         return this == JobState.RUNNING;
     }
 
-    public boolean isUnknown() { return  this == UNKNOWN;}
+    public boolean isUnknown() {
+        return this == UNKNOWN;
+    }
 
-    public boolean isSuccessful() { return this == COMPLETED_SUCCESSFUL; }
+    public boolean isSuccessful() {
+        return this == COMPLETED_SUCCESSFUL;
+    }
 
 }

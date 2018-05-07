@@ -56,7 +56,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     private Duration cacheUpdateInterval
 
 
-
     boolean requestMemoryIsEnabled
     boolean requestWalltimeIsEnabled
     boolean requestQueueIsEnabled
@@ -66,7 +65,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean holdJobsIsEnabled
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
-        assert(executionService)
+        assert (executionService)
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
@@ -224,7 +223,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         if (!updateDaemonThread) {
             throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
         }
-        while(true) {
+        while (true) {
             synchronized (activeJobs) {
                 if (activeJobs.isEmpty()) {
                     return 0
@@ -272,13 +271,15 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return userAccount
     }
 
-
     boolean executesWithoutJobSystem() {
         return false
     }
 
-
     abstract String getSubmissionCommand()
+
+    abstract String getQueryJobStatesCommand()
+
+    abstract String getExtendedQueryJobStatesCommand()
 
     ProcessingParameters convertResourceSet(BEJob job) {
         return convertResourceSet(job, job.resourceSet)
@@ -334,6 +335,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract protected String parseJobID(String commandOutput)
 
+    abstract protected JobState parseJobState(String stateString)
+
     abstract protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs)
 
     abstract protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs)
@@ -365,7 +368,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
                 job.setJobState(js)
 
-                if (!js.isPlannedOrRunning()){
+                if (!js.isPlannedOrRunning()) {
                     activeJobs.remove(id)
                 }
             }

@@ -49,7 +49,8 @@ class LSFJobManager extends AbstractLSFJobManager {
         return queriedExtendedStates
     }
 
-    private JobState parseJobState(String stateString) {
+    @Override
+    protected JobState parseJobState(String stateString) {
         JobState js = JobState.UNKNOWN
 
         if (stateString == "RUN")
@@ -115,8 +116,8 @@ class LSFJobManager extends AbstractLSFJobManager {
                     String jobState = it["STAT"]
                     if (logger.isVerbosityMedium())
                         logger.postAlwaysInfo(["Bjobs BEJob line: " + it,
-                                 "	Entry in arr[ID]: " + jobID,
-                                 "   Entry in arr[STAT]: " + jobState].join("\n"))
+                                               "	Entry in arr[ID]: " + jobID,
+                                               "   Entry in arr[STAT]: " + jobState].join("\n"))
                     result.put(jobID, it as Map<String, Object>)
                 }
             }
@@ -247,5 +248,15 @@ class LSFJobManager extends AbstractLSFJobManager {
     @Override
     String getSubmissionCommand() {
         return "bsub"
+    }
+
+    @Override
+    String getQueryJobStatesCommand() {
+        return null
+    }
+
+    @Override
+    String getExtendedQueryJobStatesCommand() {
+        return null
     }
 }
