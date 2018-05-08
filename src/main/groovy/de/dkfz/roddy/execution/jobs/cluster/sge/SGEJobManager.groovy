@@ -94,7 +94,7 @@ class SGEJobManager extends GridEngineBasedJobManager<SGECommand> {
 
     @Override
     void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put("-l", "h_rt=${TimeUnit.fromDuration(resourceSet.walltime).alignToHours()}")
+        parameters.put("-l", "h_rt=${TimeUnit.fromDuration(resourceSet.walltime).toHourString()}")
     }
 
     @Override

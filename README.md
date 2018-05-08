@@ -82,8 +82,6 @@ You can find [here](https://github.com/eilslabs/BatchEuphoria/blob/develop/src/m
 
 
 ## Integration Tests
-Use `gradle uberJar` to setup the jar file for integration tests.
 
-To test it with LSF environment use `java -jar BatchEuphoria.jar -s yourServer -a yourAccount -rs http://yourServer:8080/platform/ws -ra yourRestAccount -c lsf`
+To start the integration tests, please fill in host and user settings (password for lsf rest) into integrationTest.properties. Then start the tests like you'd start any unit tests.
 
-For PBS environment use `java -jar BatchEuphoria.jar -s yourServer -a yourAccount -c pbs`
