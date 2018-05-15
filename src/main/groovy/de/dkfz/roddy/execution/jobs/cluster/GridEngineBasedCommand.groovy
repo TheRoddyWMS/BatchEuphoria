@@ -36,18 +36,14 @@ abstract class GridEngineBasedCommand extends SubmissionCommand {
                 jobIds.findAll {
                     it.getId() != "" && it.getId() != NONE && it.getId() != "-1"
                 }.collect {
-                    it.getId().split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
+                    it.getId().split("\\.")[0] // Keep the command line short. GE accepts the job number for dependencies.
                 } as LinkedList<String>
         if (tempDependencies.size() > 0) {
-            try {
-                qsubCall <<
-                        getDependsSuperParameter() <<
-                        getDependencyParameterName() <<
-                        getDependencyOptionSeparator() <<
-                        tempDependencies.join(getDependencyIDSeparator())
-            } catch (Exception ex) {
-                logger.log(Level.SEVERE, ex.toString())
-            }
+            qsubCall <<
+                    getDependsSuperParameter() <<
+                    getDependencyParameterName() <<
+                    getDependencyOptionSeparator() <<
+                    tempDependencies.join(getDependencyIDSeparator())
         }
 
         return qsubCall

@@ -51,7 +51,7 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
      *
      * @return
      */
-    protected int getPositionOfJobState() {
+    protected int getColumnOfJobState() {
         if (isTrackingOfUserJobsEnabled)
             return 9
         return 4

@@ -66,10 +66,10 @@ class BEIntegrationTest {
         return eServicesPerSystem[system]
     }
 
-    static BatchEuphoriaJobManager createJobManagerFor(AvailableClusterSystems option) {
+    static BatchEuphoriaJobManager createJobManagerFor(AvailableClusterSystems system) {
 
-        return option.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerOptions)
-                .newInstance(getExecutionServiceFor(option),
+        return system.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerOptions)
+                .newInstance(getExecutionServiceFor(system),
                 JobManagerOptions.create()
                         .setCreateDaemon(false)
                         .setTrackUserJobsOnly(true)

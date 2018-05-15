@@ -130,7 +130,7 @@ class PBSCommand extends GridEngineBasedCommand {
         } as List<String>
 
         if (!environmentStrings.empty)
-            parameterStrings << "-v \"" + environmentStrings.join(COMMA) + "\""
+            parameterStrings << "-v \"${environmentStrings.join(COMMA)}\"".toString()
 
         return parameterStrings.join(WHITESPACE)
     }

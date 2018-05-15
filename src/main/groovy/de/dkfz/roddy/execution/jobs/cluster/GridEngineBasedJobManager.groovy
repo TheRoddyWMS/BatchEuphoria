@@ -44,11 +44,11 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         return "qsub"
     }
 
-    protected int getPositionOfJobID() {
+    protected int getColumnOfJobID() {
         return 0
     }
 
-    protected int getPositionOfJobState() {
+    protected int getColumnOfJobState() {
         return 4
     }
 
@@ -80,11 +80,9 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
                     if (!RoddyConversionHelperMethods.isInteger(line.substring(0, 1)))
                         continue //Filter out lines which have been missed which do not start with a number.
 
-                    //TODO Put to a common class, is used multiple times.
-                    line = line.replaceAll("\\s+", " ").trim()       //Replace multi white space with single whitespace
-                    String[] split = line.split(" ")
-                    final int ID = getPositionOfJobID()
-                    final int JOBSTATE = getPositionOfJobState()
+                    String[] split = line.split("\\s+")
+                    final int ID = getColumnOfJobID()
+                    final int JOBSTATE = getColumnOfJobState()
                     if (logger.isVerbosityMedium())
                         logger.postAlwaysInfo(["QStat BEJob line: " + line,
                                                "	Entry in arr[" + ID + "]: " + split[ID],
@@ -195,23 +193,31 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             TimeUnit walltime = null
             String additionalNodeFlag
 
-            if (it["Resource_List"]["mem"])
-                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf((it["Resource_List"]["mem"] as String).find(/(\d+)/)), BufferUnit.valueOf((it["Resource_List"]["mem"] as String)[-2])) }
-            if (it["Resource_List"]["nodect"])
-                nodes = catchAndLogExceptions { Integer.valueOf(it["Resource_List"]["nodect"] as String) }
-            if (it["Resource_List"]["nodes"])
-                cores = catchAndLogExceptions { Integer.valueOf((it["Resource_List"]["nodes"] as String).find("ppn=.*").find(/(\d+)/)) }
-            if (it["Resource_List"]["nodes"])
-                additionalNodeFlag = catchAndLogExceptions { (it["Resource_List"]["nodes"] as String).find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
-            if (it["Resource_List"]["walltime"])
-                walltime = catchAndLogExceptions { new TimeUnit(it["Resource_List"]["walltime"] as String) }
+            def resourceList = it["Resource_List"]
+            String resourcesListMem = resourceList["mem"] as String
+            String resourcesListNoDect = resourceList["nodect"] as String
+            String resourcesListNodes = resourceList["nodes"] as String
+            String resourcesListWalltime = resourceList["walltime"] as String
+            if (resourcesListMem)
+                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/), BufferUnit.valueOf(resourcesListMem[-2]) }
+            if (resourcesListNoDect)
+                nodes = catchAndLogExceptions { Integer.valueOf(resourcesListNoDect) }
+            if (resourcesListNodes)
+                cores = catchAndLogExceptions { Integer.valueOf(resourcesListNodes.find("ppn=.*").find(/(\d+)/)) }
+            if (resourcesListNodes)
+                additionalNodeFlag = catchAndLogExceptions { resourcesListNodes.find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
+            if (resourcesListWalltime)
+                walltime = catchAndLogExceptions { new TimeUnit(resourcesListWalltime) }
 
             BufferValue usedMem = null
             TimeUnit usedWalltime = null
-            if (it["resources_used"]["mem"])
-                catchAndLogExceptions { usedMem = new BufferValue(Integer.valueOf((it["resources_used"]["mem"] as String).find(/(\d+)/)), BufferUnit.valueOf((it["resources_used"]["mem"] as String)[-2])) }
-            if (it["resources_used"]["walltime"])
-                catchAndLogExceptions { usedWalltime = new TimeUnit(it["resources_used"]["walltime"] as String) }
+            def resourcesUsed = it["resources_used"]
+            String resourcedUsedMem = resourcesUsed["mem"] as String
+            String resourcesUsedWalltime = resourcesUsed["walltime"] as String
+            if (resourcedUsedMem)
+                catchAndLogExceptions { usedMem = new BufferValue(Integer.valueOf(resourcedUsedMem.find(/(\d+)/)), BufferUnit.valueOf(resourcedUsedMem[-2])) }
+            if (resourcesUsedWalltime)
+                catchAndLogExceptions { usedWalltime = new TimeUnit(resourcesUsedWalltime) }
 
             gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String, additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String, null))
@@ -225,7 +231,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             gj.setUserGroup(it["egroup"] as String)
             gj.setResourceReq(it["submit_args"] as String)
             gj.setRunTime(it["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
-            gj.setCpuTime(it["resources_used"]["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(it["resources_used"]["cput"] as String) } : null)
+            gj.setCpuTime(resourcesUsed["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(resourcesUsed["cput"] as String) } : null)
             gj.setServer(it["server"] as String)
             gj.setUmask(it["umask"] as String)
             gj.setJobState(parseJobState(it["job_state"] as String))

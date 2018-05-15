@@ -119,7 +119,7 @@ class LSFCommand extends SubmissionCommand {
             environmentStrings += "none"
         }
 
-        return "-env \"" + environmentStrings.join(", ") + "\""
+        return "-env \"${environmentStrings.join(", ")}\""
     }
 
 }

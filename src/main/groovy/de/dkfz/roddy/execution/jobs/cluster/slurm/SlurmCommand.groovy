@@ -2,15 +2,18 @@ import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
+import groovy.transform.CompileStatic
 
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2018 German Cancer Research Center (DKFZ).
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
-
-class SlurmCommand extends SubmissionCommand {
+@CompileStatic
+class SlurmCommand extends GridEngineBasedCommand {
 
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
@@ -18,12 +21,21 @@ class SlurmCommand extends SubmissionCommand {
      * @param parentJobManager
      * @param job
      * @param jobName
-     * @param parameters Useful, if the set of parameters used for the execution command is not identical to the Job's parameters.
-     *
+     * @param processingParameters @param environmentVariables @param dependencyIDs @param command
      */
-    protected SlurmCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> parameters) {
-        super(parentJobManager, job, jobName, parameters)
+    SlurmCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
+
+//    submit = """
+//        sbatch -J ${job_name} -D ${cwd} -o ${out} -e ${err} -t ${runtime_minutes} -p ${queue} \
+//        ${"-n " + cpus} \
+//        --mem-per-cpu=${requested_memory_mb_per_core} \
+//        --wrap "/bin/bash ${script}"
+//    """
+//    kill = "scancel ${job_id}"
+//    check-alive = "squeue -j ${job_id}"
+//    job-id-regex = "Submitted batch job (\\d+).*"
 
     @Override
     protected String getJobNameParameter() {
@@ -66,7 +78,7 @@ class SlurmCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String assembleDependencyString(List<BEJobID> jobIds) {
+    protected String getAdditionalCommandParameters() {
         return null
     }
 
@@ -76,7 +88,22 @@ class SlurmCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getAdditionalCommandParameters() {
+    protected String getDependsSuperParameter() {
+        return null
+    }
+
+    @Override
+    protected String getDependencyParameterName() {
+        return null
+    }
+
+    @Override
+    protected String getDependencyOptionSeparator() {
+        return null
+    }
+
+    @Override
+    protected String getDependencyIDSeparator() {
         return null
     }
 }

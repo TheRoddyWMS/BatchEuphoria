@@ -9,16 +9,16 @@ import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import groovy.transform.CompileStatic
 
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2018 German Cancer Research Center (DKFZ).
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
-
 @CompileStatic
-class SlurmJobManager extends ClusterJobManager {
+class SlurmJobManager extends GridEngineBasedJobManager {
 
     SlurmJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -55,11 +55,6 @@ class SlurmJobManager extends ClusterJobManager {
     }
 
     @Override
-    String getSubmissionCommand() {
-        return null
-    }
-
-    @Override
     String getQueryJobStatesCommand() {
         return null
     }
@@ -90,26 +85,6 @@ class SlurmJobManager extends ClusterJobManager {
     }
 
     @Override
-    protected ExecutionResult executeKillJobs(List jobIDs) {
-        return null
-    }
-
-    @Override
-    protected ExecutionResult executeStartHeldJobs(List jobIDs) {
-        return null
-    }
-
-    @Override
-    protected Map<BEJobID, JobState> queryJobStates(List jobIDs) {
-        return null
-    }
-
-    @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List jobIds) {
-        return null
-    }
-
-    @Override
     void createStorageParameters(LinkedHashMultimap parameters, ResourceSet resourceSet) {
 
     }
@@ -131,11 +106,6 @@ class SlurmJobManager extends ClusterJobManager {
 
     @Override
     void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap parameters) {
-
-    }
-
-    @Override
-    void createDefaultManagerParameters(LinkedHashMultimap parameters) {
 
     }
 }

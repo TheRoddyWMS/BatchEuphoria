@@ -50,7 +50,7 @@ class BEJobID implements Comparable<BEJobID> {
     }
 
     String toString() {
-        return (id)
+        return id
     }
 
     @Deprecated

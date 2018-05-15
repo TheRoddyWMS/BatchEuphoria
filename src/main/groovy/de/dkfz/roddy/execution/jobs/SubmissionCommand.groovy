@@ -126,7 +126,7 @@ abstract class SubmissionCommand extends Command {
 
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
 
-    abstract protected String getAdditionalCommandParameters()//?
+    abstract protected String getAdditionalCommandParameters()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
