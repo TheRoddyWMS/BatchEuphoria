@@ -199,7 +199,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             String resourcesListNodes = resourceList["nodes"] as String
             String resourcesListWalltime = resourceList["walltime"] as String
             if (resourcesListMem)
-                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/), BufferUnit.valueOf(resourcesListMem[-2]) }
+                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/)), BufferUnit.valueOf(resourcesListMem[-2])) }
             if (resourcesListNoDect)
                 nodes = catchAndLogExceptions { Integer.valueOf(resourcesListNoDect) }
             if (resourcesListNodes)
