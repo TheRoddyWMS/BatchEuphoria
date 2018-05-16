@@ -122,7 +122,7 @@ class SGECommand extends GridEngineBasedCommand {
         } as List<String>
 
         if (!environmentStrings.empty)
-            parameterStrings << "-v \"" + environmentStrings.join(",") + "\""
+            parameterStrings << "-v \"${environmentStrings.join(",")}\"".toString()
 
         return parameterStrings.join(" ")
     }
