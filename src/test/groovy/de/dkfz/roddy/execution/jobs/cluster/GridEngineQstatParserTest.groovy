@@ -4,21 +4,19 @@
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.cluster.pbs
+package de.dkfz.roddy.execution.jobs.cluster
 
 import de.dkfz.roddy.TestExecutionService
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import groovy.transform.CompileStatic
 import org.junit.Test
-import java.lang.reflect.Method
 
 /**
  * Created by heinold on 26.03.17.
  */
 @CompileStatic
-class PBSQstatReaderTest {
+class GridEngineQstatParserTest {
 
     final static String output1 = """\
 Job Id: 14973441.tbi-pbs-ng.inet.dkfz-heidelberg.de
@@ -398,21 +396,31 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
 
 """
 
+    protected List<String> getTestQstat() {
+        return Arrays.asList(
+                "job - ID prior name user jobState submit / start at queue slots ja -task - ID",
+                "---------------------------------------------------------------------------------------------------------------- -",
+                "   1187 0.75000 r140710_09 seqware r 07 / 10 / 2014 09:51:55 main.q @worker3 1",
+                "   1188 0.41406 r140710_09 seqware r 07 / 10 / 2014 09:51:40 main.q @worker1 1",
+                "   1190 0.25000 r140710_09 seqware r 07 / 10 / 2014 09:51:55 main.q @worker2 1",
+                "   1189 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:27 1",
+                "   1191 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1",
+                "   1192 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1")
+    }
+
     @Test
-    void testReadQstatOutput() throws Exception {
+    void testProcessQstatOutputFromPlainText() throws Exception {
         TestExecutionService executionService = new TestExecutionService("", "")
         PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
                 .setTrackUserJobsOnly(true)
                 .build())
 
-        Method method = jm.getClass().getDeclaredMethod("readQstatOutput", String);
-        method.setAccessible(true);
-
-        Map<String, Map<String, String>> qstatReaderResultOutput1 = (Map<String, Map<String, String>>) method.invoke(jm, output1)
-        Map<String, Map<String, String>> qstatReaderResultOutput2 = (Map<String, Map<String, String>>) method.invoke(jm, output2)
+        Map<String, Map<String, String>> qstatReaderResultOutput1 = (Map<String, Map<String, String>>) GridEngineBasedJobManager.processQstatOutputFromPlainText(output1)
+        Map<String, Map<String, String>> qstatReaderResultOutput2 = (Map<String, Map<String, String>>) GridEngineBasedJobManager.processQstatOutputFromPlainText(output2)
 
         assert qstatReaderResultOutput1.size() == 4
+        assert qstatReaderResultOutput1.keySet() as List<String> == [ "14973441", "14973792", "14973766", "14973745"]
         assert qstatReaderResultOutput2.size() == 2
     }
 

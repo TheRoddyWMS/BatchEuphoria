@@ -39,15 +39,6 @@ class PBSCommandTest {
     }
 
     @Test
-    void testAssembleDependencyStringWithoutDependencies() throws Exception {
-        def mapOfVars = ["a": "a", "b": "b"]
-        BEJob job = makeJob(mapOfVars)
-        PBSCommand cmd = new PBSCommand(jobManager, makeJob(mapOfVars),
-                "jobName", null, mapOfVars, null, "/tmp/test.sh")
-        assert cmd.assembleDependencyString([]) == ""
-    }
-
-    @Test
     void testAssembleVariableExportParameters_nothing() {
         PBSCommand cmd = new PBSCommand(jobManager, makeJob([:]),
                  "jobName", null, [:], null, "/tmp/test.sh")

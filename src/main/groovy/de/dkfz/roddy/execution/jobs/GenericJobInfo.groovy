@@ -17,14 +17,15 @@ import java.time.LocalDateTime
  * Created by michael on 06.02.15.
  */
 @CompileStatic
-@ToString(includeNames=true)
+@ToString(includeNames = true)
 class GenericJobInfo {
 
     ResourceSet askedResources
     ResourceSet usedResources
     String jobName
     File tool
-    @Deprecated String id
+    @Deprecated
+    String id
 
     LocalDateTime submitTime;
     LocalDateTime startTime;

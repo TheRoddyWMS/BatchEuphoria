@@ -6,14 +6,13 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
-import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFJobManager
-import groovy.util.slurpersupport.GPathResult
+import groovy.transform.CompileStatic
+import groovy.transform.TypeCheckingMode
 import spock.lang.Specification
 
 import java.lang.reflect.InvocationTargetException
@@ -79,11 +78,9 @@ class PBSJobManagerSpec extends Specification {
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
-        Method method = PBSJobManager.class.getDeclaredMethod("processQstatOutput", List)
-        method.setAccessible(true)
 
         when:
-        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXmlExample])
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) jm.processQstatOutputFromXML([rawXmlExample])
 
         then:
         jobInfo.size() == 1

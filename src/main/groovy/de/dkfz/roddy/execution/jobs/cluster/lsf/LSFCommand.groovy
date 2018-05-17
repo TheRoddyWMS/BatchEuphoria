@@ -9,9 +9,12 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.tools.LoggerWrapper
+
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * This class is used to create and execute bsub commands
@@ -23,33 +26,13 @@ class LSFCommand extends SubmissionCommand {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
 
-    /**
-     * The command which should be called
-     */
-    protected String command
-
-    protected List<String> dependencyIDs
-
-    protected final List<ProcessingParameters> processingParameters
-
-    /**
-     *
-     * @param name
-     * @param environmentVariables
-     * @param command
-     * @param filesToCheck
-     */
-    LSFCommand(LSFJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters,
-               Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
-        super(parentManager, job, name, environmentVariables)
-        this.processingParameters = processingParameters
-        this.command = command
-        this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
+    LSFCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
     @Override
-    String getJobNameParameter() {
-        "-J ${jobName}" as String
+    protected String getJobNameParameter() {
+        return "-J ${jobName}" as String
     }
 
     @Override
@@ -59,7 +42,7 @@ class LSFCommand extends SubmissionCommand {
 
     @Override
     protected String getAccountParameter(String account) {
-        return ""
+        return EMPTY
     }
 
     @Override
@@ -94,7 +77,7 @@ class LSFCommand extends SubmissionCommand {
 
     @Override
     protected String getUmaskString(String umask) {
-        return ""
+        return EMPTY
     }
 
     @Override
@@ -105,10 +88,14 @@ class LSFCommand extends SubmissionCommand {
             // -ti: Immediate orphan job termination for jobs with failed dependencies.
             return "-ti -w  \"${joinedParentJobs}\" "
         } else {
-            return ""
+            return EMPTY
         }
     }
 
+    @Override
+    protected String getAdditionalCommandParameters() {
+        return EMPTY
+    }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     /**
@@ -132,10 +119,7 @@ class LSFCommand extends SubmissionCommand {
             environmentStrings += "none"
         }
 
-        return "-env \"" + environmentStrings.join(", ") + "\""
+        return "-env \"${environmentStrings.join(", ")}\""
     }
 
-    protected String getAdditionalCommandParameters() {
-        ""
-    }
 }

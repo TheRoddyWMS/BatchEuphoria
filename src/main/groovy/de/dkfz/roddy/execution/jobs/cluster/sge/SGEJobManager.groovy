@@ -7,39 +7,53 @@
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.JobManagerOptions
-import de.dkfz.roddy.execution.jobs.JobState
-import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
-import de.dkfz.roddy.tools.BufferUnit
-import groovy.transform.CompileStatic
+import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.*
+import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
+import de.dkfz.roddy.tools.*
+import groovy.util.slurpersupport.GPathResult
+
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.regex.Matcher
 
 /**
- * Created by michael on 20.05.14.
+ * @author michael
  */
-@CompileStatic
-class SGEJobManager extends PBSJobManager {
+@groovy.transform.CompileStatic
+class SGEJobManager extends GridEngineBasedJobManager<SGECommand> {
+
+    private static final LoggerWrapper logger = LoggerWrapper.getLogger(SGEJobManager)
+
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
     @Override
     protected SGECommand createCommand(BEJob job) {
-        return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript(), null)
+        return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override
-    protected int getPositionOfJobID() {
-        return 0
+    String getQueryJobStatesCommand() {
+        return "qstat -g d -j"
     }
 
     @Override
-    protected int getPositionOfJobState() {
-        return 4
+    String getExtendedQueryJobStatesCommand() {
+        return "qstat -xml -ext -f -j"
+    }
+
+    @Override
+    GenericJobInfo parseGenericJobInfo(String command) {
+        return null
     }
 
     @Override
@@ -69,32 +83,27 @@ class SGEJobManager extends PBSJobManager {
         return js;
     }
 
-    @Deprecated
-    protected List<String> getTestQstat() {
-        return Arrays.asList(
-                "job - ID prior name user jobState submit / start at queue slots ja -task - ID",
-                "---------------------------------------------------------------------------------------------------------------- -",
-                "   1187 0.75000 r140710_09 seqware r 07 / 10 / 2014 09:51:55 main.q @worker3 1",
-                "   1188 0.41406 r140710_09 seqware r 07 / 10 / 2014 09:51:40 main.q @worker1 1",
-                "   1190 0.25000 r140710_09 seqware r 07 / 10 / 2014 09:51:55 main.q @worker2 1",
-                "   1189 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:27 1",
-                "   1191 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1",
-                "   1192 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1")
-    }
-
     @Override
     void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
         parameters.put("-pe", "serial ${resourceSet.cores}")
     }
 
+    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
+        parameters.put('-q', queue)
+    }
+
     @Override
     void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put("-l", "h_rt=${resourceSet.walltime.toString()}")
+        parameters.put("-l", "h_rt=${TimeUnit.fromDuration(resourceSet.walltime).toHourString()}")
     }
 
     @Override
     void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
         parameters.put("-l", "h_rss=${resourceSet.getMem().toString(BufferUnit.M)}")
+    }
+
+    @Override
+    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
     }
 
     @Override
@@ -106,4 +115,25 @@ class SGEJobManager extends PBSJobManager {
     String getJobNameVariable() {
         return "JOB_NAME"
     }
+
+    @Override
+    String getQueueVariable() {
+        return null
+    }
+
+    @Override
+    String getNodeFileVariable() {
+        return null
+    }
+
+    @Override
+    String getSubmitHostVariable() {
+        return null
+    }
+
+    @Override
+    String getSubmitDirectoryVariable() {
+        return null
+    }
+
 }

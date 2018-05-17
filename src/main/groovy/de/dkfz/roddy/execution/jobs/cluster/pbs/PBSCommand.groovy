@@ -6,17 +6,21 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BEJobID
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
 import de.dkfz.roddy.tools.LoggerWrapper
 
 import java.util.logging.Level
 
 import static de.dkfz.roddy.StringConstants.COLON
+import static de.dkfz.roddy.StringConstants.COMMA
+import static de.dkfz.roddy.StringConstants.EMPTY
+import static de.dkfz.roddy.StringConstants.WHITESPACE
 
 /**
  * This class is used to create and execute qsub commands
@@ -24,7 +28,7 @@ import static de.dkfz.roddy.StringConstants.COLON
  * @author michael
  */
 @groovy.transform.CompileStatic
-class PBSCommand extends SubmissionCommand {
+class PBSCommand extends GridEngineBasedCommand {
 
     private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSCommand.class.name)
 
@@ -32,32 +36,13 @@ class PBSCommand extends SubmissionCommand {
     public static final String AFTEROK = "afterok"
     public static final String PARM_DEPENDS = " -W depend="
 
-    /**
-     * The command which should be called
-     */
-    protected String command
-
-    protected List<String> dependencyIDs
-
-    protected final List<ProcessingParameters> processingParameters
-
-    /**
-     *
-     * @param name
-     * @param environmentVariables
-     * @param command
-     * @param filesToCheck
-     */
-    PBSCommand(PBSJobManager parentManager, BEJob job, String name, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
-        super(parentManager, job, name, environmentVariables)
-        this.processingParameters = processingParameters
-        this.command = command
-        this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
+    PBSCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
     @Override
     protected String getJobNameParameter() {
-        "-N ${jobName}" as String
+        return "-N ${jobName}" as String
     }
 
     @Override
@@ -78,7 +63,7 @@ class PBSCommand extends SubmissionCommand {
     @Override
     protected String getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
-            return "-k"
+            return "-k n"
         } else if (jobLog.out == jobLog.error) {
             return "${joinLogParameter} -o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID')}\""
         } else {
@@ -86,18 +71,18 @@ class PBSCommand extends SubmissionCommand {
         }
     }
 
+    @Override
+    protected String getEmailParameter(String address) {
+        return address ? " -M " + address : ""
+    }
+
     protected String getJoinLogParameter() {
         return "-j oe"
     }
 
     @Override
-    protected String getEmailParameter(String address) {
-        return  address ? " -M " + address : ""
-    }
-
-    @Override
     protected String getGroupListParameter(String groupList) {
-        return " -W group_list="+ groupList
+        return " -W group_list=" + groupList
     }
 
     @Override
@@ -106,27 +91,28 @@ class PBSCommand extends SubmissionCommand {
     }
 
     @Override
-    String assembleDependencyString(List<BEJobID> jobIds) {
-        StringBuilder qsubCall = new StringBuilder("")
-        LinkedList<String> tempDependencies =
-                jobIds.findAll {
-                    it.getId() != "" && it.getId() != NONE && it.getId() != "-1"
-                }.collect {
-                    it.getId().split("\\.")[0] // Keep the command line short. PBS accepts the job number for dependencies.
-                } as LinkedList<String>
-        if (tempDependencies.size() > 0) {
-            try {
-                qsubCall <<
-                        getDependsSuperParameter() <<
-                        getDependencyParameterName() <<
-                        getDependencyOptionSeparator() <<
-                        tempDependencies.join(getDependencyIDSeparator())
-            } catch (Exception ex) {
-                logger.log(Level.SEVERE, ex.toString())
-            }
-        }
+    String getDependencyParameterName() {
+        return AFTEROK
+    }
 
-        return qsubCall
+    /**
+     * In this case i.e. afterokarray:...,afterok:
+     * A comma
+     * @return
+     */
+    @Override
+    protected String getDependencyOptionSeparator() {
+        return COLON
+    }
+
+    @Override
+    protected String getDependencyIDSeparator() {
+        return COLON
+    }
+
+    @Override
+    protected String getAdditionalCommandParameters() {
+        return EMPTY
     }
 
     @Override
@@ -144,31 +130,9 @@ class PBSCommand extends SubmissionCommand {
         } as List<String>
 
         if (!environmentStrings.empty)
-            parameterStrings << "-v \"" + environmentStrings.join(",") + "\""
+            parameterStrings << "-v \"${environmentStrings.join(COMMA)}\"".toString()
 
-        return parameterStrings.join(" ")
-    }
-
-    String getDependencyParameterName() {
-        return AFTEROK
-    }
-
-    /**
-     * In this case i.e. afterokarray:...,afterok:
-     * A comma
-     * @return
-     */
-
-    protected String getDependencyOptionSeparator() {
-        return COLON
-    }
-
-    protected String getDependencyIDSeparator() {
-        return COLON
-    }
-
-    protected String getAdditionalCommandParameters() {
-        return ""
+        return parameterStrings.join(WHITESPACE)
     }
 
     protected String getDependsSuperParameter() {

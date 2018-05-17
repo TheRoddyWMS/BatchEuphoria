@@ -1,21 +1,55 @@
-package de.dkfz.roddy.execution.jobs
+package de.dkfz.roddy.execution.jobs.cluster
 
-import de.dkfz.roddy.BEException
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.io.ExecutionResult
-import spock.lang.Specification
+import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.execution.jobs.TestHelper
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
+import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
+import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.CompileStatic
+import org.junit.Before
+import org.junit.Test
 
-class SubmissionCommandTest extends Specification {
+@CompileStatic
+class GridEngineBaseJobManagerTest {
 
-    static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager makeJobManager(final boolean passEnvironment) {
-        return new BatchEuphoriaJobManager<SubmissionCommand>(
-                TestHelper.makeExecutionService(),
-                JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
+    GridEngineBasedJobManager jobManager
+
+    @Before
+    void setUp() throws Exception {
+        jobManager = new GridEngineBasedJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build()) {
+            @Override
+            void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap parameters) {
+
+            }
 
             @Override
-            Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List jobIds) {
-                return null
+            void createQueueParameter(LinkedHashMultimap parameters, String queue) {
+
+            }
+
+            @Override
+            void createWalltimeParameter(LinkedHashMultimap parameters, ResourceSet resourceSet) {
+
+            }
+
+            @Override
+            void createMemoryParameter(LinkedHashMultimap parameters, ResourceSet resourceSet) {
+
+            }
+
+            @Override
+            void createStorageParameters(LinkedHashMultimap parameters, ResourceSet resourceSet) {
+
             }
 
             @Override
@@ -49,22 +83,12 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            String getSubmissionCommand() {
-                return null
-            }
-
-            @Override
             String getQueryJobStatesCommand() {
                 return null
             }
 
             @Override
             String getExtendedQueryJobStatesCommand() {
-                return null
-            }
-
-            @Override
-            ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
                 return null
             }
 
@@ -87,29 +111,37 @@ class SubmissionCommandTest extends Specification {
             protected JobState parseJobState(String stateString) {
                 return null
             }
-
-            @Override
-            protected ExecutionResult executeKillJobs(List jobIDs) {
-                return null
-            }
-
-            @Override
-            protected ExecutionResult executeStartHeldJobs(List jobIDs) {
-                return null
-            }
-
-            @Override
-            protected Map<BEJobID, JobState> queryJobStates(List jobIDs) {
-                return null
-            }
         }
     }
 
-    def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<Boolean> passEnvironment) {
-        return new SubmissionCommand(jobManager, null, null, [], [:] as Map<String,String>, [], "") {
+    private BEJob makeJob(Map<String, String> mapOfParameters) {
+        BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"), null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, jobManager, JobLog.none(), null)
+        job
+    }
 
-            {
-                this.setPassEnvironment(passEnvironment)
+    @Test
+    void testAssembleDependencyStringWithoutDependencies() throws Exception {
+        def mapOfVars = ["a": "a", "b": "b"]
+        GridEngineBasedCommand cmd = new GridEngineBasedCommand(jobManager, makeJob(mapOfVars),
+                "jobName", null, mapOfVars, null, "/tmp/test.sh") {
+            @Override
+            protected String getDependsSuperParameter() {
+                return null
+            }
+
+            @Override
+            protected String getDependencyParameterName() {
+                return null
+            }
+
+            @Override
+            protected String getDependencyOptionSeparator() {
+                return null
+            }
+
+            @Override
+            protected String getDependencyIDSeparator() {
+                return null
             }
 
             @Override
@@ -153,33 +185,16 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String assembleDependencyString(List<BEJobID> jobIds) {
-                return null
-            }
-
-            @Override
-            protected String assembleVariableExportParameters() throws BEException {
-                return null
-            }
-
-            @Override
             protected String getAdditionalCommandParameters() {
                 return null
             }
+
+            @Override
+            protected String assembleVariableExportParameters() {
+                return null
+            }
         }
+        assert cmd.assembleDependencyString([]) == ""
     }
 
-    def "GetPassLocalEnvironment_JobPrecedenceOverJobManager"() {
-        when:
-        def cmd = makeSubmissionCommand(makeJobManager(true), Optional.of(false))
-        then:
-        !cmd.getPassLocalEnvironment()
-    }
-
-    def "GetPassLocalEnvironment_JobManagerAsFallback"() {
-        when:
-        def cmd = makeSubmissionCommand(makeJobManager(true), Optional.empty())
-        then:
-        cmd.getPassLocalEnvironment()
-    }
 }

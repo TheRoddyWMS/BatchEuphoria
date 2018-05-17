@@ -15,14 +15,14 @@ import org.apache.http.Header
  * Created by kaercher on 02.03.17.
  */
 @CompileStatic
-class RestCommand extends Command{
+class RestCommand extends Command {
 
     String resource
     String requestBody
     List<Header> requestHeaders
     Enum<HttpMethod> httpMethod
 
-    enum HttpMethod{
+    enum HttpMethod {
         HTTPPOST,
         HTTPGET
     }
@@ -33,8 +33,8 @@ class RestCommand extends Command{
      * @param requestHeaders - request headers
      * @param httpMethod - http Method POST or GET
      */
-    RestCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod){
-        super(null,null,null,null)
+    RestCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod) {
+        super(null, null, null, null)
         this.resource = resource
         this.requestBody = requestBody
         this.requestHeaders = requestHeaders

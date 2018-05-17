@@ -21,7 +21,7 @@ public class PBSJobID extends BEJobID implements Serializable {
 
     @Override
     public boolean isValidID() {
-        return super.isValidID() ;
+        return super.isValidID();
     }
 
     @Override

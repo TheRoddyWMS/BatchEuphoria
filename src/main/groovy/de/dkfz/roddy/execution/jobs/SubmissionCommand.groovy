@@ -22,6 +22,14 @@ abstract class SubmissionCommand extends Command {
     Optional<Boolean> passEnvironment = Optional.empty()
 
     /**
+     * The command which should be called
+     */
+    protected String command
+
+    protected List<String> dependencyIDs
+
+    protected final List<ProcessingParameters> processingParameters
+    /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
      *
      * @param parentJobManager
@@ -30,8 +38,12 @@ abstract class SubmissionCommand extends Command {
      * @param environmentVariables
      *
      */
-    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
+    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters,
+                                Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, environmentVariables)
+        this.processingParameters = processingParameters
+        this.command = command
+        this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 
     /**
@@ -79,7 +91,6 @@ abstract class SubmissionCommand extends Command {
         parameters << assembleDependencyString(creatingJob.parentJobIDs)
         parameters << getAdditionalCommandParameters()
 
-
         // create job submission command call
         StringBuilder command = new StringBuilder(EMPTY)
 
@@ -98,26 +109,33 @@ abstract class SubmissionCommand extends Command {
     }
 
     abstract protected String getJobNameParameter()
-    abstract protected String getHoldParameter()
-    abstract protected String getAccountParameter(String account)
-    abstract protected String getWorkingDirectory()
-    abstract protected String getLoggingParameter(JobLog jobLog)
-    abstract protected String getEmailParameter(String address)
-    abstract protected String getGroupListParameter(String groupList)
-    abstract protected String getUmaskString(String umask)
-    abstract protected String assembleDependencyString(List<BEJobID> jobIds)
-    abstract protected String getAdditionalCommandParameters()//?
 
+    abstract protected String getHoldParameter()
+
+    abstract protected String getAccountParameter(String account)
+
+    abstract protected String getWorkingDirectory()
+
+    abstract protected String getLoggingParameter(JobLog jobLog)
+
+    abstract protected String getEmailParameter(String address)
+
+    abstract protected String getGroupListParameter(String groupList)
+
+    abstract protected String getUmaskString(String umask)
+
+    abstract protected String assembleDependencyString(List<BEJobID> jobIds)
+
+    abstract protected String getAdditionalCommandParameters()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
      *  In both cases arbitrary variables can be set to specific values or be declared to be forwarded as defined in the local environment (according
      *  to the parameters field; null-value parameters are copied as locally defined).
      *
-     *  @return A set of parameters for the submission command to achieve the requested variable exports.
+     * @return A set of parameters for the submission command to achieve the requested variable exports.
      */
     abstract protected String assembleVariableExportParameters()
-
 
     String assembleProcessingCommands() {
         StringBuilder commands = new StringBuilder()
