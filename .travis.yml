@@ -16,7 +16,7 @@ deploy:
   file: build/libs/BatchEuphoria-*.jar
   file_glob: true
   on:
-    repo: eilslabs/BatchEuphoria
+    repo: theroddywms/BatchEuphoria
     branch: master
     tags: true
   overwrite: true
