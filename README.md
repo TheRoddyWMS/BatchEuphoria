@@ -1,5 +1,6 @@
 # BatchEuphoria
 [![Build Status - Travis](https://travis-ci.org/TheRoddyWMS/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/TheRoddyWMS/BatchEuphoria)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria?ref=badge_shield)
 
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
 Currently this library supports the following job schedulers:
@@ -87,3 +88,7 @@ Use `gradle uberJar` to setup the jar file for integration tests.
 To test it with LSF environment use `java -jar BatchEuphoria.jar -s yourServer -a yourAccount -rs http://yourServer:8080/platform/ws -ra yourRestAccount -c lsf`
 
 For PBS environment use `java -jar BatchEuphoria.jar -s yourServer -a yourAccount -c pbs`
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria?ref=badge_large)
