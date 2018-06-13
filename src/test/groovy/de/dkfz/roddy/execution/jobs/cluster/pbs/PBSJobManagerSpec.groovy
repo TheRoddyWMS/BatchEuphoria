@@ -11,6 +11,7 @@ import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
 import spock.lang.Specification
@@ -73,7 +74,31 @@ class PBSJobManagerSpec extends Specification {
     </Data>
     '''
 
-    void testParseJobDetails() {
+    void "processQstatOutput, qstat with empty XML output"() {
+
+        given:
+        String rawXMLOutput ='''
+        <Data>
+            <Job>
+                <Job_Id>15020227.testServer</Job_Id>
+            </Job>
+        </Data>
+        '''
+        def parms = JobManagerOptions.create().build()
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
+        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
+        Method method = GridEngineBasedJobManager.class.getDeclaredMethod("processQstatOutputFromXML", List)
+        method.setAccessible(true)
+
+        when:
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXMLOutput])
+
+        then:
+        jobInfo.size() == 1
+    }
+
+    void "processQstatOutput, qstat with XML output"() {
+
         given:
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
@@ -87,7 +112,38 @@ class PBSJobManagerSpec extends Specification {
         jobInfo.get(new BEJobID("15020227")).jobName == "workflow_test"
     }
 
-    void testParseDuration() {
+
+    void "processQstatOutput, replace placeholder PBS_JOBID in logFile and errorLogFile with job id "() {
+      
+        given:
+        String rawXMLOutput='''
+        <Data>
+            <Job>
+                <Job_Id>15976927.testServer</Job_Id>
+                <Output_Path>/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.o$PBS_JOBID</Output_Path>
+                <Error_Path>tbi-pbs:/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e$PBS_JOBID</Error_Path>
+            </Job>
+        </Data>
+    '''
+
+        def parms = JobManagerOptions.create().build()
+        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
+        PBSJobManager jm = new PBSJobManager(testExecutionService, parms)
+        Method method = GridEngineBasedJobManager.class.getDeclaredMethod("processQstatOutputFromXML", List)
+        method.setAccessible(true)
+
+        when:
+        Map<BEJobID, GenericJobInfo> jobInfo = (Map<BEJobID, GenericJobInfo>) method.invoke(jm, [rawXMLOutput])
+
+        then:
+        jobInfo.size() == 1
+        jobInfo.get(new BEJobID("15976927")).logFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.o15976927.testServer"
+        jobInfo.get(new BEJobID("15976927")).errorLogFile.toString() == "/logging_root_path/clusterLog/2017-07-07/workflow_test/snvFilter.e15976927.testServer"
+    }
+
+
+    void "parseColonSeparatedHHMMSSDuration, parse duration"() {
+
         given:
         Method method = ClusterJobManager.class.getDeclaredMethod("parseColonSeparatedHHMMSSDuration", String)
         method.setAccessible(true)
@@ -102,7 +158,9 @@ class PBSJobManagerSpec extends Specification {
         "119:00:00" || Duration.ofHours(119)
     }
 
-    void "testParseDuration fails"() {
+  
+    void "parseColonSeparatedHHMMSSDuration, parse duration fails"() {
+
         given:
         Method method = ClusterJobManager.class.getDeclaredMethod("parseColonSeparatedHHMMSSDuration", String)
         method.setAccessible(true)

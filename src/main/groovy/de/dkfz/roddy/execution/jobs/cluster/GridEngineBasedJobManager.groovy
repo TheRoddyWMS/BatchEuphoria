@@ -133,12 +133,13 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         String command = "qdel ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
+
     /**
      * Reads qstat output
      * @param qstatOutput
      * @return output of qstat in a map with jobid as key
      */
-    static Map<String, Map<String, String>> processQstatOutputFromPlainText(String qstatOutput) {
+    private static Map<String, Map<String, String>> processQstatOutputFromPlainText(String qstatOutput) {
         return qstatOutput.split(String.format(WITH_DELIMITER, "\n\nJob Id: ")).collectEntries {
             Matcher matcher = it =~ /^\s*Job Id: (?<jobId>\d+)\..*\n/
             def result = new HashMap()
@@ -170,7 +171,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(List<String> resultLines) {
+    protected Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(List<String> resultLines) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         if (resultLines.isEmpty()) {
             return [:]
@@ -185,7 +186,16 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         }
 
         for (it in parsedJobs.children()) {
-            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String, null, it["Job_Id"] as String, null, it["depend"] ? (it["depend"] as String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null)
+            String jobIdRaw = it["Job_Id"] as String
+            BEJobID jobID
+            try {
+                jobID = new BEJobID(jobIdRaw)
+            } catch (Exception exp) {
+                throw new BEException("Job ID '${jobIdRaw}' could not be transformed to BEJobID ")
+            }
+
+            List<String> jobDependencies = it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null
+            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String ?: null, null, jobID, null, jobDependencies)
 
             BufferValue mem = null
             Integer cores
@@ -219,24 +229,24 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             if (resourcesUsedWalltime)
                 catchAndLogExceptions { usedWalltime = new TimeUnit(resourcesUsedWalltime) }
 
-            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String, additionalNodeFlag))
-            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String, null))
+            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String ?: null, additionalNodeFlag))
+            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String ?: null, null))
 
-            gj.setLogFile(getQstatFile(it["Output_Path"] as String))
-            gj.setErrorLogFile(getQstatFile(it["Error_Path"] as String))
-            gj.setUser(it["euser"] as String)
-            gj.setExecutionHosts([it["exec_host"] as String])
-            gj.setSubmissionHost(it["submit_host"] as String)
-            gj.setPriority(it["Priority"] as String)
-            gj.setUserGroup(it["egroup"] as String)
-            gj.setResourceReq(it["submit_args"] as String)
+            gj.setLogFile(getQstatFile((it["Output_Path"] as String).replace("\$PBS_JOBID", jobIdRaw)))
+            gj.setErrorLogFile(getQstatFile((it["Error_Path"] as String).replace("\$PBS_JOBID", jobIdRaw)))
+            gj.setUser(it["euser"] as String ?: null)
+            gj.setExecutionHosts(it["exec_host"] as String ? [it["exec_host"] as String] : null)
+            gj.setSubmissionHost(it["submit_host"] as String ?: null)
+            gj.setPriority(it["Priority"] as String ?: null)
+            gj.setUserGroup(it["egroup"] as String ?: null)
+            gj.setResourceReq(it["submit_args"] as String ?: null)
             gj.setRunTime(it["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
-            gj.setCpuTime(resourcesUsed["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(resourcesUsed["cput"] as String) } : null)
-            gj.setServer(it["server"] as String)
-            gj.setUmask(it["umask"] as String)
+            gj.setCpuTime(it["resources_used"]["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(it["resources_used"]["cput"] as String) } : null)
+            gj.setServer(it["server"] as String ?: null)
+            gj.setUmask(it["umask"] as String ?: null)
             gj.setJobState(parseJobState(it["job_state"] as String))
             gj.setExitCode(it["exit_status"] ? catchAndLogExceptions { Integer.valueOf(it["exit_status"] as String) } : null)
-            gj.setAccount(it["Account_Name"] as String)
+            gj.setAccount(it["Account_Name"] as String ?: null)
             gj.setStartCount(it["start_count"] ? catchAndLogExceptions { Integer.valueOf(it["start_count"] as String) } : null)
 
             if (it["qtime"]) // The time that the job entered the current queue.
@@ -248,7 +258,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             if (it["etime"])  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
                 gj.setEligibleTime(parseTime(it["etime"] as String))
 
-            queriedExtendedStates.put(new BEJobID(it["Job_Id"] as String), gj)
+            queriedExtendedStates.put(jobID, gj)
         }
         return queriedExtendedStates
     }

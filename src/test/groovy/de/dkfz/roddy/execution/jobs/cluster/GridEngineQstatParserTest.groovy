@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import org.junit.Test
 
@@ -408,6 +409,7 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
                 "   1192 0.00000 r140710_09 seqware hqw 07 / 10 / 2014 09:51:48 1")
     }
 
+    @CompileDynamic
     @Test
     void testProcessQstatOutputFromPlainText() throws Exception {
         TestExecutionService executionService = new TestExecutionService("", "")

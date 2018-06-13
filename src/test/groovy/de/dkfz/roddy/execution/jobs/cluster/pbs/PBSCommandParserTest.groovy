@@ -81,7 +81,7 @@ class PBSCommandParserTest {
 
         assert commandParser.script == "/data/michael/temp/roddyLocalTest/testproject/rpp/A100/roddyExecutionStore/exec_170402_171935425_heinold_indelCalling/analysisTools/indelCallingWorkflow/indelCalling.sh"
         assert commandParser.jobName == "r170402_171935425_A100_indelCalling"
-        assert commandParser.id == "120016"
+        assert commandParser.jobID.toString() == "120016"
         assert commandParser.walltime == "02:02:00:00"
         assert commandParser.memory == "16384"
         assert commandParser.nodes == "1"
