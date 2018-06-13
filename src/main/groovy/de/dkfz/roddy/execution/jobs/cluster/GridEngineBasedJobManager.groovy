@@ -194,7 +194,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
                 throw new BEException("Job ID '${jobIdRaw}' could not be transformed to BEJobID ")
             }
 
-            List<String> jobDependencies = it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null
+            List<String> jobDependencies = it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, String beforeDot, afterDot -> return beforeDot } : null
             GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String ?: null, null, jobID, null, jobDependencies)
 
             BufferValue mem = null

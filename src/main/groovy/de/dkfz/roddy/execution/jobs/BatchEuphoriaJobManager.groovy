@@ -246,7 +246,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract String getSubmitDirectoryVariable()
 
     List<String> getEnvironmentVariableGlobs() {
-        return Collections.unmodifiableList([])
+        return Collections.unmodifiableList([] as List<String>)
     }
 
     boolean getDefaultForHoldJobsEnabled() { return true }
