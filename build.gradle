@@ -116,8 +116,3 @@ task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
     }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
-
-// Fix Gradle version
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.8'
-}
