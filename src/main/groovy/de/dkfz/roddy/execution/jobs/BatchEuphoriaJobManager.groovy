@@ -65,12 +65,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         assert (executionService)
         this.executionService = executionService
 
-        this.isTrackingOfUserJobsEnabled = parms.trackUserJobsOnly
+        this.isTrackingOfUserJobsEnabled = parms.userIdForJobQueries as boolean
         this.queryOnlyStartedJobs = parms.trackOnlyStartedJobs
         this.userIDForQueries = parms.userIdForJobQueries
-        if (!userIDForQueries && isTrackingOfUserJobsEnabled) {
-            throw new BEException("The user name was not set properly and the system cannot track the users jobs.")
-        }
+
         this.userEmail = parms.userEmail
         this.userGroup = parms.userGroup
         this.userAccount = parms.userAccount

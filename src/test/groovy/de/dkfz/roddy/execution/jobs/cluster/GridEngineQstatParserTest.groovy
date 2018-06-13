@@ -415,7 +415,6 @@ Job Id: 14973827.tbi-pbs-ng.inet.dkfz-heidelberg.de
         TestExecutionService executionService = new TestExecutionService("", "")
         PBSJobManager jm = new PBSJobManager(executionService, JobManagerOptions.create()
                 .setCreateDaemon(false)
-                .setTrackUserJobsOnly(true)
                 .setUserIdForJobQueries("asdf")
                 .build())
 

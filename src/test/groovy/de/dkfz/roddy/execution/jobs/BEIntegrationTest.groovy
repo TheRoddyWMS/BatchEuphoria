@@ -72,7 +72,6 @@ class BEIntegrationTest {
                 .newInstance(getExecutionServiceFor(system),
                 JobManagerOptions.create()
                         .setCreateDaemon(false)
-                        .setTrackUserJobsOnly(true)
                         .build()
         ) as BatchEuphoriaJobManager
     }

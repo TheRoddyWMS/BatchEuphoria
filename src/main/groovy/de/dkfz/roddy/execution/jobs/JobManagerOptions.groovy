@@ -21,7 +21,6 @@ class JobManagerOptions {
     Duration updateInterval
 
     String userIdForJobQueries
-    boolean trackUserJobsOnly
     boolean trackOnlyStartedJobs
 
     String userGroup
@@ -76,7 +75,6 @@ class JobManagerOptions {
 @Builder(builderStrategy = ExternalStrategy, forClass = JobManagerOptions, prefix = "set")
 class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
-        trackUserJobsOnly = false
         trackOnlyStartedJobs = false
         strictMode = true
         updateInterval = Duration.ofMinutes(5)
