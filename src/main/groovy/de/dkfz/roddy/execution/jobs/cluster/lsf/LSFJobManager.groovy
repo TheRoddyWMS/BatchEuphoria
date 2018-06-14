@@ -11,11 +11,15 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.tools.*
+import de.dkfz.roddy.tools.BashUtils
+import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import groovy.json.JsonSlurper
 
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -31,6 +35,12 @@ class LSFJobManager extends AbstractLSFJobManager {
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
+
+    private static final DateTimeFormatter DATE_PATTERN = DateTimeFormatter
+            .ofPattern("MMM ppd HH:mm yyyy")
+            .withLocale(Locale.ENGLISH)
+            .withZone(ZoneId.systemDefault())
+
 
     private String getQueryCommand() {
         return LSF_COMMAND_QUERY_STATES
@@ -119,10 +129,9 @@ class LSFJobManager extends AbstractLSFJobManager {
         return result
     }
 
-    private static LocalDateTime parseTime(String str) {
-        DateTimeFormatter datePattern = DateTimeFormatter.ofPattern("MMM ppd HH:mm yyyy").withLocale(Locale.ENGLISH)
-        LocalDateTime date = LocalDateTime.parse(str + " " + LocalDateTime.now().getYear(), datePattern)
-        if (date > LocalDateTime.now()) {
+    private static ZonedDateTime parseTime(String str) {
+        ZonedDateTime date = ZonedDateTime.parse(str + " " + LocalDateTime.now().getYear(), DATE_PATTERN)
+        if (date > ZonedDateTime.now()) {
             return date.minusYears(1)
         }
         return date

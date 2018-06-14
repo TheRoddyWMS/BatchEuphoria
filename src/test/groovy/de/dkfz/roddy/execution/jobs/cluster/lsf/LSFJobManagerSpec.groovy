@@ -7,12 +7,21 @@
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.TestExecutionService
+import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import groovy.json.JsonSlurper
 import spock.lang.Specification
 
 import java.lang.reflect.Method
+import java.time.Duration
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class LSFJobManagerSpec extends Specification {
 
@@ -172,4 +181,86 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.jobID.toString() == "22005"
     }
 
+    void "test queryExtendedJobStateById"() {
+        given:
+        JobManagerOptions parms = JobManagerOptions.create().build()
+        BEExecutionService testExecutionService = [
+                execute: { String s -> new ExecutionResult(true, 0, RAW_JSON_OUTPUT.split("\n") as List<String>, null) }
+        ] as BEExecutionService
+        LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
+
+        when:
+        Map<BEJobID, GenericJobInfo> result = manager.queryExtendedJobStateById([new BEJobID("22005")])
+
+        then:
+        result.size() == 1
+        GenericJobInfo jobInfo = result.get(new BEJobID("22005"))
+        jobInfo
+        jobInfo.askedResources.size == null
+        jobInfo.askedResources.mem == null
+        jobInfo.askedResources.cores == null
+        jobInfo.askedResources.nodes == null
+        jobInfo.askedResources.walltime == Duration.ofMinutes(10)
+        jobInfo.askedResources.storage == null
+        jobInfo.askedResources.queue == "short-dmg"
+        jobInfo.askedResources.nthreads == null
+        jobInfo.askedResources.swap == null
+
+        jobInfo.usedResources.size == null
+        jobInfo.usedResources.mem == new BufferValue(5452595, BufferUnit.k)
+        jobInfo.usedResources.cores == null
+        jobInfo.usedResources.nodes == 1
+        jobInfo.usedResources.walltime == Duration.ofSeconds(1)
+        jobInfo.usedResources.storage == null
+        jobInfo.usedResources.queue == "short-dmg"
+        jobInfo.usedResources.nthreads == null
+        jobInfo.usedResources.swap == null
+
+        jobInfo.jobName == "ls -l"
+        jobInfo.tool == new File("ls -l")
+        jobInfo.jobID == new BEJobID("22005")
+        jobInfo.submitTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.eligibleTime == null
+        jobInfo.startTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.endTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.executionHosts == ["tbi-cn019", "tbi-cn019"]
+        jobInfo.submissionHost == "tbi-cn013"
+        jobInfo.priority == null
+        jobInfo.logFile == null
+        jobInfo.errorLogFile == null
+        jobInfo.inputFile == null
+        jobInfo.user == "otptest"
+        jobInfo.userGroup == null
+        jobInfo.resourceReq == 'select[type == local] order[r15s:pg] '
+        jobInfo.startCount == null
+        jobInfo.account == null
+        jobInfo.server == null
+        jobInfo.umask == null
+        jobInfo.parameters == null
+        jobInfo.parentJobIDs == ["22004"]
+        jobInfo.otherSettings == null
+        jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL
+        jobInfo.userTime == null
+        jobInfo.systemTime == null
+        jobInfo.pendReason == null
+        jobInfo.execHome == "/home/otptest"
+        jobInfo.execUserName == null
+        jobInfo.pidStr == ["46782", "46796", "46798", "46915", "47458", "47643"]
+        jobInfo.pgidStr == null
+        jobInfo.exitCode == 0
+        jobInfo.jobGroup == null
+        jobInfo.description == null
+        jobInfo.execCwd == "/home/otptest"
+        jobInfo.askedHostsStr == null
+        jobInfo.cwd == '$HOME'
+        jobInfo.projectName == "default"
+        jobInfo.cpuTime == Duration.ofSeconds(1)
+        jobInfo.runTime == Duration.ofSeconds(1)
+        jobInfo.timeUserSuspState == null
+        jobInfo.timePendState == null
+        jobInfo.timePendSuspState == null
+        jobInfo.timeSystemSuspState == null
+        jobInfo.timeUnknownState == null
+        jobInfo.timeOfCalculation == null
+    }
 }

@@ -5,11 +5,7 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerOptions
-import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
@@ -19,8 +15,8 @@ import groovy.util.slurpersupport.GPathResult
 
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.regex.Matcher
 
 @CompileStatic
@@ -148,8 +144,8 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         } as Map<String, Map<String, String>>
     }
 
-    private static LocalDateTime parseTime(String str) {
-        return catchAndLogExceptions { Instant.ofEpochSecond(Long.valueOf(str)).atZone(ZoneId.systemDefault()).toLocalDateTime() }
+    private static ZonedDateTime parseTime(String str) {
+        return catchAndLogExceptions { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), ZoneId.systemDefault()) }
     }
 
     /**

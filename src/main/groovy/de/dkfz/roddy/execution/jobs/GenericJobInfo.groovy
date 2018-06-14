@@ -11,7 +11,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 
 /**
  * Created by michael on 06.02.15.
@@ -26,10 +26,14 @@ class GenericJobInfo {
     File tool
     BEJobID jobID
 
-    LocalDateTime submitTime
-    LocalDateTime eligibleTime // when all conditions like job dependencies full filled, it is qu
-    LocalDateTime startTime
-    LocalDateTime endTime
+    /** The date-time the job entered the queue. */
+    ZonedDateTime submitTime
+    /** The date-time the job became eligible to run when all conditions like job dependencies full filled, i.e. in a queued state while residing in an execution queue. */
+    ZonedDateTime eligibleTime
+    /** The date-time the job was started. */
+    ZonedDateTime startTime
+    /** The date-time the job was completed. */
+    ZonedDateTime endTime
 
     List<String> executionHosts
     String submissionHost
@@ -74,7 +78,7 @@ class GenericJobInfo {
     Duration timePendSuspState // Suspended by its owner or the LSF administrator while in PEND state
     Duration timeSystemSuspState //Suspended by the LSF system after being dispatched
     Duration timeUnknownState
-    LocalDateTime timeOfCalculation
+    ZonedDateTime timeOfCalculation
 
 
     GenericJobInfo(String jobName, File tool, BEJobID jobID, Map<String, String> parameters, List<String> parentJobIDs) {

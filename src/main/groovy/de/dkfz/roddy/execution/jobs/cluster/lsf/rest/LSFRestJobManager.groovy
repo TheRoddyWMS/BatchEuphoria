@@ -26,7 +26,8 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -53,6 +54,12 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     private static Integer HTTP_OK = 200
 
     private static String NEW_LINE = "\r\n"
+
+    private static final DateTimeFormatter DATE_PATTERN = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+            .withLocale(Locale.ENGLISH)
+            .withZone(ZoneId.systemDefault())
+
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerOptions parms) {
         super(restExecutionService, parms)
@@ -343,13 +350,12 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
-        DateTimeFormatter lsfDatePattern = catchAndLogExceptions { DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH) }
         jobInfo.setUser(jobDetails.getProperty("user").toString())
         jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
         jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setStartTime(catchAndLogExceptions { parseTime(jobDetails.getProperty("startTime").toString()) })
+        jobInfo.setSubmitTime(catchAndLogExceptions { parseTime(jobDetails.getProperty("submitTime").toString()) })
+        jobInfo.setEndTime(catchAndLogExceptions { parseTime(jobDetails.getProperty("endTime").toString()) })
         jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts") as String ? (jobDetails.getProperty("exHosts") as String).split(":").toList() : null)
         jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
         jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
@@ -372,6 +378,13 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         jobInfo.setAskedHostsStr(jobDetails.getProperty("askedHostsStr").toString())
 
         return jobInfo
+    }
+
+    private static ZonedDateTime parseTime(String str) {
+        if (!str) {
+            return null
+        }
+        ZonedDateTime.parse(str, DATE_PATTERN)
     }
 
     /**
@@ -406,7 +419,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
-        jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString() + " " + LocalDateTime.now().getYear(), lsfDatePattern) : null)
+        jobInfo.setTimeOfCalculation(catchAndLogExceptions { parseTime(timeSummary.getProperty("timeOfCalculation").toString()) })
         jobInfo.setTimeUserSuspState(timeSummary.getProperty("ususpTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ususpTime").toString())), 0) : null)
         jobInfo.setTimePendState(timeSummary.getProperty("pendTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("pendTime").toString())), 0) : null)
         jobInfo.setTimePendSuspState(timeSummary.getProperty("psuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("psuspTime").toString())), 0) : null)

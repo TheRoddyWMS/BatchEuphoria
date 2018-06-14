@@ -19,7 +19,8 @@ import spock.lang.Specification
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class PBSJobManagerSpec extends Specification {
     PBSJobManager manager
@@ -127,8 +128,8 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.jobName == "r180328_183957634_pid_4_starAlignment"
         jobInfo.tool == null
         jobInfo.jobID == new BEJobID("4499334")
-        jobInfo.submitTime == LocalDateTime.of(2018, 03, 28, 18, 39, 22)
-        jobInfo.eligibleTime == LocalDateTime.of(2018, 03, 28, 18, 39, 22)
+        jobInfo.submitTime == ZonedDateTime.of(2018, 03, 28, 18, 39, 22, 0, ZoneId.systemDefault())
+        jobInfo.eligibleTime == ZonedDateTime.of(2018, 03, 28, 18, 39, 22, 0, ZoneId.systemDefault())
         jobInfo.startTime == null
         jobInfo.endTime == null
         jobInfo.executionHosts == null
@@ -203,10 +204,10 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.jobName == "r180405_163953553_stds_snvJoinVcfFiles"
         jobInfo.tool == null
         jobInfo.jobID == new BEJobID("4564045")
-        jobInfo.submitTime == LocalDateTime.of(2018, 4, 5, 16, 39, 18)
-        jobInfo.eligibleTime == LocalDateTime.of(2018, 4, 5, 16, 39, 42)
-        jobInfo.startTime == LocalDateTime.of(2018, 4, 5, 16, 39, 43)
-        jobInfo.endTime == LocalDateTime.of(2018, 4, 5, 16, 39, 54)
+        jobInfo.submitTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 18, 0, ZoneId.systemDefault())
+        jobInfo.eligibleTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 42, 0, ZoneId.systemDefault())
+        jobInfo.startTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 43, 0, ZoneId.systemDefault())
+        jobInfo.endTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 54, 0, ZoneId.systemDefault())
         jobInfo.executionHosts == ["denbi5-int"]
         jobInfo.submissionHost == "subm.example.com"
         jobInfo.priority == "0"
