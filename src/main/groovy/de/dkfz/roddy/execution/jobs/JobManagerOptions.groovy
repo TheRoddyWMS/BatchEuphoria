@@ -11,6 +11,7 @@ import groovy.transform.builder.Builder
 import groovy.transform.builder.ExternalStrategy
 
 import java.time.Duration
+import java.time.ZoneId
 
 
 @CompileStatic
@@ -61,6 +62,13 @@ class JobManagerOptions {
 
     Map<String, String> additionalOptions
 
+    /**
+     * Should be set to the time zone of the cluster system,
+     * setting this value is necessary only iff the cluster system runs in a different time zone than BE
+     */
+    ZoneId timeZoneId
+
+
     static JobManagerOptionsBuilder create() {
         new JobManagerOptionsBuilder()
     }
@@ -84,5 +92,6 @@ class JobManagerOptionsBuilder {
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
         passEnvironment = false     // Setting this to true should be a conscious decision. Therefore the default 'false'.
         additionalOptions = [:]
+        timeZoneId = ZoneId.systemDefault()
     }
 }

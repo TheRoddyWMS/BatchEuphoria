@@ -26,7 +26,6 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 import java.time.Duration
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -55,15 +54,16 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
     private static String NEW_LINE = "\r\n"
 
-    private static final DateTimeFormatter DATE_PATTERN = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
-            .withLocale(Locale.ENGLISH)
-            .withZone(ZoneId.systemDefault())
+    private final DateTimeFormatter DATE_PATTERN
 
 
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerOptions parms) {
         super(restExecutionService, parms)
         this.restExecutionService = restExecutionService as RestExecutionService
+        DATE_PATTERN = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+            .withLocale(Locale.ENGLISH)
+            .withZone(parms.timeZoneId)
     }
 
     /**
@@ -380,7 +380,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         return jobInfo
     }
 
-    private static ZonedDateTime parseTime(String str) {
+    private ZonedDateTime parseTime(String str) {
         if (!str) {
             return null
         }

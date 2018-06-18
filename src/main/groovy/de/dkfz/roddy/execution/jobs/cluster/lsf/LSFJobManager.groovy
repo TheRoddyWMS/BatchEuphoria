@@ -18,7 +18,6 @@ import groovy.json.JsonSlurper
 
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -36,11 +35,16 @@ class LSFJobManager extends AbstractLSFJobManager {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    private static final DateTimeFormatter DATE_PATTERN = DateTimeFormatter
-            .ofPattern("MMM ppd HH:mm yyyy")
-            .withLocale(Locale.ENGLISH)
-            .withZone(ZoneId.systemDefault())
+    private final DateTimeFormatter DATE_PATTERN
 
+
+    LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
+        super(executionService, parms)
+        DATE_PATTERN = DateTimeFormatter
+                .ofPattern("MMM ppd HH:mm yyyy")
+                .withLocale(Locale.ENGLISH)
+                .withZone(parms.timeZoneId)
+    }
 
     private String getQueryCommand() {
         return LSF_COMMAND_QUERY_STATES
@@ -72,10 +76,6 @@ class LSFJobManager extends AbstractLSFJobManager {
             js = JobState.FAILED
 
         return js
-    }
-
-    LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
-        super(executionService, parms)
     }
 
     protected LSFCommand createCommand(BEJob job) {
@@ -129,8 +129,8 @@ class LSFJobManager extends AbstractLSFJobManager {
         return result
     }
 
-    private static ZonedDateTime parseTime(String str) {
-        ZonedDateTime date = ZonedDateTime.parse(str + " " + LocalDateTime.now().getYear(), DATE_PATTERN)
+    private ZonedDateTime parseTime(String str) {
+        ZonedDateTime date = ZonedDateTime.parse("${str} ${LocalDateTime.now().getYear()}", DATE_PATTERN)
         if (date > ZonedDateTime.now()) {
             return date.minusYears(1)
         }

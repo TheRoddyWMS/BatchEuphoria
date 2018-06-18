@@ -28,7 +28,7 @@ class GenericJobInfo {
 
     /** The date-time the job entered the queue. */
     ZonedDateTime submitTime
-    /** The date-time the job became eligible to run when all conditions like job dependencies full filled, i.e. in a queued state while residing in an execution queue. */
+    /** The date-time the job became eligible to run when all conditions like job dependencies are met, i.e. in a queued state while residing in an execution queue. */
     ZonedDateTime eligibleTime
     /** The date-time the job was started. */
     ZonedDateTime startTime

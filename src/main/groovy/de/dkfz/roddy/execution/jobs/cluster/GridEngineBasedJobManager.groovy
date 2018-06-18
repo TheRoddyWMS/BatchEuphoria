@@ -23,9 +23,12 @@ import java.util.regex.Matcher
 abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobManager<C> {
 
     public static final String WITH_DELIMITER = '(?=(%1$s))'
+    private final ZoneId TIME_ZONE_ID
+
 
     GridEngineBasedJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
+        TIME_ZONE_ID = parms.timeZoneId
     }
 
     @Override
@@ -144,8 +147,8 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         } as Map<String, Map<String, String>>
     }
 
-    private static ZonedDateTime parseTime(String str) {
-        return catchAndLogExceptions { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), ZoneId.systemDefault()) }
+    private ZonedDateTime parseTime(String str) {
+        return catchAndLogExceptions { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), TIME_ZONE_ID) }
     }
 
     /**
