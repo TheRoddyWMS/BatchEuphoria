@@ -154,13 +154,13 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobID, null, dependIDs)
 
         String queue = jobResult["QUEUE"] ?: null
-        Duration runTime = catchAndLogExceptions {
+        Duration runTime = withCaughtAndLoggedException {
             jobResult["RUN_TIME"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUN_TIME"] as String) : null
         }
-        BufferValue swap = catchAndLogExceptions {
+        BufferValue swap = withCaughtAndLoggedException {
             jobResult["SWAP"] ? new BufferValue((jobResult["SWAP"] as String).find("\\d+"), BufferUnit.m) : null
         }
-        BufferValue memory = catchAndLogExceptions {
+        BufferValue memory = withCaughtAndLoggedException {
             String unit = (jobResult["MAX_MEM"] as String).find("[a-zA-Z]+")
             BufferUnit bufferUnit
             if (unit == "Gbytes")
@@ -169,10 +169,10 @@ class LSFJobManager extends AbstractLSFJobManager {
                 bufferUnit = BufferUnit.m
             jobResult["MAX_MEM"] ? new BufferValue((jobResult["MAX_MEM"] as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
         }
-        Duration runLimit = catchAndLogExceptions {
+        Duration runLimit = withCaughtAndLoggedException {
             jobResult["RUNTIMELIMIT"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUNTIMELIMIT"] as String) : null
         }
-        Integer nodes = catchAndLogExceptions { jobResult["SLOTS"] ? jobResult["SLOTS"] as Integer : null }
+        Integer nodes = withCaughtAndLoggedException { jobResult["SLOTS"] ? jobResult["SLOTS"] as Integer : null }
 
         ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
         jobInfo.setUsedResources(usedResources)
@@ -190,7 +190,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["EXIT_CODE"] ? Integer.valueOf(jobResult["EXIT_CODE"] as String) : null))
         jobInfo.setSubmissionHost(jobResult["FROM_HOST"] as String ?: null)
         jobInfo.setExecutionHosts(jobResult["EXEC_HOST"] as String ? (jobResult["EXEC_HOST"] as String).split(":").toList() : null)
-        catchAndLogExceptions {
+        withCaughtAndLoggedException {
             jobInfo.setCpuTime(jobResult["CPU_USED"] ? parseColonSeparatedHHMMSSDuration(jobResult["CPU_USED"] as String) : null)
         }
         jobInfo.setRunTime(runTime)
@@ -205,11 +205,11 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setExecHome(jobResult["EXEC_HOME"] as String ?: null)
 
         if (jobResult["SUBMIT_TIME"])
-            catchAndLogExceptions { jobInfo.setSubmitTime(parseTime(jobResult["SUBMIT_TIME"] as String)) }
+            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(jobResult["SUBMIT_TIME"] as String)) }
         if (jobResult["START_TIME"])
-            catchAndLogExceptions { jobInfo.setStartTime(parseTime(jobResult["START_TIME"] as String)) }
+            withCaughtAndLoggedException { jobInfo.setStartTime(parseTime(jobResult["START_TIME"] as String)) }
         if (jobResult["FINISH_TIME"])
-            catchAndLogExceptions {
+            withCaughtAndLoggedException {
                 jobInfo.setEndTime(parseTime((jobResult["FINISH_TIME"] as String).substring(0, (jobResult["FINISH_TIME"] as String).length() - 2)))
             }
 

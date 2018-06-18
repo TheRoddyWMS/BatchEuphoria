@@ -146,7 +146,7 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.server == "pbsserver"
         jobInfo.umask == null
         jobInfo.parameters == null
-        jobInfo.parentJobIDs == null
+        jobInfo.parentJobIDs == []
         jobInfo.otherSettings == null
         jobInfo.jobState == JobState.QUEUED
         jobInfo.userTime == null

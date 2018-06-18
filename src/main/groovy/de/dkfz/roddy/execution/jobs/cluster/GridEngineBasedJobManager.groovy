@@ -148,7 +148,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
     }
 
     private ZonedDateTime parseTime(String str) {
-        return catchAndLogExceptions { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), TIME_ZONE_ID) }
+        return withCaughtAndLoggedException { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), TIME_ZONE_ID) }
     }
 
     /**
@@ -173,7 +173,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
                 throw new BEException("Job ID '${jobIdRaw}' could not be transformed to BEJobID ")
             }
 
-            List<String> jobDependencies = catchAndLogExceptions { getJobDependencies(job["depend"] as String) }
+            List<String> jobDependencies = withCaughtAndLoggedException { getJobDependencies(job["depend"] as String) }
             String jobName = job["Job_Name"] as String ?: null
             GenericJobInfo gj = new GenericJobInfo(jobName, null, jobID, null, jobDependencies)
 
@@ -189,15 +189,15 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             String resourcesListNodes = resourceList["nodes"] as String
             String resourcesListWalltime = resourceList["walltime"] as String
             if (resourcesListMem)
-                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/)), BufferUnit.valueOf(resourcesListMem[-2])) }
+                mem = withCaughtAndLoggedException { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/)), BufferUnit.valueOf(resourcesListMem[-2])) }
             if (resourcesListNoDect)
-                nodes = catchAndLogExceptions { Integer.valueOf(resourcesListNoDect) }
+                nodes = withCaughtAndLoggedException { Integer.valueOf(resourcesListNoDect) }
             if (resourcesListNodes)
-                cores = catchAndLogExceptions { Integer.valueOf(resourcesListNodes.find("ppn=.*").find(/(\d+)/)) }
+                cores = withCaughtAndLoggedException { Integer.valueOf(resourcesListNodes.find("ppn=.*").find(/(\d+)/)) }
             if (resourcesListNodes)
-                additionalNodeFlag = catchAndLogExceptions { resourcesListNodes.find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
+                additionalNodeFlag = withCaughtAndLoggedException { resourcesListNodes.find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
             if (resourcesListWalltime)
-                walltime = catchAndLogExceptions { new TimeUnit(resourcesListWalltime) }
+                walltime = withCaughtAndLoggedException { new TimeUnit(resourcesListWalltime) }
 
             BufferValue usedMem = null
             TimeUnit usedWalltime = null
@@ -205,29 +205,29 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             String resourcedUsedMem = resourcesUsed["mem"] as String
             String resourcesUsedWalltime = resourcesUsed["walltime"] as String
             if (resourcedUsedMem)
-                catchAndLogExceptions { usedMem = new BufferValue(Integer.valueOf(resourcedUsedMem.find(/(\d+)/)), BufferUnit.valueOf(resourcedUsedMem[-2])) }
+                withCaughtAndLoggedException { usedMem = new BufferValue(Integer.valueOf(resourcedUsedMem.find(/(\d+)/)), BufferUnit.valueOf(resourcedUsedMem[-2])) }
             if (resourcesUsedWalltime)
-                catchAndLogExceptions { usedWalltime = new TimeUnit(resourcesUsedWalltime) }
+                withCaughtAndLoggedException { usedWalltime = new TimeUnit(resourcesUsedWalltime) }
 
             gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, job["queue"] as String ?: null, additionalNodeFlag))
             gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, job["queue"] as String ?: null, null))
 
-            gj.setLogFile(catchAndLogExceptions { getQstatFile(job["Output_Path"] as String, jobIdRaw) })
-            gj.setErrorLogFile(catchAndLogExceptions { getQstatFile(job["Error_Path"] as String, jobIdRaw) })
+            gj.setLogFile(withCaughtAndLoggedException { getQstatFile(job["Output_Path"] as String, jobIdRaw) })
+            gj.setErrorLogFile(withCaughtAndLoggedException { getQstatFile(job["Error_Path"] as String, jobIdRaw) })
             gj.setUser(job["euser"] as String ?: null)
-            gj.setExecutionHosts(catchAndLogExceptions { getExecutionHosts(job["exec_host"] as String) })
+            gj.setExecutionHosts(withCaughtAndLoggedException { getExecutionHosts(job["exec_host"] as String) })
             gj.setSubmissionHost(job["submit_host"] as String ?: null)
             gj.setPriority(job["Priority"] as String ?: null)
             gj.setUserGroup(job["egroup"] as String ?: null)
             gj.setResourceReq(job["submit_args"] as String ?: null)
-            gj.setRunTime(job["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(job["total_runtime"] as String)), 0) } : null)
-            gj.setCpuTime(resourcesUsed["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(job["resources_used"]["cput"] as String) } : null)
+            gj.setRunTime(job["total_runtime"] ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(job["total_runtime"] as String)), 0) } : null)
+            gj.setCpuTime(resourcesUsed["cput"] ? withCaughtAndLoggedException { parseColonSeparatedHHMMSSDuration(job["resources_used"]["cput"] as String) } : null)
             gj.setServer(job["server"] as String ?: null)
             gj.setUmask(job["umask"] as String ?: null)
             gj.setJobState(parseJobState(job["job_state"] as String))
-            gj.setExitCode(job["exit_status"] ? catchAndLogExceptions { Integer.valueOf(job["exit_status"] as String) }: null )
+            gj.setExitCode(job["exit_status"] ? withCaughtAndLoggedException { Integer.valueOf(job["exit_status"] as String) }: null )
             gj.setAccount(job["Account_Name"] as String ?: null)
-            gj.setStartCount(job["start_count"] ? catchAndLogExceptions { Integer.valueOf(job["start_count"] as String) } : null)
+            gj.setStartCount(job["start_count"] ? withCaughtAndLoggedException { Integer.valueOf(job["start_count"] as String) } : null)
 
             if (job["qtime"]) // The time that the job entered the current queue.
                 gj.setSubmitTime(parseTime(job["qtime"] as String))
@@ -255,14 +255,14 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
 
     private static List<String> getJobDependencies(String s) {
         if (!s) {
-            return null
+            return []
         }
         s.split(",")
                 .find { it.startsWith("afterok") }
-                .findAll(/(\d+).(\w+)/) { fullMatch, String beforeDot, afterDot -> return beforeDot }
+                ?.findAll(/(\d+)(\.\w+)?/) { fullMatch, String beforeDot, afterDot -> return beforeDot } ?: []as List<String>
     }
 
-    private static File getQstatFile(String s, String jobId) {
+    private File getQstatFile(String s, String jobId) {
         if (!s) {
             return null
         }
@@ -274,7 +274,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         } else {
             return null
         }
-        new File(fileName.replace("\$PBS_JOBID", jobId))
+        new File(fileName.replace("\$${getJobIdVariable()}", jobId))
     }
 
     @Override

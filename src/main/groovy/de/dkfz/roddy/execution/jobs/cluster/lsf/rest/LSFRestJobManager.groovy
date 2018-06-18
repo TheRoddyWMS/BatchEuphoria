@@ -334,8 +334,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), new BEJobID(jobDetails.getProperty("jobId").toString()), null, null)
 
         String queue = jobDetails.getProperty("queue").toString()
-        BufferValue swap = jobDetails.getProperty("swap") ? catchAndLogExceptions { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
-        BufferValue memory = catchAndLogExceptions {
+        BufferValue swap = jobDetails.getProperty("swap") ? withCaughtAndLoggedException { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
+        BufferValue memory = withCaughtAndLoggedException {
             String unit = (jobDetails.getProperty("mem") as String).find("[a-zA-Z]+")
             BufferUnit bufferUnit
             if (unit == "Gbytes")
@@ -344,26 +344,26 @@ class LSFRestJobManager extends AbstractLSFJobManager {
                 bufferUnit = BufferUnit.m
             jobDetails.getProperty("mem") ? new BufferValue((jobDetails.getProperty("mem") as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
         }
-        Duration runLimit = jobDetails.getProperty("runLimit") ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
-        Integer numProcessors = catchAndLogExceptions { jobDetails.getProperty("numProcessors").toString() as Integer }
-        Integer numberOfThreads = catchAndLogExceptions { jobDetails.getProperty("nthreads").toString() as Integer }
+        Duration runLimit = jobDetails.getProperty("runLimit") ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
+        Integer numProcessors = withCaughtAndLoggedException { jobDetails.getProperty("numProcessors").toString() as Integer }
+        Integer numberOfThreads = withCaughtAndLoggedException { jobDetails.getProperty("nthreads").toString() as Integer }
         ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
         jobInfo.setUser(jobDetails.getProperty("user").toString())
         jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
         jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTime(catchAndLogExceptions { parseTime(jobDetails.getProperty("startTime").toString()) })
-        jobInfo.setSubmitTime(catchAndLogExceptions { parseTime(jobDetails.getProperty("submitTime").toString()) })
-        jobInfo.setEndTime(catchAndLogExceptions { parseTime(jobDetails.getProperty("endTime").toString()) })
+        jobInfo.setStartTime(withCaughtAndLoggedException { parseTime(jobDetails.getProperty("startTime").toString()) })
+        jobInfo.setSubmitTime(withCaughtAndLoggedException { parseTime(jobDetails.getProperty("submitTime").toString()) })
+        jobInfo.setEndTime(withCaughtAndLoggedException { parseTime(jobDetails.getProperty("endTime").toString()) })
         jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts") as String ? (jobDetails.getProperty("exHosts") as String).split(":").toList() : null)
         jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
         jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
         jobInfo.setDescription(jobDetails.getProperty("description").toString())
         jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
-        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
+        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
         jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
-        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? catchAndLogExceptions { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
+        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? withCaughtAndLoggedException { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
         jobInfo.setPidStr(jobDetails.getProperty("pidStr") as String ? (jobDetails.getProperty("pidStr") as String).split(",").toList() : null)
         jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
         jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
@@ -419,7 +419,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
-        jobInfo.setTimeOfCalculation(catchAndLogExceptions { parseTime(timeSummary.getProperty("timeOfCalculation").toString()) })
+        jobInfo.setTimeOfCalculation(withCaughtAndLoggedException { parseTime(timeSummary.getProperty("timeOfCalculation").toString()) })
         jobInfo.setTimeUserSuspState(timeSummary.getProperty("ususpTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ususpTime").toString())), 0) : null)
         jobInfo.setTimePendState(timeSummary.getProperty("pendTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("pendTime").toString())), 0) : null)
         jobInfo.setTimePendSuspState(timeSummary.getProperty("psuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("psuspTime").toString())), 0) : null)
