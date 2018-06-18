@@ -19,7 +19,7 @@ import spock.lang.Specification
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.time.Duration
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 class PBSJobManagerSpec extends Specification {
@@ -128,8 +128,8 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.jobName == "r180328_183957634_pid_4_starAlignment"
         jobInfo.tool == null
         jobInfo.jobID == new BEJobID("4499334")
-        jobInfo.submitTime == ZonedDateTime.of(2018, 03, 28, 18, 39, 22, 0, ZoneId.systemDefault())
-        jobInfo.eligibleTime == ZonedDateTime.of(2018, 03, 28, 18, 39, 22, 0, ZoneId.systemDefault())
+        jobInfo.submitTime.isEqual ZonedDateTime.of(2018, 03, 28, 16, 39, 22, 0, ZoneOffset.UTC)
+        jobInfo.eligibleTime.isEqual ZonedDateTime.of(2018, 03, 28, 16, 39, 22, 0, ZoneOffset.UTC)
         jobInfo.startTime == null
         jobInfo.endTime == null
         jobInfo.executionHosts == null
@@ -204,10 +204,10 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.jobName == "r180405_163953553_stds_snvJoinVcfFiles"
         jobInfo.tool == null
         jobInfo.jobID == new BEJobID("4564045")
-        jobInfo.submitTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 18, 0, ZoneId.systemDefault())
-        jobInfo.eligibleTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 42, 0, ZoneId.systemDefault())
-        jobInfo.startTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 43, 0, ZoneId.systemDefault())
-        jobInfo.endTime == ZonedDateTime.of(2018, 4, 5, 16, 39, 54, 0, ZoneId.systemDefault())
+        jobInfo.submitTime.isEqual ZonedDateTime.of(2018, 4, 5, 14, 39, 18, 0, ZoneOffset.UTC)
+        jobInfo.eligibleTime.isEqual ZonedDateTime.of(2018, 4, 5, 14, 39, 42, 0, ZoneOffset.UTC)
+        jobInfo.startTime.isEqual ZonedDateTime.of(2018, 4, 5, 14, 39, 43, 0, ZoneOffset.UTC)
+        jobInfo.endTime.isEqual ZonedDateTime.of(2018, 4, 5, 14, 39, 54, 0, ZoneOffset.UTC)
         jobInfo.executionHosts == ["denbi5-int"]
         jobInfo.submissionHost == "subm.example.com"
         jobInfo.priority == "0"
