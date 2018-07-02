@@ -12,7 +12,6 @@ import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.tools.LoggerWrapper
 
 import static de.dkfz.roddy.StringConstants.EMPTY
 
@@ -23,8 +22,6 @@ import static de.dkfz.roddy.StringConstants.EMPTY
  */
 @groovy.transform.CompileStatic
 class LSFCommand extends SubmissionCommand {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFCommand.class.name)
 
     LSFCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)

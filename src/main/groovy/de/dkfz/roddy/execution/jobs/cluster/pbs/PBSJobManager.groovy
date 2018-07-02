@@ -7,30 +7,22 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import com.google.common.collect.LinkedHashMultimap
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
-import de.dkfz.roddy.tools.*
-import groovy.util.slurpersupport.GPathResult
-
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.regex.Matcher
+import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.TimeUnit
 
 /**
  * @author michael
  */
 @groovy.transform.CompileStatic
 class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
-
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(PBSJobManager)
 
     PBSJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)

@@ -52,15 +52,16 @@ dependencies {
     testRuntime "net.bytebuddy:byte-buddy:1.6.5"
     testRuntime "org.objenesis:objenesis:2.5.1"
     testCompile 'com.google.guava:guava:23.0'
-    compile 'net.logstash.logback:logstash-logback-encoder:4.7'
+    testCompile 'org.slf4j:slf4j-nop:1.7.25'
+    compile 'org.slf4j:slf4j-api:1.7.25'
     compile group: 'org.apache.commons', name: 'commons-io', version: '1.3.2'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.9'
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
     compile 'com.google.guava:guava:23.0'
-    compile 'com.github.eilslabs:RoddyToolLib:master-SNAPSHOT'
-    // compile 'com.github.theroddywms:RoddyToolLib:0.0.4'
+    // change version of RoddyToolLib to a released version when making a release of BE
+    compile 'com.github.eilslabs:RoddyToolLib:cad3b06aefbda1a04124bc8744ff0095bc2b630d'
 }
 
 task writePom {
@@ -115,9 +116,4 @@ task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
         attributes 'Implementation-Version': version
     }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
-}
-
-// Fix Gradle version
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.8'
 }

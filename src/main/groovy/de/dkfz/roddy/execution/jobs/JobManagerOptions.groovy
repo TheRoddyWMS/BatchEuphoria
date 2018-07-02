@@ -11,17 +11,16 @@ import groovy.transform.builder.Builder
 import groovy.transform.builder.ExternalStrategy
 
 import java.time.Duration
+import java.time.ZoneId
 
 
 @CompileStatic
 class JobManagerOptions {
 
-    boolean strictMode
     boolean createDaemon
     Duration updateInterval
 
     String userIdForJobQueries
-    boolean trackUserJobsOnly
     boolean trackOnlyStartedJobs
 
     String userGroup
@@ -63,6 +62,13 @@ class JobManagerOptions {
 
     Map<String, String> additionalOptions
 
+    /**
+     * Should be set to the time zone of the cluster system,
+     * setting this value is necessary only iff the cluster system runs in a different time zone than BE
+     */
+    ZoneId timeZoneId
+
+
     static JobManagerOptionsBuilder create() {
         new JobManagerOptionsBuilder()
     }
@@ -76,9 +82,7 @@ class JobManagerOptions {
 @Builder(builderStrategy = ExternalStrategy, forClass = JobManagerOptions, prefix = "set")
 class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
-        trackUserJobsOnly = false
         trackOnlyStartedJobs = false
-        strictMode = true
         updateInterval = Duration.ofMinutes(5)
         createDaemon = false
         requestMemoryIsEnabled = true
@@ -86,7 +90,8 @@ class JobManagerOptionsBuilder {
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
         requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        passEnvironment = false     // Setting this to true should be a concious decision. Therefore the default 'false'.
+        passEnvironment = false     // Setting this to true should be a conscious decision. Therefore the default 'false'.
         additionalOptions = [:]
+        timeZoneId = ZoneId.systemDefault()
     }
 }

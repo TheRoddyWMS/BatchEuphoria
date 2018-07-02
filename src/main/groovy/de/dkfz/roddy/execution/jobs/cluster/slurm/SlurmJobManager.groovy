@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 German Cancer Research Center (DKFZ).
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ */
+
+package de.dkfz.roddy.execution.jobs.cluster.slurm
+
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
@@ -12,11 +20,6 @@ import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import groovy.transform.CompileStatic
 
-/*
- * Copyright (c) 2018 German Cancer Research Center (DKFZ).
- *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
- */
 @CompileStatic
 class SlurmJobManager extends GridEngineBasedJobManager {
 

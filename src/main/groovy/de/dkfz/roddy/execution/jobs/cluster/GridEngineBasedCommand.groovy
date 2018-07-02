@@ -5,15 +5,12 @@ import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 
-import java.util.logging.Level
 
 @CompileStatic
 abstract class GridEngineBasedCommand extends SubmissionCommand {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(GridEngineBasedCommand.class.name)
     public static final String NONE = "none"
 
     /**

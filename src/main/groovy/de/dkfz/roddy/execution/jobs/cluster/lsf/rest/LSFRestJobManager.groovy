@@ -16,7 +16,6 @@ import de.dkfz.roddy.execution.jobs.cluster.lsf.AbstractLSFJobManager
 import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.LoggerWrapper
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
@@ -27,7 +26,7 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
 
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -39,7 +38,6 @@ import java.time.format.DateTimeFormatter
 class LSFRestJobManager extends AbstractLSFJobManager {
 
     protected final RestExecutionService restExecutionService
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(LSFRestJobManager.class.name);
 
     /*REST RESOURCES*/
     private static String URI_JOB_SUBMIT = "/jobs/submit"
@@ -56,9 +54,16 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
     private static String NEW_LINE = "\r\n"
 
+    private final DateTimeFormatter DATE_PATTERN
+
+
     LSFRestJobManager(BEExecutionService restExecutionService, JobManagerOptions parms) {
         super(restExecutionService, parms)
         this.restExecutionService = restExecutionService as RestExecutionService
+        DATE_PATTERN = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+            .withLocale(Locale.ENGLISH)
+            .withZone(parms.timeZoneId)
     }
 
     /**
@@ -118,8 +123,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         ContentWithHeaders requestPartsWithHeader = joinParts(requestParts)
         headers.addAll(requestPartsWithHeader.headers)
-
-        logger.postAlwaysInfo("request body:\n" + requestPartsWithHeader.content)
 
         return new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
     }
@@ -276,7 +279,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("job").each { NodeChild element ->
                 jobDetailsResult.put(new BEJobID(element.getProperty("jobId").toString()), setJobInfoForJobDetails(element))
@@ -285,7 +287,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             return jobDetailsResult
 
         } else {
-            logger.warning("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
             throw new BEException("Job details couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
@@ -302,7 +303,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_BASICS, null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            logger.info("status code: " + result.statusCode + " result:" + result.body)
             Map<BEJobID, JobState> resultStates = [:]
             res.getProperty("pseudoJob").each { NodeChild element ->
                 String jobId = null
@@ -320,7 +320,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             }
             return resultStates
         } else {
-            logger.warning("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
             throw new BEException("Job states couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
@@ -335,8 +334,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), new BEJobID(jobDetails.getProperty("jobId").toString()), null, null)
 
         String queue = jobDetails.getProperty("queue").toString()
-        BufferValue swap = jobDetails.getProperty("swap") ? catchAndLogExceptions { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
-        BufferValue memory = catchAndLogExceptions {
+        BufferValue swap = jobDetails.getProperty("swap") ? withCaughtAndLoggedException { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
+        BufferValue memory = withCaughtAndLoggedException {
             String unit = (jobDetails.getProperty("mem") as String).find("[a-zA-Z]+")
             BufferUnit bufferUnit
             if (unit == "Gbytes")
@@ -345,27 +344,26 @@ class LSFRestJobManager extends AbstractLSFJobManager {
                 bufferUnit = BufferUnit.m
             jobDetails.getProperty("mem") ? new BufferValue((jobDetails.getProperty("mem") as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
         }
-        Duration runLimit = jobDetails.getProperty("runLimit") ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
-        Integer numProcessors = catchAndLogExceptions { jobDetails.getProperty("numProcessors").toString() as Integer }
-        Integer numberOfThreads = catchAndLogExceptions { jobDetails.getProperty("nthreads").toString() as Integer }
+        Duration runLimit = jobDetails.getProperty("runLimit") ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null
+        Integer numProcessors = withCaughtAndLoggedException { jobDetails.getProperty("numProcessors").toString() as Integer }
+        Integer numberOfThreads = withCaughtAndLoggedException { jobDetails.getProperty("nthreads").toString() as Integer }
         ResourceSet usedResources = new ResourceSet(memory, numProcessors, null, runLimit, null, queue, null)
         jobInfo.setUsedResources(usedResources)
 
-        DateTimeFormatter lsfDatePattern = catchAndLogExceptions { DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withLocale(Locale.ENGLISH) }
         jobInfo.setUser(jobDetails.getProperty("user").toString())
         jobInfo.setSystemTime(jobDetails.getProperty("getSystemTime").toString())
         jobInfo.setUserTime(jobDetails.getProperty("getUserTime").toString())
-        jobInfo.setStartTime(!jobDetails.getProperty("startTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("startTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setSubmitTime(jobDetails.getProperty("submitTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("submitTime").toString(), lsfDatePattern) } : null)
-        jobInfo.setEndTime(!jobDetails.getProperty("endTime").toString().equals("") ? catchAndLogExceptions { LocalDateTime.parse(jobDetails.getProperty("endTime").toString(), lsfDatePattern) } : null)
+        jobInfo.setStartTime(withCaughtAndLoggedException { parseTime(jobDetails.getProperty("startTime").toString()) })
+        jobInfo.setSubmitTime(withCaughtAndLoggedException { parseTime(jobDetails.getProperty("submitTime").toString()) })
+        jobInfo.setEndTime(withCaughtAndLoggedException { parseTime(jobDetails.getProperty("endTime").toString()) })
         jobInfo.setExecutionHosts(jobDetails.getProperty("exHosts") as String ? (jobDetails.getProperty("exHosts") as String).split(":").toList() : null)
         jobInfo.setSubmissionHost(jobDetails.getProperty("fromHost").toString())
         jobInfo.setJobGroup(jobDetails.getProperty("jobGroup").toString())
         jobInfo.setDescription(jobDetails.getProperty("description").toString())
         jobInfo.setUserGroup(jobDetails.getProperty("userGroup").toString())
-        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
+        jobInfo.setRunTime(jobDetails.getProperty("runTime") ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
         jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
-        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? catchAndLogExceptions { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
+        jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? withCaughtAndLoggedException { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
         jobInfo.setPidStr(jobDetails.getProperty("pidStr") as String ? (jobDetails.getProperty("pidStr") as String).split(",").toList() : null)
         jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
         jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
@@ -382,6 +380,13 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         return jobInfo
     }
 
+    private ZonedDateTime parseTime(String str) {
+        if (!str) {
+            return null
+        }
+        ZonedDateTime.parse(str, DATE_PATTERN)
+    }
+
     /**
      * Get the time history for each given job
      * @param jobList
@@ -393,7 +398,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         def result = restExecutionService.execute(new RestCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList.keySet() as List), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            logger.info("status code: " + result.statusCode + " result:" + result.body)
 
             res.getProperty("history").each { NodeChild jobHistory ->
 
@@ -402,7 +406,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             }
 
         } else {
-            logger.warning("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
             throw new BEException("Job histories couldn't be retrieved. \n status code: ${result.statusCode} \n result: ${result.body}")
         }
     }
@@ -416,7 +419,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
-        jobInfo.setTimeOfCalculation(timeSummary.getProperty("timeOfCalculation") ? LocalDateTime.parse(timeSummary.getProperty("timeOfCalculation").toString() + " " + LocalDateTime.now().getYear(), lsfDatePattern) : null)
+        jobInfo.setTimeOfCalculation(withCaughtAndLoggedException { parseTime(timeSummary.getProperty("timeOfCalculation").toString()) })
         jobInfo.setTimeUserSuspState(timeSummary.getProperty("ususpTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("ususpTime").toString())), 0) : null)
         jobInfo.setTimePendState(timeSummary.getProperty("pendTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("pendTime").toString())), 0) : null)
         jobInfo.setTimePendSuspState(timeSummary.getProperty("psuspTime") ? Duration.ofSeconds(Math.round(Double.parseDouble(timeSummary.getProperty("psuspTime").toString())), 0) : null)

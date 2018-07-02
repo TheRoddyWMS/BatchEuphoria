@@ -5,35 +5,30 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerOptions
-import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.LoggerWrapper
 import de.dkfz.roddy.tools.RoddyConversionHelperMethods
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 import groovy.util.slurpersupport.GPathResult
-import org.xml.sax.SAXParseException
 
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.regex.Matcher
 
 @CompileStatic
 abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobManager<C> {
 
-    private static final LoggerWrapper logger = LoggerWrapper.getLogger(GridEngineBasedJobManager)
-
     public static final String WITH_DELIMITER = '(?=(%1$s))'
+    private final ZoneId TIME_ZONE_ID
+
 
     GridEngineBasedJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
+        TIME_ZONE_ID = parms.timeZoneId
     }
 
     @Override
@@ -69,8 +64,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         Map<BEJobID, JobState> result = [:]
 
         if (!er.successful) {
-            if (strictMode) // Do not pull this into the outer if! The else branch needs to be executed if er.successful is true
-                throw new BEException("The execution of ${queryCommand} failed.\n\t" + er.resultLines?.join("\n\t").toString())
+            throw new BEException("The execution of ${queryCommand} failed.\n\t" + er.resultLines?.join("\n\t")?.toString())
         } else {
             if (resultLines.size() > 2) {
 
@@ -83,10 +77,6 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
                     String[] split = line.split("\\s+")
                     final int ID = getColumnOfJobID()
                     final int JOBSTATE = getColumnOfJobState()
-                    if (logger.isVerbosityMedium())
-                        logger.postAlwaysInfo(["QStat BEJob line: " + line,
-                                               "	Entry in arr[" + ID + "]: " + split[ID],
-                                               "    Entry in arr[" + JOBSTATE + "]: " + split[JOBSTATE]].join("\n"))
 
                     BEJobID jobID = new BEJobID(split[ID])
 
@@ -107,15 +97,10 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         if (isTrackingOfUserJobsEnabled)
             qStatCommand += " -u $userIDForQueries "
 
-        ExecutionResult er
-        try {
-            er = executionService.execute(qStatCommand.toString())
-        } catch (Exception exp) {
-            logger.severe("Could not execute qStat command", exp)
-        }
+        ExecutionResult er = executionService.execute(qStatCommand.toString())
 
         if (er != null && er.successful) {
-            queriedExtendedStates = this.processQstatOutputFromXML([er.resultLines.join("")])
+            queriedExtendedStates = this.processQstatOutputFromXML(er.resultLines.join("\n"))
         } else {
             throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n ${qStatCommand.toString()} \n\t result:${er.resultLines.join("\n\t")}")
         }
@@ -162,8 +147,8 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         } as Map<String, Map<String, String>>
     }
 
-    private static LocalDateTime parseTime(String str) {
-        return catchAndLogExceptions { Instant.ofEpochSecond(Long.valueOf(str)).atZone(ZoneId.systemDefault()).toLocalDateTime() }
+    private ZonedDateTime parseTime(String str) {
+        return withCaughtAndLoggedException { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), TIME_ZONE_ID) }
     }
 
     /**
@@ -171,22 +156,16 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    protected Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(List<String> resultLines) {
+    protected Map<BEJobID, GenericJobInfo> processQstatOutputFromXML(String result) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        if (resultLines.isEmpty()) {
+        if (result.isEmpty()) {
             return [:]
         }
 
-        GPathResult parsedJobs
-        try {
-            parsedJobs = new XmlSlurper().parseText(resultLines.last())
-        } catch (SAXParseException ex) {
-            logger.rare(resultLines.last())
-            throw ex
-        }
+        GPathResult parsedJobs = new XmlSlurper().parseText(result)
 
-        for (it in parsedJobs.children()) {
-            String jobIdRaw = it["Job_Id"] as String
+        for (job in parsedJobs.children()) {
+            String jobIdRaw = job["Job_Id"] as String
             BEJobID jobID
             try {
                 jobID = new BEJobID(jobIdRaw)
@@ -194,8 +173,9 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
                 throw new BEException("Job ID '${jobIdRaw}' could not be transformed to BEJobID ")
             }
 
-            List<String> jobDependencies = it["depend"] ? (it["depend"] as  String).find("afterok.*")?.findAll(/(\d+).(\w+)/) { fullMatch, beforeDot, afterDot -> return beforeDot } : null
-            GenericJobInfo gj = new GenericJobInfo(it["Job_Name"] as String ?: null, null, jobID, null, jobDependencies)
+            List<String> jobDependencies = withCaughtAndLoggedException { getJobDependencies(job["depend"] as String) }
+            String jobName = job["Job_Name"] as String ?: null
+            GenericJobInfo gj = new GenericJobInfo(jobName, null, jobID, null, jobDependencies)
 
             BufferValue mem = null
             Integer cores
@@ -203,76 +183,98 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             TimeUnit walltime = null
             String additionalNodeFlag
 
-            def resourceList = it["Resource_List"]
+            Object resourceList = job["Resource_List"]
             String resourcesListMem = resourceList["mem"] as String
             String resourcesListNoDect = resourceList["nodect"] as String
             String resourcesListNodes = resourceList["nodes"] as String
             String resourcesListWalltime = resourceList["walltime"] as String
             if (resourcesListMem)
-                mem = catchAndLogExceptions { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/)), BufferUnit.valueOf(resourcesListMem[-2])) }
+                mem = withCaughtAndLoggedException { new BufferValue(Integer.valueOf(resourcesListMem.find(/(\d+)/)), BufferUnit.valueOf(resourcesListMem[-2])) }
             if (resourcesListNoDect)
-                nodes = catchAndLogExceptions { Integer.valueOf(resourcesListNoDect) }
+                nodes = withCaughtAndLoggedException { Integer.valueOf(resourcesListNoDect) }
             if (resourcesListNodes)
-                cores = catchAndLogExceptions { Integer.valueOf(resourcesListNodes.find("ppn=.*").find(/(\d+)/)) }
+                cores = withCaughtAndLoggedException { Integer.valueOf(resourcesListNodes.find("ppn=.*").find(/(\d+)/)) }
             if (resourcesListNodes)
-                additionalNodeFlag = catchAndLogExceptions { resourcesListNodes.find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
+                additionalNodeFlag = withCaughtAndLoggedException { resourcesListNodes.find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
             if (resourcesListWalltime)
-                walltime = catchAndLogExceptions { new TimeUnit(resourcesListWalltime) }
+                walltime = withCaughtAndLoggedException { new TimeUnit(resourcesListWalltime) }
 
             BufferValue usedMem = null
             TimeUnit usedWalltime = null
-            def resourcesUsed = it["resources_used"]
+            Object resourcesUsed = job["resources_used"]
             String resourcedUsedMem = resourcesUsed["mem"] as String
             String resourcesUsedWalltime = resourcesUsed["walltime"] as String
             if (resourcedUsedMem)
-                catchAndLogExceptions { usedMem = new BufferValue(Integer.valueOf(resourcedUsedMem.find(/(\d+)/)), BufferUnit.valueOf(resourcedUsedMem[-2])) }
+                withCaughtAndLoggedException { usedMem = new BufferValue(Integer.valueOf(resourcedUsedMem.find(/(\d+)/)), BufferUnit.valueOf(resourcedUsedMem[-2])) }
             if (resourcesUsedWalltime)
-                catchAndLogExceptions { usedWalltime = new TimeUnit(resourcesUsedWalltime) }
+                withCaughtAndLoggedException { usedWalltime = new TimeUnit(resourcesUsedWalltime) }
 
-            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, it["queue"] as String ?: null, additionalNodeFlag))
-            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, it["queue"] as String ?: null, null))
+            gj.setAskedResources(new ResourceSet(null, mem, cores, nodes, walltime, null, job["queue"] as String ?: null, additionalNodeFlag))
+            gj.setUsedResources(new ResourceSet(null, usedMem, null, null, usedWalltime, null, job["queue"] as String ?: null, null))
 
-            gj.setLogFile(getQstatFile((it["Output_Path"] as String).replace("\$PBS_JOBID", jobIdRaw)))
-            gj.setErrorLogFile(getQstatFile((it["Error_Path"] as String).replace("\$PBS_JOBID", jobIdRaw)))
-            gj.setUser(it["euser"] as String ?: null)
-            gj.setExecutionHosts(it["exec_host"] as String ? [it["exec_host"] as String] : null)
-            gj.setSubmissionHost(it["submit_host"] as String ?: null)
-            gj.setPriority(it["Priority"] as String ?: null)
-            gj.setUserGroup(it["egroup"] as String ?: null)
-            gj.setResourceReq(it["submit_args"] as String ?: null)
-            gj.setRunTime(it["total_runtime"] ? catchAndLogExceptions { Duration.ofSeconds(Math.round(Double.parseDouble(it["total_runtime"] as String)), 0) } : null)
-            gj.setCpuTime(it["resources_used"]["cput"] ? catchAndLogExceptions { parseColonSeparatedHHMMSSDuration(it["resources_used"]["cput"] as String) } : null)
-            gj.setServer(it["server"] as String ?: null)
-            gj.setUmask(it["umask"] as String ?: null)
-            gj.setJobState(parseJobState(it["job_state"] as String))
-            gj.setExitCode(it["exit_status"] ? catchAndLogExceptions { Integer.valueOf(it["exit_status"] as String) } : null)
-            gj.setAccount(it["Account_Name"] as String ?: null)
-            gj.setStartCount(it["start_count"] ? catchAndLogExceptions { Integer.valueOf(it["start_count"] as String) } : null)
+            gj.setLogFile(withCaughtAndLoggedException { getQstatFile(job["Output_Path"] as String, jobIdRaw) })
+            gj.setErrorLogFile(withCaughtAndLoggedException { getQstatFile(job["Error_Path"] as String, jobIdRaw) })
+            gj.setUser(job["euser"] as String ?: null)
+            gj.setExecutionHosts(withCaughtAndLoggedException { getExecutionHosts(job["exec_host"] as String) })
+            gj.setSubmissionHost(job["submit_host"] as String ?: null)
+            gj.setPriority(job["Priority"] as String ?: null)
+            gj.setUserGroup(job["egroup"] as String ?: null)
+            gj.setResourceReq(job["submit_args"] as String ?: null)
+            gj.setRunTime(job["total_runtime"] ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(job["total_runtime"] as String)), 0) } : null)
+            gj.setCpuTime(resourcesUsed["cput"] ? withCaughtAndLoggedException { parseColonSeparatedHHMMSSDuration(job["resources_used"]["cput"] as String) } : null)
+            gj.setServer(job["server"] as String ?: null)
+            gj.setUmask(job["umask"] as String ?: null)
+            gj.setJobState(parseJobState(job["job_state"] as String))
+            gj.setExitCode(job["exit_status"] ? withCaughtAndLoggedException { Integer.valueOf(job["exit_status"] as String) }: null )
+            gj.setAccount(job["Account_Name"] as String ?: null)
+            gj.setStartCount(job["start_count"] ? withCaughtAndLoggedException { Integer.valueOf(job["start_count"] as String) } : null)
 
-            if (it["qtime"]) // The time that the job entered the current queue.
-                gj.setSubmitTime(parseTime(it["qtime"] as String))
-            if (it["start_time"]) // The timepoint the job was started.
-                gj.setStartTime(parseTime(it["start_time"] as String))
-            if (it["comp_time"])  // The timepoint the job was completed.
-                gj.setEndTime(parseTime(it["comp_time"] as String))
-            if (it["etime"])  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
-                gj.setEligibleTime(parseTime(it["etime"] as String))
+            if (job["qtime"]) // The time that the job entered the current queue.
+                gj.setSubmitTime(parseTime(job["qtime"] as String))
+            if (job["start_time"]) // The timepoint the job was started.
+                gj.setStartTime(parseTime(job["start_time"] as String))
+            if (job["comp_time"])  // The timepoint the job was completed.
+                gj.setEndTime(parseTime(job["comp_time"] as String))
+            if (job["etime"])  // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
+                gj.setEligibleTime(parseTime(job["etime"] as String))
 
             queriedExtendedStates.put(jobID, gj)
         }
         return queriedExtendedStates
     }
 
-    private static File getQstatFile(String s) {
+    private static List<String> getExecutionHosts(String s) {
         if (!s) {
             return null
-        } else if (s.startsWith("/")) {
-            return new File(s)
+        }
+        s.split(/\+/)
+                .collect { String it -> it.split("/") }
+                .collect { it.first() }
+                .unique()
+    }
+
+    private static List<String> getJobDependencies(String s) {
+        if (!s) {
+            return []
+        }
+        s.split(",")
+                .find { it.startsWith("afterok") }
+                ?.findAll(/(\d+)(\.\w+)?/) { fullMatch, String beforeDot, afterDot -> return beforeDot } ?: []as List<String>
+    }
+
+    private File getQstatFile(String s, String jobId) {
+        if (!s) {
+            return null
+        }
+        String fileName
+        if (s.startsWith("/")) {
+            fileName = s
         } else if (s =~ /^[\w-]+:\//) {
-            return new File(s.replaceAll(/^[\w-]+:/, ""))
+            fileName = s.replaceAll(/^[\w-]+:/, "")
         } else {
             return null
         }
+        new File(fileName.replace("\$${getJobIdVariable()}", jobId))
     }
 
     @Override
