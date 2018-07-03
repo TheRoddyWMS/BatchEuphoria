@@ -95,6 +95,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
+    /**
+     * Call this method to let the manager try to check, if the submission host is actually compatible with the manager.
+     * @return
+     */
+    abstract boolean checkCompatibilityToHost()
 
     BEJobResult submitJob(BEJob job) throws TimeoutException {
         Command command = createCommand(job)
@@ -246,7 +251,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     abstract String getSubmitDirectoryVariable()
 
     List<String> getEnvironmentVariableGlobs() {
-        return Collections.unmodifiableList([])
+        return Collections.unmodifiableList([]) as List<String>
     }
 
     boolean getDefaultForHoldJobsEnabled() { return true }

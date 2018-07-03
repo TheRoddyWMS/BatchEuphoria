@@ -37,6 +37,16 @@ class SGEJobManager extends GridEngineBasedJobManager<SGECommand> {
     }
 
     @Override
+    boolean checkCompatibilityToHost() {
+        // For GridEngine, we check the installation folder of qsub. Should contain gridengine
+        // GridEngine does print some version code when you use -help option, but I am not sure, how this changes.
+
+        String cmd = "readlink -f `which qsub` | grep gridengine > /dev/null && echo GE || echo NONGE"
+        def result = executionService.execute(cmd)
+        return result.firstLine.contains("gridengine")
+    }
+
+    @Override
     protected SGECommand createCommand(BEJob job) {
         return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }

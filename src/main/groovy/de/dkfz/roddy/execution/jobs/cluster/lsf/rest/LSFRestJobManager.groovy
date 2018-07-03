@@ -25,6 +25,7 @@ import org.apache.http.Header
 import org.apache.http.entity.ContentType
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HTTP
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -61,7 +62,11 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         this.restExecutionService = restExecutionService as RestExecutionService
     }
 
-    /**
+    @Override
+    boolean checkCompatibilityToHost() {
+        throw new NotImplementedException()
+    }
+/**
      * Submit job
      *
      body = "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB\r\n" +

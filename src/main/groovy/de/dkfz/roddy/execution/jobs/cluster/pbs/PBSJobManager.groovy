@@ -37,6 +37,24 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
     }
 
     @Override
+    boolean checkCompatibilityToHost() {
+        // PBS tests are non trivial. qsub and co are not very helpful, as they don't feature any useful messages.
+        // As we support PBS Torque, we'll check installation folders and for a specific started service.
+        // Checking directories of course can miss, that Torque is installed in a different directory which does
+        // not contain "torque".
+        String cmd = "which qsub;"
+        cmd += "ps -u root | grep trqauthd >/dev/null && echo PBS || NONPBS" // Append fast check for running torque auth daemon.
+        def result = executionService.execute(cmd)
+
+        // We should have two lines:
+        //   /opt/torque/bin/qsub
+        //   PBS / NONPBS
+        return result.resultLines.size() == 2 &&
+                result.resultLines[0].contains("torque") &&
+                result.resultLines[1] == "PBS"
+    }
+
+    @Override
     protected PBSCommand createCommand(BEJob job) {
         return new PBSCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }

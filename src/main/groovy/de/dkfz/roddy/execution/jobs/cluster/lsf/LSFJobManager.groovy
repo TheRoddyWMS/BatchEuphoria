@@ -71,6 +71,18 @@ class LSFJobManager extends AbstractLSFJobManager {
         super(executionService, parms)
     }
 
+    @Override
+    boolean checkCompatibilityToHost() {
+        def result = executionService.execute("which bsub; bsub -h 2>&1 >/dev/null | grep LSF > /dev/null && echo LSF || echo NONLSF")
+
+        // The result should now have two lines, e.g.:
+        //   /opt/lsf/10.1/linux3.10-glibc2.17-x86_64/bin/qsub
+        //   LSF
+        return result.resultLines.size() == 2 &&
+                result.resultLines[0].contains("lsf") &&
+                result.resultLines[1] == "LSF"
+    }
+
     protected LSFCommand createCommand(BEJob job) {
         return new LSFCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }

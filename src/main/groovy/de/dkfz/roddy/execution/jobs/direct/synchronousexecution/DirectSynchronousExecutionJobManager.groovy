@@ -26,6 +26,12 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
+    boolean checkCompatibilityToHost() {
+        // The direct manager is always compatible with its host.
+        return true;
+    }
+
+    @Override
     protected void createUpdateDaemonThread() {
         //Not necessary, a command / job knows its state in local execution
     }
