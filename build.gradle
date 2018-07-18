@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2017 German Cancer Research Center (DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/theroddywms/Roddy/LICENSE.txt).
  */
 
 plugins {
@@ -13,7 +13,7 @@ apply plugin: 'idea'
 apply plugin: 'application'
 apply plugin: 'maven'
 
-group = "com.github.eilslabs"
+group = "com.github.theroddywms"
 
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 sourceCompatibility = '1.8'
@@ -59,8 +59,8 @@ dependencies {
     compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
     compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
     compile 'com.google.guava:guava:23.0'
-    // compile 'com.github.eilslabs:RoddyToolLib:develop-SNAPSHOT'
-    compile 'com.github.theroddywms:RoddyToolLib:0.0.4'
+    // compile 'com.github.eilslabs:RoddyToolLib:master-SNAPSHOT'
+    compile 'com.github.theroddywms:RoddyToolLib:1.0.0'
 }
 
 task writePom {
@@ -119,5 +119,5 @@ task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
 
 // Fix Gradle version
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.2.1'
+    gradleVersion = '4.8'
 }

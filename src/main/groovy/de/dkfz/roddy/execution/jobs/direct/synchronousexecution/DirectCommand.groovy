@@ -68,7 +68,7 @@ class DirectCommand extends Command {
 
         //TODO Command assembly should be part of the file system provider? Maybe there is a need for a local file system provider?
         //This is very linux specific...
-        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command << " &> ${job.jobLog.getOut(job.jobCreationCounter.toString())} & wait &> /dev/null";
+        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command << " &> ${job.jobLog.getOut(job.jobCreationCounter.toString())}";
 
         return commandString.toString()
     }

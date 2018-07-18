@@ -307,11 +307,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         BEJobResult jobResult
         if (res.successful) {
             String exID
-            try {
-                exID = parseJobID(res.resultLines.join("\n"))
-            } catch (BEException ex) {
-                throw new BEException("Full input was: '${res.resultLines.join("\n")}", ex)
-            }
+            exID = parseJobID(res.resultLines.join("\n"))
             def job = command.getJob()
             BEJobID jobID = new BEJobID(exID)
             command.setJobID(jobID)
