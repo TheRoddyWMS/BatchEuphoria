@@ -75,7 +75,7 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
 
     @Override
     void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
-        int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
+        int nodes = resourceSet.isNodesSet() && resourceSet.getNodes() > 0 ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
 
         // The -n parameter is the amount of SLOTS!
@@ -83,8 +83,14 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
         // If you use > 1 nodes and > 1 cores it is a bit more complicated than let's say in PBS
         // If nodes == 1, -n is the amount of cores. If nodes > 1, -n is the amount of cores multiplied by
         // the amount of nodes. In addition, you need to provide a span factor as a resource.
+        // Unfortunately, we had some errors when span was not set. It happened, that the job was spread over
+        // several nodes. To prevent this, we can add the hosts=1 span attribute. BUT: This only works for a
+        // span of 1, not for more. To have more hosts, you need ptile.
 
-        parameters.put("-n", nodes == 1 ? "" + cores : "${cores * nodes} -R \"span[ptile=${cores}]\"")
+        def s = ""
+        if (nodes == 1) s = "${cores} -R \"span[hosts=1]\""
+        else s = "${cores * nodes} -R \"span[ptile=${cores}]\""
+        parameters.put("-n", s)
     }
 
     @Override
