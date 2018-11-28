@@ -55,6 +55,11 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     }
 
     @Override
+    boolean executesWithoutJobSystem() {
+        return true
+    }
+
+    @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         assert resourceSet
 

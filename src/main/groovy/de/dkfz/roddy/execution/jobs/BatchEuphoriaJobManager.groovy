@@ -14,7 +14,6 @@ import groovy.transform.CompileStatic
 
 import java.time.Duration
 import java.time.LocalDateTime
-
 import java.util.concurrent.TimeoutException
 
 /**
@@ -43,7 +42,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     private String userAccount
 
     private final Map<BEJobID, BEJob> activeJobs = [:]
+
     private Thread updateDaemonThread
+
+    protected boolean closeThread
 
     private Map<BEJobID, JobState> cachedStates = [:]
     private final Object cacheStatesLock = new Object()
@@ -207,20 +209,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-    int waitForJobsToFinish() {
-        if (!updateDaemonThread) {
-            throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
-        }
-        while (true) {
-            synchronized (activeJobs) {
-                if (activeJobs.isEmpty()) {
-                    return 0
-                }
-            }
-            Thread.sleep(cacheUpdateInterval.toMillis())
-        }
-    }
-
     abstract String getJobIdVariable()
 
     abstract String getJobNameVariable()
@@ -328,16 +316,34 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected void createUpdateDaemonThread() {
         updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-            updateActiveJobList()
-            try {
-                Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10 * 1000))
-            } catch (InterruptedException e) {
-                e.printStackTrace()
+            while (!closeThread) {
+                updateActiveJobList()
+
+                waitForUpdateIntervalDuration()
             }
         })
     }
 
+    boolean isDaemonAlive() {
+        updateDaemonThread && updateDaemonThread.isAlive()
+    }
+
+    void waitForUpdateIntervalDuration() {
+        long duration = Math.max(cacheUpdateInterval.toMillis(), 10 * 1000)
+        // Sleel one second until the duration is reached. This allows the daemon to finish on demand.
+        for (long timer = duration; timer > 0 && !closeThread; timer -= 1000)
+            Thread.sleep(1000)
+    }
+
+    void stopUpdateDaemon() {
+        closeThread = true
+        updateDaemonThread?.join()
+    }
+
+    public boolean surveilledJobsHadErrors = false
+
     private void updateActiveJobList() {
+        List<BEJobID> listOfRemovableJobs = []
         synchronized (activeJobs) {
             Map<BEJobID, JobState> states = queryJobStatesUsingCache(activeJobs.keySet() as List<BEJobID>, true)
 
@@ -346,11 +352,17 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                 BEJob job = activeJobs.get(id)
 
                 job.setJobState(js)
-
                 if (!js.isPlannedOrRunning()) {
-                    activeJobs.remove(id)
+                    if (!js.successful) {
+                        println("Job ${id} had an error with jobstate ${js.name()}.")
+                        surveilledJobsHadErrors = true
+                    } else {
+                        println("Job ${id} was successful.")
+                    }
+                    listOfRemovableJobs << id
                 }
             }
+            listOfRemovableJobs.each { activeJobs.remove(it) }
         }
     }
 
@@ -363,5 +375,20 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             lastCacheUpdate = LocalDateTime.now()
         }
         return new HashMap(cachedStates)
+    }
+
+    int waitForJobsToFinish() {
+        if (!updateDaemonThread) {
+            throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
+        }
+        while (!closeThread) {
+            synchronized (activeJobs) {
+                if (activeJobs.isEmpty()) {
+                    return 0
+                }
+            }
+            waitForUpdateIntervalDuration()
+        }
+        return surveilledJobsHadErrors ? 1 : 0
     }
 }
