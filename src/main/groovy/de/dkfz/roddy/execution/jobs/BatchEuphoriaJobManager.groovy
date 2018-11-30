@@ -11,6 +11,8 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -24,6 +26,8 @@ import java.util.concurrent.TimeoutException
  */
 @CompileStatic
 abstract class BatchEuphoriaJobManager<C extends Command> {
+
+    final static Logger log = LoggerFactory.getLogger(BatchEuphoriaJobManager)
 
     protected final BEExecutionService executionService
 
@@ -325,12 +329,13 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     }
 
     boolean isDaemonAlive() {
-        updateDaemonThread && updateDaemonThread.isAlive()
+        return updateDaemonThread != null && updateDaemonThread.isAlive()
     }
 
     void waitForUpdateIntervalDuration() {
         long duration = Math.max(cacheUpdateInterval.toMillis(), 10 * 1000)
-        // Sleel one second until the duration is reached. This allows the daemon to finish on demand.
+        // Sleep one second until the duration is reached. This allows the daemon to finish faster, when it shall stop
+        // (closeThread == true)
         for (long timer = duration; timer > 0 && !closeThread; timer -= 1000)
             Thread.sleep(1000)
     }
@@ -348,16 +353,16 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             Map<BEJobID, JobState> states = queryJobStatesUsingCache(activeJobs.keySet() as List<BEJobID>, true)
 
             for (BEJobID id : activeJobs.keySet()) {
-                JobState js = states.get(id)
+                JobState jobState = states.get(id)
                 BEJob job = activeJobs.get(id)
 
-                job.setJobState(js)
-                if (!js.isPlannedOrRunning()) {
-                    if (!js.successful) {
-                        println("Job ${id} had an error with jobstate ${js.name()}.")
+                job.setJobState(jobState)
+                if (!jobState.isPlannedOrRunning()) {
+                    if (!jobState.successful) {
+                        log.info("Job ${id} had an error with jobstate ${jobState.name()}.")
                         surveilledJobsHadErrors = true
                     } else {
-                        println("Job ${id} was successful.")
+                        log.info("Job ${id} was successful.")
                     }
                     listOfRemovableJobs << id
                 }
@@ -379,7 +384,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     int waitForJobsToFinish() {
         if (!updateDaemonThread) {
-            throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
+            throw new BEException("The job manager must be created with JobManagerOption.createDaemon set to true to make waitForJobsToFinish() work.")
         }
         while (!closeThread) {
             synchronized (activeJobs) {
