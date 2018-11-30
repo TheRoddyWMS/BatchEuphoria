@@ -49,12 +49,23 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private Thread updateDaemonThread
 
-    protected boolean closeThread
+    /**
+     * Set this to true to tell the job manager, that an existing update daemon shall be closed, e.g. because
+     * the application is in the process to exit.
+     */
+    protected boolean updateDaemonShallBeClosed
+
+    /**
+     * Set this to true, if you do not want to allow any further job submission.
+     */
+    protected boolean forbidFurtherJobSubmission
 
     private Map<BEJobID, JobState> cachedStates = [:]
     private final Object cacheStatesLock = new Object()
     private LocalDateTime lastCacheUpdate
     private Duration cacheUpdateInterval
+
+    public boolean surveilledJobsHadErrors = false
 
 
     boolean requestMemoryIsEnabled
@@ -92,8 +103,17 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-
+    /**
+     * If you override this method, make sure to build in the check for further job submission! It is not allowed to
+     * submit any jobs after waitForJobs() was called.
+     * @param job
+     * @return
+     * @throws TimeoutException
+     */
     BEJobResult submitJob(BEJob job) throws TimeoutException {
+        if (forbidFurtherJobSubmission) {
+            throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
+        }
         Command command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -320,7 +340,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected void createUpdateDaemonThread() {
         updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-            while (!closeThread) {
+            while (!updateDaemonShallBeClosed) {
                 updateActiveJobList()
 
                 waitForUpdateIntervalDuration()
@@ -335,17 +355,15 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     void waitForUpdateIntervalDuration() {
         long duration = Math.max(cacheUpdateInterval.toMillis(), 10 * 1000)
         // Sleep one second until the duration is reached. This allows the daemon to finish faster, when it shall stop
-        // (closeThread == true)
-        for (long timer = duration; timer > 0 && !closeThread; timer -= 1000)
+        // (updateDaemonShallBeClosed == true)
+        for (long timer = duration; timer > 0 && !updateDaemonShallBeClosed; timer -= 1000)
             Thread.sleep(1000)
     }
 
     void stopUpdateDaemon() {
-        closeThread = true
+        updateDaemonShallBeClosed = true
         updateDaemonThread?.join()
     }
-
-    public boolean surveilledJobsHadErrors = false
 
     private void updateActiveJobList() {
         List<BEJobID> listOfRemovableJobs = []
@@ -382,14 +400,22 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return new HashMap(cachedStates)
     }
 
+    /**
+     * The method will wait until all started jobs are finished (with or without errors).
+     *
+     * Note, that the method does not allow further job submission! As soon, as you call it, you cannot submit jobs!
+     *
+     * @return
+     */
     int waitForJobsToFinish() {
         if (!updateDaemonThread) {
             throw new BEException("The job manager must be created with JobManagerOption.createDaemon set to true to make waitForJobsToFinish() work.")
         }
-        while (!closeThread) {
+        forbidFurtherJobSubmission = true
+        while (!updateDaemonShallBeClosed) {
             synchronized (activeJobs) {
                 if (activeJobs.isEmpty()) {
-                    return 0
+                    break
                 }
             }
             waitForUpdateIntervalDuration()
