@@ -67,6 +67,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     public boolean surveilledJobsHadErrors = false
 
+    private final List<UpdateDaemonListener> updateDaemonListeners = []
 
     boolean requestMemoryIsEnabled
     boolean requestWalltimeIsEnabled
@@ -348,6 +349,12 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         })
     }
 
+    final void addUpdateDaemonListener(UpdateDaemonListener listener) {
+        synchronized (updateDaemonListeners) {
+            updateDaemonListeners << listener
+        }
+    }
+
     boolean isDaemonAlive() {
         return updateDaemonThread != null && updateDaemonThread.isAlive()
     }
@@ -376,11 +383,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
                 job.setJobState(jobState)
                 if (!jobState.isPlannedOrRunning()) {
+                    synchronized (updateDaemonListeners) {
+                        updateDaemonListeners.each { it.jobEnded(job, jobState) }
+                    }
                     if (!jobState.successful) {
-                        log.info("Job ${id} had an error with jobstate ${jobState.name()}.")
                         surveilledJobsHadErrors = true
-                    } else {
-                        log.info("Job ${id} was successful.")
                     }
                     listOfRemovableJobs << id
                 }
@@ -405,9 +412,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      *
      * Note, that the method does not allow further job submission! As soon, as you call it, you cannot submit jobs!
      *
-     * @return
+     * @return true, if there were NO errors, false, if there were any.
      */
-    int waitForJobsToFinish() {
+    boolean waitForJobsToFinish() {
         if (!updateDaemonThread) {
             throw new BEException("The job manager must be created with JobManagerOption.createDaemon set to true to make waitForJobsToFinish() work.")
         }
@@ -420,6 +427,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             }
             waitForUpdateIntervalDuration()
         }
-        return surveilledJobsHadErrors ? 1 : 0
+        return !surveilledJobsHadErrors
     }
 }
