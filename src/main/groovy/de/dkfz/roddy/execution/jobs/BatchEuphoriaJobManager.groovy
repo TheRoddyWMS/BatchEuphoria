@@ -11,10 +11,11 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.time.Duration
 import java.time.LocalDateTime
-
 import java.util.concurrent.TimeoutException
 
 /**
@@ -25,6 +26,8 @@ import java.util.concurrent.TimeoutException
  */
 @CompileStatic
 abstract class BatchEuphoriaJobManager<C extends Command> {
+
+    final static Logger log = LoggerFactory.getLogger(BatchEuphoriaJobManager)
 
     protected final BEExecutionService executionService
 
@@ -43,13 +46,28 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     private String userAccount
 
     private final Map<BEJobID, BEJob> activeJobs = [:]
+
     private Thread updateDaemonThread
+
+    /**
+     * Set this to true to tell the job manager, that an existing update daemon shall be closed, e.g. because
+     * the application is in the process to exit.
+     */
+    protected boolean updateDaemonShallBeClosed
+
+    /**
+     * Set this to true, if you do not want to allow any further job submission.
+     */
+    protected boolean forbidFurtherJobSubmission
 
     private Map<BEJobID, JobState> cachedStates = [:]
     private final Object cacheStatesLock = new Object()
     private LocalDateTime lastCacheUpdate
     private Duration cacheUpdateInterval
 
+    public boolean surveilledJobsHadErrors = false
+
+    private final List<UpdateDaemonListener> updateDaemonListeners = []
 
     boolean requestMemoryIsEnabled
     boolean requestWalltimeIsEnabled
@@ -86,8 +104,17 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-
+    /**
+     * If you override this method, make sure to build in the check for further job submission! It is not allowed to
+     * submit any jobs after waitForJobs() was called.
+     * @param job
+     * @return
+     * @throws TimeoutException
+     */
     BEJobResult submitJob(BEJob job) throws TimeoutException {
+        if (forbidFurtherJobSubmission) {
+            throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
+        }
         Command command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
@@ -207,20 +234,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-    int waitForJobsToFinish() {
-        if (!updateDaemonThread) {
-            throw new BEException("createDaemon needs to be enabled for waitForJobsToFinish")
-        }
-        while (true) {
-            synchronized (activeJobs) {
-                if (activeJobs.isEmpty()) {
-                    return 0
-                }
-            }
-            Thread.sleep(cacheUpdateInterval.toMillis())
-        }
-    }
-
     abstract String getJobIdVariable()
 
     abstract String getJobNameVariable()
@@ -328,29 +341,58 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected void createUpdateDaemonThread() {
         updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-            updateActiveJobList()
-            try {
-                Thread.sleep(Math.max(cacheUpdateInterval.toMillis(), 10 * 1000))
-            } catch (InterruptedException e) {
-                e.printStackTrace()
+            while (!updateDaemonShallBeClosed) {
+                updateActiveJobList()
+
+                waitForUpdateIntervalDuration()
             }
         })
     }
 
+    final void addUpdateDaemonListener(UpdateDaemonListener listener) {
+        synchronized (updateDaemonListeners) {
+            updateDaemonListeners << listener
+        }
+    }
+
+    boolean isDaemonAlive() {
+        return updateDaemonThread != null && updateDaemonThread.isAlive()
+    }
+
+    void waitForUpdateIntervalDuration() {
+        long duration = Math.max(cacheUpdateInterval.toMillis(), 10 * 1000)
+        // Sleep one second until the duration is reached. This allows the daemon to finish faster, when it shall stop
+        // (updateDaemonShallBeClosed == true)
+        for (long timer = duration; timer > 0 && !updateDaemonShallBeClosed; timer -= 1000)
+            Thread.sleep(1000)
+    }
+
+    void stopUpdateDaemon() {
+        updateDaemonShallBeClosed = true
+        updateDaemonThread?.join()
+    }
+
     private void updateActiveJobList() {
+        List<BEJobID> listOfRemovableJobs = []
         synchronized (activeJobs) {
             Map<BEJobID, JobState> states = queryJobStatesUsingCache(activeJobs.keySet() as List<BEJobID>, true)
 
             for (BEJobID id : activeJobs.keySet()) {
-                JobState js = states.get(id)
+                JobState jobState = states.get(id)
                 BEJob job = activeJobs.get(id)
 
-                job.setJobState(js)
-
-                if (!js.isPlannedOrRunning()) {
-                    activeJobs.remove(id)
+                job.setJobState(jobState)
+                if (!jobState.isPlannedOrRunning()) {
+                    synchronized (updateDaemonListeners) {
+                        updateDaemonListeners.each { it.jobEnded(job, jobState) }
+                    }
+                    if (!jobState.successful) {
+                        surveilledJobsHadErrors = true
+                    }
+                    listOfRemovableJobs << id
                 }
             }
+            listOfRemovableJobs.each { activeJobs.remove(it) }
         }
     }
 
@@ -363,5 +405,28 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             lastCacheUpdate = LocalDateTime.now()
         }
         return new HashMap(cachedStates)
+    }
+
+    /**
+     * The method will wait until all started jobs are finished (with or without errors).
+     *
+     * Note, that the method does not allow further job submission! As soon, as you call it, you cannot submit jobs!
+     *
+     * @return true, if there were NO errors, false, if there were any.
+     */
+    boolean waitForJobsToFinish() {
+        if (!updateDaemonThread) {
+            throw new BEException("The job manager must be created with JobManagerOption.createDaemon set to true to make waitForJobsToFinish() work.")
+        }
+        forbidFurtherJobSubmission = true
+        while (!updateDaemonShallBeClosed) {
+            synchronized (activeJobs) {
+                if (activeJobs.isEmpty()) {
+                    break
+                }
+            }
+            waitForUpdateIntervalDuration()
+        }
+        return !surveilledJobsHadErrors
     }
 }

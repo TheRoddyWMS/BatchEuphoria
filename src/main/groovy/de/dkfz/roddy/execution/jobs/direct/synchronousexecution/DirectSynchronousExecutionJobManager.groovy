@@ -99,6 +99,9 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     BEJobResult submitJob(BEJob job) {
+        if (forbidFurtherJobSubmission) {
+            throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
+        }
         // Some of the parent jobs are in a bad state!
         Command command = createCommand(job)
         BEJobResult jobResult

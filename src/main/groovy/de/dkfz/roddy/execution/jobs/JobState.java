@@ -55,7 +55,7 @@ public enum JobState implements Serializable {
     }
 
     public static boolean _isPlannedOrRunning(JobState jobState) {
-        return Arrays.asList(JobState.RUNNING, JobState.QUEUED, JobState.HOLD, JobState.STARTED, JobState.UNSTARTED).contains(jobState);
+        return Arrays.asList(JobState.RUNNING, JobState.QUEUED, JobState.HOLD, JobState.SUSPENDED, JobState.STARTED, JobState.UNSTARTED).contains(jobState);
     }
 
     public boolean isDummy() {
