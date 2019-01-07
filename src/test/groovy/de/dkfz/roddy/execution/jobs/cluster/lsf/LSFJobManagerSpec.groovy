@@ -22,6 +22,8 @@ import java.lang.reflect.Method
 import java.time.Duration
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 class LSFJobManagerSpec extends Specification {
 
@@ -43,8 +45,8 @@ class LSFJobManagerSpec extends Specification {
       "JOB_PRIORITY":"",
       "PIDS":"46782,46796,46798,46915,47458,47643",
       "EXIT_CODE":"",
-      "FROM_HOST":"tbi-cn013",
-      "EXEC_HOST":"tbi-cn019:tbi-cn019",
+      "FROM_HOST":"from-host",
+      "EXEC_HOST":"exec-host:exec-host",
       "SUBMIT_TIME":"Dec 28 19:56",
       "START_TIME":"Dec 28 19:56",
       "FINISH_TIME":"Dec 28 19:56 L",
@@ -56,11 +58,11 @@ class LSFJobManagerSpec extends Specification {
       "RUNTIMELIMIT":"00:10:00",
       "SUB_CWD":"$HOME",
       "PEND_REASON":"",
-      "EXEC_CWD":"\\/home\\/otptest",
+      "EXEC_CWD":"\\/some\\/test",
       "OUTPUT_FILE":"",
       "INPUT_FILE":"",
       "EFFECTIVE_RESREQ":"select[type == local] order[r15s:pg] ",
-      "EXEC_HOME":"\\/home\\/otptest",
+      "EXEC_HOME":"\\/some\\/test",
       "SLOTS":"1",
       "ERROR_FILE":"",
       "COMMAND":"ls -l",
@@ -87,8 +89,8 @@ class LSFJobManagerSpec extends Specification {
       "JOB_PRIORITY":"",
       "PIDS":"51904",
       "EXIT_CODE":"1",
-      "FROM_HOST":"tbi-cn013",
-      "EXEC_HOST":"tbi-cn020",
+      "FROM_HOST":"from-host",
+      "EXEC_HOST":"exec-host",
       "SUBMIT_TIME":"Dec 28 19:56",
       "START_TIME":"Dec 28 19:56",
       "FINISH_TIME":"Dec 28 19:56 L",
@@ -100,11 +102,11 @@ class LSFJobManagerSpec extends Specification {
       "RUNTIMELIMIT":"00:10:00",
       "SUB_CWD":"$HOME",
       "PEND_REASON":"Job dependency condition not satisfied;",
-      "EXEC_CWD":"\\/home\\/otptest",
+      "EXEC_CWD":"\\/some/\\/test",
       "OUTPUT_FILE":"\\/sequencing\\/whole_genome_sequencing\\/coveragePlotSingle.o30060",
       "INPUT_FILE":"",
       "EFFECTIVE_RESREQ":"select[type == local] order[r15s:pg] ",
-      "EXEC_HOME":"\\/home\\/otptest",
+      "EXEC_HOME":"\\/some\\/test",
       "SLOTS":"1",
       "ERROR_FILE":"",
       "COMMAND":"ls -l",
@@ -181,6 +183,29 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.jobID.toString() == "22005"
     }
 
+    String dateToString(ZonedDateTime date) {
+        DateTimeFormatter.ofPattern('MMM ppd HH:mm').format(date)
+    }
+
+    void "test parseTime"() {
+        given:
+        JobManagerOptions parms = JobManagerOptions.create().build()
+        BEExecutionService testExecutionService = [
+                execute: { String s -> new ExecutionResult(true, 0, RAW_JSON_OUTPUT.split("\n") as List<String>, null) }
+        ] as BEExecutionService
+        LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
+
+        when:
+        ZonedDateTime refTime = ZonedDateTime.now()
+        ZonedDateTime earlierTime = refTime.minusDays(1)
+        ZonedDateTime laterTime = refTime.plusDays(1)
+        ZonedDateTime laterLastYear = laterTime.minusYears(1)
+
+        then:
+        manager.parseTime(dateToString(earlierTime)).truncatedTo(ChronoUnit.MINUTES).equals(earlierTime.truncatedTo(ChronoUnit.MINUTES))
+        manager.parseTime(dateToString(laterTime)).truncatedTo(ChronoUnit.MINUTES).equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
+    }
+
     void "test queryExtendedJobStateById"() {
         given:
         JobManagerOptions parms = JobManagerOptions.create().build()
@@ -219,12 +244,14 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.jobName == "ls -l"
         jobInfo.tool == new File("ls -l")
         jobInfo.jobID == new BEJobID("22005")
-        jobInfo.submitTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+
+        // The year-parsing/inferrence is checked in another test. Here just take the parsed value.
+        jobInfo.submitTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
         jobInfo.eligibleTime == null
-        jobInfo.startTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
-        jobInfo.endTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
-        jobInfo.executionHosts == ["tbi-cn019", "tbi-cn019"]
-        jobInfo.submissionHost == "tbi-cn013"
+        jobInfo.startTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.endTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.executionHosts == ["exec-host", "exec-host"]
+        jobInfo.submissionHost == "from-host"
         jobInfo.priority == null
         jobInfo.logFile == null
         jobInfo.errorLogFile == null
@@ -243,14 +270,14 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.userTime == null
         jobInfo.systemTime == null
         jobInfo.pendReason == null
-        jobInfo.execHome == "/home/otptest"
+        jobInfo.execHome == "/some/test"
         jobInfo.execUserName == null
         jobInfo.pidStr == ["46782", "46796", "46798", "46915", "47458", "47643"]
         jobInfo.pgidStr == null
         jobInfo.exitCode == 0
         jobInfo.jobGroup == null
         jobInfo.description == null
-        jobInfo.execCwd == "/home/otptest"
+        jobInfo.execCwd == "/some/test"
         jobInfo.askedHostsStr == null
         jobInfo.cwd == '$HOME'
         jobInfo.projectName == "default"

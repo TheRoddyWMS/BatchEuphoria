@@ -129,7 +129,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         return result
     }
 
-    private ZonedDateTime parseTime(String str) {
+    ZonedDateTime parseTime(String str) {
         ZonedDateTime date = ZonedDateTime.parse("${str} ${LocalDateTime.now().getYear()}", DATE_PATTERN)
         if (date > ZonedDateTime.now()) {
             return date.minusYears(1)
