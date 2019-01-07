@@ -29,10 +29,14 @@ import java.time.format.DateTimeFormatter
 @groovy.transform.CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
-    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
-            "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
-            "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
-            "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
+    private static final fileCommand = System.getProperty("tabularBJobsDir") + "/\$(date \"+%Y-%m-%d_%H:%M:%S.txt\") ;"
+
+    private static final fields = "jobid job_name stat user queue job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency"
+
+    private static final String LSF_COMMAND_QUERY_STATES =
+            "bjobs -a -o -hms \"$fields \" -u icgcdata 1> $fileCommand 2> /dev/null; " +
+            "bjobs -a -o -hms -json \"$fields \""
+
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
     private final DateTimeFormatter DATE_PATTERN
@@ -129,7 +133,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         return result
     }
 
-    private ZonedDateTime parseTime(String str) {
+    ZonedDateTime parseTime(String str) {
         ZonedDateTime date = ZonedDateTime.parse("${str} ${LocalDateTime.now().getYear()}", DATE_PATTERN)
         if (date > ZonedDateTime.now()) {
             return date.minusYears(1)
