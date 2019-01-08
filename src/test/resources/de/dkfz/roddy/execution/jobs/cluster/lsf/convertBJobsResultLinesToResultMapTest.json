@@ -1,0 +1,42 @@
+{
+  "COMMAND":"bjobs",
+  "JOBS":6,
+  "RECORDS":[
+    {
+      "JOBID":"487641",
+      "JOB_NAME":"RoddyTest_testScript",
+      "STAT":"EXIT",
+      "FINISH_TIME":"Jan  7 09:59 L"
+    },
+    {
+      "JOBID":"487642",
+      "JOB_NAME":"RoddyTest_testScript",
+      "STAT":"EXIT",
+      "FINISH_TIME":"Jan  7 09:59 L"
+    },
+    {
+      "JOBID":"488155",
+      "JOB_NAME":"RoddyTest_testScript",
+      "STAT":"EXIT",
+      "FINISH_TIME":"Jan  7 09:59 L"
+    },
+    {
+      "JOBID":"491861",
+      "JOB_NAME":"RoddyTest_testScript",
+      "STAT":"DONE",
+      "FINISH_TIME":"Jan  8 14:17 L"
+    },
+    {
+      "JOBID":"491864",
+      "JOB_NAME":"RoddyTest_testScript",
+      "STAT":"DONE",
+      "FINISH_TIME":"Jan  8 14:20 L"
+    },
+    {
+      "JOBID":"491867",
+      "JOB_NAME":"RoddyTest_testScriptMultiInMixedParameters",
+      "STAT":"DONE",
+      "FINISH_TIME":"Jan  8 14:21 L"
+    }
+  ]
+}

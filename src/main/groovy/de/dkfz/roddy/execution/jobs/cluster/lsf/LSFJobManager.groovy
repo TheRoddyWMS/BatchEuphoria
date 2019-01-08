@@ -14,12 +14,13 @@ import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.BashUtils
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
+import de.dkfz.roddy.tools.DateTimeHelper
 import groovy.json.JsonSlurper
+import groovy.transform.CompileStatic
 
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * Factory for the management of LSF cluster systems.
@@ -29,33 +30,38 @@ import java.time.format.DateTimeFormatter
 @groovy.transform.CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
-    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
+    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat finish_time\""
+    private static final String LSF_COMMAND_QUERY_EXTENDED_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    private final DateTimeFormatter DATE_PATTERN
-
+    static final DateTimeHelper dateTimeHelper = new DateTimeHelper("MMM ppd HH:mm yyyy")
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
-        DATE_PATTERN = DateTimeFormatter
-                .ofPattern("MMM ppd HH:mm yyyy")
-                .withLocale(Locale.ENGLISH)
-                .withZone(parms.timeZoneId)
     }
 
-    private String getQueryCommand() {
-        return LSF_COMMAND_QUERY_STATES
+    ZonedDateTime parseTime(String str) {
+        ZonedDateTime date = dateTimeHelper.parseTime(str)
+        /**
+         * LSF does not return the year of submission (or whatever). The assumption here is that if the time parsed
+         * under the assumption of the current year is later than the current time, then the job correct date must
+         * have been in the last year. As LSF does not return the actual year, this is the least problematic assumption.
+         */
+        if (date > ZonedDateTime.now()) {
+            return date.minusYears(1)
+        }
+        return date
     }
 
     @Override
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (BEJobID id : jobIds) {
-            Map<String, Object> jobDetails = runBjobs([id]).get(id)
-            queriedExtendedStates.put(id, queryJobInfo(jobDetails))
+            Map<String, Object> jobDetails = runBjobs([id], true).get(id)
+            queriedExtendedStates.put(id, convertJobDetailsMapToGenericJobInfoobject(jobDetails))
         }
         return queriedExtendedStates
     }
@@ -88,15 +94,16 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
-        runBjobs(jobIDs).collectEntries { BEJobID jobID, Object value ->
+        def bjobs = runBjobs(jobIDs, false)
+        bjobs.collectEntries { BEJobID jobID, Object value ->
             JobState js = parseJobState(value["STAT"] as String)
             [(jobID): js]
         } as Map<BEJobID, JobState>
 
     }
 
-    private Map<BEJobID, Map<String, Object>> runBjobs(List<BEJobID> jobIDs) {
-        StringBuilder queryCommand = new StringBuilder(getQueryCommand())
+    Map<BEJobID, Map<String, Object>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
+        StringBuilder queryCommand = new StringBuilder(extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
 
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
@@ -109,49 +116,76 @@ class LSFJobManager extends AbstractLSFJobManager {
         ExecutionResult er = executionService.execute(queryCommand.toString())
         List<String> resultLines = er.resultLines
 
-        Map<BEJobID, Map<String, Object>> result = [:]
-
-        if (er.successful) {
-            if (resultLines.size() >= 1) {
-                String rawJson = resultLines.join("\n")
-                Object parsedJson = new JsonSlurper().parseText(rawJson)
-                List records = (List) parsedJson.getAt("RECORDS")
-                records.each {
-                    BEJobID jobID = new BEJobID(it["JOBID"] as String)
-                    result.put(jobID, it as Map<String, Object>)
-                }
-            }
-
-        } else {
+        if (!er.successful) {
             String error = "Job status couldn't be updated. \n command: ${queryCommand} \n status code: ${er.exitCode} \n result: ${er.resultLines}"
             throw new BEException(error)
         }
-        return result
+
+        Map<BEJobID, Map<String, Object>> result = convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
+        return filterJobMapByAge(result, maxAgeOfJobsForQueries)
     }
 
-    private ZonedDateTime parseTime(String str) {
-        ZonedDateTime date = ZonedDateTime.parse("${str} ${LocalDateTime.now().getYear()}", DATE_PATTERN)
-        if (date > ZonedDateTime.now()) {
-            return date.minusYears(1)
+    static Map<BEJobID, Map<String, Object>> convertBJobsJsonOutputToResultMap(String rawJson) {
+        Map<BEJobID, Map<String, Object>> result = [:]
+
+        if (!rawJson)
+            return result
+
+        Object parsedJson = new JsonSlurper().parseText(rawJson)
+        List records = (List) parsedJson["RECORDS"]
+        for (record in records) {
+            BEJobID jobID = new BEJobID(record["JOBID"] as String)
+            result[jobID] = record as Map<String, Object>
         }
-        return date
+
+        result
+    }
+
+    /**
+     * For all entries in records, check if they are finished and if so, check if they are younger (or older) than
+     * the maximum age.
+     * @param records A map of informational entries for one or more job ids
+     * @param reference Time A timestamp which can be set. It is compared against the timestamp of finished entries.
+     * @param maxJobKeepDuration Defines the maximum duration
+     * @return The map of records where too old entries are filtered out.
+     */
+    @CompileStatic
+    static Map<BEJobID, Map<String, Object>> filterJobMapByAge(
+            Map<BEJobID, Map<String, Object>> records,
+            LocalDateTime referenceTime = LocalDateTime.now(),
+            Duration maxJobKeepDuration
+    ) {
+        records.findAll { def k, def record ->
+            String finishTime = record["FINISH_TIME"]
+            boolean youngEnough = true
+            if (finishTime) {
+                String timeString = "${finishTime[0..-3]} ${referenceTime.getYear()}"
+                withCaughtAndLoggedException {
+                    ZonedDateTime _finishTime = parseTime(timeString)
+                    Duration timeSpan = dateTimeHelper.timeSpanOf(_finishTime.toLocalDateTime(), referenceTime)
+                    if (dateTimeHelper.isOlderThan(timeSpan, maxJobKeepDuration))
+                        youngEnough = false
+                }
+            }
+            youngEnough
+        }
     }
 
     /**
      * Used by @getJobDetails to set JobInfo
      */
-    private GenericJobInfo queryJobInfo(Map<String, Object> jobResult) {
+    private GenericJobInfo convertJobDetailsMapToGenericJobInfoobject(Map<String, Object> jobResult) {
 
         GenericJobInfo jobInfo
         BEJobID jobID
-        try{
+        try {
             jobID = new BEJobID(jobResult["JOBID"] as String)
-        }catch (Exception exp){
+        } catch (Exception exp) {
             throw new BEException("Job ID '${jobResult["JOBID"]}' could not be transformed to BEJobID ")
         }
 
-        List<String> dependIDs = ((String) jobResult["DEPENDENCY"])? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
-        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobID, null, dependIDs)
+        List<String> dependIDs = ((String) jobResult["DEPENDENCY"]) ? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
+        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String) : null, jobID, null, dependIDs)
 
         String queue = jobResult["QUEUE"] ?: null
         Duration runTime = withCaughtAndLoggedException {
@@ -204,13 +238,17 @@ class LSFJobManager extends AbstractLSFJobManager {
         jobInfo.setResourceReq(jobResult["EFFECTIVE_RESREQ"] as String ?: null)
         jobInfo.setExecHome(jobResult["EXEC_HOME"] as String ?: null)
 
-        if (jobResult["SUBMIT_TIME"])
-            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(jobResult["SUBMIT_TIME"] as String)) }
-        if (jobResult["START_TIME"])
-            withCaughtAndLoggedException { jobInfo.setStartTime(parseTime(jobResult["START_TIME"] as String)) }
-        if (jobResult["FINISH_TIME"])
+        String submissionTime = jobResult["SUBMIT_TIME"]
+        String startTime = jobResult["START_TIME"]
+        String finishTime = jobResult["FINISH_TIME"]
+
+        if (submissionTime)
+            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(submissionTime as String)) }
+        if (startTime)
+            withCaughtAndLoggedException { jobInfo.setStartTime(parseTime(startTime as String)) }
+        if (finishTime)
             withCaughtAndLoggedException {
-                jobInfo.setEndTime(parseTime((jobResult["FINISH_TIME"] as String).substring(0, (jobResult["FINISH_TIME"] as String).length() - 2)))
+                jobInfo.setEndTime(parseTime(finishTime[0..-2]))
             }
 
         return jobInfo

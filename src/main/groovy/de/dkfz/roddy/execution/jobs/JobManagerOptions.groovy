@@ -18,14 +18,21 @@ import java.time.ZoneId
 class JobManagerOptions {
 
     boolean createDaemon
+
     Duration updateInterval
 
     String userIdForJobQueries
+
+    Duration maxAgeOfJobsForJobQueries
+
     boolean trackOnlyStartedJobs
 
     String userGroup
+
     String userAccount
+
     String userEmail
+
     String userMask
 
     /**
@@ -84,6 +91,7 @@ class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
         trackOnlyStartedJobs = false
         updateInterval = Duration.ofMinutes(5)
+        maxAgeOfJobsForJobQueries = Duration.ofDays(14)
         createDaemon = false
         requestMemoryIsEnabled = true
         requestWalltimeIsEnabled = true

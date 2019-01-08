@@ -1,0 +1,41 @@
+{
+  "COMMAND": "bjobs",
+  "JOBS": 1,
+  "RECORDS": [
+    {
+      "JOBID": "22005",
+      "JOB_NAME": "ls -l",
+      "STAT": "DONE",
+      "USER": "otptest",
+      "QUEUE": "short-dmg",
+      "JOB_DESCRIPTION": "",
+      "PROJ_NAME": "default",
+      "JOB_GROUP": "",
+      "JOB_PRIORITY": "",
+      "PIDS": "46782,46796,46798,46915,47458,47643",
+      "EXIT_CODE": "",
+      "FROM_HOST": "tbi-cn013",
+      "EXEC_HOST": "tbi-cn019:tbi-cn019",
+      "SUBMIT_TIME": "Dec 28 19:56",
+      "START_TIME": "Dec 28 19:56",
+      "FINISH_TIME": "Dec 28 19:56 L",
+      "CPU_USED": "00:00:01",
+      "RUN_TIME": "00:00:01",
+      "USER_GROUP": "",
+      "SWAP": "",
+      "MAX_MEM": "5.2 Gbytes",
+      "RUNTIMELIMIT": "00:10:00",
+      "SUB_CWD": "$HOME",
+      "PEND_REASON": "",
+      "EXEC_CWD": "\/home\/otptest",
+      "OUTPUT_FILE": "",
+      "INPUT_FILE": "",
+      "EFFECTIVE_RESREQ": "select[type == local] order[r15s:pg] ",
+      "EXEC_HOME": "\/home\/otptest",
+      "SLOTS": "1",
+      "ERROR_FILE": "",
+      "COMMAND": "ls -l",
+      "DEPENDENCY": "done(22004)"
+    }
+  ]
+}

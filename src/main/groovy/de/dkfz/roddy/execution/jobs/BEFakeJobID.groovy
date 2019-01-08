@@ -13,7 +13,7 @@ import static de.dkfz.roddy.execution.jobs.BEFakeJobID.FakeJobReason.values
 /**
  * Created by heinold on 23.02.17.
  */
-class BEFakeJobID extends BEJobID.FakeJobID {
+class BEFakeJobID extends BEJobID {
     /**
      * Various reasons why a job was not executed and is a fake job.
      */
