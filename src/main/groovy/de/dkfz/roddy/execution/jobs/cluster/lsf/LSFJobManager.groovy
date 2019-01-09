@@ -37,18 +37,18 @@ class LSFJobManager extends AbstractLSFJobManager {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    static final DateTimeHelper dateTimeHelper = new DateTimeHelper("MMM ppd HH:mm yyyy")
+    static final DateTimeHelper dateTimeHelper = new DateTimeHelper("MMM ppd HH:mm yyyy", Locale.ENGLISH)
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
-    ZonedDateTime parseTime(String str) {
-        ZonedDateTime date = dateTimeHelper.parseTime(str)
+    static ZonedDateTime parseTime(String str) {
+        ZonedDateTime date = dateTimeHelper.parseToZonedDateTime("${str} ${LocalDateTime.now().year}")
         /**
-         * LSF does not return the year of submission (or whatever). The assumption here is that if the time parsed
-         * under the assumption of the current year is later than the current time, then the job correct date must
-         * have been in the last year. As LSF does not return the actual year, this is the least problematic assumption.
+         * parseToZonedDateTime() parses a zoned time as provided by LSF. Unfortunately, LFS does not return the submission year!
+         * The (kind of reasonable) assumption made here is that if the job's submission time (assuming the current
+         * year) is later than the current time, then the job was submitted last year.
          */
         if (date > ZonedDateTime.now()) {
             return date.minusYears(1)
@@ -152,18 +152,17 @@ class LSFJobManager extends AbstractLSFJobManager {
     @CompileStatic
     static Map<BEJobID, Map<String, Object>> filterJobMapByAge(
             Map<BEJobID, Map<String, Object>> records,
-            LocalDateTime referenceTime = LocalDateTime.now(),
             Duration maxJobKeepDuration
     ) {
         records.findAll { def k, def record ->
             String finishTime = record["FINISH_TIME"]
             boolean youngEnough = true
             if (finishTime) {
-                String timeString = "${finishTime[0..-3]} ${referenceTime.getYear()}"
+                String timeString = "${finishTime[0..-3]}"
                 withCaughtAndLoggedException {
                     ZonedDateTime _finishTime = parseTime(timeString)
-                    Duration timeSpan = dateTimeHelper.timeSpanOf(_finishTime.toLocalDateTime(), referenceTime)
-                    if (dateTimeHelper.isOlderThan(timeSpan, maxJobKeepDuration))
+                    Duration timeSpan = Duration.between(_finishTime.toLocalDateTime(), LocalDateTime.now())
+                    if (dateTimeHelper.durationExceeds(timeSpan, maxJobKeepDuration))
                         youngEnough = false
                 }
             }
@@ -174,7 +173,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     /**
      * Used by @getJobDetails to set JobInfo
      */
-    private GenericJobInfo convertJobDetailsMapToGenericJobInfoobject(Map<String, Object> jobResult) {
+    GenericJobInfo convertJobDetailsMapToGenericJobInfoobject(Map<String, Object> jobResult) {
 
         GenericJobInfo jobInfo
         BEJobID jobID
@@ -243,13 +242,11 @@ class LSFJobManager extends AbstractLSFJobManager {
         String finishTime = jobResult["FINISH_TIME"]
 
         if (submissionTime)
-            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(submissionTime as String)) }
+            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(submissionTime)) }
         if (startTime)
             withCaughtAndLoggedException { jobInfo.setStartTime(parseTime(startTime as String)) }
         if (finishTime)
-            withCaughtAndLoggedException {
-                jobInfo.setEndTime(parseTime(finishTime[0..-2]))
-            }
+            withCaughtAndLoggedException { jobInfo.setEndTime(parseTime(finishTime[0..-3])) }
 
         return jobInfo
     }

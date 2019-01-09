@@ -16,59 +16,22 @@ import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import groovy.json.JsonSlurper
+import groovy.transform.CompileStatic
+import spock.lang.Ignore
 import spock.lang.Specification
 
-import java.lang.reflect.Method
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 class LSFJobManagerSpec extends Specification {
 
-    final static String RAW_JSON_OUTPUT_WITHOUT_LISTS = '''
-{
-  "COMMAND":"bjobs",
-  "JOBS":1,
-  "RECORDS":[
-    {
-      "JOBID":"22005",
-      "JOB_NAME":"ls -l",
-      "STAT":"DONE",
-      "USER":"otptest",
-      "QUEUE":"short-dmg",
-      "JOB_DESCRIPTION":"",
-      "PROJ_NAME":"default",
-      "JOB_GROUP":"",
-      "JOB_PRIORITY":"",
-      "PIDS":"51904",
-      "EXIT_CODE":"1",
-      "FROM_HOST":"tbi-cn013",
-      "EXEC_HOST":"tbi-cn020",
-      "SUBMIT_TIME":"Dec 28 19:56",
-      "START_TIME":"Dec 28 19:56",
-      "FINISH_TIME":"Dec 28 19:56 L",
-      "CPU_USED":"00:00:01",
-      "RUN_TIME":"00:00:01",
-      "USER_GROUP":"",
-      "SWAP":"0 Mbytes",
-      "MAX_MEM":"522 MBytes",
-      "RUNTIMELIMIT":"00:10:00",
-      "SUB_CWD":"$HOME",
-      "PEND_REASON":"Job dependency condition not satisfied;",
-      "EXEC_CWD":"\\/home\\/otptest",
-      "OUTPUT_FILE":"\\/sequencing\\/whole_genome_sequencing\\/coveragePlotSingle.o30060",
-      "INPUT_FILE":"",
-      "EFFECTIVE_RESREQ":"select[type == local] order[r15s:pg] ",
-      "EXEC_HOME":"\\/home\\/otptest",
-      "SLOTS":"1",
-      "ERROR_FILE":"",
-      "COMMAND":"ls -l",
-      "DEPENDENCY":"done(22004)"
+    static final File getResourceFile(String file) {
+        new File("src/test/resources/de/dkfz/roddy/execution/jobs/cluster/lsf/", file)
     }
-  ]
-}
-'''
 
     void "queryJobInfo, bjobs JSON output with lists  "() {
 
@@ -76,71 +39,80 @@ class LSFJobManagerSpec extends Specification {
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
         LSFJobManager jm = new LSFJobManager(testExecutionService, parms)
-        Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", Map)
-        method.setAccessible(true)
-        Object parsedJson = new JsonSlurper().parseText(RAW_JSON_OUTPUT)
+
+        Object parsedJson = new JsonSlurper().parseText(getResourceFile(resourceFile).text)
         List records = (List) parsedJson.getAt("RECORDS")
 
         when:
-        GenericJobInfo jobInfo = method.invoke(jm, records.get(0))
+        GenericJobInfo jobInfo = jm.convertJobDetailsMapToGenericJobInfoobject(records.get(0))
 
         then:
         jobInfo != null
-        jobInfo.tool == new File("ls -l")
-    }
-
-    void "queryJobInfo, bjobs JSON output without lists  "() {
-
-        given:
-        def parms = JobManagerOptions.create().build()
-        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
-        LSFJobManager jm = new LSFJobManager(testExecutionService, parms)
-        Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", Map)
-        method.setAccessible(true)
-        Object parsedJson = new JsonSlurper().parseText(RAW_JSON_OUTPUT_WITHOUT_LISTS)
-        List records = (List) parsedJson.getAt("RECORDS")
-
-        when:
-        GenericJobInfo jobInfo = method.invoke(jm, records.get(0))
-
-        then:
-        jobInfo != null
-        jobInfo.tool == new File("ls -l")
-    }
-
-    void "queryJobInfo, bjobs JSON output empty  "() {
-
-        given:
-        String emptyRawJsonOutput = '''
-        {
-            "COMMAND":"bjobs",
-            "JOBS":1,
-            "RECORDS":[
-                {
-                "JOBID":"22005",
-                }
-            ]
-        }
-        '''
-        def parms = JobManagerOptions.create().build()
-        TestExecutionService testExecutionService = new TestExecutionService("test", "test")
-        LSFJobManager jm = new LSFJobManager(testExecutionService, parms)
-        Method method = LSFJobManager.class.getDeclaredMethod("queryJobInfo", Map)
-        method.setAccessible(true)
-        Object parsedJson = new JsonSlurper().parseText(emptyRawJsonOutput)
-        List records = (List) parsedJson.getAt("RECORDS")
-
-        when:
-        GenericJobInfo jobInfo = method.invoke(jm, records.get(0))
-
-        then:
         jobInfo.jobID.toString() == "22005"
+        jobInfo.tool == expectedTool
+
+        where:
+        resourceFile                                     | expectedJobId | expectedTool
+        "queryExtendedJobStateByIdTest.json"             | "22005"       | new File("ls -l")
+        "queryExtendedJobStateByIdWithoutListsTest.json" | "22005"       | new File("ls -l")
+        "queryExtendedJobStateByIdEmptyTest.json"        | "22005"       | null
+    }
+
+    @CompileStatic
+    String zonedDateTimeToString(ZonedDateTime date) {
+        DateTimeFormatter.ofPattern('MMM ppd HH:mm').withLocale(Locale.ENGLISH).format(date)
+    }
+
+    @CompileStatic
+    String localDateTimeToLSFString(LocalDateTime date) {
+        DateTimeFormatter.ofPattern('MMM ppd HH:mm').withLocale(Locale.ENGLISH).format(date) + " L"
+    }
+
+    void testZonedDateTimeToString(input, expected) {
+        expect:
+        zonedDateTimeToString(input) == expected
+
+        where:
+        input                                                              | expected
+        ZonedDateTime.of(2000, 1, 1, 10, 21, 0, 0, ZoneId.systemDefault()) | "Jan  1 10:21"
+        ZonedDateTime.of(2000, 5, 7, 10, 21, 0, 0, ZoneId.systemDefault()) | "May  7 10:21"
+    }
+
+    void testLocalDateTimeToLSFString(input, expected) {
+        expect:
+        localDateTimeToLSFString(input) == expected
+
+        where:
+        input                                | expected
+        LocalDateTime.of(2000, 1, 1, 10, 21) | "Jan  1 10:21 L"
+        LocalDateTime.of(2000, 5, 7, 10, 21) | "May  7 10:21 L"
+    }
+
+    void "test parseTime"() {
+        given:
+        def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
+
+        JobManagerOptions parms = JobManagerOptions.create().build()
+        BEExecutionService testExecutionService = [
+                execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
+        ] as BEExecutionService
+        LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
+
+        when:
+        ZonedDateTime refTime = ZonedDateTime.now()
+        ZonedDateTime earlierTime = refTime.minusDays(1)
+        ZonedDateTime laterTime = refTime.plusDays(1)
+        ZonedDateTime laterLastYear = laterTime.minusYears(1)
+
+        then:
+        manager.parseTime(zonedDateTimeToString(earlierTime)).truncatedTo(ChronoUnit.MINUTES).equals(earlierTime.truncatedTo(ChronoUnit.MINUTES))
+        manager.parseTime(zonedDateTimeToString(laterTime)).truncatedTo(ChronoUnit.MINUTES).equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
     }
 
     void "test queryExtendedJobStateById"() {
         given:
         JobManagerOptions parms = JobManagerOptions.create().build()
-        def jsonFile = getResourceFile("de/dkfz/roddy/execution/jobs/cluster/lsf/queryExtendedJobStateByIdTest.json")
+        def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
         BEExecutionService testExecutionService = [
                 execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
         ] as BEExecutionService
@@ -176,12 +148,14 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.jobName == "ls -l"
         jobInfo.tool == new File("ls -l")
         jobInfo.jobID == new BEJobID("22005")
-        jobInfo.submitTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+
+        // The year-parsing/inferrence is checked in another test. Here just take the parsed value.
+        jobInfo.submitTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
         jobInfo.eligibleTime == null
-        jobInfo.startTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
-        jobInfo.endTime == ZonedDateTime.of(2017, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
-        jobInfo.executionHosts == ["tbi-cn019", "tbi-cn019"]
-        jobInfo.submissionHost == "tbi-cn013"
+        jobInfo.startTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.endTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.executionHosts == ["exec-host", "exec-host"]
+        jobInfo.submissionHost == "from-host"
         jobInfo.priority == null
         jobInfo.logFile == null
         jobInfo.errorLogFile == null
@@ -200,14 +174,14 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.userTime == null
         jobInfo.systemTime == null
         jobInfo.pendReason == null
-        jobInfo.execHome == "/home/otptest"
+        jobInfo.execHome == "/some/test"
         jobInfo.execUserName == null
         jobInfo.pidStr == ["46782", "46796", "46798", "46915", "47458", "47643"]
         jobInfo.pgidStr == null
         jobInfo.exitCode == 0
         jobInfo.jobGroup == null
         jobInfo.description == null
-        jobInfo.execCwd == "/home/otptest"
+        jobInfo.execCwd == "/some/test"
         jobInfo.askedHostsStr == null
         jobInfo.cwd == '$HOME'
         jobInfo.projectName == "default"
@@ -221,13 +195,10 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.timeOfCalculation == null
     }
 
-    static final File getResourceFile(String file) {
-        new File("src/test/resources", file)
-    }
 
     def "test convertBJobsResultLinesToResultMap"() {
         given:
-        def jsonFile = getResourceFile("de/dkfz/roddy/execution/jobs/cluster/lsf/convertBJobsResultLinesToResultMapTest.json")
+        def jsonFile = getResourceFile("convertBJobsResultLinesToResultMapTest.json")
         def json = jsonFile.text
 
         when:
@@ -245,21 +216,32 @@ class LSFJobManagerSpec extends Specification {
 
     def "test filterJobMapByAge"() {
         given:
-        def jsonFile = getResourceFile("de/dkfz/roddy/execution/jobs/cluster/lsf/convertBJobsResultLinesToResultMapTest.json")
+        def jsonFile = getResourceFile("convertBJobsResultLinesToResultMapTest.json")
         def json = jsonFile.text
-        LocalDateTime referenceTime = LocalDateTime.of(2019, 01, 8, 14, 29, 2, 25)
 
         when:
+        LocalDateTime referenceTime = LocalDateTime.now()
+        int minutesToSubtract = 20
         def records = LSFJobManager.convertBJobsJsonOutputToResultMap(json)
-        records = LSFJobManager.filterJobMapByAge(records, referenceTime, Duration.ofMinutes(10))
+        records.each {
+            def id, def record ->
+                def timeForRecord = LocalDateTime.of(referenceTime.year, referenceTime.month, referenceTime.dayOfMonth, referenceTime.hour, referenceTime.minute, referenceTime.second).minusMinutes(minutesToSubtract)
+                minutesToSubtract -= 4
+                record["FINISH_TIME"] = localDateTimeToLSFString(timeForRecord)
+        }
+        records = LSFJobManager.filterJobMapByAge(records, Duration.ofMinutes(10))
         def id = records.keySet()[0]
 
         then:
-        records.size() == 2
-        id.id == "491864"
-        records[id]["FINISH_TIME"] == "Jan  8 14:20 L"
+        records.size() == 3
+        id.id == "491861"
     }
 
+    /**
+     * This test should not be run by default, as it runs quite a while (on purpose).
+     * Reenable it, if you run into memory leaks.
+     */
+    @Ignore
     def testMassiveConvertBJobsResultLinesToResultMap(def _entries, def value) {
         when:
         int entries = _entries[0]
