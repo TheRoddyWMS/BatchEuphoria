@@ -129,7 +129,13 @@ class LSFJobManager extends AbstractLSFJobManager {
         return result
     }
 
-    private ZonedDateTime parseTime(String str) {
+    /** parseTime() parses a zoned time as provided by LSF. Unfortunately, LFS does not return the submission year! The (kind of reasonable)
+     *  assumption made here is that if the job's submission time (assuming the current year) is later than the current time, then the job was
+     *  submitted last year.
+     * @param str
+     * @return
+     */
+    ZonedDateTime parseTime(String str) {
         ZonedDateTime date = ZonedDateTime.parse("${str} ${LocalDateTime.now().getYear()}", DATE_PATTERN)
         if (date > ZonedDateTime.now()) {
             return date.minusYears(1)

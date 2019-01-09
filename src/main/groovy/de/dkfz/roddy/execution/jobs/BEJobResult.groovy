@@ -66,7 +66,7 @@ class BEJobResult implements Serializable {
     }
 
     Optional<List<String>> getResultLines() {
-        return Optional.of(executionResult).map { it.resultLines }
+        return Optional.of(executionResult).map { it.resultLines } as Optional<List<String>>
     }
 
     boolean isSuccessful() {
