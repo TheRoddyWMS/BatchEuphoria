@@ -126,7 +126,7 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.usedResources.swap == null
 
         jobInfo.jobName == "r180328_183957634_pid_4_starAlignment"
-        jobInfo.tool == null
+        jobInfo.command == null
         jobInfo.jobID == new BEJobID("4499334")
         jobInfo.submitTime.isEqual ZonedDateTime.of(2018, 03, 28, 16, 39, 22, 0, ZoneOffset.UTC)
         jobInfo.eligibleTime.isEqual ZonedDateTime.of(2018, 03, 28, 16, 39, 22, 0, ZoneOffset.UTC)
@@ -202,7 +202,7 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         jobInfo.usedResources.swap == null
 
         jobInfo.jobName == "r180405_163953553_stds_snvJoinVcfFiles"
-        jobInfo.tool == null
+        jobInfo.command == null
         jobInfo.jobID == new BEJobID("4564045")
         jobInfo.submitTime.isEqual ZonedDateTime.of(2018, 4, 5, 14, 39, 18, 0, ZoneOffset.UTC)
         jobInfo.eligibleTime.isEqual ZonedDateTime.of(2018, 4, 5, 14, 39, 42, 0, ZoneOffset.UTC)

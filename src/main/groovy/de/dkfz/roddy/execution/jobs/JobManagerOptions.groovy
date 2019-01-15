@@ -23,7 +23,7 @@ class JobManagerOptions {
 
     String userIdForJobQueries
 
-    Duration maxAgeOfJobsForJobQueries
+    Duration maxTrackingTimeForFinishedJobs
 
     boolean trackOnlyStartedJobs
 
@@ -91,7 +91,7 @@ class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
         trackOnlyStartedJobs = false
         updateInterval = Duration.ofMinutes(5)
-        maxAgeOfJobsForJobQueries = Duration.ofDays(14)
+        maxTrackingTimeForFinishedJobs = Duration.ofDays(14)
         createDaemon = false
         requestMemoryIsEnabled = true
         requestWalltimeIsEnabled = true

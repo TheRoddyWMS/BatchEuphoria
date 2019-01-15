@@ -33,7 +33,7 @@ class LSFJobManagerSpec extends Specification {
         new File("src/test/resources/de/dkfz/roddy/execution/jobs/cluster/lsf/", file)
     }
 
-    void "queryJobInfo, bjobs JSON output with lists  "() {
+    void "Test convertJobDetailsMapToGenericJobInfoObject"() {
 
         given:
         def parms = JobManagerOptions.create().build()
@@ -44,17 +44,17 @@ class LSFJobManagerSpec extends Specification {
         List records = (List) parsedJson.getAt("RECORDS")
 
         when:
-        GenericJobInfo jobInfo = jm.convertJobDetailsMapToGenericJobInfoobject(records.get(0))
+        GenericJobInfo jobInfo = jm.convertJobDetailsMapToGenericJobInfoObject(records.get(0))
 
         then:
         jobInfo != null
         jobInfo.jobID.toString() == "22005"
-        jobInfo.tool == expectedTool
+        jobInfo.command == expectedCommand
 
         where:
-        resourceFile                                     | expectedJobId | expectedTool
-        "queryExtendedJobStateByIdTest.json"             | "22005"       | new File("ls -l")
-        "queryExtendedJobStateByIdWithoutListsTest.json" | "22005"       | new File("ls -l")
+        resourceFile                                     | expectedJobId | expectedCommand
+        "queryExtendedJobStateByIdTest.json"             | "22005"       | "ls -l"
+        "queryExtendedJobStateByIdWithoutListsTest.json" | "22005"       | "ls -l"
         "queryExtendedJobStateByIdEmptyTest.json"        | "22005"       | null
     }
 
@@ -65,6 +65,8 @@ class LSFJobManagerSpec extends Specification {
 
     @CompileStatic
     String localDateTimeToLSFString(LocalDateTime date) {
+        // Important here is, that LSF puts " L" or other status codes at the end of some dates, e.g. FINISH_DATE
+        // Thus said, " L" does not apply for all dates reported by LSF!
         DateTimeFormatter.ofPattern('MMM ppd HH:mm').withLocale(Locale.ENGLISH).format(date) + " L"
     }
 
@@ -109,9 +111,25 @@ class LSFJobManagerSpec extends Specification {
         manager.parseTime(zonedDateTimeToString(laterTime)).truncatedTo(ChronoUnit.MINUTES).equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
     }
 
-    void "test queryExtendedJobStateById"() {
+    void "test queryExtendedJobStateById with overdue date"() {
         given:
         JobManagerOptions parms = JobManagerOptions.create().build()
+        def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
+        BEExecutionService testExecutionService = [
+                execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
+        ] as BEExecutionService
+        LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
+
+        when:
+        Map<BEJobID, GenericJobInfo> result = manager.queryExtendedJobStateById([new BEJobID("22005")])
+
+        then:
+        result.size() == 0
+    }
+
+    void "test queryExtendedJobStateById"() {
+        given:
+        JobManagerOptions parms = JobManagerOptions.create().setMaxTrackingTimeForFinishedJobs(Duration.ofDays(360000)).build()
         def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
         BEExecutionService testExecutionService = [
                 execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
@@ -146,14 +164,15 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.usedResources.swap == null
 
         jobInfo.jobName == "ls -l"
-        jobInfo.tool == new File("ls -l")
+        jobInfo.command == "ls -l"
         jobInfo.jobID == new BEJobID("22005")
 
         // The year-parsing/inferrence is checked in another test. Here just take the parsed value.
-        jobInfo.submitTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        ZonedDateTime testTime = ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.submitTime == testTime
         jobInfo.eligibleTime == null
-        jobInfo.startTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
-        jobInfo.endTime == ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        jobInfo.startTime == testTime
+        jobInfo.endTime == testTime
         jobInfo.executionHosts == ["exec-host", "exec-host"]
         jobInfo.submissionHost == "from-host"
         jobInfo.priority == null

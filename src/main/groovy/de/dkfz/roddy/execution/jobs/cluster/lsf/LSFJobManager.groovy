@@ -56,12 +56,24 @@ class LSFJobManager extends AbstractLSFJobManager {
         return date
     }
 
+    /**
+     * Important here is, that LSF puts " L" or other status codes at the end of some dates, e.g. FINISH_DATE
+     * Thus said, " L" does not apply for all dates reported by LSF! This method just removes the last two characters
+     * of the time string.
+     */
+    static String stripAwayStatusInfo(String time) {
+        if (time)
+            return time[0..-3]
+        return null
+    }
+
     @Override
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (BEJobID id : jobIds) {
-            Map<String, Object> jobDetails = runBjobs([id], true).get(id)
-            queriedExtendedStates.put(id, convertJobDetailsMapToGenericJobInfoobject(jobDetails))
+            Map<String, String> jobDetails = runBjobs([id], true)[id]
+            if (jobDetails) // Ignore filtered / nonexistent ids
+                queriedExtendedStates.put(id, convertJobDetailsMapToGenericJobInfoObject(jobDetails))
         }
         return queriedExtendedStates
     }
@@ -102,7 +114,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     }
 
-    Map<BEJobID, Map<String, Object>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
+    Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
         StringBuilder queryCommand = new StringBuilder(extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
 
         // user argument must be passed before the job IDs
@@ -121,12 +133,12 @@ class LSFJobManager extends AbstractLSFJobManager {
             throw new BEException(error)
         }
 
-        Map<BEJobID, Map<String, Object>> result = convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
-        return filterJobMapByAge(result, maxAgeOfJobsForQueries)
+        Map<BEJobID, Map<String, String>> result = convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
+        return filterJobMapByAge(result, maxTrackingTimeForFinishedJobs)
     }
 
-    static Map<BEJobID, Map<String, Object>> convertBJobsJsonOutputToResultMap(String rawJson) {
-        Map<BEJobID, Map<String, Object>> result = [:]
+    static Map<BEJobID, Map<String, String>> convertBJobsJsonOutputToResultMap(String rawJson) {
+        Map<BEJobID, Map<String, String>> result = [:]
 
         if (!rawJson)
             return result
@@ -135,7 +147,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         List records = (List) parsedJson["RECORDS"]
         for (record in records) {
             BEJobID jobID = new BEJobID(record["JOBID"] as String)
-            result[jobID] = record as Map<String, Object>
+            result[jobID] = record as Map<String, String>
         }
 
         result
@@ -150,17 +162,16 @@ class LSFJobManager extends AbstractLSFJobManager {
      * @return The map of records where too old entries are filtered out.
      */
     @CompileStatic
-    static Map<BEJobID, Map<String, Object>> filterJobMapByAge(
-            Map<BEJobID, Map<String, Object>> records,
+    static Map<BEJobID, Map<String, String>> filterJobMapByAge(
+            Map<BEJobID, Map<String, String>> records,
             Duration maxJobKeepDuration
     ) {
         records.findAll { def k, def record ->
             String finishTime = record["FINISH_TIME"]
             boolean youngEnough = true
             if (finishTime) {
-                String timeString = "${finishTime[0..-3]}"
                 withCaughtAndLoggedException {
-                    ZonedDateTime _finishTime = parseTime(timeString)
+                    ZonedDateTime _finishTime = parseTime(stripAwayStatusInfo(finishTime))
                     Duration timeSpan = Duration.between(_finishTime.toLocalDateTime(), LocalDateTime.now())
                     if (dateTimeHelper.durationExceeds(timeSpan, maxJobKeepDuration))
                         youngEnough = false
@@ -173,82 +184,95 @@ class LSFJobManager extends AbstractLSFJobManager {
     /**
      * Used by @getJobDetails to set JobInfo
      */
-    GenericJobInfo convertJobDetailsMapToGenericJobInfoobject(Map<String, Object> jobResult) {
+    GenericJobInfo convertJobDetailsMapToGenericJobInfoObject(Map<String, String> _jobResult) {
+        // Remove empty entries first to keep the output clean (use null, where the value is null or empty.)
+        Map<String, String> jobResult = _jobResult.findAll { String k, String v -> v }
 
         GenericJobInfo jobInfo
         BEJobID jobID
+        String JOBID = jobResult["JOBID"]
         try {
-            jobID = new BEJobID(jobResult["JOBID"] as String)
+            jobID = new BEJobID(JOBID)
         } catch (Exception exp) {
-            throw new BEException("Job ID '${jobResult["JOBID"]}' could not be transformed to BEJobID ")
+            throw new BEException("Job ID '${JOBID}' could not be transformed to BEJobID ")
         }
 
-        List<String> dependIDs = ((String) jobResult["DEPENDENCY"]) ? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
-        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String) : null, jobID, null, dependIDs)
+        List<String> dependIDs = jobResult["DEPENDENCY"]?.tokenize(/&/)?.collect { it.find(/\d+/) }
+        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"], jobResult["COMMAND"], jobID, null, dependIDs)
 
-        String queue = jobResult["QUEUE"] ?: null
-        Duration runTime = withCaughtAndLoggedException {
-            jobResult["RUN_TIME"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUN_TIME"] as String) : null
-        }
+        /** Common */
+        jobInfo.user = jobResult["USER"]
+        jobInfo.userGroup = jobResult["USER_GROUP"]
+        jobInfo.description = jobResult["JOB_DESCRIPTION"]
+        jobInfo.projectName = jobResult["PROJ_NAME"]
+        jobInfo.jobGroup = jobResult["JOB_GROUP"]
+        jobInfo.priority = jobResult["JOB_PRIORITY"]
+        jobInfo.pidStr = jobResult["PIDS"]?.split(",")?.toList()
+        jobInfo.submissionHost = jobResult["FROM_HOST"]
+        jobInfo.executionHosts = jobResult["EXEC_HOST"]?.split(":")?.toList()
+
+        /** Resources */
+        String queue = jobResult["QUEUE"]
+        Duration runLimit = safelyParseColonSeparatedDuration(jobResult["RUNTIMELIMIT"])
+        Duration runTime = safelyParseColonSeparatedDuration(jobResult["RUN_TIME"])
+        BufferValue memory = safelyCastToBufferValue(jobResult["MAX_MEM"])
         BufferValue swap = withCaughtAndLoggedException {
-            jobResult["SWAP"] ? new BufferValue((jobResult["SWAP"] as String).find("\\d+"), BufferUnit.m) : null
+            String SWAP = jobResult["SWAP"]
+            SWAP ? new BufferValue(SWAP.find("\\d+"), BufferUnit.m) : null
         }
-        BufferValue memory = withCaughtAndLoggedException {
-            String unit = (jobResult["MAX_MEM"] as String).find("[a-zA-Z]+")
-            BufferUnit bufferUnit
-            if (unit == "Gbytes")
-                bufferUnit = BufferUnit.g
-            else
-                bufferUnit = BufferUnit.m
-            jobResult["MAX_MEM"] ? new BufferValue((jobResult["MAX_MEM"] as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
-        }
-        Duration runLimit = withCaughtAndLoggedException {
-            jobResult["RUNTIMELIMIT"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUNTIMELIMIT"] as String) : null
-        }
-        Integer nodes = withCaughtAndLoggedException { jobResult["SLOTS"] ? jobResult["SLOTS"] as Integer : null }
+        Integer nodes = withCaughtAndLoggedException { jobResult["SLOTS"] as Integer }
 
-        ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
-        jobInfo.setUsedResources(usedResources)
+        jobInfo.usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
+        jobInfo.askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
+        jobInfo.resourceReq = jobResult["EFFECTIVE_RESREQ"]
+        jobInfo.runTime = runTime
+        jobInfo.cpuTime = safelyParseColonSeparatedDuration(jobResult["CPU_USED"])
 
-        ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
-        jobInfo.setAskedResources(askedResources)
+        /** Status info */
+        jobInfo.jobState = parseJobState(jobResult["STAT"])
+        jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["EXIT_CODE"] as Integer)
+        jobInfo.pendReason = jobResult["PEND_REASON"]
 
-        jobInfo.setUser(jobResult["USER"] as String ?: null)
-        jobInfo.setDescription(jobResult["JOB_DESCRIPTION"] as String ?: null)
-        jobInfo.setProjectName(jobResult["PROJ_NAME"] as String ?: null)
-        jobInfo.setJobGroup(jobResult["JOB_GROUP"] as String ?: null)
-        jobInfo.setPriority(jobResult["JOB_PRIORITY"] as String ?: null)
-        jobInfo.setPidStr(jobResult["PIDS"] as String ? (jobResult["PIDS"] as String).split(",").toList() : null)
-        jobInfo.setJobState(parseJobState(jobResult["STAT"] as String))
-        jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["EXIT_CODE"] ? Integer.valueOf(jobResult["EXIT_CODE"] as String) : null))
-        jobInfo.setSubmissionHost(jobResult["FROM_HOST"] as String ?: null)
-        jobInfo.setExecutionHosts(jobResult["EXEC_HOST"] as String ? (jobResult["EXEC_HOST"] as String).split(":").toList() : null)
-        withCaughtAndLoggedException {
-            jobInfo.setCpuTime(jobResult["CPU_USED"] ? parseColonSeparatedHHMMSSDuration(jobResult["CPU_USED"] as String) : null)
-        }
-        jobInfo.setRunTime(runTime)
-        jobInfo.setUserGroup(jobResult["USER_GROUP"] as String ?: null)
-        jobInfo.setCwd(jobResult["SUB_CWD"] as String ?: null)
-        jobInfo.setPendReason(jobResult["PEND_REASON"] as String ?: null)
-        jobInfo.setExecCwd(jobResult["EXEC_CWD"] as String ?: null)
-        jobInfo.setLogFile(getBjobsFile(jobResult["OUTPUT_FILE"] as String, jobID, "out"))
-        jobInfo.setErrorLogFile(getBjobsFile(jobResult["ERROR_FILE"] as String, jobID, "err"))
-        jobInfo.setInputFile(jobResult["INPUT_FILE"] ? new File(jobResult["INPUT_FILE"] as String) : null)
-        jobInfo.setResourceReq(jobResult["EFFECTIVE_RESREQ"] as String ?: null)
-        jobInfo.setExecHome(jobResult["EXEC_HOME"] as String ?: null)
+        /** Directories and files */
+        jobInfo.cwd = jobResult["SUB_CWD"]
+        jobInfo.execCwd = jobResult["EXEC_CWD"]
+        jobInfo.logFile = getBjobsFile(jobResult["OUTPUT_FILE"], jobID, "out")
+        jobInfo.errorLogFile = getBjobsFile(jobResult["ERROR_FILE"], jobID, "err")
+        jobInfo.inputFile = jobResult["INPUT_FILE"] ? new File(jobResult["INPUT_FILE"]) : null
+        jobInfo.execHome = jobResult["EXEC_HOME"]
 
-        String submissionTime = jobResult["SUBMIT_TIME"]
-        String startTime = jobResult["START_TIME"]
-        String finishTime = jobResult["FINISH_TIME"]
-
-        if (submissionTime)
-            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(submissionTime)) }
-        if (startTime)
-            withCaughtAndLoggedException { jobInfo.setStartTime(parseTime(startTime as String)) }
-        if (finishTime)
-            withCaughtAndLoggedException { jobInfo.setEndTime(parseTime(finishTime[0..-3])) }
+        /** Timestamps */
+        jobInfo.submitTime = safelyParseTime(jobResult["SUBMIT_TIME"])
+        jobInfo.startTime = safelyParseTime(jobResult["START_TIME"])
+        jobInfo.endTime = safelyParseTime(stripAwayStatusInfo(jobResult["FINISH_TIME"]))
 
         return jobInfo
+    }
+
+    Duration safelyParseColonSeparatedDuration(String value) {
+        withCaughtAndLoggedException {
+            value ? parseColonSeparatedHHMMSSDuration(value) : null
+        }
+    }
+
+    ZonedDateTime safelyParseTime(String time) {
+        if (time)
+            return withCaughtAndLoggedException {
+                return parseTime(time)
+            }
+        return null
+    }
+
+    BufferValue safelyCastToBufferValue(String MAX_MEM) {
+        withCaughtAndLoggedException {
+            if (MAX_MEM) {
+                String bufferSize = MAX_MEM.find("([0-9]*[.])?[0-9]+")
+                String unit = MAX_MEM.find("[a-zA-Z]+")
+                BufferUnit bufferUnit = unit == "Gbytes" ? BufferUnit.g : BufferUnit.m
+                return new BufferValue(bufferSize, bufferUnit)
+            }
+            return null
+        }
     }
 
     private File getBjobsFile(String s, BEJobID jobID, String type) {
