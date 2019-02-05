@@ -34,7 +34,7 @@
       "EXEC_HOME": "/some/test",
       "SLOTS": "1",
       "ERROR_FILE": "",
-      "COMMAND": "ls -l",
+      "COMMAND": "/home/testuser/somescript.sh",
       "DEPENDENCY": "done(22004)"
     }
   ]

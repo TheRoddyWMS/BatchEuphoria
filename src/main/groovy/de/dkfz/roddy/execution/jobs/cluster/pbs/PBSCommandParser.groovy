@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.ExtendedJobInfo
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.ComplexLine
@@ -19,7 +19,7 @@ import groovy.transform.CompileStatic
 import static de.dkfz.roddy.StringConstants.*
 
 /**
- * Used to convert commands from cli to e.g. GenericJobInfo
+ * Used to convert commands from cli to e.g. ExtendedJobInfo
  * Created by heinold on 04.04.17.
  */
 @CompileStatic
@@ -128,12 +128,12 @@ class PBSCommandParser {
         }
     }
 
-    GenericJobInfo toGenericJobInfo() {
-        GenericJobInfo jInfo = new GenericJobInfo(jobName, script, jobID, parameters, dependencies)
+    ExtendedJobInfo toGenericJobInfo() {
+        ExtendedJobInfo jInfo = new ExtendedJobInfo(jobName, script, jobID, parameters, dependencies)
         ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
                 cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
                 null, null, null)
-        jInfo.setAskedResources(askedResources)
+        jInfo.setRequestedResources(askedResources)
         return jInfo
     }
 }

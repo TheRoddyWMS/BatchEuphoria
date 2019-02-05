@@ -23,7 +23,6 @@ class JobManagerOptionsTest {
         def parms = JobManagerOptions.create().build()
         assert parms.trackOnlyStartedJobs == false
         assert parms.updateInterval == Duration.ofMinutes(5)
-        assert parms.createDaemon == false
         assert !parms.passEnvironment
     }
 }

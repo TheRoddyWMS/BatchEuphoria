@@ -1,0 +1,7 @@
+<Data>
+    <Job>
+        <Job_Id>22005.testServer</Job_Id>
+        <Output_Path>testServer:/logging_root_path/logfile.o$PBS_JOBID</Output_Path>
+        <Error_Path>testServer:/logging_root_path/logfile.e$PBS_JOBID</Error_Path>
+    </Job>
+</Data>

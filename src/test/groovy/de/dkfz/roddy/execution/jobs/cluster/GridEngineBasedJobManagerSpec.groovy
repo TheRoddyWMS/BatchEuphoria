@@ -9,17 +9,18 @@ class GridEngineBasedJobManagerSpec extends Specification {
         output == GridEngineBasedJobManager.getExecutionHosts(input)
 
         where:
-        input                  || output
-        null                   || null
-        ""                     || null
-        "asdf"                 || ["asdf"]
-        "asdf+asdf"            || ["asdf"]
-        "asdf+qwertz"          || ["asdf", "qwertz"]
-        "asdf/5+asdf"          || ["asdf"]
-        "asdf/10+asdf/1"       || ["asdf"]
-        "asdf/3+qwertz/7"      || ["asdf", "qwertz"]
-        "asdf+qwertz/2"        || ["asdf", "qwertz"]
-        "asdf+qwertz/2+yxcv/6" || ["asdf", "qwertz", "yxcv"]
+        input                                 || output
+        null                                  || []
+        ""                                    || []
+        "asdf"                                || ["asdf"]
+        "asdf+asdf"                           || ["asdf"]
+        "asdf+qwertz"                         || ["asdf", "qwertz"]
+        "asdf/5+asdf"                         || ["asdf"]
+        "asdf/10+asdf/1"                      || ["asdf"]
+        "asdf/3+qwertz/7"                     || ["asdf", "qwertz"]
+        "asdf+qwertz/2"                       || ["asdf", "qwertz"]
+        "asdf+qwertz/2+yxcv/6"                || ["asdf", "qwertz", "yxcv"]
+        "exec-host/0+exec-host/1+exec-host/2" || ["exec-host"]
 
     }
 
