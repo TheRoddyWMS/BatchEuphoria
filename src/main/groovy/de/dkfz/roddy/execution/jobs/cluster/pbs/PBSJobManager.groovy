@@ -7,16 +7,18 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerOptions
-import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.PackageScope
+import groovy.util.slurpersupport.GPathResult
 
 /**
  * @author michael
@@ -34,8 +36,8 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
     }
 
     @Override
-    GenericJobInfo parseGenericJobInfo(String commandString) {
-        return new PBSCommandParser(commandString).toGenericJobInfo();
+    ExtendedJobInfo parseGenericJobInfo(String commandString) {
+        return new PBSCommandParser(commandString).toGenericJobInfo()
     }
 
     /**
@@ -79,12 +81,12 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
     }
 
     @Override
-    String getQueryJobStatesCommand() {
+    String getQueryCommandForJobInfo() {
         return "qstat -t"
     }
 
     @Override
-    String getExtendedQueryJobStatesCommand() {
+    String getQueryCommandForExtendedJobInfo() {
         return "qstat -x -f"
     }
 
@@ -156,5 +158,97 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
     String getSubmitDirectoryVariable() {
         return "PBS_O_WORKDIR"
     }
+
+
+    @Override
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfo(List<BEJobID> jobIds) {
+        Map<BEJobID, ExtendedJobInfo> queriedExtendedStates = [:]
+        String qStatCommand = getQueryCommandForExtendedJobInfo()
+        qStatCommand += " " + jobIds.collect { it }.join(" ")
+        // For the reviewer: This does not make sense right? We have a list of given ids which we want to
+        // query anyway.
+        //        if (isTrackingOfUserJobsEnabled)
+        //            qStatCommand += " -u $userIDForQueries "
+
+        ExecutionResult er = executionService.execute(qStatCommand.toString())
+        if (er != null && er.successful) {
+            GPathResult parsedJobs = new XmlSlurper().parseText(er.resultLines.join("\n"))
+            for (BEJobID jobID : jobIds) {
+                def jobInfo = parsedJobs.children().find { it["Job_Id"].toString().startsWith("${jobID.id}.") }
+                queriedExtendedStates[jobID] = this.processQstatOutputFromXMLNodeChild(jobInfo)
+            }
+        } else {
+            throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n ${qStatCommand.toString()} \n\t result:${er.resultLines.join("\n\t")}")
+        }
+        return queriedExtendedStates
+    }
+
+    /**
+     * Reads the qstat output and creates ExtendedJobInfo objects
+     * @param resultLines - Input of ExecutionResult object
+     * @return map with jobid as key
+     */
+    @PackageScope
+    ExtendedJobInfo processQstatOutputFromXMLNodeChild(GPathResult job) {
+        String jobIdRaw = job["Job_Id"] as String
+        BEJobID jobID = toJobID(jobIdRaw)
+
+        List<String> jobDependencies = getJobDependencies(job["depend"])
+        ExtendedJobInfo jobInfo = new ExtendedJobInfo(job["Job_Name"] as String, null, jobID, null, jobDependencies)
+
+        /** Common */
+        jobInfo.user = (job["Job_Owner"] as String)?.split(StringConstants.SPLIT_AT)[0]
+        jobInfo.userGroup = job["egroup"]
+        jobInfo.priority = job["Priority"]
+        jobInfo.submissionHost = job["submit_host"]
+        jobInfo.server = job["server"]
+        jobInfo.umask = job["umask"]
+        jobInfo.account = job["Account_Name"]
+        jobInfo.startCount = safelyCastToInteger(job["start_count"])
+
+        /** Resources
+         * Note: Both nodes and nodect are deprecated values
+         *       nodect is the number of requested nodes and of type integer
+         */
+        jobInfo.executionHosts = getExecutionHosts(job["exec_host"])
+        String queue = job["queue"] as String
+
+        def requestedResources = job["Resource_List"]
+        String resourcesListNodes = requestedResources["nodes"]
+        Integer requestedNodes = safelyCastToInteger(requestedResources["nodect"])
+        Integer requestedCores = safelyCastToInteger(resourcesListNodes?.find("ppn=.*")?.find(/(\d+)/))
+        String requestedAdditionalNodeFlag = withCaughtAndLoggedException { resourcesListNodes?.find(/(\d+):(\.*)/) { fullMatch, nCores, feature -> return feature } }
+        TimeUnit requestedWalltime = safelyCastToTimeUnit(requestedResources["walltime"])
+        BufferValue requestedMemory = safelyCastToBufferValue(requestedResources["mem"])
+
+        def usedResources = job["resources_used"]
+        TimeUnit usedWalltime = safelyCastToTimeUnit(usedResources["walltime"])
+        BufferValue usedMemory = safelyCastToBufferValue(usedResources["mem"])
+
+        jobInfo.requestedResources = new ResourceSet(null, requestedMemory, requestedCores, requestedNodes, requestedWalltime, null, queue, requestedAdditionalNodeFlag)
+        jobInfo.usedResources = new ResourceSet(null, usedMemory, null, null, usedWalltime, null, queue, null)
+        jobInfo.rawResourceRequest = job["submit_args"]
+        jobInfo.runTime = safelyCastToDuration(job["total_runtime"])
+        jobInfo.cpuTime = safelyParseColonSeparatedDuration(usedResources["cput"])
+
+        /** Status info */
+        jobInfo.jobState = parseJobState(job["job_state"] as String)
+        jobInfo.exitCode = safelyCastToInteger(job["exit_status"])
+
+        /** Directories and files */
+        jobInfo.logFile = safelyGetQstatFile(job["Output_Path"] as String, jobIdRaw)
+        jobInfo.errorLogFile = safelyGetQstatFile(job["Error_Path"] as String, jobIdRaw)
+
+        /** Timestamps */
+        jobInfo.submitTime = safelyParseTime(job["qtime"])      // The time that the job entered the current queue.
+        jobInfo.startTime = safelyParseTime(job["start_time"])  // The timepoint the job was started.
+        jobInfo.endTime = safelyParseTime(job["comp_time"])     // The timepoint the job was completed.
+        jobInfo.eligibleTime = safelyParseTime(job["etime"])    // The time that the job became eligible to run, i.e. in a queued state while residing in an execution queue.
+        // http://docs.adaptivecomputing.com/torque/4-2-7/Content/topics/9-accounting/accountingRecords.htm
+        // Left is ctime: The the time the job was created
+
+        return jobInfo
+    }
+
 
 }

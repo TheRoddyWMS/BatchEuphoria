@@ -134,7 +134,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
 
     @Override
-    GenericJobInfo parseGenericJobInfo(String command) {
+    ExtendedJobInfo parseGenericJobInfo(String command) {
         return null
     }
 
@@ -271,9 +271,9 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * Updates job information for given jobs
      * @param jobList
      */
-    private Map<BEJobID, GenericJobInfo> getJobDetails(List<BEJobID> jobList) {
+    private Map<BEJobID, ExtendedJobInfo> getJobDetails(List<BEJobID> jobList) {
         List<Header> headers = []
-        Map<BEJobID, GenericJobInfo> jobDetailsResult = [:]
+        Map<BEJobID, ExtendedJobInfo> jobDetailsResult = [:]
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
@@ -296,14 +296,14 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param list of job ids
      */
     @Override
-    Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIds) {
+    Map<BEJobID, JobInfo> queryJobInfo(List<BEJobID> jobIds) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
         RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_BASICS, null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
-            Map<BEJobID, JobState> resultStates = [:]
+            Map<BEJobID, JobInfo> resultStates = [:]
             res.getProperty("pseudoJob").each { NodeChild element ->
                 String jobId = null
                 if (jobIds) {
@@ -315,7 +315,11 @@ class LSFRestJobManager extends AbstractLSFJobManager {
                 }
 
                 if (jobId) {
-                    resultStates.put(new BEJobID(jobId), parseJobState(element.getProperty("jobStatus").toString()))
+                    def jobID = new BEJobID(jobId)
+                    def jobState = parseJobState(element.getProperty("jobStatus").toString())
+                    JobInfo jobInfo = new JobInfo(jobID)
+                    jobInfo.jobState = jobState
+                    resultStates[jobID] = jobInfo
                 }
             }
             return resultStates
@@ -324,14 +328,18 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         }
     }
 
-    /**
+    @Override
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfo(List<BEJobID> jobIDs) {
+        return null
+    }
+/**
      * Used by @getJobDetails to set JobInfo
      * @param job
      * @param jobDetails - XML job details
      */
-    private GenericJobInfo setJobInfoForJobDetails(NodeChild jobDetails) {
+    private ExtendedJobInfo setJobInfoForJobDetails(NodeChild jobDetails) {
 
-        GenericJobInfo jobInfo = new GenericJobInfo(jobDetails.getProperty("jobName").toString(), new File(jobDetails.getProperty("command").toString()), new BEJobID(jobDetails.getProperty("jobId").toString()), null, null)
+        ExtendedJobInfo jobInfo = new ExtendedJobInfo(jobDetails.getProperty("jobName").toString(), jobDetails.getProperty("command").toString(), new BEJobID(jobDetails.getProperty("jobId").toString()), null, null)
 
         String queue = jobDetails.getProperty("queue").toString()
         BufferValue swap = jobDetails.getProperty("swap") ? withCaughtAndLoggedException { new BufferValue(jobDetails.getProperty("swap").toString(), BufferUnit.m) } : null
@@ -364,23 +372,23 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         jobInfo.setRunTime(jobDetails.getProperty("runTime") ? withCaughtAndLoggedException { Duration.ofSeconds(Math.round(Double.parseDouble(jobDetails.getProperty("runTime").toString()))) } : null)
         jobInfo.setProjectName(jobDetails.getProperty("projectName").toString())
         jobInfo.setExitCode(jobDetails.getProperty("exitStatus").toString() ? withCaughtAndLoggedException { Integer.valueOf(jobDetails.getProperty("exitStatus").toString()) } : null)
-        jobInfo.setPidStr(jobDetails.getProperty("pidStr") as String ? (jobDetails.getProperty("pidStr") as String).split(",").toList() : null)
-        jobInfo.setPgidStr(jobDetails.getProperty("pgidStr").toString())
+        jobInfo.setProcessesInJob(jobDetails.getProperty("pidStr") as String ? (jobDetails.getProperty("pidStr") as String).split(",").toList() : null)
+        jobInfo.setProcessGroupID(jobDetails.getProperty("pgidStr").toString())
         jobInfo.setCwd(jobDetails.getProperty("cwd").toString())
         jobInfo.setPendReason(jobDetails.getProperty("pendReason").toString())
         jobInfo.setExecCwd(jobDetails.getProperty("execCwd").toString())
         jobInfo.setPriority(jobDetails.getProperty("priority").toString())
         jobInfo.setLogFile(new File(jobDetails.getProperty("outFile").toString()))
         jobInfo.setInputFile(new File(jobDetails.getProperty("inFile").toString()))
-        jobInfo.setResourceReq(jobDetails.getProperty("resReq").toString())
+        jobInfo.setRawResourceRequest(jobDetails.getProperty("resReq").toString())
         jobInfo.setExecHome(jobDetails.getProperty("execHome").toString())
         jobInfo.setExecUserName(jobDetails.getProperty("execUserName").toString())
-        jobInfo.setAskedHostsStr(jobDetails.getProperty("askedHostsStr").toString())
+        jobInfo.setRawHostQueryString(jobDetails.getProperty("askedHostsStr").toString())
 
         return jobInfo
     }
 
-    private ZonedDateTime parseTime(String str) {
+    ZonedDateTime parseTime(String str) {
         if (!str) {
             return null
         }
@@ -391,7 +399,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * Get the time history for each given job
      * @param jobList
      */
-    private void updateJobStatistics(Map<BEJobID, GenericJobInfo> jobList) {
+    private void updateJobStatistics(Map<BEJobID, ExtendedJobInfo> jobList) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
@@ -415,7 +423,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param job
      * @param jobHistory - xml job history
      */
-    private void setJobInfoFromJobHistory(GenericJobInfo jobInfo, NodeChild jobHistory) {
+    private void setJobInfoFromJobHistory(ExtendedJobInfo jobInfo, NodeChild jobHistory) {
 
         GPathResult timeSummary = jobHistory.getProperty("timeSummary") as GPathResult
         DateTimeFormatter lsfDatePattern = DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy").withLocale(Locale.ENGLISH)
@@ -430,8 +438,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
-        Map<BEJobID, GenericJobInfo> jobDetailsResult = getJobDetails(jobIds)
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+        Map<BEJobID, ExtendedJobInfo> jobDetailsResult = getJobDetails(jobIds)
         updateJobStatistics(jobDetailsResult)
         return jobDetailsResult
     }
@@ -442,12 +450,12 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    String getQueryJobStatesCommand() {
+    String getQueryCommandForJobInfo() {
         return null
     }
 
     @Override
-    String getExtendedQueryJobStatesCommand() {
+    String getQueryCommandForExtendedJobInfo() {
         return null
     }
 

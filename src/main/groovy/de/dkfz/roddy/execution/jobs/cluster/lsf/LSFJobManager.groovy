@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2019 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/BatchEuphoria/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
@@ -14,12 +14,12 @@ import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.BashUtils
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
+import de.dkfz.roddy.tools.DateTimeHelper
 import groovy.json.JsonSlurper
 
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * Factory for the management of LSF cluster systems.
@@ -29,35 +29,81 @@ import java.time.format.DateTimeFormatter
 @groovy.transform.CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
-    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
+    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat finish_time\""
+    private static final String LSF_COMMAND_QUERY_EXTENDED_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
-            "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
+            "finish_time cpu_used run_time user_group swap max_mem max_req_proc" +
+            "memlimit runtimelimit swaplimit sub_cwd " +
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    private final DateTimeFormatter DATE_PATTERN
+    public static final String longReportedDateFormatWithoutStatus = "MMM ppd HH:mm yyyy"
 
+    static final DateTimeHelper dateTimeHelper = new DateTimeHelper(longReportedDateFormatWithoutStatus, Locale.ENGLISH)
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
-        DATE_PATTERN = DateTimeFormatter
-                .ofPattern("MMM ppd HH:mm yyyy")
-                .withLocale(Locale.ENGLISH)
-                .withZone(parms.timeZoneId)
     }
 
-    private String getQueryCommand() {
-        return LSF_COMMAND_QUERY_STATES
-    }
-
+    /**
+     * Time formats in LSF can be configured.
+     * E.g. to our knowledge, by default, reported values look like:
+     *   "Jan  1 10:21 L" with status information or "Jan  1 10:21" without them.
+     * LSF can be configured to also report the year, so values would be reported as:
+     *   "Jan  1 10:21 2010 L" with status information or "Jan  1 10:21 2010" without them.
+     *
+     * There might be different configurations, but we stick to those 4 versions.
+     *
+     * Furthermore, we do not know, if LSF will report in other languages than english.
+     * We assume, that english is used for month names.
+     *
+     * We also assume, that the method will not be misused. If its misused, it will throw
+     * an exception.
+     */
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
-        Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        for (BEJobID id : jobIds) {
-            Map<String, Object> jobDetails = runBjobs([id]).get(id)
-            queriedExtendedStates.put(id, queryJobInfo(jobDetails))
+    ZonedDateTime parseTime(String str) {
+        // Prevent NullPointerException, will throw a DateTimeParserException later
+        if (str == null) str = ""
+        String dateForParser = str
+        if (str.size() == "Jan 01 01:00".size()) {
+            // Lets start and see, if the date is reported in its short version, if so, add the year.
+            dateForParser = "${str} ${LocalDateTime.now().year}"
+        } else if (str.size() == "Jan 01 01:00 L".size()) {
+            // Here we need to strip away the status first, then append the current year.
+            dateForParser = "${stripAwayStatusInfo(str)} ${LocalDateTime.now().year}"
+        } else if (str.size() == "Jan 01 01:00 1000".size()) {
+            // Easy enough, just keep it like it is.
+            dateForParser = str
+        } else if (str.size() == "Jan 01 01:00 1000 L".size()) {
+            // Again, strip away the status info.
+            dateForParser = stripAwayStatusInfo(str)
         }
-        return queriedExtendedStates
+
+        // Finally we try to parse the date. Lets see if it works. If not, an exception is thrown.
+        ZonedDateTime date = dateTimeHelper.parseToZonedDateTime(dateForParser)
+
+        // If LSF is not configured to report the date, the (kind of reasonable) assumption made here is that if
+        // the job's submission time (assuming the current year) is later than the current time, then the job was
+        // submitted last year.
+
+        if (date > ZonedDateTime.now()) {
+            return date.minusYears(1)
+        }
+        return date
+    }
+
+    /**
+     * Important here is, that LSF puts " L" or other status codes at the end of some dates, e.g. FINISH_DATE
+     * Thus said, " L" does not apply for all dates reported by LSF! This method just removes the last two characters
+     * of the time string.
+     */
+    static String stripAwayStatusInfo(String time) {
+        String result = time
+        if (time && time.size() > 2) {
+            if (time[-2..-1] ==~ ~/[ ][a-zA-Z0-9]/)
+                result = time[0..-3]
+        }
+        return result
     }
 
     @Override
@@ -83,20 +129,36 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    GenericJobInfo parseGenericJobInfo(String commandString) {
+    ExtendedJobInfo parseGenericJobInfo(String commandString) {
         return new LSFCommandParser(commandString).toGenericJobInfo();
     }
 
-    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
-        runBjobs(jobIDs).collectEntries { BEJobID jobID, Object value ->
+    @Override
+    Map<BEJobID, JobInfo> queryJobInfo(List<BEJobID> jobIDs) {
+        def bjobs = runBjobs(jobIDs, false)
+        bjobs = bjobs.findAll { BEJobID k, Map<String, String> v -> v }
+
+        return bjobs.collectEntries { BEJobID jobID, Object value ->
             JobState js = parseJobState(value["STAT"] as String)
-            [(jobID): js]
-        } as Map<BEJobID, JobState>
+            JobInfo jobInfo = new JobInfo(jobID)
+            jobInfo.jobState = js
+            [(jobID): jobInfo]
+        } as Map<BEJobID, JobInfo>
 
     }
 
-    private Map<BEJobID, Map<String, Object>> runBjobs(List<BEJobID> jobIDs) {
-        StringBuilder queryCommand = new StringBuilder(getQueryCommand())
+    @Override
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfo(List<BEJobID> jobIds) {
+        Map<BEJobID, ExtendedJobInfo> queriedExtendedStates = [:]
+        for (BEJobID id : jobIds) {
+            Map<String, String> jobDetails = runBjobs([id], true)[id]
+            queriedExtendedStates.put(id, convertJobDetailsMapToGenericJobInfoObject(jobDetails))
+        }
+        return queriedExtendedStates
+    }
+
+    Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
+        StringBuilder queryCommand = new StringBuilder(extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
 
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
@@ -109,117 +171,104 @@ class LSFJobManager extends AbstractLSFJobManager {
         ExecutionResult er = executionService.execute(queryCommand.toString())
         List<String> resultLines = er.resultLines
 
-        Map<BEJobID, Map<String, Object>> result = [:]
-
-        if (er.successful) {
-            if (resultLines.size() >= 1) {
-                String rawJson = resultLines.join("\n")
-                Object parsedJson = new JsonSlurper().parseText(rawJson)
-                List records = (List) parsedJson.getAt("RECORDS")
-                records.each {
-                    BEJobID jobID = new BEJobID(it["JOBID"] as String)
-                    result.put(jobID, it as Map<String, Object>)
-                }
-            }
-
-        } else {
+        if (!er.successful) {
             String error = "Job status couldn't be updated. \n command: ${queryCommand} \n status code: ${er.exitCode} \n result: ${er.resultLines}"
             throw new BEException(error)
         }
-        return result
+
+        return convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
     }
 
-    /** parseTime() parses a zoned time as provided by LSF. Unfortunately, LFS does not return the submission year! The (kind of reasonable)
-     *  assumption made here is that if the job's submission time (assuming the current year) is later than the current time, then the job was
-     *  submitted last year.
-     * @param str
-     * @return
-     */
-    ZonedDateTime parseTime(String str) {
-        ZonedDateTime date = ZonedDateTime.parse("${str} ${LocalDateTime.now().getYear()}", DATE_PATTERN)
-        if (date > ZonedDateTime.now()) {
-            return date.minusYears(1)
+    static Map<BEJobID, Map<String, String>> convertBJobsJsonOutputToResultMap(String rawJson) {
+        Map<BEJobID, Map<String, String>> result = [:]
+
+        if (!rawJson)
+            return result
+
+        Object parsedJson = new JsonSlurper().parseText(rawJson)
+        List records = (List) parsedJson["RECORDS"]
+        for (record in records) {
+            BEJobID jobID = new BEJobID(record["JOBID"] as String)
+            result[jobID] = record as Map<String, String>
         }
-        return date
+
+        result
     }
 
     /**
      * Used by @getJobDetails to set JobInfo
      */
-    private GenericJobInfo queryJobInfo(Map<String, Object> jobResult) {
+    ExtendedJobInfo convertJobDetailsMapToGenericJobInfoObject(Map<String, String> _rawExtendedStates) {
+        // Remove empty entries first to keep the output clean (use null, where the value is null or empty.)
+        Map<String, String> extendedStates = _rawExtendedStates.findAll { String k, String v -> v }
 
-        GenericJobInfo jobInfo
-        BEJobID jobID
-        try{
-            jobID = new BEJobID(jobResult["JOBID"] as String)
-        }catch (Exception exp){
-            throw new BEException("Job ID '${jobResult["JOBID"]}' could not be transformed to BEJobID ")
-        }
+        BEJobID jobID = toJobID(extendedStates["JOBID"])
 
-        List<String> dependIDs = ((String) jobResult["DEPENDENCY"])? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
-        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"] as String ?: null, jobResult["COMMAND"] as String ? new File(jobResult["COMMAND"] as String): null, jobID, null, dependIDs)
+        List<String> dependIDs = extendedStates["DEPENDENCY"]?.tokenize(/&/)?.collect { it.find(/\d+/) }
+        ExtendedJobInfo jobInfo = new ExtendedJobInfo(extendedStates["JOB_NAME"], extendedStates["COMMAND"], jobID, null, dependIDs)
 
-        String queue = jobResult["QUEUE"] ?: null
-        Duration runTime = withCaughtAndLoggedException {
-            jobResult["RUN_TIME"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUN_TIME"] as String) : null
-        }
+        /** Common */
+        jobInfo.user = extendedStates["USER"]
+        jobInfo.userGroup = extendedStates["USER_GROUP"]
+        jobInfo.description = extendedStates["JOB_DESCRIPTION"]
+        jobInfo.projectName = extendedStates["PROJ_NAME"]
+        jobInfo.jobGroup = extendedStates["JOB_GROUP"]
+        jobInfo.priority = extendedStates["JOB_PRIORITY"]
+        jobInfo.processesInJob = extendedStates["PIDS"]?.split(",")?.toList()
+        jobInfo.submissionHost = extendedStates["FROM_HOST"]
+
+        /** Resources */
+        jobInfo.executionHosts = extendedStates["EXEC_HOST"]?.split(":")?.toList()
+        // Count hosts! The node count has no custom entry. However, we can calculate it from the host list.
+        Integer noOfExecutionHosts = jobInfo.executionHosts?.sort()?.unique()?.size()
+        String queue = extendedStates["QUEUE"]
+        Duration requestedWalltime = safelyParseColonSeparatedDuration(extendedStates["RUNTIMELIMIT"])
+        Duration usedWalltime = safelyParseColonSeparatedDuration(extendedStates["RUN_TIME"])
+        BufferValue usedMemory = safelyCastToBufferValue(extendedStates["MAX_MEM"])
+        BufferValue requestedMemory = safelyCastToBufferValue(extendedStates["MEMLIMIT"])
+        Integer requestedCores = extendedStates["MAX_REQ_PROC"] as Integer
         BufferValue swap = withCaughtAndLoggedException {
-            jobResult["SWAP"] ? new BufferValue((jobResult["SWAP"] as String).find("\\d+"), BufferUnit.m) : null
+            String SWAP = extendedStates["SWAP"]
+            SWAP ? new BufferValue(SWAP.find("\\d+"), BufferUnit.m) : null
         }
-        BufferValue memory = withCaughtAndLoggedException {
-            String unit = (jobResult["MAX_MEM"] as String).find("[a-zA-Z]+")
-            BufferUnit bufferUnit
-            if (unit == "Gbytes")
-                bufferUnit = BufferUnit.g
-            else
-                bufferUnit = BufferUnit.m
-            jobResult["MAX_MEM"] ? new BufferValue((jobResult["MAX_MEM"] as String).find("([0-9]*[.])?[0-9]+"), bufferUnit) : null
-        }
-        Duration runLimit = withCaughtAndLoggedException {
-            jobResult["RUNTIMELIMIT"] ? parseColonSeparatedHHMMSSDuration(jobResult["RUNTIMELIMIT"] as String) : null
-        }
-        Integer nodes = withCaughtAndLoggedException { jobResult["SLOTS"] ? jobResult["SLOTS"] as Integer : null }
 
-        ResourceSet usedResources = new ResourceSet(memory, null, nodes, runTime, null, queue, null)
-        jobInfo.setUsedResources(usedResources)
+        jobInfo.usedResources = new ResourceSet(usedMemory, null, noOfExecutionHosts, usedWalltime, null, queue, null)
+        jobInfo.requestedResources = new ResourceSet(requestedMemory, requestedCores, null, requestedWalltime, null, queue, null)
+        jobInfo.rawResourceRequest = extendedStates["EFFECTIVE_RESREQ"]
+        jobInfo.runTime = usedWalltime
+        jobInfo.cpuTime = safelyParseColonSeparatedDuration(extendedStates["CPU_USED"])
 
-        ResourceSet askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
-        jobInfo.setAskedResources(askedResources)
+        /** Status info */
+        jobInfo.jobState = parseJobState(extendedStates["STAT"])
+        jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (extendedStates["EXIT_CODE"] as Integer)
+        jobInfo.pendReason = extendedStates["PEND_REASON"]
 
-        jobInfo.setUser(jobResult["USER"] as String ?: null)
-        jobInfo.setDescription(jobResult["JOB_DESCRIPTION"] as String ?: null)
-        jobInfo.setProjectName(jobResult["PROJ_NAME"] as String ?: null)
-        jobInfo.setJobGroup(jobResult["JOB_GROUP"] as String ?: null)
-        jobInfo.setPriority(jobResult["JOB_PRIORITY"] as String ?: null)
-        jobInfo.setPidStr(jobResult["PIDS"] as String ? (jobResult["PIDS"] as String).split(",").toList() : null)
-        jobInfo.setJobState(parseJobState(jobResult["STAT"] as String))
-        jobInfo.setExitCode(jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["EXIT_CODE"] ? Integer.valueOf(jobResult["EXIT_CODE"] as String) : null))
-        jobInfo.setSubmissionHost(jobResult["FROM_HOST"] as String ?: null)
-        jobInfo.setExecutionHosts(jobResult["EXEC_HOST"] as String ? (jobResult["EXEC_HOST"] as String).split(":").toList() : null)
-        withCaughtAndLoggedException {
-            jobInfo.setCpuTime(jobResult["CPU_USED"] ? parseColonSeparatedHHMMSSDuration(jobResult["CPU_USED"] as String) : null)
-        }
-        jobInfo.setRunTime(runTime)
-        jobInfo.setUserGroup(jobResult["USER_GROUP"] as String ?: null)
-        jobInfo.setCwd(jobResult["SUB_CWD"] as String ?: null)
-        jobInfo.setPendReason(jobResult["PEND_REASON"] as String ?: null)
-        jobInfo.setExecCwd(jobResult["EXEC_CWD"] as String ?: null)
-        jobInfo.setLogFile(getBjobsFile(jobResult["OUTPUT_FILE"] as String, jobID, "out"))
-        jobInfo.setErrorLogFile(getBjobsFile(jobResult["ERROR_FILE"] as String, jobID, "err"))
-        jobInfo.setInputFile(jobResult["INPUT_FILE"] ? new File(jobResult["INPUT_FILE"] as String) : null)
-        jobInfo.setResourceReq(jobResult["EFFECTIVE_RESREQ"] as String ?: null)
-        jobInfo.setExecHome(jobResult["EXEC_HOME"] as String ?: null)
+        /** Directories and files */
+        jobInfo.cwd = extendedStates["SUB_CWD"]
+        jobInfo.execCwd = extendedStates["EXEC_CWD"]
+        jobInfo.logFile = getBjobsFile(extendedStates["OUTPUT_FILE"], jobID, "out")
+        jobInfo.errorLogFile = getBjobsFile(extendedStates["ERROR_FILE"], jobID, "err")
+        jobInfo.inputFile = extendedStates["INPUT_FILE"] ? new File(extendedStates["INPUT_FILE"]) : (File)null
+        jobInfo.execHome = extendedStates["EXEC_HOME"]
 
-        if (jobResult["SUBMIT_TIME"])
-            withCaughtAndLoggedException { jobInfo.setSubmitTime(parseTime(jobResult["SUBMIT_TIME"] as String)) }
-        if (jobResult["START_TIME"])
-            withCaughtAndLoggedException { jobInfo.setStartTime(parseTime(jobResult["START_TIME"] as String)) }
-        if (jobResult["FINISH_TIME"])
-            withCaughtAndLoggedException {
-                jobInfo.setEndTime(parseTime((jobResult["FINISH_TIME"] as String).substring(0, (jobResult["FINISH_TIME"] as String).length() - 2)))
-            }
+        /** Timestamps */
+        jobInfo.submitTime = safelyParseTime(extendedStates["SUBMIT_TIME"])
+        jobInfo.startTime = safelyParseTime(extendedStates["START_TIME"])
+        jobInfo.endTime = safelyParseTime(extendedStates["FINISH_TIME"])
 
         return jobInfo
+    }
+
+    BufferValue safelyCastToBufferValue(String MAX_MEM) {
+        withCaughtAndLoggedException {
+            if (MAX_MEM) {
+                String bufferSize = MAX_MEM.find("([0-9]*[.])?[0-9]+")
+                String unit = MAX_MEM.find("[a-zA-Z]+")
+                BufferUnit bufferUnit = unit == "Gbytes" ? BufferUnit.g : BufferUnit.m
+                return new BufferValue(bufferSize, bufferUnit)
+            }
+            return null
+        }
     }
 
     private File getBjobsFile(String s, BEJobID jobID, String type) {
@@ -260,12 +309,12 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    String getQueryJobStatesCommand() {
+    String getQueryCommandForJobInfo() {
         return null
     }
 
     @Override
-    String getExtendedQueryJobStatesCommand() {
+    String getQueryCommandForExtendedJobInfo() {
         return null
     }
 }

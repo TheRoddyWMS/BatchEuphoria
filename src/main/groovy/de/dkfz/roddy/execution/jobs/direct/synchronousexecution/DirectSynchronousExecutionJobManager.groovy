@@ -24,22 +24,22 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         super(executionService, parms)
     }
 
-    @Override
-    protected void createUpdateDaemonThread() {
-        //Not necessary, a command / job knows its state in local execution
-    }
-
     DirectCommand createCommand(BEJob job) {
         return new DirectCommand(this, job, [])
     }
 
     @Override
-    GenericJobInfo parseGenericJobInfo(String command) {
+    ExtendedJobInfo parseGenericJobInfo(String command) {
         return null
     }
 
     @Override
-    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
+    Map<BEJobID, JobInfo> queryJobInfo(List<BEJobID> jobIDs) {
+        return [:]
+    }
+
+    @Override
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfo(List<BEJobID> jobIDs) {
         return [:]
     }
 
@@ -158,17 +158,17 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    String getQueryJobStatesCommand() {
+    String getQueryCommandForJobInfo() {
         return null
     }
 
     @Override
-    String getExtendedQueryJobStatesCommand() {
+    String getQueryCommandForExtendedJobInfo() {
         return null
     }
 
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
         return [:]
     }
 }

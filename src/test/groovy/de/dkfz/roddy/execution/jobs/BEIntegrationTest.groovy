@@ -18,7 +18,6 @@ import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
 import org.junit.BeforeClass
 import org.junit.Test
-import org.xml.sax.SAXParseException
 
 import java.time.Duration
 
@@ -71,7 +70,6 @@ class BEIntegrationTest {
         return system.loadClass().getDeclaredConstructor(BEExecutionService, JobManagerOptions)
                 .newInstance(getExecutionServiceFor(system),
                 JobManagerOptions.create()
-                        .setCreateDaemon(false)
                         .build()
         ) as BatchEuphoriaJobManager
     }
@@ -148,14 +146,14 @@ class BEIntegrationTest {
         List<JobState> lastStates = []
         while (sleep > 0 && !allJobsInCorrectState) {
             lastStates.clear()
-            def status = jobManager.queryJobStatus(jobList, true)
+            def jobInfo = jobManager.queryJobInfoByJob(jobList)
             allJobsInCorrectState = true
             for (BEJob job in jobList) {
-                allJobsInCorrectState &= listOfStatesToCheck.contains(status[job])
-                lastStates << status[job]
+                allJobsInCorrectState &= listOfStatesToCheck.contains(jobInfo[job])
+                lastStates << jobInfo[job].jobState
             }
             if (!allJobsInCorrectState) {
-                assert status.values().join(" ").find(JobState.FAILED.name()) != JobState.FAILED.name()
+                assert jobInfo.values().join(" ").find(JobState.FAILED.name()) != JobState.FAILED.name()
                 sleep--
             }
         }

@@ -14,8 +14,6 @@ import groovy.transform.CompileStatic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.time.Duration
-import java.time.LocalDateTime
 import java.util.concurrent.TimeoutException
 
 /**
@@ -29,7 +27,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     final static Logger log = LoggerFactory.getLogger(BatchEuphoriaJobManager)
 
-    protected final BEExecutionService executionService
+    final BEExecutionService executionService
 
     protected boolean isTrackingOfUserJobsEnabled
 
@@ -45,29 +43,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     private String userAccount
 
-    private final Map<BEJobID, BEJob> activeJobs = [:]
-
-    private Thread updateDaemonThread
-
-    /**
-     * Set this to true to tell the job manager, that an existing update daemon shall be closed, e.g. because
-     * the application is in the process to exit.
-     */
-    protected boolean updateDaemonShallBeClosed
 
     /**
      * Set this to true, if you do not want to allow any further job submission.
      */
     protected boolean forbidFurtherJobSubmission
-
-    private Map<BEJobID, JobState> cachedStates = [:]
-    private final Object cacheStatesLock = new Object()
-    private LocalDateTime lastCacheUpdate
-    private Duration cacheUpdateInterval
-
-    public boolean surveilledJobsHadErrors = false
-
-    private final List<UpdateDaemonListener> updateDaemonListeners = []
 
     boolean requestMemoryIsEnabled
     boolean requestWalltimeIsEnabled
@@ -89,7 +69,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.userGroup = parms.userGroup
         this.userAccount = parms.userAccount
         this.userMask = parms.userMask
-        this.cacheUpdateInterval = parms.updateInterval
 
         this.requestMemoryIsEnabled = parms.requestMemoryIsEnabled
         this.requestWalltimeIsEnabled = parms.requestWalltimeIsEnabled
@@ -99,9 +78,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.passEnvironment = parms.passEnvironment
         this.holdJobsIsEnabled = Optional.ofNullable(parms.holdJobIsEnabled).orElse(getDefaultForHoldJobsEnabled())
 
-        if (parms.createDaemon) {
-            createUpdateDaemonThread()
-        }
     }
 
     /**
@@ -122,6 +98,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return job.runResult
     }
 
+    @Deprecated
+    void addToListOfStartedJobs(BEJob job) {
+    }
+
     /**
      * Resume given job
      * @param job
@@ -139,8 +119,13 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
+    static final assertListIsValid(List list) {
+        assert list && list.every { it != null }
+    }
+
     /**
      * Try to abort a list of jobs
+     *
      * @param jobs
      */
     void killJobs(List<BEJob> jobs) {
@@ -156,6 +141,16 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
+    final JobInfo queryJobInfoByJob(BEJob job) {
+        assert job
+        queryJobInfoByID(job.jobID)
+    }
+
+    final JobInfo queryJobInfoByID(BEJobID jobID) {
+        assert jobID
+        return queryJobInfoByID([jobID])[jobID]
+    }
+
     /**
      * Queries the status of all jobs in the list.
      *
@@ -166,36 +161,66 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobs
      * @return
      */
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false) {
-        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobs*.jobID, forceUpdate)
-        return jobs.collectEntries { BEJob job ->
-            [job, job.jobState == JobState.ABORTED ? JobState.ABORTED :
-                    result[job.jobID] ?: JobState.UNKNOWN]
+    final Map<BEJob, JobInfo> queryJobInfoByJob(List<BEJob> jobs) {
+        assertListIsValid(jobs)
+
+        Map<BEJobID, BEJob> jobsByID = jobs.collectEntries {
+            def job = it
+            def id = it.jobID
+            [id, job]
+        }
+
+        return queryJobInfoByID(jobs*.jobID)
+                .collectEntries {
+            BEJobID id, JobInfo info -> [jobsByID[id], info]
+        } as Map<BEJob, JobInfo>
+    }
+
+    /**
+     * Query a list of job states by their id.
+     * If the status of a job could not be determined, the query will return UNKNOWN as the state for this job.
+     *
+     * @param jobIDs
+     * @return A map of all job states accessible by their id.
+     */
+    final Map<BEJobID, JobInfo> queryJobInfoByID(List<BEJobID> jobIDs) {
+        assertListIsValid(jobIDs)
+
+        Map<BEJobID, JobInfo> result = queryJobInfo(jobIDs) ?: [:] as Map<BEJobID, JobInfo>
+
+        // Collect the result and fill in empty entries with UNKNOWN
+        return jobIDs.collectEntries {
+            BEJobID jobID ->
+                [jobID, result[jobID] ?: new JobInfo(jobID)]
         }
     }
 
     /**
-     * Queries the status of all jobs in the list.
+     * Query the states of all jobs available limited by the settings provided in the constructor.
      *
-     * Every job ID in the list is supposed to have an entry in the result map. If
-     * the manager cannot retrieve info about the job, the result will be UNKNOWN
-     * for this particular job.
-     *
-     * @param jobIds
      * @return
      */
-    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
-        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobIds, forceUpdate)
-        return jobIds.collectEntries { BEJobID jobId -> [jobId, result[jobId] ?: JobState.UNKNOWN] }
+    final Map<BEJobID, JobInfo> queryAllJobInfo() {
+        queryJobInfo(null)
     }
 
     /**
-     * Queries the status of all jobs.
+     * Needs to be overriden by JobManager implementations.
+     * jobIDs may be null or [] which means, that the query is not for specific jobs but for all available (except for
+     * the filter settings of the JobManager) jobs.
      *
-     * @return
+     * @param jobIDs A list of IDs OR null/[]
      */
-    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
-        return queryJobStatesUsingCache(null, forceUpdate)
+    abstract Map<BEJobID, JobInfo> queryJobInfo(List<BEJobID> jobIDs)
+
+    final ExtendedJobInfo queryExtendedJobInfoByJob(BEJob job) {
+        assert job
+        return queryExtendedJobInfoByID(job.jobID)
+    }
+
+    final ExtendedJobInfo queryExtendedJobInfoByID(BEJobID id) {
+        assert id
+        return queryExtendedJobInfoByID([id])[id]
     }
 
     /**
@@ -204,15 +229,17 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * - The used cores
      * - The used walltime
      *
-     * @param jobs
-     * @return
+     * If the jobid cannot be found, an empty extend job info object will be returned with the jobstate set to UNKNOWN
      */
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs) {
+    final Map<BEJob, ExtendedJobInfo> queryExtendedJobInfoByJob(List<BEJob> jobs) {
+        assertListIsValid(jobs)
 
-        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect { it.getJobID() })
-        return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries {
-            Map.Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value]
-        }
+        Map<BEJobID, BEJob> jobsByID = jobs.collectEntries { [it.jobID, it] }
+
+        return queryExtendedJobInfoByID(jobs*.jobID)
+                .collectEntries {
+            BEJobID id, JobInfo info -> [jobsByID[id], info]
+        } as Map<BEJob, ExtendedJobInfo>
     }
 
     /**
@@ -221,18 +248,33 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * - The used cores
      * - The used walltime
      *
-     * @param jobIds
-     * @return
+     * If the jobid cannot be found, an empty extend job info object will be returned with the jobstate set to UNKNOWN
      */
-    abstract Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds)
+    final Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfoByID(List<BEJobID> jobIDs) {
+        assertListIsValid(jobIDs)
 
-    void addToListOfStartedJobs(BEJob job) {
-        if (updateDaemonThread) {
-            synchronized (activeJobs) {
-                activeJobs.put(job.getJobID(), job)
-            }
-        }
+        Map<BEJobID, ExtendedJobInfo> queriedExtendedStates = queryExtendedJobInfo(jobIDs) ?: [:] as Map<BEJobID, ExtendedJobInfo>
+
+        jobIDs.collectEntries {
+            BEJobID jobID ->
+                [
+                        jobID,
+                        queriedExtendedStates[jobID] ?: new ExtendedJobInfo(jobID)
+                ]
+        } as Map<BEJobID, ExtendedJobInfo>
     }
+
+    final Map<BEJobID, ExtendedJobInfo> queryAllExtendedJobInfo() { return queryExtendedJobInfo(null) }
+
+    /**
+     * Needs to be overriden by JobManager implementations.
+     * jobIDs may be null or [] which means, that the query is not for specific jobs but for all available (except for
+     * the filter settings of the JobManager) jobs.
+     *
+     * @param jobIDs A list of IDs OR null/[]
+     * @return a list of jobs
+     */
+    abstract Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfo(List<BEJobID> jobIDs)
 
     abstract String getJobIdVariable()
 
@@ -278,9 +320,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract String getSubmissionCommand()
 
-    abstract String getQueryJobStatesCommand()
+    abstract String getQueryCommandForJobInfo()
 
-    abstract String getExtendedQueryJobStatesCommand()
+    abstract String getQueryCommandForExtendedJobInfo()
 
     ProcessingParameters convertResourceSet(BEJob job) {
         return convertResourceSet(job, job.resourceSet)
@@ -295,7 +337,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param commandString
      * @return
      */
-    abstract GenericJobInfo parseGenericJobInfo(String command)
+    abstract ExtendedJobInfo parseGenericJobInfo(String command)
 
     protected List<BEJobID> collectJobIDsFromJobs(List<BEJob> jobs) {
         BEJob.jobsWithUniqueValidJobId(jobs).collect { it.runResult.getJobID() }
@@ -315,9 +357,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             job.resetJobID(jobID)
             jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
-            synchronized (cacheStatesLock) {
-                cachedStates.put(jobID, isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED)
-            }
         } else {
             def job = command.getJob()
             jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
@@ -333,100 +372,59 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract protected JobState parseJobState(String stateString)
 
-    abstract protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs)
-
     abstract protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs)
 
     abstract protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs)
 
-    protected void createUpdateDaemonThread() {
-        updateDaemonThread = Thread.startDaemon("Job state update daemon.", {
-            while (!updateDaemonShallBeClosed) {
-                updateActiveJobList()
 
-                waitForUpdateIntervalDuration()
-            }
-        })
-    }
-
-    final void addUpdateDaemonListener(UpdateDaemonListener listener) {
-        synchronized (updateDaemonListeners) {
-            updateDaemonListeners << listener
-        }
-    }
-
-    boolean isDaemonAlive() {
-        return updateDaemonThread != null && updateDaemonThread.isAlive()
-    }
-
-    void waitForUpdateIntervalDuration() {
-        long duration = Math.max(cacheUpdateInterval.toMillis(), 10 * 1000)
-        // Sleep one second until the duration is reached. This allows the daemon to finish faster, when it shall stop
-        // (updateDaemonShallBeClosed == true)
-        for (long timer = duration; timer > 0 && !updateDaemonShallBeClosed; timer -= 1000)
-            Thread.sleep(1000)
-    }
-
-    void stopUpdateDaemon() {
-        updateDaemonShallBeClosed = true
-        updateDaemonThread?.join()
-    }
-
-    private void updateActiveJobList() {
-        List<BEJobID> listOfRemovableJobs = []
-        synchronized (activeJobs) {
-            Map<BEJobID, JobState> states = queryJobStatesUsingCache(activeJobs.keySet() as List<BEJobID>, true)
-
-            for (BEJobID id : activeJobs.keySet()) {
-                JobState jobState = states.get(id)
-                BEJob job = activeJobs.get(id)
-
-                job.setJobState(jobState)
-                if (!jobState.isPlannedOrRunning()) {
-                    synchronized (updateDaemonListeners) {
-                        updateDaemonListeners.each { it.jobEnded(job, jobState) }
-                    }
-                    if (!jobState.successful) {
-                        surveilledJobsHadErrors = true
-                    }
-                    listOfRemovableJobs << id
-                }
-            }
-            listOfRemovableJobs.each { activeJobs.remove(it) }
-        }
-    }
-
-    private Map<BEJobID, JobState> queryJobStatesUsingCache(List<BEJobID> jobIDs, boolean forceUpdate) {
-        if (forceUpdate || lastCacheUpdate == null || cacheUpdateInterval == Duration.ZERO ||
-                Duration.between(lastCacheUpdate, LocalDateTime.now()) > cacheUpdateInterval) {
-            synchronized (cacheStatesLock) {
-                cachedStates = queryJobStates(jobIDs)
-            }
-            lastCacheUpdate = LocalDateTime.now()
-        }
-        return new HashMap(cachedStates)
+    @Deprecated
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
+        queryJobInfoByJob(jobs).collectEntries { BEJob job, JobInfo ji -> [job, ji.jobState] } as Map<BEJob, JobState>
     }
 
     /**
-     * The method will wait until all started jobs are finished (with or without errors).
+     * Queries the status of all jobs in the list.
      *
-     * Note, that the method does not allow further job submission! As soon, as you call it, you cannot submit jobs!
+     * Every job ID in the list is supposed to have an entry in the result map. If
+     * the manager cannot retrieve info about the job, the result will be UNKNOWN
+     * for this particular job.
      *
-     * @return true, if there were NO errors, false, if there were any.
+     * @param jobIds
+     * @return
      */
-    boolean waitForJobsToFinish() {
-        if (!updateDaemonThread) {
-            throw new BEException("The job manager must be created with JobManagerOption.createDaemon set to true to make waitForJobsToFinish() work.")
-        }
-        forbidFurtherJobSubmission = true
-        while (!updateDaemonShallBeClosed) {
-            synchronized (activeJobs) {
-                if (activeJobs.isEmpty()) {
-                    break
-                }
-            }
-            waitForUpdateIntervalDuration()
-        }
-        return !surveilledJobsHadErrors
+    @Deprecated
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds) {
+        queryJobInfoByID(jobIds).collectEntries { BEJobID id, JobInfo ji -> [id, ji.jobState] } as Map<BEJobID, JobState>
     }
+
+    /**
+     * Queries the status of all jobs.
+     *
+     * @return
+     */
+    @Deprecated
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
+        return queryAllJobInfo().collectEntries { BEJobID id, JobInfo ji -> [id, ji.jobState] } as Map<BEJobID, JobState>
+    }
+
+    @Deprecated
+    Map<BEJob, ExtendedJobInfo> queryExtendedJobState(List<BEJob> jobs) {
+        queryExtendedJobInfoByJob(jobs)
+    }
+
+    /**
+     * Will be used to gather extended information about a job like:
+     * - The used memory
+     * - The used cores
+     * - The used walltime
+     *
+     * @param jobIds
+     * @return
+     */
+    @Deprecated
+    Map<BEJobID, ExtendedJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+        return queryExtendedJobInfo(jobIds)
+    }
+
+
 }

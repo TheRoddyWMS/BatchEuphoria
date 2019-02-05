@@ -1,0 +1,12 @@
+{
+  "COMMAND": "bjobs",
+  "JOBS": 1,
+  "RECORDS": [
+    {
+      "JOBID": "22005",
+      "JOB_NAME": "ls -l",
+      "STAT": "DONE",
+      "FINISH_TIME": "Dec 28 19:56 L"
+    }
+  ]
+}

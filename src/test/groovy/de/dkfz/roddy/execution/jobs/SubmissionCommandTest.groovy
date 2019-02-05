@@ -14,7 +14,7 @@ class SubmissionCommandTest extends Specification {
                 JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
 
             @Override
-            Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List jobIds) {
+            Map<BEJobID, ExtendedJobInfo> queryExtendedJobStateById(List jobIds) {
                 return null
             }
 
@@ -54,12 +54,12 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            String getQueryJobStatesCommand() {
+            String getQueryCommandForJobInfo() {
                 return null
             }
 
             @Override
-            String getExtendedQueryJobStatesCommand() {
+            String getQueryCommandForExtendedJobInfo() {
                 return null
             }
 
@@ -69,7 +69,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            GenericJobInfo parseGenericJobInfo(String command) {
+            ExtendedJobInfo parseGenericJobInfo(String command) {
                 return null
             }
 
@@ -99,7 +99,12 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected Map<BEJobID, JobState> queryJobStates(List jobIDs) {
+            Map<BEJobID, JobInfo> queryJobInfo(List<BEJobID> jobIDs) {
+                return null
+            }
+
+            @Override
+            Map<BEJobID, ExtendedJobInfo> queryExtendedJobInfo(List<BEJobID> jobIDs) {
                 return null
             }
         }

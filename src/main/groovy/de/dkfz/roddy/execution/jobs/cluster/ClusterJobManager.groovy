@@ -16,6 +16,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.time.Duration
+import java.time.ZonedDateTime
 
 /**
  * A class for processing backends running on a cluster.
@@ -29,7 +30,7 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         super(executionService, parms)
     }
 
-    protected static <T> T withCaughtAndLoggedException(final Closure<T> closure) {
+    static <T> T withCaughtAndLoggedException(final Closure<T> closure) {
         try {
             return closure.call()
         } catch (Exception e) {
@@ -46,7 +47,36 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         return null
     }
 
-    protected static Duration parseColonSeparatedHHMMSSDuration(String str) {
+    static BEJobID toJobID(String jobIdRaw) {
+        BEJobID jobID
+        try {
+            jobID = new BEJobID(jobIdRaw)
+        } catch (Exception exp) {
+            throw new BEException("Job ID '${jobIdRaw}' could not be transformed to BEJobID ")
+        }
+        jobID
+    }
+
+    static Duration safelyParseColonSeparatedDuration(Object value) {
+        String _value = value as String
+        withCaughtAndLoggedException {
+            return _value ? parseColonSeparatedHHMMSSDuration(_value) : null
+        }
+    }
+
+    ZonedDateTime safelyParseTime(Object time) {
+        String _time = time as String
+        if (time)
+            return withCaughtAndLoggedException {
+                return parseTime(_time)
+            }
+        return null
+    }
+
+    abstract ZonedDateTime parseTime(String time)
+
+
+    static Duration parseColonSeparatedHHMMSSDuration(String str) {
         String[] hhmmss = str.split(":")
         if (hhmmss.size() != 3) {
             throw new BEException("Duration string is not of the format HH+:MM:SS: '${str}'")
@@ -99,4 +129,6 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     abstract void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
 
     abstract void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet)
+
+
 }

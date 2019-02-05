@@ -17,15 +17,18 @@ import java.time.ZoneId
 @CompileStatic
 class JobManagerOptions {
 
-    boolean createDaemon
     Duration updateInterval
 
     String userIdForJobQueries
+
     boolean trackOnlyStartedJobs
 
     String userGroup
+
     String userAccount
+
     String userEmail
+
     String userMask
 
     /**
@@ -84,13 +87,12 @@ class JobManagerOptionsBuilder {
     JobManagerOptionsBuilder() {
         trackOnlyStartedJobs = false
         updateInterval = Duration.ofMinutes(5)
-        createDaemon = false
         requestMemoryIsEnabled = true
         requestWalltimeIsEnabled = true
         requestQueueIsEnabled = true
         requestCoresIsEnabled = true
-        requestStorageIsEnabled = false  // Defaults to false, not supported now.
-        passEnvironment = false     // Setting this to true should be a conscious decision. Therefore the default 'false'.
+        requestStorageIsEnabled = false     // Defaults to false, not supported now.
+        passEnvironment = false             // Setting this to true should be a conscious decision. Therefore the default 'false'.
         additionalOptions = [:]
         timeZoneId = ZoneId.systemDefault()
     }

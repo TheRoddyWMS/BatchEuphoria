@@ -1,0 +1,65 @@
+<!-- This file was automatically formatted and afterwards manually formatted again to be readable and
+     compliant to PBS output-->
+<Data>
+    <Job>
+        <Job_Id>22005.pbsserver</Job_Id>
+        <Job_Name>ATestJob</Job_Name>
+        <Job_Owner>testuser@subm-host.example.com</Job_Owner>
+        <resources_used>
+            <cput>00:00:00</cput>
+            <mem>6064kb</mem>
+            <vmem>454232kb</vmem>
+            <walltime>00:00:06</walltime>
+        </resources_used>
+        <job_state>C</job_state>
+        <queue>debug</queue>
+        <server>pbsserver</server>
+        <Checkpoint>u</Checkpoint>
+        <ctime>1522255162</ctime>
+        <depend>afterok:6059780.pbsserver@pbsserver:6059781.pbsserver@pbsserver,beforeok:6059788.pbsserver@pbsserver</depend>
+        <Error_Path>subm:/somefolder/job.o$PBS_JOBID</Error_Path>
+        <exec_host>exec-host/0+exec-host/1+exec-host/2</exec_host>
+        <exec_port>15003</exec_port>
+        <Hold_Types>n</Hold_Types>
+        <Join_Path>oe</Join_Path>
+        <Keep_Files>n</Keep_Files>
+        <Mail_Points>a</Mail_Points>
+        <mtime>1522255162</mtime>
+        <Output_Path>subm:/somefolder/job.o$PBS_JOBID</Output_Path>
+        <Priority>0</Priority>
+        <qtime>1522255162</qtime>
+        <Rerunable>True</Rerunable>
+        <Resource_List>
+            <cput>168:00:00</cput>
+            <mem>37888mb</mem>
+            <ncpus>1</ncpus>
+            <nice>5</nice>
+            <nodect>1</nodect>
+            <nodes>1:ppn=4</nodes>
+            <walltime>05:00:00</walltime>
+        </Resource_List>
+        <session_id>51904</session_id>
+        <Variable_List>PBS_O_QUEUE=otp,PBS_O_HOME=/home/otp-data,PBS_O_LOGNAME=otp-data,PBS_O_PATH=/usr/local/bin:/usr/bin:/bin:/usr/games,PBS_O_MAIL=/var/mail/otp-data,PBS_O_SHELL=/bin/bash,PBS_O_LANG=en_US.utf8,TOOL_ID=starAlignment,PARAMETER_FILE=/somefolder/exec/ATestJob.parameters,CONFIG_FILE=/somefolder/exec/ATestJob.parameters,debugWrapInScript=false,baseEnvironmentScript=/tbi/software/sourceme,PBS_O_WORKDIR=/home/otp-data,PBS_O_HOST=subm.example.com,PBS_O_SERVER=pbsserver</Variable_List>
+        <sched_hint>Post job file processing error; job 4564045.pbsserver on host exec-host/1
+
+            Unable to copy file /var/spool/torque/spool/4564045.pbsserver.OU to
+            otp-data@subm:/somefolder/results/r180405_163953553_stds_snvJoinVcfFiles.o4564045.pbsserver
+            *** error from copy
+            Host key verification failed.
+            lost connection
+            *** end error output
+            Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver.OU
+        </sched_hint>
+        <etime>1522255162</etime>
+        <exit_status>0</exit_status>
+        <submit_args>-v TOOL_ID=starAlignment,PARAMETER_FILE=/somefolder/exec/ATestJob.parameters,CONFIG_FILE=/somefolder/exec/ATestJob.parameters,debugWrapInScript=false,baseEnvironmentScript=/tbi/software/sourceme -N ATestJob -h -w /home/otp-data -j oe -o /somefolder/job.o$PBS_JOBID -l mem=37888M -l walltime=00:05:00:00 -l nodes=1:ppn=4 -q otp /somefolder/wrapInScript.sh</submit_args>
+        <start_time>1522939183</start_time>
+        <start_count>1</start_count>
+        <fault_tolerant>False</fault_tolerant>
+        <comp_time>1522939194</comp_time>
+        <job_radix>0</job_radix>
+        <total_runtime>10.431524</total_runtime>
+        <submit_host>subm-host.example.com</submit_host>
+        <init_work_dir>/home/testuser</init_work_dir>
+    </Job>
+</Data>

@@ -9,19 +9,17 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
+import de.dkfz.roddy.execution.jobs.ExtendedJobInfo
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.StringConstants.SPLIT_COLON
-import static de.dkfz.roddy.StringConstants.SPLIT_COMMA
-import static de.dkfz.roddy.StringConstants.SPLIT_EQUALS
+import static de.dkfz.roddy.StringConstants.*
 
 /**
- * Used to convert commands from cli to e.g. GenericJobInfo
+ * Used to convert commands from cli to e.g. ExtendedJobInfo
  * Created by heinold on 04.04.17.
  */
 @CompileStatic
@@ -60,11 +58,11 @@ class PBSCommandParser {
 
         if (!commandString.startsWith("qsub")) return  // It is obviously not a PBS call
 
-        String[] splitted = line.splitBy(" ").findAll { it }
+        Collection<String> splitted = line.splitBy(" ").findAll { it }
         script = splitted[-1]
         jobName = "not readable"
 
-        for (int i = 0; i < splitted.length - 1; i++) {
+        for (int i = 0; i < splitted.size() - 1; i++) {
             String option = splitted[i]
             if (!option.startsWith("-")) continue // It is not an option but a parameter or a text (e.g. qsub, script)
 
@@ -130,12 +128,12 @@ class PBSCommandParser {
         }
     }
 
-    GenericJobInfo toGenericJobInfo() {
-        GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), jobID, parameters, dependencies)
+    ExtendedJobInfo toGenericJobInfo() {
+        ExtendedJobInfo jInfo = new ExtendedJobInfo(jobName, script, jobID, parameters, dependencies)
         ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
                 cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
                 null, null, null)
-        jInfo.setAskedResources(askedResources)
+        jInfo.setRequestedResources(askedResources)
         return jInfo
     }
 }

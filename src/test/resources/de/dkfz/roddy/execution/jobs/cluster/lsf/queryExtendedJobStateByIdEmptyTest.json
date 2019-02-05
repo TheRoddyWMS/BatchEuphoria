@@ -1,0 +1,9 @@
+{
+  "COMMAND": "bjobs",
+  "JOBS": 1,
+  "RECORDS": [
+    {
+      "JOBID": "22005"
+    }
+  ]
+}
