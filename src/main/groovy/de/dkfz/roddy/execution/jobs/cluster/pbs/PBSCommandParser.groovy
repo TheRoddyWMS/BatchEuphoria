@@ -129,7 +129,7 @@ class PBSCommandParser {
     }
 
     GenericJobInfo toGenericJobInfo() {
-        GenericJobInfo jInfo = new GenericJobInfo(jobName, script, jobID, parameters, dependencies)
+        GenericJobInfo jInfo = new GenericJobInfo(jobName, new File(script), jobID, parameters, dependencies)
         ResourceSet askedResources = new ResourceSet(null, memory ? new BufferValue(memory as Integer, bufferUnit) : null,
                 cores ? cores as Integer : null, nodes ? nodes as Integer : null, walltime ? new TimeUnit(walltime) : null,
                 null, null, null)

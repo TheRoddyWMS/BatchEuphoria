@@ -23,7 +23,7 @@ class GenericJobInfo {
     ResourceSet askedResources
     ResourceSet usedResources
     String jobName
-    String command
+    File tool
     BEJobID jobID
 
     /** The date-time the job entered the queue. */
@@ -81,9 +81,9 @@ class GenericJobInfo {
     ZonedDateTime timeOfCalculation
 
 
-    GenericJobInfo(String jobName, String command, BEJobID jobID, Map<String, String> parameters, List<String> parentJobIDs) {
+    GenericJobInfo(String jobName, File command, BEJobID jobID, Map<String, String> parameters, List<String> parentJobIDs) {
         this.jobName = jobName
-        this.command = command
+        this.tool = command
         this.jobID = jobID
         this.parameters = parameters
         this.parentJobIDs = parentJobIDs

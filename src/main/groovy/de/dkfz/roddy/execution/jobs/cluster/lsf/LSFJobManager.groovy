@@ -43,13 +43,45 @@ class LSFJobManager extends AbstractLSFJobManager {
         super(executionService, parms)
     }
 
-    static ZonedDateTime parseTime(String str) {
-        ZonedDateTime date = dateTimeHelper.parseToZonedDateTime("${str} ${LocalDateTime.now().year}")
-        /**
-         * parseToZonedDateTime() parses a zoned time as provided by LSF. Unfortunately, LFS does not return the submission year!
-         * The (kind of reasonable) assumption made here is that if the job's submission time (assuming the current
-         * year) is later than the current time, then the job was submitted last year.
-         */
+    /**
+     * Time formats in LSF can be configured.
+     * E.g. to our knowledge, by default, reported values look like:
+     *   "Jan  1 10:21 L" with status information or "Jan  1 10:21" without them.
+     * LSF can be configured to also report the year, so values would be reported as:
+     *   "Jan  1 10:21 2010 L" with status information or "Jan  1 10:21 2010" without them.
+     *
+     * There might be different configurations, but we stick to those 4 versions.
+     *
+     * Furthermore, we do not know, if LSF will report in other languages than english.
+     * We assume, that english is used for month names.
+     *
+     * We also assume, that the method will not be misused. If its misused, it will throw
+     * an exception.
+     */
+    ZonedDateTime parseTime(String str) {
+        // Prevent NullPointerException, will throw a DateTimeParserException later
+        if (str == null) str = ""
+        String dateForParser = str
+        if (str.size() == "Jan 01 01:00".size()) {
+            // Lets start and see, if the date is reported in its short version, if so, add the year.
+            dateForParser = "${str} ${LocalDateTime.now().year}"
+        } else if (str.size() == "Jan 01 01:00 L".size()) {
+            // Here we need to strip away the status first, then append the current year.
+            dateForParser = "${stripAwayStatusInfo(str)} ${LocalDateTime.now().year}"
+        } else if (str.size() == "Jan 01 01:00 1000".size()) {
+            // Easy enough, just keep it like it is.
+            dateForParser = str
+        } else if (str.size() == "Jan 01 01:00 1000 L".size()) {
+            // Again, strip away the status info.
+            dateForParser = stripAwayStatusInfo(str)
+        }
+
+        // Finally we try to parse the date. Lets see if it works. If not, an exception is thrown.
+        ZonedDateTime date = dateTimeHelper.parseToZonedDateTime(dateForParser)
+
+        // If LSF is not configured to report the date, the (kind of reasonable) assumption made here is that if
+        // the job's submission time (assuming the current year) is later than the current time, then the job was
+        // submitted last year.
         if (date > ZonedDateTime.now()) {
             return date.minusYears(1)
         }
@@ -62,9 +94,12 @@ class LSFJobManager extends AbstractLSFJobManager {
      * of the time string.
      */
     static String stripAwayStatusInfo(String time) {
-        if (time)
-            return time[0..-3]
-        return null
+        String result = time
+        if (time && time.size() > 2) {
+            if (time[-2..-1] ==~ ~/[ ][a-zA-Z0-9]/)
+                result = time[0..-3]
+        }
+        return result
     }
 
     @Override
@@ -134,7 +169,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
 
         Map<BEJobID, Map<String, String>> result = convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
-        return filterJobMapByAge(result, maxTrackingTimeForFinishedJobs)
+        return result; //filterJobMapByAge(result, maxTrackingTimeForFinishedJobs)
     }
 
     static Map<BEJobID, Map<String, String>> convertBJobsJsonOutputToResultMap(String rawJson) {
@@ -198,7 +233,8 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
 
         List<String> dependIDs = jobResult["DEPENDENCY"]?.tokenize(/&/)?.collect { it.find(/\d+/) }
-        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"], jobResult["COMMAND"], jobID, null, dependIDs)
+        String _cmd = jobResult["COMMAND"];
+        jobInfo = new GenericJobInfo(jobResult["JOB_NAME"], _cmd ? new File(_cmd) : null, jobID, null, dependIDs)
 
         /** Common */
         jobInfo.user = jobResult["USER"]
