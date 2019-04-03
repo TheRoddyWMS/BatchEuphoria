@@ -18,6 +18,7 @@ import de.dkfz.roddy.tools.DateTimeHelper
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 
+import java.time.DateTimeException
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -56,7 +57,12 @@ class LSFJobManager extends AbstractLSFJobManager {
      * We assume, that english is used for month names.
      *
      * We also assume, that the method will not be misused. If its misused, it will throw
-     * an exception.
+     * an exception if:
+     *  - The string is empty OR
+     *  - The string is wrong OR
+     *  - The string is not in one of the four allowed date formats:
+     *    * Short (with status flag)
+     *    * Long (with status flag)
      */
     ZonedDateTime parseTime(String str) {
         // Prevent NullPointerException, will throw a DateTimeParserException later
@@ -74,6 +80,8 @@ class LSFJobManager extends AbstractLSFJobManager {
         } else if (str.size() == "Jan 01 01:00 1000 L".size()) {
             // Again, strip away the status info.
             dateForParser = stripAwayStatusInfo(str)
+        } else {
+            throw new DateTimeException("The string ${str} is not a valid LSF datetime string and cannot be parsed.")
         }
 
         // Finally we try to parse the date. Lets see if it works. If not, an exception is thrown.
