@@ -4,7 +4,7 @@
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
 Currently this library supports the following job schedulers:
 * PBS
-* LSF (REST)
+* LSF (REST) Version 10.1 Fix Pack 2 or later
 * direct execution
 
 ### Dependencies
