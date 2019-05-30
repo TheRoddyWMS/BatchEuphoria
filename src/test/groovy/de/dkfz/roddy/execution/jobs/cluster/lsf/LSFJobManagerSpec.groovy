@@ -116,6 +116,13 @@ class LSFJobManagerSpec extends Specification {
 }
 '''
 
+    final static String RAW_JSON_OUTPUT_WITHOUT_JOB = '''
+        { "COMMAND":"bjobs", "JOBS":1, "RECORDS":[
+            { "JOBID":"404", "ERROR":"Job <404> is not found" }
+        ] }
+     '''
+
+
     void "queryJobInfo, bjobs JSON output with lists  "() {
 
         given:
@@ -289,5 +296,20 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.timeSystemSuspState == null
         jobInfo.timeUnknownState == null
         jobInfo.timeOfCalculation == null
+    }
+
+    void "test queryExtendedJobStateById when no job exists"() {
+        given:
+        JobManagerOptions parms = JobManagerOptions.create().build()
+        BEExecutionService testExecutionService = [
+                execute: { String s -> new ExecutionResult(true, 0, RAW_JSON_OUTPUT_WITHOUT_JOB.split("\n") as List<String>, null) }
+        ] as BEExecutionService
+        LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
+
+        when:
+        Map<BEJobID, GenericJobInfo> result = manager.queryExtendedJobStateById([new BEJobID("404")])
+
+        then:
+        result.size() == 0
     }
 }

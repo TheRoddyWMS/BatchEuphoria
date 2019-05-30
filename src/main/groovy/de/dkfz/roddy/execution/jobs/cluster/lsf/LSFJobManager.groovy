@@ -55,7 +55,10 @@ class LSFJobManager extends AbstractLSFJobManager {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (BEJobID id : jobIds) {
             Map<String, Object> jobDetails = runBjobs([id]).get(id)
-            queriedExtendedStates.put(id, queryJobInfo(jobDetails))
+            GenericJobInfo jobInfo = queryJobInfo(jobDetails)
+            if (jobInfo) {
+                queriedExtendedStates.put(id, jobInfo)
+            }
         }
         return queriedExtendedStates
     }
@@ -154,6 +157,10 @@ class LSFJobManager extends AbstractLSFJobManager {
             jobID = new BEJobID(jobResult["JOBID"] as String)
         }catch (Exception exp){
             throw new BEException("Job ID '${jobResult["JOBID"]}' could not be transformed to BEJobID ")
+        }
+
+        if (jobResult.containsKey("ERROR")) {
+            return null
         }
 
         List<String> dependIDs = ((String) jobResult["DEPENDENCY"])? ((String) jobResult["DEPENDENCY"]).tokenize(/&/).collect { it.find(/\d+/) } : null
