@@ -61,13 +61,6 @@ abstract class SubmissionCommand extends Command {
         passEnvironment.orElse(parentJobManager.passEnvironment)
     }
 
-    @Deprecated
-    @Override
-    String toString() {
-        // TODO toString() shouldn't be used for such specific things. Remove explicit calls to get the bash command representation.
-        return toBashCommandString()
-    }
-
     @Override
     String toBashCommandString() {
         String email = parentJobManager.getUserEmail()

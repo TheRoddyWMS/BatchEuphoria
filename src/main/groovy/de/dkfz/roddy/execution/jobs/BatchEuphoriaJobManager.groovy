@@ -35,6 +35,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     protected boolean queryOnlyStartedJobs
 
+    protected final Duration maxTrackingTimeForFinishedJobs
+
     protected String userIDForQueries
 
     private String userEmail
@@ -83,6 +85,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
         this.isTrackingOfUserJobsEnabled = parms.userIdForJobQueries as boolean
         this.queryOnlyStartedJobs = parms.trackOnlyStartedJobs
+        this.maxTrackingTimeForFinishedJobs = parms.maxTrackingTimeForFinishedJobs
         this.userIDForQueries = parms.userIdForJobQueries
 
         this.userEmail = parms.userEmail
@@ -102,6 +105,10 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         if (parms.createDaemon) {
             createUpdateDaemonThread()
         }
+    }
+
+    void setQueryJobStatesFilter() {
+
     }
 
     /**

@@ -81,9 +81,9 @@ class GenericJobInfo {
     ZonedDateTime timeOfCalculation
 
 
-    GenericJobInfo(String jobName, File tool, BEJobID jobID, Map<String, String> parameters, List<String> parentJobIDs) {
+    GenericJobInfo(String jobName, File command, BEJobID jobID, Map<String, String> parameters, List<String> parentJobIDs) {
         this.jobName = jobName
-        this.tool = tool
+        this.tool = command
         this.jobID = jobID
         this.parameters = parameters
         this.parentJobIDs = parentJobIDs

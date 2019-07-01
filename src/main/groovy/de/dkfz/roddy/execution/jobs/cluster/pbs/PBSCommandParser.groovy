@@ -16,9 +16,7 @@ import de.dkfz.roddy.tools.ComplexLine
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.StringConstants.SPLIT_COLON
-import static de.dkfz.roddy.StringConstants.SPLIT_COMMA
-import static de.dkfz.roddy.StringConstants.SPLIT_EQUALS
+import static de.dkfz.roddy.StringConstants.*
 
 /**
  * Used to convert commands from cli to e.g. GenericJobInfo
@@ -60,11 +58,11 @@ class PBSCommandParser {
 
         if (!commandString.startsWith("qsub")) return  // It is obviously not a PBS call
 
-        String[] splitted = line.splitBy(" ").findAll { it }
+        Collection<String> splitted = line.splitBy(" ").findAll { it }
         script = splitted[-1]
         jobName = "not readable"
 
-        for (int i = 0; i < splitted.length - 1; i++) {
+        for (int i = 0; i < splitted.size() - 1; i++) {
             String option = splitted[i]
             if (!option.startsWith("-")) continue // It is not an option but a parameter or a text (e.g. qsub, script)
 

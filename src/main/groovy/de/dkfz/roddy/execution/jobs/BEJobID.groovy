@@ -53,13 +53,6 @@ class BEJobID implements Comparable<BEJobID> {
         return id
     }
 
-    @Deprecated
-    static class FakeJobID extends BEJobID {
-        FakeJobID(String id) {
-            super(id)
-        }
-    }
-
     @Override
     int compareTo(BEJobID o) {
         return this.id.compareTo(o.id)
