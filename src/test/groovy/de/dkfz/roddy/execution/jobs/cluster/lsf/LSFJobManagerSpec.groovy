@@ -9,23 +9,18 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.GenericJobInfo
-import de.dkfz.roddy.execution.jobs.JobManagerOptions
-import de.dkfz.roddy.execution.jobs.JobState
+import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
-import groovy.json.JsonSlurper
-import groovy.transform.CompileStatic
-import spock.lang.Ignore
-import spock.lang.Specification
 
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.regex.Matcher
+
+import groovy.json.JsonSlurper
+import groovy.transform.CompileStatic
+import spock.lang.*
 
 class LSFJobManagerSpec extends Specification {
 
@@ -34,7 +29,6 @@ class LSFJobManagerSpec extends Specification {
     }
 
     void "Test convertJobDetailsMapToGenericJobInfoObject"() {
-
         given:
         def parms = JobManagerOptions.create().build()
         TestExecutionService testExecutionService = new TestExecutionService("test", "test")
@@ -90,6 +84,147 @@ class LSFJobManagerSpec extends Specification {
         LocalDateTime.of(2000, 5, 7, 10, 21) | "May  7 10:21 L"
     }
 
+    void "test DAY pattern"() {
+        when:
+        boolean result = (input ==~ LSFJobManager.DAY)
+
+        then:
+        result == matches
+
+        where:
+        input | matches
+        "1"   | true
+        "12"  | true
+        ""    | false
+        "A"   | false
+        "1A"  | false
+        "A1"  | false
+    }
+
+    void "test MONTH pattern"() {
+        when:
+        boolean result = (input ==~ LSFJobManager.MONTH)
+
+        then:
+        result == matches
+
+        where:
+        input   | matches
+        "Apr"   | true
+        "April" | false
+        "A"     | false
+        "4"     | false
+        "04"    | false
+    }
+
+    void "test YEAR pattern"() {
+        when:
+        boolean result = (input ==~ LSFJobManager.YEAR)
+
+        then:
+        result == matches
+
+        where:
+        input  | matches
+        "1234" | true
+        "123"  | false
+        "12"   | false
+        "1"    | false
+        ""     | false
+    }
+
+    void "test TIME pattern, succeeding parses"() {
+        when:
+        String input = [hour, minute, second].findAll().join(":")
+        Matcher matcher = input =~ LSFJobManager.TIME
+
+        then:
+        matcher.matches()
+        matcher.group("time") == input
+        matcher.group("hour") == hour
+        matcher.group("minute") == minute
+        matcher.group("second") == second
+
+        where:
+        hour | minute | second
+        "12" | "34"   | "56"
+        "01" | "02"   | "03"
+        "1"  | "2"    | "3"
+        "1"  | "2"    | null
+    }
+
+    void "test TIME pattern, failing parses"() {
+        when:
+        String input = [hour, minute, second].findAll().join(separator)
+        Matcher matcher = input =~ LSFJobManager.TIME
+
+        then:
+        !matcher.matches()
+
+        where:
+        hour | minute | second | separator
+        " "  | " "    | " "    | ":"
+        "1"  | "2"    | " "    | ":"
+        "1"  | "2"    | "3"    | ","
+    }
+
+    @Unroll
+    void "test TIMESTAMP_PATTERN pattern, succeeding parses (#month #day #time #year #suffix)"() {
+        when:
+        Closure<String> ifNotEmpty = { String input ->
+            return input == "-" ? null : input
+        }
+
+        List<String> timeComponent = time.split(":") as List<String>
+        String input = [month, day, time, year, suffix].findAll { it != "-" }.join(" ")
+        Matcher matcher = input =~ LSFJobManager.TIMESTAMP_PATTERN
+
+        then:
+        matcher.matches()
+
+        matcher.group("day") == day
+        matcher.group("month") == month
+        matcher.group("year") == ifNotEmpty(year)
+        matcher.group("time") == ifNotEmpty(time)
+        matcher.group("hour") == ifNotEmpty(timeComponent[0])
+        matcher.group("minute") == ifNotEmpty(timeComponent[1])
+        matcher.group("second") == ifNotEmpty(timeComponent[2])
+        matcher.group("lsfSuffix") == ifNotEmpty(suffix)
+
+        where:
+        month | day  | time       | year   | suffix
+        "Jan" | "01" | "12:34"    | "-"    | "-"
+        "Feb" | "2"  | "12:34"    | "-"    | "-"
+        "Mar" | "03" | "12:34"    | "-"    | "L"
+        "Apr" | "04" | "12:34"    | "1000" | "-"
+        "May" | "05" | "12:34"    | "1000" | "L"
+        "Jun" | "6"  | "12:34:56" | "1000" | "L"
+        "Jul" | "07" | "12:34:56" | "1000" | "L"
+        "Aug" | "88" | "00:00:00" | "1000" | "-"
+        "Sep" | "9"  | "1:2:3"    | "1000" | "-"
+        "Oct" | "10" | "12:3:4"   | "1000" | "-"
+        "Nov" | "11" | "12:34:56" | "1000" | "-"
+        "Dec" | "12" | "12:34"    | "1000" | "-"
+    }
+
+    @Unroll
+    void "test TIMESTAMP_PATTERN pattern, failing parses (#input)"() {
+        when:
+        Matcher matcher = input =~ LSFJobManager.TIMESTAMP_PATTERN
+
+        then:
+        !matcher.matches()
+
+        where:
+        input                  |_
+        "Aug 42 :: 1000"       |_
+        "Sep 2 :18:20 1000"    |_
+        "Oct 2 14::20 1000"    |_
+        "Nov 2 14:18: 1000"    |_
+        "Dec 2 14:18:20 19"    |_
+        "Tst 2 14:18:20 1000"  |_
+    }
+
     void "test parseTime"() {
         given:
         def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
@@ -109,6 +244,42 @@ class LSFJobManagerSpec extends Specification {
         then:
         manager.parseTime(zonedDateTimeToString(earlierTime)).truncatedTo(ChronoUnit.MINUTES).equals(earlierTime.truncatedTo(ChronoUnit.MINUTES))
         manager.parseTime(zonedDateTimeToString(laterTime)).truncatedTo(ChronoUnit.MINUTES).equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
+    }
+
+    @Unroll
+    void "parseTime, parses all known formats (#month #day #hour:#minute:#second #year #suffix)"() {
+        given:
+        def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
+
+        JobManagerOptions parms = JobManagerOptions.create().build()
+        BEExecutionService testExecutionService = [
+                execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
+        ] as BEExecutionService
+        LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
+
+        String time = [hour, minute, second].findAll { it != "" }.join(":")
+        String timestamp = [month, day, time, year, suffix].findAll { it != "" }.join(" ")
+
+        when:
+        ZonedDateTime result = manager.parseTime(timestamp)
+        LocalDateTime resultTime = result.toLocalDateTime()
+
+        then:
+        result.getMonthValue() == LSFJobManager.MONTH_VALUE[month]
+        result.getDayOfMonth() == Integer.parseInt(day)
+        result.getYear() == (year ? Integer.parseInt(year) : LocalDateTime.now().year)
+        resultTime.getHour() == Integer.parseInt(hour)
+        resultTime.getMinute() == Integer.parseInt(minute)
+        resultTime.getSecond() == (second ? Integer.parseInt(second) : 0)
+
+        where:
+        month | day  | hour | minute | second | year   | suffix |_
+        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     |_
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    |_
+        "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     |_
+        "Apr" | "04" | "01" | "02"   | ""     | "1000" | "L"    |_
+        "May" | "5"  | "01" | "02"   | "03"   | "1000" | ""     |_
+        "Jun" | "6"  | "01" | "02"   | "03"   | "1000" | "L"    |_
     }
 
 //    void "test queryExtendedJobStateById with overdue date"() {
