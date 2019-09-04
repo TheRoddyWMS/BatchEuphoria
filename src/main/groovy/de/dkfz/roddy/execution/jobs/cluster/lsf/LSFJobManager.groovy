@@ -43,7 +43,7 @@ class LSFJobManager extends AbstractLSFJobManager {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    static final DateTimeHelper dateTimeHelper = new DateTimeHelper("MMM ppd HH:mm yyyy", Locale.ENGLISH)
+    static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
