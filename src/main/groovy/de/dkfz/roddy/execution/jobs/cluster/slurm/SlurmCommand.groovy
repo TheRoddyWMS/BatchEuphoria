@@ -86,6 +86,11 @@ class SlurmCommand extends GridEngineBasedCommand {
     }
 
     @Override
+    protected String getEnvironment() {
+        return ""
+    }
+
+    @Override
     protected String assembleVariableExportParameters() {
         return null
     }

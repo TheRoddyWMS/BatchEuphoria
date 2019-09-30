@@ -111,6 +111,11 @@ class PBSCommand extends GridEngineBasedCommand {
     }
 
     @Override
+    protected String getEnvironment() {
+        return ""
+    }
+
+    @Override
     String assembleVariableExportParameters() {
         List<String> parameterStrings = []
 

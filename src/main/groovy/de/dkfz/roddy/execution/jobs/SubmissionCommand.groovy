@@ -87,6 +87,10 @@ abstract class SubmissionCommand extends Command {
         // create job submission command call
         StringBuilder command = new StringBuilder(EMPTY)
 
+        if (getEnvironment()) {
+            command << "${getEnvironment()} "
+        }
+
         if (job.getToolScript()) {
             command << "echo " << BashUtils.strongQuote(job.getToolScript()) << " | "
         }
@@ -120,6 +124,8 @@ abstract class SubmissionCommand extends Command {
     abstract protected String assembleDependencyString(List<BEJobID> jobIds)
 
     abstract protected String getAdditionalCommandParameters()
+
+    abstract protected String getEnvironment()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
