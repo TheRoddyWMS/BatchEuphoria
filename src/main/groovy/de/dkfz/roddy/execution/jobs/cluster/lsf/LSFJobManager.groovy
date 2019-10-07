@@ -326,7 +326,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     private File getBjobsFile(String s, BEJobID jobID, String type) {
         if (!s) {
             return null
-        } else if (executionService.execute("stat -c %F ${BashUtils.strongQuote(s)}").firstLine == "directory") {
+        } else if (executionService.execute("LC_ALL=C stat -c %F ${BashUtils.strongQuote(s)} 2> /dev/null").firstLine == "directory") {
             return new File(s, "${jobID.getId()}.${type}")
         } else {
             return new File(s)
