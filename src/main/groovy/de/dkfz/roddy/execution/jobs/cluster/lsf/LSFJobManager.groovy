@@ -323,13 +323,22 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
     }
 
-    private File getBjobsFile(String s, BEJobID jobID, String type) {
-        if (!s) {
+    /**
+     * LSF doesn't return the actual path to the the log file, but the exact path that was passed to it. This path might
+     * be be a either a directory or a regular file. To be consistent with other systems, that always return the actual
+     * path, we try to find out the correct path to the log file here.
+     * @param path the log path passed to LSF
+     * @param jobID ID of the job this log file belongs to
+     * @param fileTypeSuffix "out" or "err" depending on the log
+     * @return path to the log file
+     */
+    private File getBjobsFile(String path, BEJobID jobID, String fileTypeSuffix) {
+        if (!path) {
             return null
-        } else if (executionService.execute("stat -c %F ${BashUtils.strongQuote(s)}").firstLine == "directory") {
-            return new File(s, "${jobID.getId()}.${type}")
+        } else if (executionService.execute("LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null").firstLine == "directory") {
+            return new File(path, "${jobID.getId()}.${fileTypeSuffix}")
         } else {
-            return new File(s)
+            return new File(path)
         }
     }
 
