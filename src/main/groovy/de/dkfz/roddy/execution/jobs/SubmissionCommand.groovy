@@ -87,8 +87,8 @@ abstract class SubmissionCommand extends Command {
         // create job submission command call
         StringBuilder command = new StringBuilder(EMPTY)
 
-        if (getEnvironment()) {
-            command << "${getEnvironment()} "
+        if (getEnvironmentString()) {
+            command << "${getEnvironmentString()} "
         }
 
         if (job.getToolScript()) {
@@ -125,7 +125,7 @@ abstract class SubmissionCommand extends Command {
 
     abstract protected String getAdditionalCommandParameters()
 
-    abstract protected String getEnvironment()
+    abstract protected String getEnvironmentString()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.

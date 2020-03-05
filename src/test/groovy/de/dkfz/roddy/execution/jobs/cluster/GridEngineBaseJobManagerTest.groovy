@@ -190,7 +190,7 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected String getEnvironment() {
+            protected String getEnvironmentString() {
                 return ""
             }
 

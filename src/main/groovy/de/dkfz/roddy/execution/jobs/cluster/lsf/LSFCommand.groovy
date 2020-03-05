@@ -95,8 +95,8 @@ class LSFCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getEnvironment() {
-        return LSFJobManager.LSF_COMMAND_ENVIRONMENT
+    protected String getEnvironmentString() {
+        return LSFJobManager.getEnvironmentString()
     }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.

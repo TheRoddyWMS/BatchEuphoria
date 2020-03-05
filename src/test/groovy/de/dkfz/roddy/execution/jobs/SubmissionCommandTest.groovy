@@ -168,7 +168,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String getEnvironment() {
+            protected String getEnvironmentString() {
                 return ""
             }
         }

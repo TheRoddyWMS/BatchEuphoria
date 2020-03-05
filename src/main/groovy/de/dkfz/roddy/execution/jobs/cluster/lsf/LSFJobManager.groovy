@@ -36,7 +36,6 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     final static String TIMESTAMP_PATTERN = /${MONTH}\s+${DAY}\s+${TIME}(\s+${YEAR})?(\s+${LSF_SUFFIX})?/
 
-    static final String LSF_COMMAND_ENVIRONMENT = "LSB_NTRIES=1"
     private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat finish_time\""
     private static final String LSF_COMMAND_QUERY_EXTENDED_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
@@ -45,6 +44,10 @@ class LSFJobManager extends AbstractLSFJobManager {
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
     static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
+
+    final static String getEnvironmentString() {
+        return "LSB_NTRIES=1"
+    }
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -164,7 +167,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
         StringBuilder queryCommand = new StringBuilder()
-        queryCommand << "${LSF_COMMAND_ENVIRONMENT} "
+        queryCommand << "${getEnvironmentString()} "
         queryCommand << extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
@@ -337,13 +340,13 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "${LSF_COMMAND_ENVIRONMENT} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
+        String command = "${getEnvironmentString()} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        String command = "${LSF_COMMAND_ENVIRONMENT} bresume ${jobIDs*.id.join(" ")}"
+        String command = "${getEnvironmentString()} bresume ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 

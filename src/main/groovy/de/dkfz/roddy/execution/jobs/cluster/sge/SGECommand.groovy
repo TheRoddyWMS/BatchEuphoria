@@ -103,7 +103,7 @@ class SGECommand extends GridEngineBasedCommand {
     }
 
     @Override
-    protected String getEnvironment() {
+    protected String getEnvironmentString() {
         return ""
     }
 
