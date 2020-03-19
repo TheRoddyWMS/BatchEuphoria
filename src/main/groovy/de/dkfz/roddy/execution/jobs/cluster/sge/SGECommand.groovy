@@ -103,6 +103,11 @@ class SGECommand extends GridEngineBasedCommand {
     }
 
     @Override
+    protected String getEnvironmentString() {
+        return ""
+    }
+
+    @Override
     protected String assembleVariableExportParameters() {
         List<String> parameterStrings = []
 

@@ -45,6 +45,10 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
 
+    final static String getEnvironmentString() {
+        return "LSB_NTRIES=1"
+    }
+
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
@@ -162,8 +166,9 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
-        StringBuilder queryCommand = new StringBuilder(extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
-
+        StringBuilder queryCommand = new StringBuilder()
+        queryCommand << "${getEnvironmentString()} "
+        queryCommand << extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
             queryCommand << " -u $userIDForQueries "
@@ -344,20 +349,19 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
+        String command = "${getEnvironmentString()} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        String command = "bresume ${jobIDs*.id.join(" ")}"
+        String command = "${getEnvironmentString()} bresume ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 
     @Override
     String parseJobID(String commandOutput) {
         String result = commandOutput.find(/<[0-9]+>/)
-        //ToDo 'Group <resUsers>: Pending job threshold reached. Retrying in 60 seconds...'
         if (result == null)
             throw new BEException("Could not parse raw ID from: '${commandOutput}'")
         String exID = result.substring(1, result.length() - 1)
