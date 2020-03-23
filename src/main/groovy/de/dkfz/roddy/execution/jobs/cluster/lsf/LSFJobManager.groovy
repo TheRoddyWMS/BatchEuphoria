@@ -168,7 +168,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
         StringBuilder queryCommand = new StringBuilder()
         queryCommand << "${getEnvironmentString()} "
-        queryCommand << extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES
+        queryCommand << (extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
             queryCommand << " -u $userIDForQueries "
