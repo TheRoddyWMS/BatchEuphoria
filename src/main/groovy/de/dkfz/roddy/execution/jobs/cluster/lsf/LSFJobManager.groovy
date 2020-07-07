@@ -46,10 +46,10 @@ class LSFJobManager extends AbstractLSFJobManager {
     static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
 
     /**
-     * LSF supports retrying the e.g. submission command multiple times. The default is to retry for a very long time,
-     * which is also blocking the execution of the thread. A single retry works usually, a single retry is very failing
-     * to frequently, in particular if there is load on the LSF system. The current number of LSB_NTRIES is a
-     * compromise.
+     * LSF supports retrying the submission command multiple times. The default is to retry for a very long time,
+     * which is also blocking the execution of the thread. A single retry usually works but is failing
+     * too frequently, in particular if there is load on the LSF system. The current number of LSB_NTRIES is a
+     * compromise between blocking endlessly and having no failover.
      *
      * @return a Bash environment variable declaration affecting LSF commands.
      */
