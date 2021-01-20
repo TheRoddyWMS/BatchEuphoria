@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs
@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import groovy.transform.CompileStatic
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong
  * When a job is executed with the JM, the used Command and a BEJobResult object will be created and added to this
  * object.
  */
-@groovy.transform.CompileStatic
+@CompileStatic
 class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
     public static final String PARM_JOBCREATIONCOUNTER = "JOB_CREATION_COUNTER"
@@ -30,9 +31,16 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     private BEJobID jobID
 
     /**
-     * The destriptive name of the job. Can be passed to the execution system.
+     * The descriptive name of the job. Can be passed to the execution system.
      */
     public final String jobName
+
+    /**
+     * The accounting name under which the job runs. It is the responsibility of the execution system to use this
+     * information.
+     */
+    public final String accountingName
+
 
     /**
      * Jobs can be marked as dirty if they are in a directed acyclic graph of job dependency modelling a workflow.
@@ -104,8 +112,18 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(BEJobID jobID, String jobName, File tool, String toolScript, String toolMD5, ResourceSet resourceSet, Collection<BEJob> parentJobs,
-          Map<String, String> parameters, BatchEuphoriaJobManager jobManager, JobLog jobLog, File workingDirectory) {
+    BEJob(BEJobID jobID,
+          String jobName,
+          File tool,
+          String toolScript,
+          String toolMD5,
+          ResourceSet resourceSet,
+          Collection<BEJob> parentJobs,
+          Map<String, String> parameters,
+          BatchEuphoriaJobManager jobManager,
+          JobLog jobLog,
+          File workingDirectory,
+          String accountingName = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -121,11 +139,13 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         assert jobLog: "jobLog not set"
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
+        this.accountingName = accountingName
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
     BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
-        this(jobID, null, null, null, null, null, [], [:], jobManager, JobLog.none(), null)
+        this(jobID, null, null, null, null, null, [],
+                [:] as Map<String, String>, jobManager, JobLog.none(), null, null)
     }
 
     BEJob addParentJobs(Collection<BEJob> parentJobs) {

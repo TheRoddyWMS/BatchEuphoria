@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
@@ -19,11 +19,8 @@ import groovy.transform.CompileStatic
 import org.junit.Before
 import org.junit.Test
 
-/**
- * Created by heinold on 26.03.17.
- */
 @CompileStatic
-class LSFCommandTest {
+class LSFSubmissionCommandTest {
 
 
     LSFJobManager jobManager
@@ -42,14 +39,14 @@ class LSFCommandTest {
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
         def mapOfVars = ["a": "a", "b": "b"]
         BEJob job = makeJob(mapOfVars)
-        LSFCommand cmd = new LSFCommand(jobManager, makeJob(mapOfVars),
+        LSFSubmissionCommand cmd = new LSFSubmissionCommand(jobManager, makeJob(mapOfVars),
                 "jobName", null, mapOfVars, null, "/tmp/test.sh")
-        assert cmd.assembleDependencyString([]) == ""
+        assert cmd.assembleDependencyParameter([]) == ""
     }
 
     @Test
     void testAssembleVariableExportParameters_nothing() {
-        LSFCommand cmd = new LSFCommand(jobManager, makeJob([:]),
+        LSFSubmissionCommand cmd = new LSFSubmissionCommand(jobManager, makeJob([:]),
                  "jobName", null, [:], null, "/tmp/test.sh")
         assert cmd.assembleVariableExportParameters() == "-env \"none\""
     }
@@ -57,14 +54,14 @@ class LSFCommandTest {
     @Test
     void testAssembleVariableExportParameters_onlyVars() {
         Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
-        LSFCommand cmd = new LSFCommand(jobManager, makeJob(mapOfVars),
+        LSFSubmissionCommand cmd = new LSFSubmissionCommand(jobManager, makeJob(mapOfVars),
                 "jobName", null, mapOfVars, null, "/tmp/test.sh")
         assert cmd.assembleVariableExportParameters() == "-env \"a=a, b\""
     }
 
     @Test
     void testAssembleVariableExportParameters_allVars() {
-        LSFCommand cmd = new LSFCommand(jobManager, makeJob([:] as LinkedHashMap<String, String>),
+        LSFSubmissionCommand cmd = new LSFSubmissionCommand(jobManager, makeJob([:] as LinkedHashMap<String, String>),
                 "jobName", null, [:], null, "/tmp/test.sh")
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-env \"all\""
@@ -73,7 +70,7 @@ class LSFCommandTest {
     @Test
     void testAssembleVariableExportParameters_allVarsAndExplicit() {
         Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
-        LSFCommand cmd = new LSFCommand(jobManager, makeJob(mapOfVars as LinkedHashMap<String, String>),
+        LSFSubmissionCommand cmd = new LSFSubmissionCommand(jobManager, makeJob(mapOfVars as LinkedHashMap<String, String>),
                 "jobName", null, mapOfVars, null, "/tmp/test.sh")
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-env \"all, a=a, b\""

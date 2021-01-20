@@ -1,20 +1,16 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
-package de.dkfz.roddy.execution.jobs.cluster.sge
+package de.dkfz.roddy.execution.jobs.cluster.pbs
 
-import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.COLON
@@ -23,12 +19,20 @@ import static de.dkfz.roddy.StringConstants.EMPTY
 import static de.dkfz.roddy.StringConstants.WHITESPACE
 
 /**
- * Created by michael on 20.05.14.
+ * This class is used to create and execute qsub commands
+ *
+ * @author michael
  */
 @CompileStatic
-class SGECommand extends GridEngineBasedCommand {
+class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
-    SGECommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+    public static final String NONE = "none"
+    public static final String AFTEROK = "afterok"
+    public static final String PARM_DEPENDS = " -W depend="
+
+    PBSSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+                         List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
+                         List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
@@ -48,18 +52,18 @@ class SGECommand extends GridEngineBasedCommand {
     }
 
     @Override
-    protected String getWorkingDirectory() {
-        return "-wd ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
+    protected String getWorkingDirectoryParameter() {
+        return "-w ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
     }
 
     @Override
     protected String getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
-            return "-o /dev/null -e /dev/null"
+            return "-k n"
         } else if (jobLog.out == jobLog.error) {
-            return "${joinLogParameter} -o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$JOB_ID')}\""
+            return "${joinLogParameter} -o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID')}\""
         } else {
-            return "-o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$JOB_ID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '\\$JOB_ID')}\""
+            return "-o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '\\$PBS_JOBID')}\""
         }
     }
 
@@ -69,41 +73,46 @@ class SGECommand extends GridEngineBasedCommand {
     }
 
     protected String getJoinLogParameter() {
-        return "-j y"
+        return "-j oe"
     }
 
     @Override
     protected String getGroupListParameter(String groupList) {
-        return EMPTY
+        return " -W group_list=" + groupList
     }
 
     @Override
     protected String getUmaskString(String umask) {
-        return WHITESPACE
+        return umask ? "-W umask=" + umask : ""
     }
 
     @Override
     String getDependencyParameterName() {
-        return "-hold_jid"
+        return AFTEROK
+    }
+
+    /**
+     * In this case i.e. afterokarray:...,afterok:
+     * A comma
+     * @return
+     */
+    @Override
+    protected String getDependencyOptionSeparator() {
+        return COLON
     }
 
     @Override
-    String getDependencyOptionSeparator() {
-        return WHITESPACE
-    }
-
-    @Override
-    String getDependencyIDSeparator() {
-        return COMMA
+    protected String getDependencyIDSeparator() {
+        return COLON
     }
 
     @Override
     protected String getAdditionalCommandParameters() {
-        return " -S /bin/bash "
+        return EMPTY
     }
 
     @Override
-    protected String assembleVariableExportParameters() {
+    String assembleVariableExportParameters() {
         List<String> parameterStrings = []
 
         if (passLocalEnvironment)
@@ -117,12 +126,12 @@ class SGECommand extends GridEngineBasedCommand {
         } as List<String>
 
         if (!environmentStrings.empty)
-            parameterStrings << "-v \"${environmentStrings.join(",")}\"".toString()
+            parameterStrings << "-v \"${environmentStrings.join(COMMA)}\"".toString()
 
-        return parameterStrings.join(" ")
+        return parameterStrings.join(WHITESPACE)
     }
 
     protected String getDependsSuperParameter() {
-        return WHITESPACE
+        PARM_DEPENDS
     }
 }

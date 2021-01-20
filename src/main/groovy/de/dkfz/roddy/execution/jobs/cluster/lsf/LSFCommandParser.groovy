@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
+ */
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import de.dkfz.roddy.BEException
@@ -14,7 +19,7 @@ import static de.dkfz.roddy.StringConstants.*
 
 /**
  * Used to convert commands from cli to e.g. GenericJobInfo
- * Created by kaercher on 15.05.17.
+ *
  */
 @CompileStatic
 class LSFCommandParser {

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
@@ -26,9 +26,8 @@ import java.time.ZonedDateTime
 /**
  * Factory for the management of LSF cluster systems.
  *
- *
  */
-@groovy.transform.CompileStatic
+@CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
     private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat finish_time\""
@@ -139,8 +138,11 @@ class LSFJobManager extends AbstractLSFJobManager {
         return js
     }
 
-    protected LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
+    protected Command createCommand(BEJob job) {
+        return new LSFSubmissionCommand(
+                this, job, job.jobName, [], job.parameters,
+                job.accountingName, job.parentJobIDs*.id,
+                job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override

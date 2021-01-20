@@ -40,7 +40,7 @@ class PBSCommandTest {
 
     @Test
     void testAssembleVariableExportParameters_nothing() {
-        PBSCommand cmd = new PBSCommand(jobManager, makeJob([:]),
+        PBSSubmissionCommand cmd = new PBSSubmissionCommand(jobManager, makeJob([:]),
                  "jobName", null, [:], null, "/tmp/test.sh")
         assert cmd.assembleVariableExportParameters() == ""
     }
@@ -48,14 +48,14 @@ class PBSCommandTest {
     @Test
     void testAssembleVariableExportParameters_onlyVars() {
         Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
-        PBSCommand cmd = new PBSCommand(jobManager, makeJob(mapOfVars),
+        PBSSubmissionCommand cmd = new PBSSubmissionCommand(jobManager, makeJob(mapOfVars),
                 "jobName", null, mapOfVars, null, "/tmp/test.sh")
         assert cmd.assembleVariableExportParameters() == "-v \"a=a,b\""
     }
 
     @Test
     void testAssembleVariableExportParameters_allVars() {
-        PBSCommand cmd = new PBSCommand(jobManager, makeJob([:] as LinkedHashMap<String, String>),
+        PBSSubmissionCommand cmd = new PBSSubmissionCommand(jobManager, makeJob([:] as LinkedHashMap<String, String>),
                 "jobName", null, [:], null, "/tmp/test.sh")
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-V"
@@ -64,7 +64,7 @@ class PBSCommandTest {
     @Test
     void testAssembleVariableExportParameters_allVarsAndExplicit() {
         Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
-        PBSCommand cmd = new PBSCommand(jobManager, makeJob(mapOfVars as LinkedHashMap<String, String>),
+        PBSSubmissionCommand cmd = new PBSSubmissionCommand(jobManager, makeJob(mapOfVars as LinkedHashMap<String, String>),
                 "jobName", null, mapOfVars, null, "/tmp/test.sh")
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-V -v \"a=a,b\""

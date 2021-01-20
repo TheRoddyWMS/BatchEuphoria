@@ -51,7 +51,8 @@ class BEJobResult implements Serializable {
 
     }
 
-    BEJobResult(Command command, BEJob job, ExecutionResult executionResult, File toolID, Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    BEJobResult(Command command, BEJob job, ExecutionResult executionResult, File toolID,
+                Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.command = command
         assert (null != job)
         this.job = job

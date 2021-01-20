@@ -1,10 +1,14 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
+
+import groovy.transform.CompileStatic
+
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
@@ -13,18 +17,25 @@ import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 
-import static de.dkfz.roddy.StringConstants.EMPTY
-
 /**
- * This class is used to create and execute bsub commands
- *
- * Created by kaercher on 12.04.17.
+ * This class is used to create and execute bsub commands.
  */
-@groovy.transform.CompileStatic
-class LSFCommand extends SubmissionCommand {
+@CompileStatic
+class LSFSubmissionCommand extends SubmissionCommand {
 
-    LSFCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+    final String accountingName
+
+    LSFSubmissionCommand(
+            BatchEuphoriaJobManager parentJobManager,
+            BEJob job,
+            String jobName,
+            List<ProcessingParameters> processingParameters,
+            Map<String, String> environmentVariables,
+            String accountingName,
+            List<String> dependencyIDs,
+            String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
+        this.accountingName = accountingName
     }
 
     @Override
@@ -38,18 +49,23 @@ class LSFCommand extends SubmissionCommand {
     }
 
     @Override
+    protected String getAccountingNameParameter() {
+        return job.accountingName != null ? "-P '${job.accountingName}'" : ""
+    }
+
+    @Override
     protected String getAccountParameter(String account) {
         return EMPTY
     }
 
     @Override
-    protected String getWorkingDirectory() {
-        return "-cwd ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
+    protected String getWorkingDirectoryParameter() {
+        return "-cwd ${job.workingDirectory ?: WORKING_DIRECTORY_DEFAULT}" as String
     }
 
     @Override
     protected String getLoggingParameter(JobLog jobLog) {
-        getLoggingParameters(jobLog)
+        return getLoggingParameters(jobLog)
     }
 
     static getLoggingParameters(JobLog jobLog) {
@@ -69,7 +85,7 @@ class LSFCommand extends SubmissionCommand {
 
     @Override
     String getGroupListParameter(String groupList) {
-        return " -G" + groupList
+        return "-G" + groupList
     }
 
     @Override
@@ -78,7 +94,7 @@ class LSFCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String assembleDependencyString(List<BEJobID> jobIds) {
+    protected String assembleDependencyParameter(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
             String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")

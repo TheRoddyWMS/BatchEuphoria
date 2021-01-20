@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster
@@ -10,7 +10,11 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.*
+import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
+import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
+import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import groovy.transform.CompileStatic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

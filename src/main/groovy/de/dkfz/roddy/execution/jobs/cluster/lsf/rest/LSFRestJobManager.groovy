@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
@@ -13,7 +13,7 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.lsf.AbstractLSFJobManager
-import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFCommand
+import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFSubmissionCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
@@ -32,7 +32,6 @@ import java.time.format.DateTimeFormatter
 /**
  * REST job manager for cluster systems.
  *
- * Created by kaercher on 22.03.17.
  */
 @CompileStatic
 class LSFRestJobManager extends AbstractLSFJobManager {
@@ -94,7 +93,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
      */
     @Override
-    protected RestCommand createCommand(BEJob job) {
+    protected RestSubmissionCommand createCommand(BEJob job) {
         List<Header> headers = []
         headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
@@ -124,7 +123,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         ContentWithHeaders requestPartsWithHeader = joinParts(requestParts)
         headers.addAll(requestPartsWithHeader.headers)
 
-        return new RestCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestCommand.HttpMethod.HTTPPOST)
+        return new RestSubmissionCommand(URI_JOB_SUBMIT, requestPartsWithHeader.content, headers, RestSubmissionCommand.HttpMethod.HTTPPOST)
     }
 
     @Override
@@ -216,7 +215,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
             resources.append(" affinity[core(${cores})]")
         }
         resources.append("' ")
-        String logging = LSFCommand.getLoggingParameters(job.jobLog)
+        String logging = LSFSubmissionCommand.getLoggingParameters(job.jobLog)
         String cwd = job.getWorkingDirectory() ? "-cwd ${job.getWorkingDirectory()} " : ""
 
         String parentJobs = ""
@@ -264,7 +263,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         String body = "<UserCmd>" +
                 "<cmd>${cmd}</cmd>" +
                 "</UserCmd>"
-        return restExecutionService.execute(new RestCommand(URI_USER_COMMAND, body, headers, RestCommand.HttpMethod.HTTPPOST)) as RestResult
+        return restExecutionService.execute(new RestSubmissionCommand(URI_USER_COMMAND, body, headers, RestSubmissionCommand.HttpMethod.HTTPPOST)) as RestResult
     }
 
     /**
@@ -276,7 +275,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         Map<BEJobID, GenericJobInfo> jobDetailsResult = [:]
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
+        RestResult result = restExecutionService.execute(new RestSubmissionCommand(URI_JOB_DETAILS + prepareURLWithParam(jobList), null, headers, RestSubmissionCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
 
@@ -300,7 +299,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-        RestResult result = restExecutionService.execute(new RestCommand(URI_JOB_BASICS, null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
+        RestResult result = restExecutionService.execute(new RestSubmissionCommand(URI_JOB_BASICS, null, headers, RestSubmissionCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
             Map<BEJobID, JobState> resultStates = [:]
@@ -395,7 +394,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
-        def result = restExecutionService.execute(new RestCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList.keySet() as List), null, headers, RestCommand.HttpMethod.HTTPGET)) as RestResult
+        def result = restExecutionService.execute(new RestSubmissionCommand(URI_JOB_HISTORY + "?ids=" + prepareURLWithParam(jobList.keySet() as List), null, headers, RestSubmissionCommand.HttpMethod.HTTPGET)) as RestResult
         if (result.isSuccessful()) {
             GPathResult res = new XmlSlurper().parseText(result.body)
 
@@ -436,10 +435,12 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         return jobDetailsResult
     }
 
+
     @Override
     String getSubmissionCommand() {
         return null
     }
+
 
     @Override
     String getQueryJobStatesCommand() {
