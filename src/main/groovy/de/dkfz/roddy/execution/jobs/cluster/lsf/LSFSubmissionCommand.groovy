@@ -23,19 +23,15 @@ import de.dkfz.roddy.execution.jobs.SubmissionCommand
 @CompileStatic
 class LSFSubmissionCommand extends SubmissionCommand {
 
-    final String accountingName
-
     LSFSubmissionCommand(
             BatchEuphoriaJobManager parentJobManager,
             BEJob job,
             String jobName,
             List<ProcessingParameters> processingParameters,
             Map<String, String> environmentVariables,
-            String accountingName,
             List<String> dependencyIDs,
             String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
-        this.accountingName = accountingName
     }
 
     @Override
@@ -50,7 +46,7 @@ class LSFSubmissionCommand extends SubmissionCommand {
 
     @Override
     protected String getAccountingNameParameter() {
-        return job.accountingName != null ? "-P '${job.accountingName}'" : ""
+        return job.accountingName != null ? "-P \"${job.accountingName}\"" : ""
     }
 
     @Override

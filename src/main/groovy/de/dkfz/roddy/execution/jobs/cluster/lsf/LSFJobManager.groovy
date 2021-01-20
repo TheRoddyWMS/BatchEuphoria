@@ -140,8 +140,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     protected Command createCommand(BEJob job) {
         return new LSFSubmissionCommand(
-                this, job, job.jobName, [], job.parameters,
-                job.accountingName, job.parentJobIDs*.id,
+                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
                 job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
