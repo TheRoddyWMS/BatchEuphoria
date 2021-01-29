@@ -87,6 +87,7 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
-* 0.0.8
+* 0.0.12
 
    - accounting name added to Job and implementation of `-P` parameter for `bsub` (LSF).
+   - fixed year-inference unit test

@@ -39,7 +39,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
      * The accounting name under which the job runs. It is the responsibility of the execution system to use this
      * information.
      */
-    public final String accountingName
+    public final String accountingProject
 
 
     /**
@@ -123,7 +123,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
           BatchEuphoriaJobManager jobManager,
           JobLog jobLog,
           File workingDirectory,
-          String accountingName = null) {
+          String accountingProject = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -139,7 +139,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         assert jobLog: "jobLog not set"
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
-        this.accountingName = accountingName
+        this.accountingProject = accountingProject
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
@@ -160,23 +160,23 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this
     }
 
-    BEJobResult getRunResult() {
+    JR getRunResult() {
         return this.runResult
     }
 
-    BEJob setRunResult(BEJobResult result) {
+    BEJob setRunResult(JR result) {
         assert (this.jobID == result.jobID)
         this.runResult = result
         return this
     }
 
     boolean isFakeJob() {
-        getJobID().toString()
+        jobID.toString()
         if (this instanceof FakeBEJob)
             return true
         if (jobName != null && jobName.equals("Fakejob"))
             return true
-        String jobID = getJobID()
+        String jobID = jobID
         if (jobID == null)
             return false
         return BEFakeJobID.isFakeJobID(jobID)

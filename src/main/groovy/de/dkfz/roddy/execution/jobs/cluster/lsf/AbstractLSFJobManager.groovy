@@ -58,6 +58,18 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
         return Collections.unmodifiableList(["LSB_*", "LS_*"])
     }
 
+    /**
+     * LSF supports retrying the submission command multiple times. The default is to retry for a very long time,
+     * which is also blocking the execution of the thread. A single retry usually works but is failing
+     * too frequently, in particular if there is load on the LSF system. The current number of LSB_NTRIES is a
+     * compromise between blocking endlessly and having no failover.
+     *
+     * @return a Bash environment variable declaration affecting LSF commands.
+     */
+    final static String getEnvironmentString() {
+        return "LSB_NTRIES=5"
+    }
+
     private String durationToLSFWallTime(Duration wallTime) {
         if (wallTime) {
             return String.valueOf(wallTime.toMinutes())

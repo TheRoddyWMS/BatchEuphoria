@@ -46,7 +46,7 @@ class LSFSubmissionCommand extends SubmissionCommand {
 
     @Override
     protected String getAccountingNameParameter() {
-        return job.accountingName != null ? "-P \"${job.accountingName}\"" : ""
+        return job.accountingProject != null ? "-P \"${job.accountingProject}\"" : ""
     }
 
     @Override
@@ -108,7 +108,7 @@ class LSFSubmissionCommand extends SubmissionCommand {
 
     @Override
     protected String getEnvironmentString() {
-        return LSFJobManager.getEnvironmentString()
+        return LSFJobManager.environmentString
     }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
