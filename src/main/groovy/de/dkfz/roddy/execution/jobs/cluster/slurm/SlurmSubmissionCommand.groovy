@@ -86,6 +86,11 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
+    protected String getEnvironmentString() {
+        return ""
+    }
+
+    @Override
     protected String assembleVariableExportParameters() {
         return null
     }

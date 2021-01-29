@@ -106,6 +106,11 @@ class LSFSubmissionCommand extends SubmissionCommand {
         return EMPTY
     }
 
+    @Override
+    protected String getEnvironmentString() {
+        return LSFJobManager.getEnvironmentString()
+    }
+
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
     /**
      *  Note that variable quoting is left to the client code. The whole -env parameter-value is quoted with ".

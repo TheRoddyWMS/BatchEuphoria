@@ -172,6 +172,11 @@ class SubmissionCommandTest extends Specification {
             protected String getAdditionalCommandParameters() {
                 return null
             }
+
+            @Override
+            protected String getEnvironmentString() {
+                return ""
+            }
         }
     }
 

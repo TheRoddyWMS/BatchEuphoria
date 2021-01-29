@@ -101,6 +101,11 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
+    protected String getEnvironmentString() {
+        return ""
+    }
+
+    @Override
     protected String assembleVariableExportParameters() {
         List<String> parameterStrings = []
 

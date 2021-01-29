@@ -11,17 +11,12 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.tools.BashUtils
-import de.dkfz.roddy.tools.BufferUnit
-import de.dkfz.roddy.tools.BufferValue
-import de.dkfz.roddy.tools.DateTimeHelper
+import de.dkfz.roddy.tools.*
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 
-import java.time.DateTimeException
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.ZonedDateTime
+import java.time.*
+import java.util.regex.Matcher
 
 /**
  * Factory for the management of LSF cluster systems.
@@ -30,6 +25,16 @@ import java.time.ZonedDateTime
 @CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
+    static final Map<String, Integer> MONTH_VALUE = ["Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6, "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12]
+
+    final static String DAY = /(?<day>\d{1,2})/
+    final static String MONTH = /(?<month>${MONTH_VALUE.keySet().join("|")})/
+    final static String YEAR = /(?<year>\d{4})/
+    final static String TIME = /(?<time>(?<hour>\d{1,2}):(?<minute>\d{1,2})(:(?<second>\d{1,2}))?)/
+    final static String LSF_SUFFIX = /(?<lsfSuffix>[L])/
+
+    final static String TIMESTAMP_PATTERN = /${MONTH}\s+${DAY}\s+${TIME}(\s+${YEAR})?(\s+${LSF_SUFFIX})?/
+
     private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat finish_time\""
     private static final String LSF_COMMAND_QUERY_EXTENDED_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
@@ -37,7 +42,19 @@ class LSFJobManager extends AbstractLSFJobManager {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    static final DateTimeHelper dateTimeHelper = new DateTimeHelper("MMM ppd HH:mm yyyy", Locale.ENGLISH)
+    static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
+
+    /**
+     * LSF supports retrying the submission command multiple times. The default is to retry for a very long time,
+     * which is also blocking the execution of the thread. A single retry usually works but is failing
+     * too frequently, in particular if there is load on the LSF system. The current number of LSB_NTRIES is a
+     * compromise between blocking endlessly and having no failover.
+     *
+     * @return a Bash environment variable declaration affecting LSF commands.
+     */
+    final static String getEnvironmentString() {
+        return "LSB_NTRIES=5"
+    }
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -64,32 +81,31 @@ class LSFJobManager extends AbstractLSFJobManager {
      *    * Long (with status flag)
      */
     ZonedDateTime parseTime(String str) {
-        // Prevent NullPointerException, will throw a DateTimeParserException later
-        if (str == null) str = ""
-        String dateForParser = str
-        if (str.size() == "Jan 01 01:00".size()) {
-            // Lets start and see, if the date is reported in its short version, if so, add the year.
-            dateForParser = "${str} ${LocalDateTime.now().year}"
-        } else if (str.size() == "Jan 01 01:00 L".size()) {
-            // Here we need to strip away the status first, then append the current year.
-            dateForParser = "${stripAwayStatusInfo(str)} ${LocalDateTime.now().year}"
-        } else if (str.size() == "Jan 01 01:00 1000".size()) {
-            // Easy enough, just keep it like it is.
-            dateForParser = str
-        } else if (str.size() == "Jan 01 01:00 1000 L".size()) {
-            // Again, strip away the status info.
-            dateForParser = stripAwayStatusInfo(str)
+        Integer day, month, year, hour, minute, second
+        Matcher matcher = str =~ TIMESTAMP_PATTERN
+        if (matcher.matches()) {
+            Closure<Integer> saveGet = { String field, Integer fallback = 0 ->
+                return matcher.group(field) ? Integer.parseInt(matcher.group(field)) : fallback
+            }
+            day = Integer.parseInt(matcher.group("day"))
+            month = MONTH_VALUE[matcher.group("month")]
+            year = saveGet("year", LocalDateTime.now().year)
+            hour = Integer.parseInt(matcher.group("hour"))
+            minute = Integer.parseInt(matcher.group("minute"))
+            second = saveGet("second", 0)
         } else {
             throw new DateTimeException("The string ${str} is not a valid LSF datetime string and cannot be parsed.")
         }
 
-        // Finally we try to parse the date. Lets see if it works. If not, an exception is thrown.
-        ZonedDateTime date = dateTimeHelper.parseToZonedDateTime(dateForParser)
+        ZonedDateTime now = ZonedDateTime.now()
+
+        LocalDateTime localDateTime = LocalDateTime.of(year, month, day, hour, minute, second)
+        ZonedDateTime date = ZonedDateTime.ofLocal(localDateTime, now.zone, now.offset)
 
         // If LSF is not configured to report the date, the (kind of reasonable) assumption made here is that if
         // the job's submission time (assuming the current year) is later than the current time, then the job was
         // submitted last year.
-        if (date > ZonedDateTime.now()) {
+        if (date > now) {
             return date.minusYears(1)
         }
         return date
@@ -159,8 +175,9 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
-        StringBuilder queryCommand = new StringBuilder(extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
-
+        StringBuilder queryCommand = new StringBuilder()
+        queryCommand << "${getEnvironmentString()} "
+        queryCommand << (extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
             queryCommand << " -u $userIDForQueries "
@@ -320,32 +337,40 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
     }
 
-    private File getBjobsFile(String s, BEJobID jobID, String type) {
-        if (!s) {
+    /**
+     * LSF doesn't return the actual path to the the log file, but the exact path that was passed to it. This path might
+     * be be a either a directory or a regular file. To be consistent with other systems, that always return the actual
+     * path, we try to find out the correct path to the log file here.
+     * @param path the log path passed to LSF
+     * @param jobID ID of the job this log file belongs to
+     * @param fileTypeSuffix "out" or "err" depending on the log
+     * @return path to the log file
+     */
+    private File getBjobsFile(String path, BEJobID jobID, String fileTypeSuffix) {
+        if (!path) {
             return null
-        } else if (executionService.execute("stat -c %F ${BashUtils.strongQuote(s)}").firstLine == "directory") {
-            return new File(s, "${jobID.getId()}.${type}")
+        } else if (executionService.execute("LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null").firstLine == "directory") {
+            return new File(path, "${jobID.getId()}.${fileTypeSuffix}")
         } else {
-            return new File(s)
+            return new File(path)
         }
     }
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
+        String command = "${getEnvironmentString()} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        String command = "bresume ${jobIDs*.id.join(" ")}"
+        String command = "${getEnvironmentString()} bresume ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false)
     }
 
     @Override
     String parseJobID(String commandOutput) {
         String result = commandOutput.find(/<[0-9]+>/)
-        //ToDo 'Group <resUsers>: Pending job threshold reached. Retrying in 60 seconds...'
         if (result == null)
             throw new BEException("Could not parse raw ID from: '${commandOutput}'")
         String exID = result.substring(1, result.length() - 1)
