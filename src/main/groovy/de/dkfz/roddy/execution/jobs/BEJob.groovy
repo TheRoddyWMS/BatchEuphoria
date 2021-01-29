@@ -90,7 +90,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * Stores the result when the job was executed.
      */
-    private BEJobResult runResult
+    private JR runResult
 
     //////////////////////////////////////////////////////////////
     // Now come some job / command specific settings

@@ -83,5 +83,10 @@ You can find [here](https://github.com/eilslabs/BatchEuphoria/blob/develop/src/m
 
 ## Integration Tests
 
-To start the integration tests, please fill in host and user settings (password for lsf rest) into integrationTest.properties. Then start the tests like you'd start any unit tests.
+To start the integration tests, please fill in host and user settings (password for lsf rest) into integrationTest.properties. Then start the tests like you'd start.
 
+# Change Logs
+
+* 0.0.8
+
+   - accounting name added to Job and implementation of `-P` parameter for `bsub` (LSF).
