@@ -133,9 +133,9 @@ class RestExecutionService implements BEExecutionService {
 
 
     RestResult execute(RestSubmissionCommand restCommand, boolean waitFor = true) {
-        if (waitFor) {
+        if (!waitFor) {
             throw new IllegalArgumentException(
-                    "RestExecutionService.execute does not implement asynchronous execution with waitFor = true")
+                    "RestExecutionService.execute does not implement asynchronous execution with waitFor = false")
         }
         String url = BASE_URL + restCommand.resource
         log.debug("request url: {}", url)
