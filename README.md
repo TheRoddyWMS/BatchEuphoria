@@ -1,5 +1,6 @@
+[![Build Status - Travis](https://travis-ci.org/TheRoddyWMS/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/TheRoddyWMS/BatchEuphoria) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria?ref=badge_shield)
+
 # BatchEuphoria
-[![Build Status - Travis](https://travis-ci.org/TheRoddyWMS/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/TheRoddyWMS/BatchEuphoria)
 
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
 Currently this library supports the following job schedulers:
