@@ -91,7 +91,7 @@ class LSFSubmissionCommandSpec extends Specification {
         null, [:], null, "/tmp/test.sh")
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none"  -J jobname -H  -cwd $HOME -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none"  -J jobname -H -cwd $HOME -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
     }
 
     def "command with accounting name" () {
@@ -100,7 +100,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobname",null, [:], null, "/tmp/test.sh")
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none" -P "accountingProject" -J jobname -H  -cwd $HOME -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none" -P "accountingProject" -J jobname -H -cwd $HOME -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
     }
 
 

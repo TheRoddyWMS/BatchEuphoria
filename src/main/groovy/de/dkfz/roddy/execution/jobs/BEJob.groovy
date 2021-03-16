@@ -39,7 +39,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
      * The accounting name under which the job runs. It is the responsibility of the execution system to use this
      * information.
      */
-    public final String accountingProject
+    public final String accountingName
 
 
     /**
@@ -99,11 +99,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     protected File workingDirectory
 
     /**
-     * Set this, to have use a custom account for the job. (If supported by the target job manager)
-     */
-    String customUserAccount
-
-    /**
      * Set this to use a custom queue for the job. (If supported by the target job manager)
      */
     String customQueue
@@ -123,7 +118,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
           BatchEuphoriaJobManager jobManager,
           JobLog jobLog,
           File workingDirectory,
-          String accountingProject = null) {
+          String accountingName = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -139,7 +134,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         assert jobLog: "jobLog not set"
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
-        this.accountingProject = accountingProject
+        this.accountingName = accountingName
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 

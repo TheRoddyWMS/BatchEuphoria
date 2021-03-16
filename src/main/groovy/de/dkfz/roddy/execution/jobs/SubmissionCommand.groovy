@@ -69,16 +69,14 @@ abstract class SubmissionCommand extends Command {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
-        String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         // collect parameters for job submission
         List<String> parameters = []
         parameters << assembleVariableExportParameters()
-        parameters << getAccountingNameParameter()
+        parameters << getAccountNameParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
-        parameters << getAccountParameter(accountName)
         parameters << getWorkingDirectoryParameter()
         parameters << getLoggingParameter(job.jobLog)
         parameters << getEmailParameter(email)
@@ -111,13 +109,11 @@ abstract class SubmissionCommand extends Command {
 
     abstract protected String getJobNameParameter()
 
-    protected String getAccountingNameParameter() {
-        return ""
-    }
-
     abstract protected String getHoldParameter()
 
-    abstract protected String getAccountParameter(String account)
+    protected String getAccountNameParameter() {
+        return ""
+    }
 
     abstract protected String getWorkingDirectoryParameter()
 

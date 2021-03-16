@@ -51,11 +51,6 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected String getAccountParameter(String account) {
-        return null
-    }
-
-    @Override
     protected String getWorkingDirectoryParameter() {
         return null
     }

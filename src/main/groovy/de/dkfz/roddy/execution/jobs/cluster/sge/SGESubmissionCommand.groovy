@@ -41,8 +41,8 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected String getAccountParameter(String account) {
-        return account ? "-A ${account}" as String : ""
+    protected String getAccountNameParameter() {
+        return job.accountingName != null ? "-A \"${job.accountingName}\"" : ""
     }
 
     @Override

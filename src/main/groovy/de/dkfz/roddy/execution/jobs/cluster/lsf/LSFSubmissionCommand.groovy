@@ -45,13 +45,8 @@ class LSFSubmissionCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String getAccountingNameParameter() {
-        return job.accountingProject != null ? "-P \"${job.accountingProject}\"" : ""
-    }
-
-    @Override
-    protected String getAccountParameter(String account) {
-        return EMPTY
+    protected String getAccountNameParameter() {
+        return job.accountingName != null ? "-P \"${job.accountingName}\"" : ""
     }
 
     @Override

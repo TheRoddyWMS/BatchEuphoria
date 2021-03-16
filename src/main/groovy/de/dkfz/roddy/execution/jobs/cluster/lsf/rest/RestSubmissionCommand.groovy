@@ -104,9 +104,4 @@ class RestSubmissionCommand extends SubmissionCommand {
         throw new NotImplementedException()
     }
 
-    @Override
-    protected String getAccountParameter(String account) {
-        throw new NotImplementedException()
-    }
-
 }
