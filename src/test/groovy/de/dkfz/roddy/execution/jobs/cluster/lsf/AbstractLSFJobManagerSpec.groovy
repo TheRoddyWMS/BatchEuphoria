@@ -6,12 +6,8 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.JobManagerOptionsBuilder
-import de.dkfz.roddy.tools.BufferValue
-import org.junit.Test
 import spock.lang.Shared
 import spock.lang.Specification
-
-import static org.junit.Assert.*
 
 class AbstractLSFJobManagerSpec extends Specification {
 

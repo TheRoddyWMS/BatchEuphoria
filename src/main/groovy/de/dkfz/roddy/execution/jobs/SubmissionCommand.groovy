@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 package de.dkfz.roddy.execution.jobs
 
@@ -17,7 +17,8 @@ abstract class SubmissionCommand extends Command {
 
     /**
      *  Should the local environment during the submission be copied to the execution hosts?
-     *  This is an Optional, because the actual value will be calculated from both the Job/Command comfiguration and the JobManager.
+     *  This is an Optional, because the actual value will be calculated from both the Job/Command configuration and
+     *  the JobManager.
      */
     Optional<Boolean> passEnvironment = Optional.empty()
 
@@ -38,8 +39,10 @@ abstract class SubmissionCommand extends Command {
      * @param environmentVariables
      *
      */
-    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters,
-                                Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+                                List<ProcessingParameters> processingParameters,
+                                Map<String, String> environmentVariables, List<String> dependencyIDs,
+                                String command) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
         this.command = command
@@ -66,40 +69,39 @@ abstract class SubmissionCommand extends Command {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
-        String accountName = job.customUserAccount ?: parentJobManager.getUserAccount()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         // collect parameters for job submission
         List<String> parameters = []
         parameters << assembleVariableExportParameters()
+        parameters << getAccountNameParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
-        parameters << getAccountParameter(accountName)
-        parameters << getWorkingDirectory()
+        parameters << getWorkingDirectoryParameter()
         parameters << getLoggingParameter(job.jobLog)
         parameters << getEmailParameter(email)
         if (groupList && groupList != "UNDEFINED") parameters << getGroupListParameter(groupList)
         parameters << getUmaskString(umask)
         parameters << assembleProcessingCommands()
-        parameters << assembleDependencyString(creatingJob.parentJobIDs)
+        parameters << assembleDependencyParameter(creatingJob.parentJobIDs)
         parameters << getAdditionalCommandParameters()
 
         // create job submission command call
         StringBuilder command = new StringBuilder(EMPTY)
 
-        if (getEnvironmentString()) {
-            command << "${getEnvironmentString()} "
+        if (environmentString) {
+            command << "${environmentString} "
         }
 
-        if (job.getToolScript()) {
-            command << "echo " << BashUtils.strongQuote(job.getToolScript()) << " | "
+        if (job.toolScript) {
+            command << "echo " << BashUtils.strongQuote(job.toolScript) << " | "
         }
 
-        command << parentJobManager.getSubmissionCommand()
+        command << parentJobManager.submissionCommand
         command << " ${parameters.join(" ")} "
 
-        if (job.getTool()) {
-            command << " " << job.getTool().getAbsolutePath()
+        if (job.tool) {
+            command << " " << job.tool.absolutePath
         }
 
         return command
@@ -109,9 +111,11 @@ abstract class SubmissionCommand extends Command {
 
     abstract protected String getHoldParameter()
 
-    abstract protected String getAccountParameter(String account)
+    protected String getAccountNameParameter() {
+        return ""
+    }
 
-    abstract protected String getWorkingDirectory()
+    abstract protected String getWorkingDirectoryParameter()
 
     abstract protected String getLoggingParameter(JobLog jobLog)
 
@@ -121,7 +125,7 @@ abstract class SubmissionCommand extends Command {
 
     abstract protected String getUmaskString(String umask)
 
-    abstract protected String assembleDependencyString(List<BEJobID> jobIds)
+    abstract protected String assembleDependencyParameter(List<BEJobID> jobIds)
 
     abstract protected String getAdditionalCommandParameters()
 

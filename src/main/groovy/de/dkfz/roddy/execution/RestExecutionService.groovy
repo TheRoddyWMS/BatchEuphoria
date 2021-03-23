@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution
@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.Command
-import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestCommand
+import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestSubmissionCommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
 import groovy.transform.CompileStatic
 import org.apache.commons.io.IOUtils
@@ -52,14 +52,13 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 /**
- * Execution service for cluster systems with REST services. It is currently only used for LSF
- * Created by kaercher on 12.01.17.
+ * Execution service for cluster systems with REST services. It is currently only used for LSF.
  */
 @CompileStatic
 class RestExecutionService implements BEExecutionService {
     final Logger log = LoggerFactory.getLogger(RestExecutionService.class)
 
-    public boolean isCertAuth = false //true if certificate authentication is used
+    public boolean isCertAuth = false // true if certificate authentication is used
 
     private String token = ""
     private LocalDateTime tokenDate = LocalDateTime.now()
@@ -108,7 +107,7 @@ class RestExecutionService implements BEExecutionService {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
-        RestResult result = execute(new RestCommand(RESOURCE_LOGON, body, headers, RestCommand.HttpMethod.HTTPPOST))
+        RestResult result = execute(new RestSubmissionCommand(RESOURCE_LOGON, body, headers, RestSubmissionCommand.HttpMethod.HTTPPOST))
         log.debug("response status: {} ", result.statusCode)
         if (result.statusCode != 200)
             throw new AuthenticationException("Could not authenticate, returned HTTP status code: ${result.statusCode}")
@@ -123,7 +122,7 @@ class RestExecutionService implements BEExecutionService {
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
 
-        RestResult result = execute(new RestCommand(RESOURCE_LOGOUT, null, headers, RestCommand.HttpMethod.HTTPPOST))
+        RestResult result = execute(new RestSubmissionCommand(RESOURCE_LOGOUT, null, headers, RestSubmissionCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
             throw new AuthenticationException("Could not log out, returned HTTP status code: ${result.statusCode}")
 
@@ -133,7 +132,11 @@ class RestExecutionService implements BEExecutionService {
     }
 
 
-    RestResult execute(RestCommand restCommand) {
+    RestResult execute(RestSubmissionCommand restCommand, boolean waitFor = true) {
+        if (!waitFor) {
+            throw new IllegalArgumentException(
+                    "RestExecutionService.execute does not implement asynchronous execution with waitFor = false")
+        }
         String url = BASE_URL + restCommand.resource
         log.debug("request url: {}", url)
         CloseableHttpClient httpClient
@@ -144,7 +147,7 @@ class RestExecutionService implements BEExecutionService {
         }
         def httpRequest
 
-        if (restCommand.httpMethod == RestCommand.HttpMethod.HTTPPOST) {
+        if (restCommand.httpMethod == RestSubmissionCommand.HttpMethod.HTTPPOST) {
             httpRequest = new HttpPost(url)
             if (restCommand.requestBody)
                 log.debug("request body: {}", restCommand.requestBody)
@@ -159,7 +162,7 @@ class RestExecutionService implements BEExecutionService {
 
         if (restCommand.requestHeaders) {
             log.debug("request headers: {}", restCommand.requestHeaders)
-            httpRequest.setHeaders(restCommand.requestHeaders.toArray(new Header[0]))
+            httpRequest.setHeaders(restCommand.requestHeaders.toArray(new Header[0]) as Header)
         }
 
 
@@ -182,9 +185,7 @@ class RestExecutionService implements BEExecutionService {
         } finally {
             response.close()
         }
-
     }
-
 
     private CloseableHttpClient createHttpClientWithCredentialAuth() {
         //TODO Currently all certificates are trusted for testing. It has to be fixed.
@@ -239,19 +240,26 @@ class RestExecutionService implements BEExecutionService {
 
     }
 
+
     @Override
     boolean isAvailable() {
         List<Header> headers = []
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
 
-        RestResult result = execute(new RestCommand(RESOURCE_PING, null, headers, RestCommand.HttpMethod.HTTPPOST))
+        RestResult result = execute(new RestSubmissionCommand(RESOURCE_PING, null, headers, RestSubmissionCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
             throw new BEException("Web service is not available, returned HTTP status code: ${result.statusCode}")
 
         return true
     }
 
+    /** TODO Refactor (violated LSP and parallel inheritance hierarchy smell)
+     *  The existence of this method with just an exception is an indication that there is a faulty design, because
+     *  the subclass (RestExecutionService) cannot handle all arguments that are valid for the superclass method,
+     *  which is a violation of the Liskov-Substitution-Principle. This may be related to the bad "parallel inheritance
+     *  hierarchy" smell.
+     */
     @Override
     ExecutionResult execute(Command command, boolean waitFor = null) {
         throw new NotImplementedException()
@@ -262,8 +270,10 @@ class RestExecutionService implements BEExecutionService {
         throw new NotImplementedException()
     }
 
+
     @Override
     File queryWorkingDirectory() {
         throw new NotImplementedException()
     }
+
 }

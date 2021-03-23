@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
@@ -21,9 +21,8 @@ import java.util.regex.Matcher
 /**
  * Factory for the management of LSF cluster systems.
  *
- *
  */
-@groovy.transform.CompileStatic
+@CompileStatic
 class LSFJobManager extends AbstractLSFJobManager {
 
     static final Map<String, Integer> MONTH_VALUE = ["Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6, "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12]
@@ -44,18 +43,6 @@ class LSFJobManager extends AbstractLSFJobManager {
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
     static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
-
-    /**
-     * LSF supports retrying the submission command multiple times. The default is to retry for a very long time,
-     * which is also blocking the execution of the thread. A single retry usually works but is failing
-     * too frequently, in particular if there is load on the LSF system. The current number of LSB_NTRIES is a
-     * compromise between blocking endlessly and having no failover.
-     *
-     * @return a Bash environment variable declaration affecting LSF commands.
-     */
-    final static String getEnvironmentString() {
-        return "LSB_NTRIES=5"
-    }
 
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -81,7 +68,7 @@ class LSFJobManager extends AbstractLSFJobManager {
      *    * Short (with status flag)
      *    * Long (with status flag)
      */
-    ZonedDateTime parseTime(String str) {
+    ZonedDateTime parseTime(String str, ZonedDateTime referenceDate = ZonedDateTime.now()) {
         Integer day, month, year, hour, minute, second
         Matcher matcher = str =~ TIMESTAMP_PATTERN
         if (matcher.matches()) {
@@ -98,15 +85,13 @@ class LSFJobManager extends AbstractLSFJobManager {
             throw new DateTimeException("The string ${str} is not a valid LSF datetime string and cannot be parsed.")
         }
 
-        ZonedDateTime now = ZonedDateTime.now()
-
         LocalDateTime localDateTime = LocalDateTime.of(year, month, day, hour, minute, second)
-        ZonedDateTime date = ZonedDateTime.ofLocal(localDateTime, now.zone, now.offset)
+        ZonedDateTime date = ZonedDateTime.ofLocal(localDateTime, referenceDate.zone, referenceDate.offset)
 
         // If LSF is not configured to report the date, the (kind of reasonable) assumption made here is that if
-        // the job's submission time (assuming the current year) is later than the current time, then the job was
-        // submitted last year.
-        if (date > now) {
+        // the job's submission time (assuming the current year) is later than the time of the request (usually just
+        // now), then the job was submitted last year.
+        if (date > referenceDate) {
             return date.minusYears(1)
         }
         return date
@@ -155,8 +140,10 @@ class LSFJobManager extends AbstractLSFJobManager {
         return js
     }
 
-    protected LSFCommand createCommand(BEJob job) {
-        return new LSFCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
+    protected Command createCommand(BEJob job) {
+        return new LSFSubmissionCommand(
+                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
+                job.tool?.absolutePath ?: job.toolScript)
     }
 
     @Override
@@ -175,7 +162,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
         StringBuilder queryCommand = new StringBuilder()
-        queryCommand << "${getEnvironmentString()} "
+        queryCommand << "${environmentString} "
         queryCommand << (extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)

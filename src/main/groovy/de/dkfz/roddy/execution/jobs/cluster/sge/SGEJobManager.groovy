@@ -7,36 +7,26 @@
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
 import com.google.common.collect.LinkedHashMultimap
-import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
-import groovy.util.slurpersupport.GPathResult
-
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.regex.Matcher
 
 /**
  * @author michael
  */
 @groovy.transform.CompileStatic
-class SGEJobManager extends GridEngineBasedJobManager<SGECommand> {
+class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
 
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
     @Override
-    protected SGECommand createCommand(BEJob job) {
-        return new SGECommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
+    protected SGESubmissionCommand createCommand(BEJob job) {
+        return new SGESubmissionCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override

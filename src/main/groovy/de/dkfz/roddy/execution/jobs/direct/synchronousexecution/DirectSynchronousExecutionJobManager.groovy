@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
@@ -14,8 +14,7 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import groovy.transform.CompileStatic
 
-/**
- */
+
 @CompileStatic
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
@@ -108,12 +107,12 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         BEJobID jobID
         ExecutionResult res
 
-        /** For direct execution, there might be parent jobs, which  failed or were aborted. Don't start, if this is the case.  **/
+        /** For direct execution, there may be parent jobs, which failed or were aborted.
+         *  Don't start, if this is the case.  **/
         if (job.parentJobs.findAll {
             BEJob pJob = it as BEJob
-            !(pJob.getJobState() == JobState.COMPLETED_SUCCESSFUL || pJob.getJobState() == JobState.UNKNOWN)
-        }
-        ) {
+            !(pJob.jobState == JobState.COMPLETED_SUCCESSFUL || pJob.jobState == JobState.UNKNOWN)
+        }) {
             jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
             command.setJobID(jobID)
         } else {

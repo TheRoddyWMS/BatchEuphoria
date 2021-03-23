@@ -1,18 +1,15 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution
 
-import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.Command
 import groovy.transform.CompileStatic
 
-/**
- * Created by kaercher on 12.01.17.
- */
 @CompileStatic
 interface BEExecutionService {
 

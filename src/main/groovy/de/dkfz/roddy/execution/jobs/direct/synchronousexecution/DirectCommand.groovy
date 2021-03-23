@@ -10,16 +10,14 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
-
-import static de.dkfz.roddy.StringConstants.BRACE_RIGHT
-import static de.dkfz.roddy.StringConstants.DOLLAR_LEFTBRACE
+import groovy.transform.CompileStatic
 
 /**
  * Local commands run locally and, if the workflow requires and supports it, concurrent.
  * They are called in a local process with waitFor after each call. Dependencies are therefore automatically resolved.
  * Roddy waits for the processes to exit.
  */
-@groovy.transform.CompileStatic
+@CompileStatic
 class DirectCommand extends Command {
 
     private final List<ProcessingParameters> processingParameters
@@ -28,7 +26,7 @@ class DirectCommand extends Command {
 
 
     DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, List<ProcessingParameters> processingParameters, @Deprecated String command = null) {
-        super(parentManager, job, job.tool.getName(), job.parameters)
+        super(parentManager, job, job.tool.name, job.parameters)
         this.processingParameters = processingParameters
         this.command = command ?: job.tool.absolutePath
     }

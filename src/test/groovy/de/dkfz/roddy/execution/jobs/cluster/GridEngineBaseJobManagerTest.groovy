@@ -10,8 +10,6 @@ import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.TestHelper
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSCommand
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import de.dkfz.roddy.tools.TimeUnit
@@ -122,7 +120,7 @@ class GridEngineBaseJobManagerTest {
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
         def mapOfVars = ["a": "a", "b": "b"]
-        GridEngineBasedCommand cmd = new GridEngineBasedCommand(jobManager, makeJob(mapOfVars),
+        GridEngineBasedSubmissionCommand cmd = new GridEngineBasedSubmissionCommand(jobManager, makeJob(mapOfVars),
                 "jobName", null, mapOfVars, null, "/tmp/test.sh") {
             @Override
             protected String getDependsSuperParameter() {
@@ -155,12 +153,7 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected String getAccountParameter(String account) {
-                return null
-            }
-
-            @Override
-            protected String getWorkingDirectory() {
+            protected String getWorkingDirectoryParameter() {
                 return null
             }
 
@@ -199,7 +192,7 @@ class GridEngineBaseJobManagerTest {
                 return null
             }
         }
-        assert cmd.assembleDependencyString([]) == ""
+        assert cmd.assembleDependencyParameter([]) == ""
     }
 
 }

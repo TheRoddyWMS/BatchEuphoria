@@ -1,23 +1,19 @@
 /*
- * Copyright (c) 2016 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
-import de.dkfz.roddy.StringConstants
+
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
-import de.dkfz.roddy.execution.jobs.cluster.pbs.PBSJobManager
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.COMMA
 import static de.dkfz.roddy.StringConstants.EMPTY
 import static de.dkfz.roddy.StringConstants.WHITESPACE
@@ -26,9 +22,11 @@ import static de.dkfz.roddy.StringConstants.WHITESPACE
  * Created by michael on 20.05.14.
  */
 @CompileStatic
-class SGECommand extends GridEngineBasedCommand {
+class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
 
-    SGECommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+    SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+                         List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
+                         List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
@@ -43,12 +41,12 @@ class SGECommand extends GridEngineBasedCommand {
     }
 
     @Override
-    protected String getAccountParameter(String account) {
-        return account ? "-A ${account}" as String : ""
+    protected String getAccountNameParameter() {
+        return job.accountingName != null ? "-A \"${job.accountingName}\"" : ""
     }
 
     @Override
-    protected String getWorkingDirectory() {
+    protected String getWorkingDirectoryParameter() {
         return "-wd ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
     }
 

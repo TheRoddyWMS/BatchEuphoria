@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
@@ -9,18 +9,15 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.jobs.*
+import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
 
 import java.time.Duration
 
-/**
- * Created by kaercher on 22.03.17.
- */
 @CompileStatic
-abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
+abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionCommand> {
 
     AbstractLSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
@@ -59,6 +56,18 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFCommand> {
     @Override
     List<String> getEnvironmentVariableGlobs() {
         return Collections.unmodifiableList(["LSB_*", "LS_*"])
+    }
+
+    /**
+     * LSF supports retrying the submission command multiple times. The default is to retry for a very long time,
+     * which is also blocking the execution of the thread. A single retry usually works but is failing
+     * too frequently, in particular if there is load on the LSF system. The current number of LSB_NTRIES is a
+     * compromise between blocking endlessly and having no failover.
+     *
+     * @return a Bash environment variable declaration affecting LSF commands.
+     */
+    final static String getEnvironmentString() {
+        return "LSB_NTRIES=5"
     }
 
     private String durationToLSFWallTime(Duration wallTime) {

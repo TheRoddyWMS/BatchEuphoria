@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs
@@ -19,10 +19,11 @@ import java.time.LocalDateTime
 import java.util.concurrent.TimeoutException
 
 /**
- * Basic factory and manager class for BEJob and Command management
+ * Basic factory and manager class for BEJob and Command management.
  * Currently supported are qsub via PBS or SGE. Other cluster systems or custom job submission / execution system are possible.
  *
- * @author michael
+ * TODO Refactor: Violates Single-Responsibility Principle (factory and manager) and parallel inherit. hierarchy with Command.
+ * TODO Refactor: Co-/Contravariance works. This does not have to be a generic class. Remove the template.
  */
 @CompileStatic
 abstract class BatchEuphoriaJobManager<C extends Command> {

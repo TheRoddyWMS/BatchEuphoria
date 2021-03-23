@@ -1,18 +1,17 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
+import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.COMMA
@@ -24,14 +23,16 @@ import static de.dkfz.roddy.StringConstants.WHITESPACE
  *
  * @author michael
  */
-@groovy.transform.CompileStatic
-class PBSCommand extends GridEngineBasedCommand {
+@CompileStatic
+class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     public static final String NONE = "none"
     public static final String AFTEROK = "afterok"
     public static final String PARM_DEPENDS = " -W depend="
 
-    PBSCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+    PBSSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+                         List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
+                         List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
@@ -46,12 +47,12 @@ class PBSCommand extends GridEngineBasedCommand {
     }
 
     @Override
-    protected String getAccountParameter(String account) {
-        return account ? "-A ${account}" as String : ""
+    protected String getAccountNameParameter() {
+        return job.accountingName != null ? "-A \"${job.accountingName}\"" : ""
     }
 
     @Override
-    protected String getWorkingDirectory() {
+    protected String getWorkingDirectoryParameter() {
         return "-w ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
     }
 

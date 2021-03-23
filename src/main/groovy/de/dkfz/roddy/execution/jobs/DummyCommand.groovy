@@ -1,16 +1,13 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021  German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs
 
 import groovy.transform.CompileStatic
 
-/**
- * Created by heinold on 23.02.17.
- */
 @CompileStatic
 class DummyCommand extends Command {
 

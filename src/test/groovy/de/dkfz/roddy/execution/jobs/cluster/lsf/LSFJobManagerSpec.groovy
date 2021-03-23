@@ -242,12 +242,14 @@ class LSFJobManagerSpec extends Specification {
         ZonedDateTime laterLastYear = laterTime.minusYears(1)
 
         then:
-        manager.parseTime(zonedDateTimeToString(earlierTime)).truncatedTo(ChronoUnit.MINUTES).equals(earlierTime.truncatedTo(ChronoUnit.MINUTES))
-        manager.parseTime(zonedDateTimeToString(laterTime)).truncatedTo(ChronoUnit.MINUTES).equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
+        manager.parseTime(zonedDateTimeToString(earlierTime)).truncatedTo(ChronoUnit.MINUTES).
+                equals(earlierTime.truncatedTo(ChronoUnit.MINUTES))
+        manager.parseTime(zonedDateTimeToString(laterTime)).truncatedTo(ChronoUnit.MINUTES).
+                equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
     }
 
     @Unroll
-    void "parseTime, parses all known formats (#month #day #hour:#minute:#second #year #suffix)"() {
+    void "parseTime, parses all known formats (#month #day #hour:#minute:#second #year #suffix #expectedYear)"() {
         given:
         def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
 
@@ -261,25 +263,26 @@ class LSFJobManagerSpec extends Specification {
         String timestamp = [month, day, time, year, suffix].findAll { it != "" }.join(" ")
 
         when:
-        ZonedDateTime result = manager.parseTime(timestamp)
+        ZonedDateTime result = manager.parseTime(timestamp, referenceDate)
         LocalDateTime resultTime = result.toLocalDateTime()
 
         then:
-        result.getMonthValue() == LSFJobManager.MONTH_VALUE[month]
-        result.getDayOfMonth() == Integer.parseInt(day)
-        result.getYear() == (year ? Integer.parseInt(year) : LocalDateTime.now().year)
-        resultTime.getHour() == Integer.parseInt(hour)
-        resultTime.getMinute() == Integer.parseInt(minute)
-        resultTime.getSecond() == (second ? Integer.parseInt(second) : 0)
+        result.monthValue == LSFJobManager.MONTH_VALUE[month]
+        result.dayOfMonth == Integer.parseInt(day)
+        result.year == expectedYear
+        resultTime.hour == Integer.parseInt(hour)
+        resultTime.minute == Integer.parseInt(minute)
+        resultTime.second == (second ? Integer.parseInt(second) : 0)
 
         where:
-        month | day  | hour | minute | second | year   | suffix |_
-        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     |_
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    |_
-        "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     |_
-        "Apr" | "04" | "01" | "02"   | ""     | "1000" | "L"    |_
-        "May" | "5"  | "01" | "02"   | "03"   | "1000" | ""     |_
-        "Jun" | "6"  | "01" | "02"   | "03"   | "1000" | "L"    |_
+        month | day  | hour | minute | second | year   | suffix | expectedYear | referenceDate
+        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | 2021         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2020         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2021         | ZonedDateTime.of(2021, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     | 1000         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Apr" | "04" | "01" | "02"   | ""     | "1001" | "L"    | 1001         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "May" | "5"  | "01" | "02"   | "03"   | "1002" | ""     | 1002         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Jun" | "6"  | "01" | "02"   | "03"   | "1003" | "L"    | 1003         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
     }
 
 //    void "test queryExtendedJobStateById with overdue date"() {
@@ -338,7 +341,7 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.tool == new File("ls -l")
         jobInfo.jobID == new BEJobID("22005")
 
-        // The year-parsing/inferrence is checked in another test. Here just take the parsed value.
+        // The year-parsing/inference is checked in another test. Here just take the parsed value.
         ZonedDateTime testTime = ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
         jobInfo.submitTime == testTime
         jobInfo.eligibleTime == null
@@ -410,12 +413,12 @@ class LSFJobManagerSpec extends Specification {
 //        def json = jsonFile.text
 //
 //        when:
-//        LocalDateTime referenceTime = LocalDateTime.now()
+//        LocalDateTime referenceDate = LocalDateTime.now()
 //        int minutesToSubtract = 20
 //        def records = LSFJobManager.convertBJobsJsonOutputToResultMap(json)
 //        records.each {
 //            def id, def record ->
-//                def timeForRecord = LocalDateTime.of(referenceTime.year, referenceTime.month, referenceTime.dayOfMonth, referenceTime.hour, referenceTime.minute, referenceTime.second).minusMinutes(minutesToSubtract)
+//                def timeForRecord = LocalDateTime.of(referenceDate.year, referenceDate.month, referenceDate.dayOfMonth, referenceDate.hour, referenceDate.minute, referenceDate.second).minusMinutes(minutesToSubtract)
 //                minutesToSubtract -= 4
 //                record["FINISH_TIME"] = localDateTimeToLSFString(timeForRecord)
 //        }

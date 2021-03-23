@@ -1,22 +1,20 @@
 /*
- * Copyright (c) 2018 German Cancer Research Center (DKFZ).
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.slurm
 
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedCommand
+import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
 @CompileStatic
-class SlurmCommand extends GridEngineBasedCommand {
+class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
@@ -26,7 +24,9 @@ class SlurmCommand extends GridEngineBasedCommand {
      * @param jobName
      * @param processingParameters @param environmentVariables @param dependencyIDs @param command
      */
-    SlurmCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables, List<String> dependencyIDs, String command) {
+    SlurmSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+                           List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
+                           List<String> dependencyIDs, String command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
@@ -51,12 +51,7 @@ class SlurmCommand extends GridEngineBasedCommand {
     }
 
     @Override
-    protected String getAccountParameter(String account) {
-        return null
-    }
-
-    @Override
-    protected String getWorkingDirectory() {
+    protected String getWorkingDirectoryParameter() {
         return null
     }
 

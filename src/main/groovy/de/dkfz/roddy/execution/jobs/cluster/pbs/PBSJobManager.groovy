@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
- * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
@@ -17,20 +17,19 @@ import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
+import groovy.transform.CompileStatic
 
-/**
- * @author michael
- */
-@groovy.transform.CompileStatic
-class PBSJobManager extends GridEngineBasedJobManager<PBSCommand> {
+@CompileStatic
+class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
 
     PBSJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
 
     @Override
-    protected PBSCommand createCommand(BEJob job) {
-        return new PBSCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
+    protected PBSSubmissionCommand createCommand(BEJob job) {
+        return new PBSSubmissionCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
+                job.tool?.getAbsolutePath() ?: job.getToolScript())
     }
 
     @Override

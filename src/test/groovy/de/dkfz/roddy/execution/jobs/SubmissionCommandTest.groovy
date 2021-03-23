@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
+ *
+ * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
+ */
+
 package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.BEException
@@ -8,8 +14,8 @@ import spock.lang.Specification
 
 class SubmissionCommandTest extends Specification {
 
-    static de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager makeJobManager(final boolean passEnvironment) {
-        return new BatchEuphoriaJobManager<SubmissionCommand>(
+    static BatchEuphoriaJobManager makeJobManager(final boolean passEnvironment) {
+        return new BatchEuphoriaJobManager(
                 TestHelper.makeExecutionService(),
                 JobManagerOptions.create().setPassEnvironment(passEnvironment).build()) {
 
@@ -123,12 +129,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String getAccountParameter(String account) {
-                return null
-            }
-
-            @Override
-            protected String getWorkingDirectory() {
+            protected String getWorkingDirectoryParameter() {
                 return null
             }
 
@@ -153,7 +154,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected String assembleDependencyString(List<BEJobID> jobIds) {
+            protected String assembleDependencyParameter(List<BEJobID> jobIds) {
                 return null
             }
 
