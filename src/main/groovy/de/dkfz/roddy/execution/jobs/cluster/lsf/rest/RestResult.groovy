@@ -27,8 +27,8 @@ class RestResult extends ExecutionResult {
      * @param body - body of the respond
      * @param statusCode - http status code
      */
-    RestResult(Header[] headers, String body, int statusCode) {
-        super(statusCode == 200, statusCode, [body], null)
+    RestResult(RestSubmissionCommand command, Header[] headers, String body, int statusCode) {
+        super(commandSummaryList(command), statusCode == 200, statusCode, [body], [], null)
         this.headers = headers
     }
 
@@ -42,7 +42,20 @@ class RestResult extends ExecutionResult {
     }
 
     String getBody() {
-        resultLines.join("\n")
+        stdout.join("\n")
     }
+
+    private static List<String> commandSummaryList(RestSubmissionCommand command) {
+        List<String> summary =
+                ["resource=$command.resource",
+                 "method=$command.httpMethod",
+                 "headers=[" +
+                         command.requestHeaders.collect {
+                             "${it.name}=${it.value}"
+                         }.join(", ") + "]",
+                 "body=$command.requestBody"] as List<String>
+        return summary
+    }
+
 
 }

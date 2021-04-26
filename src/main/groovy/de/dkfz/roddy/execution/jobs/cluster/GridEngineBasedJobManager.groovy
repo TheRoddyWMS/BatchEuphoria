@@ -69,12 +69,12 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
             queryCommand << " -u $userIDForQueries "
 
         ExecutionResult er = executionService.execute(queryCommand.toString())
-        List<String> resultLines = er.resultLines
+        List<String> resultLines = er.stdout
 
         Map<BEJobID, JobState> result = [:]
 
         if (!er.successful) {
-            throw new BEException("The execution of ${queryCommand} failed.\n\t" + er.resultLines?.join("\n\t")?.toString())
+            throw new BEException("Execution failed. ${er.toStatusLine()}")
         } else {
             if (resultLines.size() > 2) {
 
@@ -110,9 +110,9 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         ExecutionResult er = executionService.execute(qStatCommand.toString())
 
         if (er != null && er.successful) {
-            queriedExtendedStates = this.processQstatOutputFromXML(er.resultLines.join("\n"))
+            queriedExtendedStates = this.processQstatOutputFromXML(er.stdout.join("\n"))
         } else {
-            throw new BEException("Extended job states couldn't be retrieved. \n Returned status code:${er.exitCode} \n ${qStatCommand.toString()} \n\t result:${er.resultLines.join("\n\t")}")
+            throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
         }
         return queriedExtendedStates
     }

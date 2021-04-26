@@ -173,10 +173,10 @@ class LSFJobManager extends AbstractLSFJobManager {
         }
 
         ExecutionResult er = executionService.execute(queryCommand.toString())
-        List<String> resultLines = er.resultLines
+        List<String> resultLines = er.stdout
 
         if (!er.successful) {
-            String error = "Job status couldn't be updated. \n command: ${queryCommand} \n status code: ${er.exitCode} \n result: ${er.resultLines}"
+            String error = "Job status couldn't be updated. \n command: ${er.toStatusLine()}"
             throw new BEException(error)
         }
 
@@ -335,7 +335,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     private File getBjobsFile(String path, BEJobID jobID, String fileTypeSuffix) {
         if (!path) {
             return null
-        } else if (executionService.execute("LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null").firstLine == "directory") {
+        } else if (executionService.execute("LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null").firstStdoutLine == "directory") {
             return new File(path, "${jobID.getId()}.${fileTypeSuffix}")
         } else {
             return new File(path)
