@@ -181,7 +181,7 @@ class RestExecutionService implements BEExecutionService {
                 }
             }
             this.tokenDate = LocalDateTime.now()
-            return new RestResult(response.getAllHeaders(), result, response.getStatusLine().getStatusCode())
+            return new RestResult(restCommand, response.getAllHeaders(), result, response.getStatusLine().getStatusCode())
         } finally {
             response.close()
         }

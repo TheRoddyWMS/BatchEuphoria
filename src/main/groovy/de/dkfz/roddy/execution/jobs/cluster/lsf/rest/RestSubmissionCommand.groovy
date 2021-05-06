@@ -9,7 +9,6 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
-import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFJobManager
 import groovy.transform.CompileStatic
 import org.apache.http.Header
 import sun.reflect.generics.reflectiveObjects.NotImplementedException

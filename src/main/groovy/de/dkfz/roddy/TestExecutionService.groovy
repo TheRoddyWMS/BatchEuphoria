@@ -49,11 +49,6 @@ class TestExecutionService implements BEExecutionService {
     }
 
     @Override
-    ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError, OutputStream outputStream) {
-        return null
-    }
-
-    @Override
     boolean isAvailable() {
         return true
     }
