@@ -303,15 +303,19 @@ class LSFJobManagerSpec extends Specification {
 
     void "test queryExtendedJobStateById"() {
         given:
-        JobManagerOptions parms = JobManagerOptions.create().setMaxTrackingTimeForFinishedJobs(Duration.ofDays(360000)).build()
+        JobManagerOptions parms = JobManagerOptions.create().
+                setMaxTrackingTimeForFinishedJobs(Duration.ofDays(360000)).build()
         def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
         BEExecutionService testExecutionService = [
-                execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
+                execute: { String s ->
+                    new ExecutionResult(["executed/command"], true, 0, jsonFile.readLines(), [])
+                }
         ] as BEExecutionService
         LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
 
         when:
-        Map<BEJobID, GenericJobInfo> result = manager.queryExtendedJobStateById([new BEJobID("22005")])
+        Map<BEJobID, GenericJobInfo> result =
+                manager.queryExtendedJobStateById([new BEJobID("22005")])
 
         then:
         result.size() == 1
