@@ -39,12 +39,32 @@ class PBSCommandParserTest {
             }
 
             @Override
+            ExecutionResult execute(Command command, Duration timeout) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
+                return null
+            }
+
+            @Override
             ExecutionResult execute(String command) {
                 return null
             }
 
             @Override
             ExecutionResult execute(String command, boolean waitFor) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command, Duration timeout) {
+                return null
+            }
+
+            @Override
+            ExecutionResult execute(String command, boolean waitFor, Duration timeout) {
                 return null
             }
 

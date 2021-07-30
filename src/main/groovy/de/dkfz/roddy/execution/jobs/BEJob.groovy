@@ -195,15 +195,21 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     static List<BEJob> jobsWithUniqueValidJobId(List<BEJob> jobs) {
-        return jobs.findAll { !it.isFakeJob() }.sort { it.getJobID().toString() }.unique { it.getJobID().toString() }
+        return jobs.
+                findAll { !it.fakeJob }.
+                sort { it.jobID.toString() }.
+                unique { it.jobID.toString() }
     }
 
     static List<BEJobID> uniqueValidJobIDs(List<BEJobID> jobIDs) {
-        return jobIDs.findAll { it.isValidID() }.sort { it.toString() }.unique { it.toString() }
+        return jobIDs.
+                findAll { it.validID }.
+                sort { it.toString() }.
+                unique { it.toString() }
     }
 
     List<BEJobID> getParentJobIDs() {
-        return parentJobs.collect { it.getJobID() }
+        return parentJobs.collect { it.jobID }
     }
 
     File getWorkingDirectory() {

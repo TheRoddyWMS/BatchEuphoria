@@ -14,6 +14,8 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
 import groovy.transform.CompileStatic
 
+import java.time.Duration
+
 
 @CompileStatic
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
@@ -38,7 +40,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs,
+                                                    Duration timeout = Duration.ZERO) {
         return [:]
     }
 
@@ -92,12 +95,22 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs) {
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs,
+                                        Duration timeout = Duration.ZERO) {
         (jobs?.collectEntries { BEJob job -> [job, JobState.UNKNOWN] } ?: [:]) as Map<BEJob, JobState>
     }
 
+    /**
+     * Submit job with the specified wallTime.
+     *
+     * The interface and behaviour deviates from the one of other JobManagers. The other job
+     * managers are rather for asynchronous execution with a swift submission command (bsub, qsub)
+     * that directly returns. The DirectSynchronousJobManager, as the name says, submits jobs
+     * synchronously and the jobs's runtime usually are much longer than the execution time of
+     * bsub/qsub.
+     */
     @Override
-    BEJobResult submitJob(BEJob job) {
+    BEJobResult submitJob(BEJob job, Duration walltime = Duration.ZERO) {
         if (forbidFurtherJobSubmission) {
             throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
         }
@@ -119,7 +132,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
             jobID = new BEJobID(job.jobCreationCounter.toString()) // Needs to be set before job.run, because console output will be wrong otherwise.
             command.job.resetJobID(jobID)
             command.setJobID(jobID)
-            res = executionService.execute(command)
+            res = executionService.execute(command, walltime)
             if (!res.successful)
                 throw new BEException("Execution of Job ${jobID} failed: ${res.toStatusLine()}")
         }
@@ -167,7 +180,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
     }
 
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
+                                                           Duration timeout = Duration.ZERO) {
         return [:]
     }
 }

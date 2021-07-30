@@ -231,7 +231,11 @@ class LSFJobManagerSpec extends Specification {
 
         JobManagerOptions parms = JobManagerOptions.create().build()
         BEExecutionService testExecutionService = [
-                execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
+                execute: { String s, Duration timeout ->
+                    new ExecutionResult(
+                            [s], true, 0,
+                            jsonFile.readLines(), null)
+                }
         ] as BEExecutionService
         LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
 
@@ -255,7 +259,10 @@ class LSFJobManagerSpec extends Specification {
 
         JobManagerOptions parms = JobManagerOptions.create().build()
         BEExecutionService testExecutionService = [
-                execute: { String s -> new ExecutionResult(true, 0, jsonFile.readLines(), null) }
+                execute: { String s, Duration timeout -> new ExecutionResult(
+                        [s], true, 0,
+                        jsonFile.readLines(), null)
+                }
         ] as BEExecutionService
         LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
 
@@ -307,8 +314,9 @@ class LSFJobManagerSpec extends Specification {
                 setMaxTrackingTimeForFinishedJobs(Duration.ofDays(360000)).build()
         def jsonFile = getResourceFile("queryExtendedJobStateByIdTest.json")
         BEExecutionService testExecutionService = [
-                execute: { String s ->
-                    new ExecutionResult(["executed/command"], true, 0, jsonFile.readLines(), [])
+                execute: { String s, Duration timeout -> new ExecutionResult(
+                        [s], true, 0,
+                        jsonFile.readLines(), [])
                 }
         ] as BEExecutionService
         LSFJobManager manager = new LSFJobManager(testExecutionService, parms)
@@ -463,7 +471,8 @@ class LSFJobManagerSpec extends Specification {
         lines << "  ]"
         lines << "}"
         println("Entries ${entries}")
-        def result = LSFJobManager.convertBJobsJsonOutputToResultMap(lines.join("\n"))
+        def result =
+                LSFJobManager.convertBJobsJsonOutputToResultMap(lines.join("\n"))
 
         then:
         result.size() == entries

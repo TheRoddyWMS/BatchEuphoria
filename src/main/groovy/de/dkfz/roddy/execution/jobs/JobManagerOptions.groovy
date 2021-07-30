@@ -75,6 +75,16 @@ class JobManagerOptions {
      */
     ZoneId timeZoneId
 
+    /**
+     * The timeout used for most commands. By default this is Duration.ZERO, which means no timout
+     * (a job cannot have an execution time of zero).
+     *
+     * Note: This only applies to some commands. Generally, querying the active jobs with bjobs
+     *       or similar may take longer because there can be a lot of jobs on the culster. For that
+     *       reason, bjobs has its own timeout that needs to be set for every execution.
+     */
+    Duration commandTimeout
+
 
     static JobManagerOptionsBuilder create() {
         new JobManagerOptionsBuilder()
@@ -101,5 +111,6 @@ class JobManagerOptionsBuilder {
         passEnvironment = false     // Setting this to true should be a conscious decision. Therefore the default 'false'.
         additionalOptions = [:]
         timeZoneId = ZoneId.systemDefault()
+        commandTimeout = Duration.ZERO
     }
 }

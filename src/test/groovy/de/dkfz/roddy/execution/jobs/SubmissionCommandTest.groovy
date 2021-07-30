@@ -12,6 +12,8 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
 
+import java.time.Duration
+
 class SubmissionCommandTest extends Specification {
 
     static BatchEuphoriaJobManager makeJobManager(final boolean passEnvironment) {
@@ -106,6 +108,16 @@ class SubmissionCommandTest extends Specification {
 
             @Override
             protected Map<BEJobID, JobState> queryJobStates(List jobIDs) {
+                return null
+            }
+
+            @Override
+            Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List jobIds, Duration timeout) {
+                return null
+            }
+
+            @Override
+            protected Map<BEJobID, JobState> queryJobStates(List jobIDs, Duration timeout) {
                 return null
             }
         }

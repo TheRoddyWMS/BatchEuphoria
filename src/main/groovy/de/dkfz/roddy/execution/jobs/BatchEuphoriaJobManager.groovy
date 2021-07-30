@@ -79,6 +79,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean requestStorageIsEnabled
     boolean passEnvironment
     boolean holdJobsIsEnabled
+    Duration commandTimeout
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         assert (executionService)
@@ -102,6 +103,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         this.requestStorageIsEnabled = parms.requestStorageIsEnabled
         this.passEnvironment = parms.passEnvironment
         this.holdJobsIsEnabled = Optional.ofNullable(parms.holdJobIsEnabled).orElse(getDefaultForHoldJobsEnabled())
+        this.commandTimeout = parms.commandTimeout
 
         if (parms.createDaemon) {
             createUpdateDaemonThread()
@@ -125,7 +127,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
         }
         Command command = createCommand(job)
-        ExecutionResult executionResult = executionService.execute(command)
+        ExecutionResult executionResult = executionService.execute(command, commandTimeout)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         addToListOfStartedJobs(job)
         return job.runResult
@@ -175,8 +177,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobs
      * @return
      */
-    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false) {
-        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobs*.jobID, forceUpdate)
+    Map<BEJob, JobState> queryJobStatus(List<BEJob> jobs, boolean forceUpdate = false,
+                                        Duration timeout = Duration.ZERO) {
+        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobs*.jobID, forceUpdate, timeout)
         return jobs.collectEntries { BEJob job ->
             [job, job.jobState == JobState.ABORTED ? JobState.ABORTED :
                     result[job.jobID] ?: JobState.UNKNOWN]
@@ -193,8 +196,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobIds
      * @return
      */
-    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false) {
-        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobIds, forceUpdate)
+    Map<BEJobID, JobState> queryJobStatusById(List<BEJobID> jobIds, boolean forceUpdate = false,
+                                              Duration timeout = Duration.ZERO) {
+        Map<BEJobID, JobState> result = queryJobStatesUsingCache(jobIds, forceUpdate, timeout)
         return jobIds.collectEntries { BEJobID jobId -> [jobId, result[jobId] ?: JobState.UNKNOWN] }
     }
 
@@ -203,8 +207,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      *
      * @return
      */
-    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false) {
-        return queryJobStatesUsingCache(null, forceUpdate)
+    Map<BEJobID, JobState> queryJobStatusAll(boolean forceUpdate = false,
+                                             Duration timeout = Duration.ZERO) {
+        return queryJobStatesUsingCache(null, forceUpdate, timeout)
     }
 
     /**
@@ -216,11 +221,15 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobs
      * @return
      */
-    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs) {
+    Map<BEJob, GenericJobInfo> queryExtendedJobState(List<BEJob> jobs,
+                                                     Duration timeout = Duration.ZERO) {
 
-        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(jobs.collect { it.getJobID() })
+        Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(
+                jobs.collect { it.getJobID() },
+                timeout)
         return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries {
-            Map.Entry<BEJobID, GenericJobInfo> it -> [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value]
+            Map.Entry<BEJobID, GenericJobInfo> it ->
+                [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value]
         }
     }
 
@@ -233,7 +242,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
      * @param jobIds
      * @return
      */
-    abstract Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds)
+    abstract Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(
+            List<BEJobID> jobIds,
+            Duration timeout = Duration.ZERO)
 
     void addToListOfStartedJobs(BEJob job) {
         if (updateDaemonThread) {
@@ -342,7 +353,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
 
     abstract protected JobState parseJobState(String stateString)
 
-    abstract protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs)
+    abstract protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs,
+                                                             Duration timeout = Duration.ZERO)
 
     abstract protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs)
 
@@ -405,11 +417,13 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         }
     }
 
-    private Map<BEJobID, JobState> queryJobStatesUsingCache(List<BEJobID> jobIDs, boolean forceUpdate) {
+    private Map<BEJobID, JobState> queryJobStatesUsingCache(List<BEJobID> jobIDs,
+                                                            boolean forceUpdate,
+                                                            Duration timeout = Duration.ZERO) {
         if (forceUpdate || lastCacheUpdate == null || cacheUpdateInterval == Duration.ZERO ||
                 Duration.between(lastCacheUpdate, LocalDateTime.now()) > cacheUpdateInterval) {
             synchronized (cacheStatesLock) {
-                cachedStates = queryJobStates(jobIDs)
+                cachedStates = queryJobStates(jobIDs, timeout)
             }
             lastCacheUpdate = LocalDateTime.now()
         }

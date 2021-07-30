@@ -112,10 +112,11 @@ class LSFJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
+                                                           Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (BEJobID id : jobIds) {
-            Map<String, String> jobDetails = runBjobs([id], true)[id]
+            Map<String, String> jobDetails = runBjobs([id], true, timeout)[id]
             if (jobDetails) // Ignore filtered / nonexistent ids
                 queriedExtendedStates.put(id, convertJobDetailsMapToGenericJobInfoObject(jobDetails))
         }
@@ -151,8 +152,9 @@ class LSFJobManager extends AbstractLSFJobManager {
         return new LSFCommandParser(commandString).toGenericJobInfo();
     }
 
-    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
-        def bjobs = runBjobs(jobIDs, false)
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs,
+                                                    Duration timeout = Duration.ZERO) {
+        def bjobs = runBjobs(jobIDs, false, timeout)
         bjobs.collectEntries { BEJobID jobID, Object value ->
             JobState js = parseJobState(value["STAT"] as String)
             [(jobID): js]
@@ -160,7 +162,8 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     }
 
-    Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended) {
+    Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended,
+                                               Duration timeout = Duration.ZERO) {
         StringBuilder queryCommand = new StringBuilder()
         queryCommand << "${environmentString} "
         queryCommand << (extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
@@ -172,7 +175,7 @@ class LSFJobManager extends AbstractLSFJobManager {
             queryCommand << " ${jobIDs*.id.join(" ")} "
         }
 
-        ExecutionResult er = executionService.execute(queryCommand.toString())
+        ExecutionResult er = executionService.execute(queryCommand.toString(), timeout)
         List<String> resultLines = er.stdout
 
         if (!er.successful) {
@@ -335,7 +338,9 @@ class LSFJobManager extends AbstractLSFJobManager {
     private File getBjobsFile(String path, BEJobID jobID, String fileTypeSuffix) {
         if (!path) {
             return null
-        } else if (executionService.execute("LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null").firstStdoutLine == "directory") {
+        } else if (executionService.execute(
+                "LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null",
+                commandTimeout).firstStdoutLine == "directory") {
             return new File(path, "${jobID.getId()}.${fileTypeSuffix}")
         } else {
             return new File(path)
@@ -345,13 +350,13 @@ class LSFJobManager extends AbstractLSFJobManager {
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
         String command = "${getEnvironmentString()} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
-        return executionService.execute(command, false)
+        return executionService.execute(command, false, commandTimeout)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
         String command = "${getEnvironmentString()} bresume ${jobIDs*.id.join(" ")}"
-        return executionService.execute(command, false)
+        return executionService.execute(command, false, commandTimeout)
     }
 
     @Override
@@ -377,4 +382,5 @@ class LSFJobManager extends AbstractLSFJobManager {
     String getExtendedQueryJobStatesCommand() {
         return null
     }
+
 }
