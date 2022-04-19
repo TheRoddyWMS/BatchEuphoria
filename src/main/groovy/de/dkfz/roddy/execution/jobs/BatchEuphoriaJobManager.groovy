@@ -403,7 +403,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                 BEJob job = activeJobs.get(id)
 
                 job.setJobState(jobState)
-                if (!jobState.isPlannedOrRunning()) {
+                if (!(jobState.planned || jobState.running)) {
                     synchronized (updateDaemonListeners) {
                         updateDaemonListeners.each { it.jobEnded(job, jobState) }
                     }

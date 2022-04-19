@@ -35,10 +35,11 @@ class LSFJobManagerSpec extends Specification {
         LSFJobManager jm = new LSFJobManager(testExecutionService, parms)
 
         Object parsedJson = new JsonSlurper().parseText(getResourceFile(resourceFile).text)
-        List records = (List) parsedJson.getAt("RECORDS")
+        List records = (List) parsedJson["RECORDS"]
 
         when:
-        GenericJobInfo jobInfo = jm.convertJobDetailsMapToGenericJobInfoObject(records.get(0))
+        GenericJobInfo jobInfo =
+                jm.convertJobDetailsMapToGenericJobInfoObject(records.get(0) as Map<String, String>)
 
         then:
         jobInfo != null
@@ -284,7 +285,7 @@ class LSFJobManagerSpec extends Specification {
         where:
         month | day  | hour | minute | second | year   | suffix | expectedYear | referenceDate
         "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | 2021         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2020         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2021         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
         "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2021         | ZonedDateTime.of(2021, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
         "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     | 1000         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
         "Apr" | "04" | "01" | "02"   | ""     | "1001" | "L"    | 1001         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
@@ -336,7 +337,7 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.askedResources.walltime == Duration.ofMinutes(10)
         jobInfo.askedResources.storage == null
         jobInfo.askedResources.queue == "short-dmg"
-        jobInfo.askedResources.nthreads == null
+        jobInfo.askedResources.numberOfThreads == null
         jobInfo.askedResources.swap == null
 
         jobInfo.usedResources.size == null
@@ -346,7 +347,7 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.usedResources.walltime == Duration.ofSeconds(1)
         jobInfo.usedResources.storage == null
         jobInfo.usedResources.queue == "short-dmg"
-        jobInfo.usedResources.nthreads == null
+        jobInfo.usedResources.numberOfThreads == null
         jobInfo.usedResources.swap == null
 
         jobInfo.jobName == "ls -l"
@@ -447,7 +448,7 @@ class LSFJobManagerSpec extends Specification {
      * Reenable it, if you run into memory leaks.
      */
     @Ignore
-    def testMassiveConvertBJobsResultLinesToResultMap(def _entries, def value) {
+    def testMassiveConvertBJobsResultLinesToResultMap(List<Integer> _entries, Boolean value) {
         when:
         int entries = _entries[0]
         String template1 = getResourceFile("bjobsJobTemplatePart1.txt").text
