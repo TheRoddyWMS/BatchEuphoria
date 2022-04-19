@@ -38,7 +38,7 @@ class TestExecutionService implements BEExecutionService {
     @Override
     ExecutionResult execute(String command, boolean waitFor = true,
                             Duration timeout = Duration.ZERO) {
-        GString sshCommand = "ssh ${user}@${server} ${BashUtils.strongQuote(command)}"
+        String sshCommand = "ssh ${user}@${server} ${BashUtils.strongQuote(command)}"
         return LocalExecutionHelper.executeCommandWithExtendedResult(sshCommand)
     }
 
@@ -65,11 +65,11 @@ class TestExecutionService implements BEExecutionService {
 
     @Override
     ExecutionResult execute(Command command, Duration timeout) {
-        execute(command, true, timeout)
+        return execute(command, true, timeout)
     }
 
     @Override
     ExecutionResult execute(String command, Duration timeout) {
-        execute(command, true, timeout)
+       return execute(command, true, timeout)
     }
 }

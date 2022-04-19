@@ -225,11 +225,11 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
                                                      Duration timeout = Duration.ZERO) {
 
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = queryExtendedJobStateById(
-                jobs.collect { it.getJobID() },
+                jobs.collect { it.jobID },
                 timeout)
         return (Map<BEJob, GenericJobInfo>) queriedExtendedStates.collectEntries {
             Map.Entry<BEJobID, GenericJobInfo> it ->
-                [jobs.find { BEJob temp -> temp.getJobID() == it.key }, (GenericJobInfo) it.value]
+                [jobs.find { BEJob temp -> temp.jobID == it.key }, (GenericJobInfo) it.value]
         }
     }
 
