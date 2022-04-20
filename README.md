@@ -88,6 +88,12 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.0.14
+
+   - Minor: Added execution time out feature
+   - Patch: Update to RoddyToolLib 2.4.0 for better handling of stdout/stderr in ExecutionResult
+   - Patch: Switched from Travis-CI to Circle-CI
+
 * 0.0.13
 
    - Update to RoddyToolLib 2.3.0 (\[Async\]ExecutionResult). Explicitly use stdout instead of `ExecutionResult.resultLines` that could also contain stderr, dependent on execution service.

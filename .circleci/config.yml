@@ -52,19 +52,29 @@ jobs: # a collection of steps
       - run:
           name: "Publish Release on GitHub"
           command: |
-            ghr -t "$GITHUB_TOKEN" -u "$CIRCLE_PROJECT_USERNAME" -r "$CIRCLE_PROJECT_REPONAME" -c "$CIRCLE_SHA1" -delete "$CIRCLE_TAG" ./build/libs/*.jar
+            VERSION=$(ls ./build/libs/*.jar | sed -r 's/.*RoddyToolLib-([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(-.+)?).jar/\1/')
+            ghr -t "$GITHUB_TOKEN" -u "$CIRCLE_PROJECT_USERNAME" -r "$CIRCLE_PROJECT_REPONAME" -c "$CIRCLE_SHA1" -n "$VERSION" -delete "$VERSION" ./build/libs/*.jar
 
 workflows:
   version: 2
-  workflow:
+  build:
     jobs:
       - build-and-test
+  release:
+    jobs:
+      - build-and-test:
+          filters:
+            branches:  # ignore any commit on any branch by default
+              ignore: /.*/
+            tags:  # unless they match the pattern
+              only: /^\d+\.\d+\.\d+$/
       - publish-github-release:
+          context:
+            - TheRoddyWMS
           requires:
             - build-and-test
-          filters:  # Only publish for proper version tags on the master branch.
-            branches:
-              only: master
-            tags:
+          filters:
+            branches:  # ignore any commit on any branch by default
+              ignore: /.*/
+            tags:  # unless they match the pattern
               only: /^\d+\.\d+\.\d+$/
-
