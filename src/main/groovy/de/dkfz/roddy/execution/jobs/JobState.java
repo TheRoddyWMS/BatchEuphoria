@@ -50,12 +50,22 @@ public enum JobState implements Serializable {
      */
     DUMMY;
 
+    @Deprecated
     public boolean isPlannedOrRunning() {
-        return _isPlannedOrRunning(this);
+        return this.isRunning() || this.isPlanned();
     }
 
-    public static boolean _isPlannedOrRunning(JobState jobState) {
-        return Arrays.asList(JobState.RUNNING, JobState.QUEUED, JobState.HOLD, JobState.SUSPENDED, JobState.STARTED, JobState.UNSTARTED).contains(jobState);
+    public boolean isPlanned() {
+        return Arrays.asList(
+                JobState.QUEUED,
+                JobState.UNSTARTED,
+                JobState.HOLD,
+                JobState.SUSPENDED).contains(this);
+    }
+
+    @Deprecated
+    public boolean isHeldOrSuspended() {
+        return Arrays.asList(JobState.HOLD, JobState.SUSPENDED).contains(this);
     }
 
     public boolean isDummy() {
@@ -64,6 +74,11 @@ public enum JobState implements Serializable {
 
     public boolean isRunning() {
         return this == JobState.RUNNING;
+    }
+
+    @Deprecated
+    public boolean isRunningOrStarted() {
+        return Arrays.asList(JobState.RUNNING, JobState.STARTED).contains(this);
     }
 
     public boolean isUnknown() {

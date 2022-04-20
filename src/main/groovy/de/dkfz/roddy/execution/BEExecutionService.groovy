@@ -10,6 +10,12 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.Command
 import groovy.transform.CompileStatic
 
+import java.time.Duration
+
+/**
+ * TODO Making this an abstract method would allow to set default values or add default
+ *      implementations that forward requests to other execute methods.
+ */
 @CompileStatic
 interface BEExecutionService {
 
@@ -17,9 +23,22 @@ interface BEExecutionService {
 
     ExecutionResult execute(Command command, boolean waitFor)
 
+    ExecutionResult execute(Command command, Duration timeout)
+
+    ExecutionResult execute(Command command, boolean waitFor, Duration timeout)
+
+
+    @Deprecated
     ExecutionResult execute(String command)
 
+    @Deprecated
     ExecutionResult execute(String command, boolean waitFor)
+
+    @Deprecated
+    ExecutionResult execute(String command, Duration timeout)
+
+    @Deprecated
+    ExecutionResult execute(String command, boolean waitFor, Duration timeout)
 
     /**
      * Query this to find out, if the service is still active

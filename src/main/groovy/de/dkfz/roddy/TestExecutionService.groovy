@@ -13,6 +13,8 @@ import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 
+import java.time.Duration
+
 /**
  * Created by heinold on 27.03.17.
  */
@@ -28,16 +30,19 @@ class TestExecutionService implements BEExecutionService {
     }
 
     @Override
-    ExecutionResult execute(Command command, boolean waitFor = true) {
-        return execute("${command}", waitFor)
+    ExecutionResult execute(Command command, boolean waitFor = true,
+                            Duration timeout = Duration.ZERO) {
+        return execute("${command}", waitFor, timeout)
     }
 
     @Override
-    ExecutionResult execute(String command, boolean waitFor = true) {
-        return LocalExecutionHelper.executeCommandWithExtendedResult("ssh ${user}@${server} ${BashUtils.strongQuote(command)}")
+    ExecutionResult execute(String command, boolean waitFor = true,
+                            Duration timeout = Duration.ZERO) {
+        String sshCommand = "ssh ${user}@${server} ${BashUtils.strongQuote(command)}"
+        return LocalExecutionHelper.executeCommandWithExtendedResult(sshCommand)
     }
 
-    ExecutionResult executeLocal(String command) {
+    ExecutionResult executeLocal(String command, Duration timeout = Duration.ZERO) {
         return LocalExecutionHelper.executeCommandWithExtendedResult(command)
     }
 
@@ -56,5 +61,15 @@ class TestExecutionService implements BEExecutionService {
     @Override
     File queryWorkingDirectory() {
         return null
+    }
+
+    @Override
+    ExecutionResult execute(Command command, Duration timeout) {
+        return execute(command, true, timeout)
+    }
+
+    @Override
+    ExecutionResult execute(String command, Duration timeout) {
+       return execute(command, true, timeout)
     }
 }

@@ -295,7 +295,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      * @param list of job ids
      */
     @Override
-    Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIds) {
+    Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIds, Duration timeout = Duration.ZERO) {
         List<Header> headers = []
         headers.add(new BasicHeader("Accept", "text/xml,application/xml;"))
 
@@ -429,7 +429,8 @@ class LSFRestJobManager extends AbstractLSFJobManager {
     }
 
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
+                                                           Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> jobDetailsResult = getJobDetails(jobIds)
         updateJobStatistics(jobDetailsResult)
         return jobDetailsResult

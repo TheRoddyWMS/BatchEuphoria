@@ -58,7 +58,8 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
     }
 
     @Override
-    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs) {
+    protected Map<BEJobID, JobState> queryJobStates(List<BEJobID> jobIDs,
+                                                    Duration timeout = Duration.ZERO) {
         StringBuilder queryCommand = new StringBuilder(getQueryJobStatesCommand())
 
         if (jobIDs && jobIDs.size() < 10) {
@@ -68,7 +69,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         if (isTrackingOfUserJobsEnabled)
             queryCommand << " -u $userIDForQueries "
 
-        ExecutionResult er = executionService.execute(queryCommand.toString())
+        ExecutionResult er = executionService.execute(queryCommand.toString(), timeout)
         List<String> resultLines = er.stdout
 
         Map<BEJobID, JobState> result = [:]
@@ -99,7 +100,8 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
     }
 
     @Override
-    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds) {
+    Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
+                                                           Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates
         String qStatCommand = getExtendedQueryJobStatesCommand()
         qStatCommand += " " + jobIds.collect { it }.join(" ")
@@ -107,7 +109,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         if (isTrackingOfUserJobsEnabled)
             qStatCommand += " -u $userIDForQueries "
 
-        ExecutionResult er = executionService.execute(qStatCommand.toString())
+        ExecutionResult er = executionService.execute(qStatCommand.toString(), timeout)
 
         if (er != null && er.successful) {
             queriedExtendedStates = this.processQstatOutputFromXML(er.stdout.join("\n"))
@@ -120,13 +122,13 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
         String command = "qrls ${jobIDs*.id.join(" ")}"
-        return executionService.execute(command, false)
+        return executionService.execute(command, false, commandTimeout)
     }
 
     @Override
     ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
         String command = "qdel ${jobIDs*.id.join(" ")}"
-        return executionService.execute(command, false)
+        return executionService.execute(command, false, commandTimeout)
     }
 
     /**

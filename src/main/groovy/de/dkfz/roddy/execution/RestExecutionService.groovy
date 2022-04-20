@@ -131,8 +131,29 @@ class RestExecutionService implements BEExecutionService {
 
     }
 
+    /** Note: This implemented method is not a proper implementation of
+     *  `ExecutionResult execute(Command, Duration)` because `RestSubmissionCommand` is a *sub*type
+     *  of `Command`, which means this method is not valid anymore for valid arguments of the
+     *  superclass, thus violating the Liskov-Substitution Principle. The method parameters are
+     *  contra-variant, so a *super*type of Command would be a valid parameter type.
+     */
+    @Override
+    ExecutionResult execute(Command command, Duration timeout) {
+        throw new IllegalArgumentException("Not a RestSubmissionCommand: ${command.class.canonicalName}")
+    }
+    RestResult execute(RestSubmissionCommand restCommand, Duration timeout) {
+        execute(restCommand, true, timeout)
+    }
 
-    RestResult execute(RestSubmissionCommand restCommand, boolean waitFor = true) {
+    /**
+     * Here is the same problem with the LSP and contravariance.
+     */
+    @Override
+    ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
+        throw new IllegalArgumentException("Not a RestSubmissionCommand: ${command.class.canonicalName}")
+    }
+    RestResult execute(RestSubmissionCommand restCommand, boolean waitFor = true,
+                       Duration timeout = Duration.ZERO) {
         if (!waitFor) {
             throw new IllegalArgumentException(
                     "RestExecutionService.execute does not implement asynchronous execution with waitFor = false")
@@ -157,7 +178,8 @@ class RestExecutionService implements BEExecutionService {
         }
 
         if (token) {
-            restCommand.requestHeaders.add(new BasicHeader("Cookie", "platform_token=${token.replaceAll('"', "#quote#")}"))
+            restCommand.requestHeaders.add(new BasicHeader("Cookie",
+                    "platform_token=${token.replaceAll('"', "#quote#")}"))
         }
 
         if (restCommand.requestHeaders) {
@@ -247,7 +269,9 @@ class RestExecutionService implements BEExecutionService {
         headers.add(new BasicHeader(HTTP.CONTENT_TYPE, "application/xml;charset=UTF-8"))
         headers.add(new BasicHeader("Accept", "application/xml"))
 
-        RestResult result = execute(new RestSubmissionCommand(RESOURCE_PING, null, headers, RestSubmissionCommand.HttpMethod.HTTPPOST))
+        RestResult result = execute(new RestSubmissionCommand(
+                RESOURCE_PING, null,
+                headers, RestSubmissionCommand.HttpMethod.HTTPPOST))
         if (result.statusCode != 200)
             throw new BEException("Web service is not available, returned HTTP status code: ${result.statusCode}")
 
@@ -265,8 +289,24 @@ class RestExecutionService implements BEExecutionService {
         throw new NotImplementedException()
     }
 
+    @Deprecated
     @Override
-    ExecutionResult execute(String command, boolean waitForIncompatibleClassChangeError = null, OutputStream outputStream = null) {
+    ExecutionResult execute(String command, Duration timeout) {
+        throw new NotImplementedException()
+    }
+
+    @Deprecated
+    @Override
+    ExecutionResult execute(String command, boolean waitFor, Duration timeout) {
+        throw new NotImplementedException()
+    }
+
+
+    @Deprecated
+    @Override
+    ExecutionResult execute(String command,
+                            boolean waitForIncompatibleClassChangeError = null,
+                            OutputStream outputStream = null) {
         throw new NotImplementedException()
     }
 
