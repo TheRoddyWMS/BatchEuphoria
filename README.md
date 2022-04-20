@@ -1,4 +1,4 @@
-[![Build Status - Travis](https://travis-ci.org/TheRoddyWMS/BatchEuphoria.svg?branch=develop)](https://travis-ci.org/TheRoddyWMS/BatchEuphoria) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria?ref=badge_shield)
+[![CircleCI](https://circleci.com/gh/TheRoddyWMS/BatchEuphoria/tree/master.svg?style=svg)](https://circleci.com/gh/TheRoddyWMS/BatchEuphoria/tree/master) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FTheRoddyWMS%2FBatchEuphoria?ref=badge_shield)
 
 # BatchEuphoria
 
