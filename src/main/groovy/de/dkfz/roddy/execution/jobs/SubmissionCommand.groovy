@@ -7,6 +7,7 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.execution.jobs.cluster.slurm.SlurmJobManager
 import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 
@@ -94,7 +95,11 @@ abstract class SubmissionCommand extends Command {
         }
 
         if (job.toolScript) {
-            command << "echo " << BashUtils.strongQuote(job.toolScript) << " | "
+            if (parentJobManager instanceof SlurmJobManager){
+                command << "echo " << BashUtils.strongQuote("#!/bin/bash " + System.lineSeparator() + job.toolScript) << " | "
+            }else{
+                command << "echo " << BashUtils.strongQuote(job.toolScript) << " | "
+            }
         }
 
         command << parentJobManager.submissionCommand

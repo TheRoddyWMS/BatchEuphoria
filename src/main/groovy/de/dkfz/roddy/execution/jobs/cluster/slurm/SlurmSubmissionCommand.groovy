@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
+ * Copyright (c) 2022 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ)..
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
@@ -13,17 +13,15 @@ import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
+import static de.dkfz.roddy.StringConstants.*
+
 @CompileStatic
 class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
-    /**
-     * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
-     *
-     * @param parentJobManager
-     * @param job
-     * @param jobName
-     * @param processingParameters @param environmentVariables @param dependencyIDs @param command
-     */
+    public static final String NONE = "none"
+    public static final String AFTEROK = "afterok"
+    public static final String PARM_DEPENDS = " --dependency="
+
     SlurmSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
                            List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
                            List<String> dependencyIDs, String command) {
@@ -42,42 +40,77 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     protected String getJobNameParameter() {
-        return null
+        return "--job-name ${jobName}" as String
     }
 
     @Override
     protected String getHoldParameter() {
-        return null
+        return "--hold"
+    }
+
+    @Override
+    protected String getAccountNameParameter() {
+        return job.accountingName != null ? "--account=\"${job.accountingName}\"" : ""
     }
 
     @Override
     protected String getWorkingDirectoryParameter() {
-        return null
+        return "--chdir ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
     }
 
     @Override
     protected String getLoggingParameter(JobLog jobLog) {
-        return null
+        if (!jobLog.out && !jobLog.error) {
+            return ""
+        } else if (jobLog.out == jobLog.error) {
+            return "--output=${jobLog.out.replace(JobLog.JOB_ID, '%j') + "/slurm-%j.out"}"
+        } else {
+            return "--output=${jobLog.out.replace(JobLog.JOB_ID, '%j') + "/slurm-%j.out"} --error=${jobLog.error.replace(JobLog.JOB_ID, '%j') + "/slurm-%j.out"}"
+        }
     }
 
     @Override
     protected String getEmailParameter(String address) {
-        return null
+        return address ? " --mail-user=" + address : ""
+    }
+
+    protected String getParsableParameter() {
+        return "--parsable"
     }
 
     @Override
     protected String getGroupListParameter(String groupList) {
-        return null
+        return " --grid=" + groupList
     }
 
     @Override
     protected String getUmaskString(String umask) {
-        return null
+        return ""
+    }
+
+    @Override
+    String getDependencyParameterName() {
+        return AFTEROK
+    }
+
+    /**
+     * In this case i.e. afterokarray:...,afterok:
+     * A comma
+     * @return
+     */
+    @Override
+    protected String getDependencyOptionSeparator() {
+        return ":"
+    }
+
+    @Override
+    protected String getDependencyIDSeparator() {
+        return COLON
     }
 
     @Override
     protected String getAdditionalCommandParameters() {
-        return null
+        return getParsableParameter()
     }
 
     @Override
@@ -86,27 +119,26 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected String assembleVariableExportParameters() {
-        return null
+    String assembleVariableExportParameters() {
+        List<String> parameterStrings = []
+
+        if (passLocalEnvironment)
+            parameterStrings << "--get-user-env "
+
+        List<String> environmentStrings = parameters.collect { key, value ->
+            if (null == value)
+                "${key}"
+            else
+                "${key}=${value}"
+        } as List<String>
+
+        if (!environmentStrings.empty)
+            parameterStrings << "--export=\"${environmentStrings.join(COMMA)}\"".toString()
+
+        return parameterStrings.join(WHITESPACE)
     }
 
-    @Override
     protected String getDependsSuperParameter() {
-        return null
-    }
-
-    @Override
-    protected String getDependencyParameterName() {
-        return null
-    }
-
-    @Override
-    protected String getDependencyOptionSeparator() {
-        return null
-    }
-
-    @Override
-    protected String getDependencyIDSeparator() {
-        return null
+        PARM_DEPENDS
     }
 }
