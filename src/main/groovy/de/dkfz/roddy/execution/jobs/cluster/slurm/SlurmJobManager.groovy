@@ -312,7 +312,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     @Override
     String getQueryJobStatesCommand() {
-        return "sacct -p -b -n"
+        return "squeue --format='%i|%T'"
     }
 
     @Override

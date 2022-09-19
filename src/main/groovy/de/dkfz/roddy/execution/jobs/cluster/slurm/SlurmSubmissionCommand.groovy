@@ -63,9 +63,9 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
         if (!jobLog.out && !jobLog.error) {
             return ""
         } else if (jobLog.out == jobLog.error) {
-            return "--output=${jobLog.out.replace(JobLog.JOB_ID, '%j') + "/slurm-%j.out"}"
+            return "--output=${jobLog.out.replace(JobLog.JOB_ID, '%j')}"
         } else {
-            return "--output=${jobLog.out.replace(JobLog.JOB_ID, '%j') + "/slurm-%j.out"} --error=${jobLog.error.replace(JobLog.JOB_ID, '%j') + "/slurm-%j.out"}"
+            return "--output=${jobLog.out.replace(JobLog.JOB_ID, '%j')} --error=${jobLog.error.replace(JobLog.JOB_ID, '%j')}"
         }
     }
 
@@ -110,7 +110,7 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     protected String getAdditionalCommandParameters() {
-        return getParsableParameter()
+        return "${getParsableParameter()} --kill-on-invalid-dep=yes" as String
     }
 
     @Override
