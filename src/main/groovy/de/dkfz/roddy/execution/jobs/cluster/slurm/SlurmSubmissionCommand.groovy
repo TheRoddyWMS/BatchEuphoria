@@ -28,16 +28,6 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 
-//    submit = """
-//        sbatch -J ${job_name} -D ${cwd} -o ${out} -e ${err} -t ${runtime_minutes} -p ${queue} \
-//        ${"-n " + cpus} \
-//        --mem-per-cpu=${requested_memory_mb_per_core} \
-//        --wrap "/bin/bash ${script}"
-//    """
-//    kill = "scancel ${job_id}"
-//    check-alive = "squeue -j ${job_id}"
-//    job-id-regex = "Submitted batch job (\\d+).*"
-
     @Override
     protected String getJobNameParameter() {
         return "--job-name ${jobName}" as String

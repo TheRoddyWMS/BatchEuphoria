@@ -123,15 +123,18 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
                                                            Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        String qStatCommand = getExtendedQueryJobStatesCommand()
-        //qStatCommand += " " + jobIds.collect { it }.join(",")
         for(int i=0; i< jobIds.size();i++){
-            ExecutionResult er = executionService.execute(qStatCommand + " " + jobIds[i] + " -o")
+            ExecutionResult er = executionService.execute(getExtendedQueryJobStatesCommand() + " " + jobIds[i] + " -o")
 
             if (er != null && er.successful) {
                 queriedExtendedStates = this.processExtendedOutput(er.stdout.join("\n"), queriedExtendedStates)
             } else {
-                throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
+                er = executionService.execute("sacct -j " + jobIds[i] + " -o --json")
+                if (er != null && er.successful) {
+                    queriedExtendedStates = this.processExtendedOutputFromJson(er.stdout.join("\n"), queriedExtendedStates)
+                } else {
+                    throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
+                }
             }
         }
         return queriedExtendedStates
@@ -165,30 +168,37 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             }
             List<String> dependIDs = []
             GenericJobInfo jobInfo = new GenericJobInfo(jobResult["JobName"], new File(jobResult["Command"]), jobID, null, dependIDs)
+
+            /** Directories and files */
             jobInfo.inputFile = new File(jobResult["StdIn"])
             jobInfo.logFile = new File(jobResult["StdOut"])
             jobInfo.user = jobResult["UserId"]
             jobInfo.submissionHost = jobResult["BatchHost"]
             jobInfo.errorLogFile = new File(jobResult["StdErr"])
+            jobInfo.execHome = jobResult["WorkDir"]
+
+            /** Status info */
             jobInfo.jobState = parseJobState(jobResult["JobState"])
             jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["ExitCode"].split(":")[0] as Integer)
             jobInfo.pendReason = jobResult["Reason"]
+
+            /** Resources */
             String queue = jobResult["Partition"]
             Duration runLimit = safelyParseColonSeparatedDuration(jobResult["TimeLimit"])
             Duration runTime = safelyParseColonSeparatedDuration(jobResult["RunTime"])
             jobInfo.runTime = runTime
-            /** Resources */
             BufferValue memory = safelyCastToBufferValue(jobResult["mem"])
             Integer cores = withCaughtAndLoggedException { jobResult["NumCPUs"] as Integer }
             Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"] as Integer }
             jobInfo.askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
-            jobInfo.execHome = jobResult["WorkDir"]
+
             /** Timestamps */
             jobInfo.submitTime = parseTime(jobResult["SubmitTime"])
             jobInfo.startTime = parseTime(jobResult["StartTime"])
             jobInfo.endTime = parseTime(jobResult["EndTime"])
             jobInfo.eligibleTime = parseTime(jobResult["EligibleTime"])
+
             result.put(jobID, jobInfo)
         }
 
@@ -203,13 +213,10 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     /**
      * Reads the sacct output as Json and creates GenericJobInfo objects
-     * TODO check if method is still needed
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    protected Map<BEJobID, GenericJobInfo> processExtendedOutputFromJson(String rawJson) {
-        Map<BEJobID, GenericJobInfo> result = [:]
-
+    protected Map<BEJobID, GenericJobInfo> processExtendedOutputFromJson(String rawJson, Map<BEJobID, GenericJobInfo> result) {
         if (!rawJson)
             return result
 
@@ -242,7 +249,6 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
             /** Resources */
             String queue = jobResult["partition"]
-            //Duration runLimit = safelyParseColonSeparatedDuration(jobResult["RUNTIMELIMIT"])
             Duration runTime = Duration.ofSeconds(jobResult["time"]["elapsed"] as long)
             BufferValue memory = safelyCastToBufferValue(jobResult["required"]["memory"] as String)
             Integer cores = withCaughtAndLoggedException { jobResult["required"]["CPUs"]  as Integer }
@@ -251,9 +257,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
             jobInfo.askedResources = new ResourceSet(null, null, null, null, null, queue, null)
-            //jobInfo.resourceReq = jobResult["EFFECTIVE_RESREQ"]
             jobInfo.runTime = runTime
-            //jobInfo.cpuTime = safelyParseColonSeparatedDuration(jobResult["CPU_USED"])
 
             /** Directories and files */
             jobInfo.execHome = jobResult["working_directory"]
