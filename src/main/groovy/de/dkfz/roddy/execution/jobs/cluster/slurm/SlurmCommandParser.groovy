@@ -22,6 +22,7 @@ import static de.dkfz.roddy.StringConstants.SPLIT_EQUALS
 /**
  * Used to convert commands from cli to e.g. GenericJobInfo
  *
+ * TODO It needs further work, in case it is needed
  */
 @CompileStatic
 class SlurmCommandParser {

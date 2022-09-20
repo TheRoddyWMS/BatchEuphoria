@@ -31,11 +31,11 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         TIME_ZONE_ID = parms.timeZoneId
     }
 
- @Override
+    @Override
     protected SlurmSubmissionCommand createCommand(BEJob job) {
         SlurmSubmissionCommand ssc = new SlurmSubmissionCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
                 job.tool?.getAbsolutePath() ?: job.getToolScript())
-     return  ssc
+        return ssc
     }
 
     @Override
@@ -101,7 +101,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     @Override
     protected JobState parseJobState(String stateString) {
-       JobState js = JobState.UNKNOWN
+        JobState js = JobState.UNKNOWN
 
         if (stateString == "RUNNING")
             js = JobState.RUNNING
@@ -123,7 +123,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
                                                            Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
-        for(int i=0; i< jobIds.size();i++){
+        for (int i = 0; i < jobIds.size(); i++) {
             ExecutionResult er = executionService.execute(getExtendedQueryJobStatesCommand() + " " + jobIds[i] + " -o")
 
             if (er != null && er.successful) {
@@ -150,7 +150,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         ComplexLine line = new ComplexLine(stdout)
 
         Collection<String> splitted = line.splitBy(" ").findAll { it }
-        if(splitted.size() > 1) {
+        if (splitted.size() > 1) {
             Map<String, String> jobResult = [:]
 
             for (int i = 0; i < splitted.size(); i++) {
@@ -222,7 +222,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
         Object parsedJson = new JsonSlurper().parseText(rawJson)
         List records = (List) parsedJson["jobs"]
-        for(jobResult in records){
+        for (jobResult in records) {
             GenericJobInfo jobInfo
             BEJobID jobID
             String JOBID = jobResult["job_id"]
@@ -251,9 +251,9 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             String queue = jobResult["partition"]
             Duration runTime = Duration.ofSeconds(jobResult["time"]["elapsed"] as long)
             BufferValue memory = safelyCastToBufferValue(jobResult["required"]["memory"] as String)
-            Integer cores = withCaughtAndLoggedException { jobResult["required"]["CPUs"]  as Integer }
+            Integer cores = withCaughtAndLoggedException { jobResult["required"]["CPUs"] as Integer }
             cores = cores == 0 ? null : cores
-            Integer nodes = withCaughtAndLoggedException { jobResult["allocation_nodes"]  as Integer }
+            Integer nodes = withCaughtAndLoggedException { jobResult["allocation_nodes"] as Integer }
 
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
             jobInfo.askedResources = new ResourceSet(null, null, null, null, null, queue, null)
@@ -267,7 +267,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             jobInfo.startTime = parseTimeOfEpochSecond(jobResult["time"]["start"] as String)
             jobInfo.endTime = parseTimeOfEpochSecond(jobResult["time"]["end"] as String)
 
-            result.put(jobID,jobInfo)
+            result.put(jobID, jobInfo)
         }
         return result
     }
@@ -341,7 +341,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
             nodesArr.each {
                 String node ->
-                    parameters.put('--nodes='+node, '--cores-per-socket=' + resourceSet.getCores())
+                    parameters.put('--nodes=' + node, '--cores-per-socket=' + resourceSet.getCores())
             }
         }
     }
@@ -352,12 +352,12 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     @Override
     void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('--time=' + TimeUnit.fromDuration(resourceSet.walltime).toHourString()," ")
+        parameters.put('--time=' + TimeUnit.fromDuration(resourceSet.walltime).toHourString(), " ")
     }
 
     @Override
     void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('--mem=' + resourceSet.getMem().toString(BufferUnit.M)," ")
+        parameters.put('--mem=' + resourceSet.getMem().toString(BufferUnit.M), " ")
     }
 
     @Override
