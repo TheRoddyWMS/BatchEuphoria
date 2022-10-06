@@ -8,7 +8,6 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
-import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
@@ -40,7 +39,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     @Override
     GenericJobInfo parseGenericJobInfo(String commandString) {
-        return new SlurmCommandParser(commandString).toGenericJobInfo()
+        throw new BEException("parseGenericJobInfo is not implemented")
     }
 
 
@@ -328,22 +327,9 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
         int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
-        // Currently not active
-        String enforceSubmissionNodes = ''
-        if (!enforceSubmissionNodes) {
-            String nVal = "--nodes=" + nodes
-            String cVal = " --cores-per-socket=" + cores
-            if (resourceSet.isAdditionalNodeFlagSet()) {
-                cVal << ':' << resourceSet.getAdditionalNodeFlag()
-            }
-            parameters.put(nVal, cVal)
-        } else {
-            String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
-            nodesArr.each {
-                String node ->
-                    parameters.put('--nodes=' + node, '--cores-per-socket=' + resourceSet.getCores())
-            }
-        }
+        String nVal = "--nodes=" + nodes
+        String cVal = " --cores-per-socket=" + cores
+        parameters.put(nVal, cVal)
     }
 
     void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {

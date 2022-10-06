@@ -40,7 +40,6 @@ class SlurmSubmissionCommandSpec extends Specification {
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(jobManager, makeJob([:]),
                 "jobName", null, [:],
                 null, "/tmp/test.sh")
-        println cmd.assembleVariableExportParameters()
         then:
         cmd.assembleVariableExportParameters() == ""
     }
@@ -51,7 +50,6 @@ class SlurmSubmissionCommandSpec extends Specification {
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(jobManager, makeJob(mapOfVars),
                 "jobName", null, mapOfVars,
                 null, "/tmp/test.sh",)
-        println cmd.assembleVariableExportParameters()
         then:
         cmd.assembleVariableExportParameters() == "--export=\"a=a,b\""
     }
@@ -62,7 +60,6 @@ class SlurmSubmissionCommandSpec extends Specification {
                 "jobName", null, [:],
                 null, "/tmp/test.sh")
         cmd.passEnvironment = Optional.of(true)
-        println cmd.assembleVariableExportParameters()
         then:
         cmd.assembleVariableExportParameters() == "--get-user-env "
     }
@@ -74,7 +71,6 @@ class SlurmSubmissionCommandSpec extends Specification {
                 "jobName", null, mapOfVars,
                 null, "/tmp/test.sh")
         cmd.passEnvironment = Optional.of(true)
-        println cmd.assembleVariableExportParameters()
         then:
         cmd.assembleVariableExportParameters() == "--get-user-env  --export=\"a=a,b\""
     }
@@ -83,18 +79,16 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(jobManager, makeJob([:]), "jobname",
                 null, [:], null, "/tmp/test.sh")
-        println cmd.toBashCommandString()
         then:
-        cmd.toBashCommandString() == 'sbatch   --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch   --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes  /tmp/test.sh'
     }
 
     def "command with accounting name"() {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(jobManager, makeJob([:], "accountingProject"),
                 "jobname", null, [:], null, "/tmp/test.sh")
-        println cmd.toBashCommandString()
         then:
-        cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes  /tmp/test.sh'
     }
 
 }

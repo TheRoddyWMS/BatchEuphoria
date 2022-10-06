@@ -174,14 +174,14 @@ class BEIntegrationTest {
         batchEuphoriaTestScript = new File(properties."remoteToolPath" as String)
         BEExecutionService executionService = getExecutionServiceFor(system)
         executionService.execute("mkdir -p ${batchEuphoriaTestScript.parentFile}")
-        if (properties."testscript" != ""){
-            if(system == AvailableClusterSystems.slurm){
+        if (properties."testscript" != "") {
+            if (system == AvailableClusterSystems.slurm) {
                 testScriptSlurm << properties."testscript"
-            }else{
+            } else {
                 testScript << properties."testscript"
             }
         }
-        if(system == AvailableClusterSystems.slurm){
+        if (system == AvailableClusterSystems.slurm) {
             println "echo ${testScriptSlurm} > ${batchEuphoriaTestScript}"
             executionService.execute("echo '${testScriptSlurm}' > ${batchEuphoriaTestScript}")
         } else {
