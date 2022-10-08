@@ -33,6 +33,7 @@ class BEIntegrationTest {
     static Map<AvailableClusterSystems, BEExecutionService> eServicesPerSystem = [:]
     static Map<AvailableClusterSystems, Boolean> testScriptWritten = [:]
     static String testScript = "ls"
+    static String testScriptSlurm = "#!/bin/bash" + System.lineSeparator() + "ls"
     static File batchEuphoriaTestScript
     static JobLog logFile
     static ResourceSet resourceSet = new ResourceSet(new BufferValue(10, BufferUnit.m), 1, 1, Duration.ofMinutes(1), null, null, null)
@@ -173,10 +174,19 @@ class BEIntegrationTest {
         batchEuphoriaTestScript = new File(properties."remoteToolPath" as String)
         BEExecutionService executionService = getExecutionServiceFor(system)
         executionService.execute("mkdir -p ${batchEuphoriaTestScript.parentFile}")
-        if (properties."testscript" != "")
-            testScript << properties."testscript"
-
-        executionService.execute("echo ${testScript} > ${batchEuphoriaTestScript}")
+        if (properties."testscript" != "") {
+            if (system == AvailableClusterSystems.slurm) {
+                testScriptSlurm << properties."testscript"
+            } else {
+                testScript << properties."testscript"
+            }
+        }
+        if (system == AvailableClusterSystems.slurm) {
+            println "echo ${testScriptSlurm} > ${batchEuphoriaTestScript}"
+            executionService.execute("echo '${testScriptSlurm}' > ${batchEuphoriaTestScript}")
+        } else {
+            executionService.execute("echo '${testScript}' > ${batchEuphoriaTestScript}")
+        }
         executionService.execute("chmod +x ${batchEuphoriaTestScript}")
         testScriptWritten[system] = true
     }

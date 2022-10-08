@@ -32,7 +32,7 @@ class TestExecutionService implements BEExecutionService {
     @Override
     ExecutionResult execute(Command command, boolean waitFor = true,
                             Duration timeout = Duration.ZERO) {
-        return execute("${command}", waitFor, timeout)
+        return execute(command.toBashCommandString(), waitFor, timeout)
     }
 
     @Override

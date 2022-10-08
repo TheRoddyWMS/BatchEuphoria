@@ -94,7 +94,7 @@ abstract class SubmissionCommand extends Command {
         }
 
         if (job.toolScript) {
-            command << "echo " << BashUtils.strongQuote(job.toolScript) << " | "
+            command << "echo " << BashUtils.strongQuote("#!/bin/bash " + System.lineSeparator() + job.toolScript) << " | "
         }
 
         command << parentJobManager.submissionCommand
