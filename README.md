@@ -88,6 +88,9 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.1.0
+   - Minor: SLURM support
+
 * 0.0.14
 
    - Minor: Added execution time out feature
