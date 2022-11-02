@@ -128,7 +128,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             if (er != null && er.successful) {
                 queriedExtendedStates = this.processExtendedOutput(er.stdout.join("\n"), queriedExtendedStates)
             } else {
-                er = executionService.execute("sacct -j " + jobIds[i] + " -o --json")
+                er = executionService.execute("sacct -j " + jobIds[i] + " --json")
                 if (er != null && er.successful) {
                     queriedExtendedStates = this.processExtendedOutputFromJson(er.stdout.join("\n"), queriedExtendedStates)
                 } else {
