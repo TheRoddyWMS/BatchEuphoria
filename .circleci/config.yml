@@ -64,17 +64,17 @@ workflows:
     jobs:
       - build-and-test:
           filters:
-            branches:  # ignore any commit on any branch by default
+            branches:  # ignore any commit on any branch by default ...
               ignore: /.*/
-            tags:  # unless they match the pattern
-              only: /^\d+\.\d+\.\d+$/
+            tags:  # ... unless they match the pattern
+              only: /^\d+\.\d+\.\d+(-.+)?$/
       - publish-github-release:
           context:
             - TheRoddyWMS
           requires:
             - build-and-test
           filters:
-            branches:  # ignore any commit on any branch by default
+            branches:  # ignore any commit on any branch by default ...
               ignore: /.*/
-            tags:  # unless they match the pattern
-              only: /^\d+\.\d+\.\d+$/
+            tags:  # ... unless they match the pattern
+              only: /^\d+\.\d+\.\d+(-.+)?$/
