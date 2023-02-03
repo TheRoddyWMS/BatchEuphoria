@@ -89,6 +89,9 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.1.1
+   - Minor: Fix: A newer LSF release is pickier on the position of the `-o` parameter in `bjobs`. Adapted to this upstream change. Probably code will still work with older LSF versions.
+
 * 0.1.0
    - Minor: SLURM support
 
@@ -106,3 +109,8 @@ To start the integration tests, please fill in host and user settings (password 
 
    - accounting name added to Job and implementation of `-P` parameter for `bsub` (LSF).
    - fixed year-inference unit test
+
+* 0.0.7-1 (Release branch 0.0.7)
+  - Minor: Fix: A newer LSF release is pickier on the position of the `-o` parameter in `bjobs`. Adapted to this upstream change. Probably code will still work with older LSF versions.
+
+* 0.0.7
