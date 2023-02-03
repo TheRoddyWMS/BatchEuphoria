@@ -35,8 +35,8 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     final static String TIMESTAMP_PATTERN = /${MONTH}\s+${DAY}\s+${TIME}(\s+${YEAR})?(\s+${LSF_SUFFIX})?/
 
-    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -o -hms -json \"jobid job_name stat finish_time\""
-    private static final String LSF_COMMAND_QUERY_EXTENDED_STATES = "bjobs -a -o -hms -json \"jobid job_name stat user queue " +
+    private static final String LSF_COMMAND_QUERY_STATES = "bjobs -a -hms -json -o \"jobid job_name stat finish_time\""
+    private static final String LSF_COMMAND_QUERY_EXTENDED_STATES = "bjobs -a -hms -json -o \"jobid job_name stat user queue " +
             "job_description proj_name job_group job_priority pids exit_code from_host exec_host submit_time start_time " +
             "finish_time cpu_used run_time user_group swap max_mem runtimelimit sub_cwd " +
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
