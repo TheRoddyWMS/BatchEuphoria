@@ -284,9 +284,9 @@ class LSFJobManagerSpec extends Specification {
 
         where:
         month | day  | hour | minute | second | year   | suffix | expectedYear | referenceDate
-        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | 2021         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2021         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2021         | ZonedDateTime.of(2021, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | 2022         | ZonedDateTime.of(2022, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2022         | ZonedDateTime.of(2022, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2022         | ZonedDateTime.of(2022, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
         "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     | 1000         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
         "Apr" | "04" | "01" | "02"   | ""     | "1001" | "L"    | 1001         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
         "May" | "5"  | "01" | "02"   | "03"   | "1002" | ""     | 1002         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
