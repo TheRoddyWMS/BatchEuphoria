@@ -218,10 +218,10 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
         Object parsedJson = new JsonSlurper().parseText(rawJson)
         List records = (List) parsedJson["jobs"]
-        for (jobResult in records) {
+        for (jsonEntry in records) {
             GenericJobInfo jobInfo
             BEJobID jobID
-            String JOBID = jobResult["job_id"]
+            String JOBID = jsonEntry["job_id"]
             try {
                 jobID = new BEJobID(JOBID)
             } catch (Exception exp) {
@@ -229,41 +229,41 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             }
 
             List<String> dependIDs = []
-            jobInfo = new GenericJobInfo(jobResult["name"] as String, null, jobID, null, dependIDs)
+            jobInfo = new GenericJobInfo(jsonEntry["name"] as String, null, jobID, null, dependIDs)
 
             /** Common */
-            jobInfo.user = jobResult["user"]
-            jobInfo.userGroup = jobResult["group"]
-            jobInfo.jobGroup = jobResult["group"]
-            jobInfo.priority = jobResult["priority"]
-            jobInfo.executionHosts = [jobResult["nodes"] as String]
+            jobInfo.user = jsonEntry["user"]
+            jobInfo.userGroup = jsonEntry["group"]
+            jobInfo.jobGroup = jsonEntry["group"]
+            jobInfo.priority = jsonEntry["priority"]
+            jobInfo.executionHosts = [jsonEntry["nodes"] as String]
 
             /** Status info */
-            jobInfo.jobState = parseJobState(jobResult["state"]["current"] as String)
-            jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["exit_code"]["return_code"] as Integer)
-            jobInfo.pendReason = jobResult["state"]["reason"]
+            jobInfo.jobState = parseJobState(jsonEntry["state"]["current"] as String)
+            jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jsonEntry["exit_code"]["return_code"] as Integer)
+            jobInfo.pendReason = jsonEntry["state"]["reason"]
 
             /** Resources */
-            String queue = jobResult["partition"]
-            Duration runLimit = Duration.ofMinutes(jobResult["time"]["limit"] as long)
-            Duration runTime = Duration.ofSeconds(jobResult["time"]["elapsed"] as long)
-            BufferValue memory = safelyCastToBufferValue(jobResult["required"]["memory"] as String)
-            Integer cores = withCaughtAndLoggedException { jobResult["required"]["CPUs"] as Integer }
+            String queue = jsonEntry["partition"]
+            Duration runLimit = Duration.ofMinutes(jsonEntry["time"]["limit"] as long)
+            Duration runTime = Duration.ofSeconds(jsonEntry["time"]["elapsed"] as long)
+            BufferValue memory = safelyCastToBufferValue(jsonEntry["required"]["memory"] as String)
+            Integer cores = withCaughtAndLoggedException { jsonEntry["required"]["CPUs"] as Integer }
             cores = cores == 0 ? null : cores
-            Integer nodes = withCaughtAndLoggedException { jobResult["allocation_nodes"] as Integer }
+            Integer nodes = withCaughtAndLoggedException { jsonEntry["allocation_nodes"] as Integer }
 
             jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
             jobInfo.runTime = runTime
 
             /** Directories and files */
-            jobInfo.execHome = jobResult["working_directory"]
+            jobInfo.execHome = jsonEntry["working_directory"]
 
             /** Timestamps */
-            jobInfo.submitTime = parseTimeOfEpochSecond(jobResult["time"]["submission"] as String)
-            jobInfo.eligibleTime = parseTimeOfEpochSecond(jobResult["time"]["eligible"] as String)
-            jobInfo.startTime = parseTimeOfEpochSecond(jobResult["time"]["start"] as String)
-            jobInfo.endTime = parseTimeOfEpochSecond(jobResult["time"]["end"] as String)
+            jobInfo.submitTime = parseTimeOfEpochSecond(jsonEntry["time"]["submission"] as String)
+            jobInfo.eligibleTime = parseTimeOfEpochSecond(jsonEntry["time"]["eligible"] as String)
+            jobInfo.startTime = parseTimeOfEpochSecond(jsonEntry["time"]["start"] as String)
+            jobInfo.endTime = parseTimeOfEpochSecond(jsonEntry["time"]["end"] as String)
 
             result.put(jobID, jobInfo)
         }
