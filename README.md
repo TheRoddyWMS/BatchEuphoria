@@ -89,6 +89,13 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.1.2
+  - patch: Fix SLURM API.
+    * Always return an asked resource for SLURM with requested memory, cores, and nodes.
+    * Correctly return "NodeList" value as `JobInfo.executionHosts`. WARNING: The returned value is just the string returned from SLURM. No splitting of a list of nodes is yet implemented.
+    * Fix "NumNodes" parsing (seems to return "-"-split value and last value is the number of nodes) and deal with "Unkown" times.
+    * Fixed time parsing.
+
 * 0.1.1
    - Patch: Fix: A newer LSF release is pickier on the position of the `-o` parameter in `bjobs`. Adapted to this upstream change. Probably code will still work with older LSF versions.
    - Patch: Bumped from RoddyToolLib 2.1.1 to 2.2.2.
