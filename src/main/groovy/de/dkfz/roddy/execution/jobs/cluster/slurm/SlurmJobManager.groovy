@@ -25,6 +25,16 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     private final ZoneId TIME_ZONE_ID
 
+    private final Map<String, JobState> stateMap = [
+            "RUNNING": JobState.RUNNING,
+            "SUSPENDED": JobState.SUSPENDED,
+            "PENDING": JobState.HOLD,
+            "CANCELLED+": JobState.ABORTED,
+            "COMPLETED": JobState.COMPLETED_SUCCESSFUL,
+            "NODE_FAIL": JobState.FAILED,
+            "FAILED": JobState.FAILED,
+    ]
+
     SlurmJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
         TIME_ZONE_ID = parms.timeZoneId
@@ -100,22 +110,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     @Override
     protected JobState parseJobState(String stateString) {
-        JobState js = JobState.UNKNOWN
-
-        if (stateString == "RUNNING")
-            js = JobState.RUNNING
-        if (stateString == "SUSPENDED")
-            js = JobState.SUSPENDED
-        if (stateString == "PENDING")
-            js = JobState.HOLD
-        if (stateString == "CANCELLED+")
-            js = JobState.ABORTED
-        if (stateString == "COMPLETED")
-            js = JobState.COMPLETED_SUCCESSFUL
-        if (stateString == "FAILED")
-            js = JobState.FAILED
-
-        return js
+        return stateMap.get(stateString, JobState.UNKNOWN)
     }
 
     @Override
@@ -123,19 +118,20 @@ class SlurmJobManager extends GridEngineBasedJobManager {
                                                            Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (int i = 0; i < jobIds.size(); i++) {
-            ExecutionResult er = executionService.execute(getExtendedQueryJobStatesCommand() + " " + jobIds[i] + " -o")
+            ExecutionResult er = executionService.execute("${getExtendedQueryJobStatesCommand()} ${jobIds[i]} -o")
 
-            if (er != null && er.successful) {
+            if (er?.successful) {
                 queriedExtendedStates = this.processExtendedOutput(er.stdout.join("\n"), queriedExtendedStates)
             } else {
-                er = executionService.execute("sacct -j " + jobIds[i] + " --json")
-                if (er != null && er.successful) {
+                er = executionService.execute("sacct -j ${jobIds[i]} --json")
+                if (er?.successful) {
                     queriedExtendedStates = this.processExtendedOutputFromJson(er.stdout.join("\n"), queriedExtendedStates)
                 } else {
                     throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
                 }
             }
         }
+
         return queriedExtendedStates
     }
 
@@ -173,6 +169,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             jobInfo.logFile = new File(jobResult["StdOut"])
             jobInfo.user = jobResult["UserId"]
             jobInfo.submissionHost = jobResult["BatchHost"]
+            jobInfo.executionHosts = [jobResult["NodeList"] as String]
             jobInfo.errorLogFile = new File(jobResult["StdErr"])
             jobInfo.execHome = jobResult["WorkDir"]
 
@@ -188,15 +185,15 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             jobInfo.runTime = runTime
             BufferValue memory = safelyCastToBufferValue(jobResult["mem"])
             Integer cores = withCaughtAndLoggedException { jobResult["NumCPUs"] as Integer }
-            Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"] as Integer }
-            jobInfo.askedResources = new ResourceSet(null, null, null, runLimit, null, queue, null)
+            Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"]?.split("-")?.last() as Integer }
+            jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
 
             /** Timestamps */
             jobInfo.submitTime = parseTime(jobResult["SubmitTime"])
+            jobInfo.eligibleTime = parseTime(jobResult["EligibleTime"])
             jobInfo.startTime = parseTime(jobResult["StartTime"])
             jobInfo.endTime = parseTime(jobResult["EndTime"])
-            jobInfo.eligibleTime = parseTime(jobResult["EligibleTime"])
 
             result.put(jobID, jobInfo)
         }
@@ -206,7 +203,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     Duration safelyParseColonSeparatedDuration(String value) {
         withCaughtAndLoggedException {
-            value ? parseColonSeparatedHHMMSSDuration(value) : null
+            value?.length() > 7 ? parseColonSeparatedHHMMSSDuration(value[-8..-1]) : null
         }
     }
 
@@ -221,10 +218,10 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
         Object parsedJson = new JsonSlurper().parseText(rawJson)
         List records = (List) parsedJson["jobs"]
-        for (jobResult in records) {
+        for (jsonEntry in records) {
             GenericJobInfo jobInfo
             BEJobID jobID
-            String JOBID = jobResult["job_id"]
+            String JOBID = jsonEntry["job_id"]
             try {
                 jobID = new BEJobID(JOBID)
             } catch (Exception exp) {
@@ -232,39 +229,41 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             }
 
             List<String> dependIDs = []
-            jobInfo = new GenericJobInfo(jobResult["name"] as String, null, jobID, null, dependIDs)
+            jobInfo = new GenericJobInfo(jsonEntry["name"] as String, null, jobID, null, dependIDs)
 
             /** Common */
-            jobInfo.user = jobResult["user"]
-            jobInfo.userGroup = jobResult["group"]
-            jobInfo.jobGroup = jobResult["group"]
-            jobInfo.priority = jobResult["priority"]
-            jobInfo.executionHosts = jobResult["nodes"] as List<String>
+            jobInfo.user = jsonEntry["user"]
+            jobInfo.userGroup = jsonEntry["group"]
+            jobInfo.jobGroup = jsonEntry["group"]
+            jobInfo.priority = jsonEntry["priority"]
+            jobInfo.executionHosts = [jsonEntry["nodes"] as String]
 
             /** Status info */
-            jobInfo.jobState = parseJobState(jobResult["state"]["current"] as String)
-            jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["exit_code"]["return_code"] as Integer)
-            jobInfo.pendReason = jobResult["state"]["reason"]
+            jobInfo.jobState = parseJobState(jsonEntry["state"]["current"] as String)
+            jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jsonEntry["exit_code"]["return_code"] as Integer)
+            jobInfo.pendReason = jsonEntry["state"]["reason"]
 
             /** Resources */
-            String queue = jobResult["partition"]
-            Duration runTime = Duration.ofSeconds(jobResult["time"]["elapsed"] as long)
-            BufferValue memory = safelyCastToBufferValue(jobResult["required"]["memory"] as String)
-            Integer cores = withCaughtAndLoggedException { jobResult["required"]["CPUs"] as Integer }
+            String queue = jsonEntry["partition"]
+            Duration runLimit = Duration.ofMinutes(jsonEntry["time"]["limit"] as long)
+            Duration runTime = Duration.ofSeconds(jsonEntry["time"]["elapsed"] as long)
+            BufferValue memory = safelyCastToBufferValue(jsonEntry["required"]["memory"] as String)
+            Integer cores = withCaughtAndLoggedException { jsonEntry["required"]["CPUs"] as Integer }
             cores = cores == 0 ? null : cores
-            Integer nodes = withCaughtAndLoggedException { jobResult["allocation_nodes"] as Integer }
+            Integer nodes = withCaughtAndLoggedException { jsonEntry["allocation_nodes"] as Integer }
 
+            jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
-            jobInfo.askedResources = new ResourceSet(null, null, null, null, null, queue, null)
             jobInfo.runTime = runTime
 
             /** Directories and files */
-            jobInfo.execHome = jobResult["working_directory"]
+            jobInfo.execHome = jsonEntry["working_directory"]
 
             /** Timestamps */
-            jobInfo.submitTime = parseTimeOfEpochSecond(jobResult["time"]["submission"] as String)
-            jobInfo.startTime = parseTimeOfEpochSecond(jobResult["time"]["start"] as String)
-            jobInfo.endTime = parseTimeOfEpochSecond(jobResult["time"]["end"] as String)
+            jobInfo.submitTime = parseTimeOfEpochSecond(jsonEntry["time"]["submission"] as String)
+            jobInfo.eligibleTime = parseTimeOfEpochSecond(jsonEntry["time"]["eligible"] as String)
+            jobInfo.startTime = parseTimeOfEpochSecond(jsonEntry["time"]["start"] as String)
+            jobInfo.endTime = parseTimeOfEpochSecond(jsonEntry["time"]["end"] as String)
 
             result.put(jobID, jobInfo)
         }
@@ -272,15 +271,15 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     }
 
     private ZonedDateTime parseTime(String str) {
-        return withCaughtAndLoggedException {
+        return str != 'Unknown' ? withCaughtAndLoggedException {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
             LocalDateTime localDateTime = LocalDateTime.parse(str, formatter)
             return ZonedDateTime.of(localDateTime, TIME_ZONE_ID)
-        }
+        } : null
     }
 
     private ZonedDateTime parseTimeOfEpochSecond(String str) {
-        return withCaughtAndLoggedException { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), TIME_ZONE_ID) }
+        return str != 'Unknown' ? withCaughtAndLoggedException { ZonedDateTime.ofInstant(Instant.ofEpochSecond(str as long), TIME_ZONE_ID) } : null
     }
 
     BufferValue safelyCastToBufferValue(String MAX_MEM) {
