@@ -26,13 +26,13 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     private final ZoneId TIME_ZONE_ID
 
     private final Map<String, JobState> stateMap = [
-            "RUNNING": JobState.RUNNING,
-            "SUSPENDED": JobState.SUSPENDED,
-            "PENDING": JobState.HOLD,
+            "RUNNING"   : JobState.RUNNING,
+            "SUSPENDED" : JobState.SUSPENDED,
+            "PENDING"   : JobState.HOLD,
             "CANCELLED+": JobState.ABORTED,
-            "COMPLETED": JobState.COMPLETED_SUCCESSFUL,
-            "NODE_FAIL": JobState.FAILED,
-            "FAILED": JobState.FAILED,
+            "COMPLETED" : JobState.COMPLETED_SUCCESSFUL,
+            "NODE_FAIL" : JobState.FAILED,
+            "FAILED"    : JobState.FAILED,
     ]
 
     SlurmJobManager(BEExecutionService executionService, JobManagerOptions parms) {
@@ -183,8 +183,8 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             Duration runLimit = safelyParseColonSeparatedDuration(jobResult["TimeLimit"])
             Duration runTime = safelyParseColonSeparatedDuration(jobResult["RunTime"])
             jobInfo.runTime = runTime
-            BufferValue memory = safelyCastToBufferValue(jobResult["mem"])
-            Integer cores = withCaughtAndLoggedException { jobResult["NumCPUs"] as Integer }
+            BufferValue memory = safelyCastToBufferValue(jobResult["MinMemoryNode"])
+            Integer cores = withCaughtAndLoggedException { jobResult["MinCPUsNode"] as Integer }
             Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"]?.split("-")?.last() as Integer }
             jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
@@ -203,7 +203,11 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     Duration safelyParseColonSeparatedDuration(String value) {
         withCaughtAndLoggedException {
-            value?.length() > 7 ? parseColonSeparatedHHMMSSDuration(value[-8..-1]) : null
+            Duration duration = parseColonSeparatedHHMMSSDuration(value.substring(value.lastIndexOf("-") + 1))
+            if (value.contains("-")) {
+                duration += Duration.ofDays(value.substring(0, value.lastIndexOf("-")).toLong())
+            }
+            return duration
         }
     }
 
