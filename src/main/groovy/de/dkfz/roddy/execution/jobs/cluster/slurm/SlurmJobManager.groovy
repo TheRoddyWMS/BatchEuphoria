@@ -113,6 +113,13 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         return stateMap.get(stateString, JobState.UNKNOWN)
     }
 
+    /**
+     * For SLURM there are two different commands to query extended job states.
+     * One only available during runtime that provides specific runtime info.
+     * And one that can be run at any time, but does not provide the specific runtime info provided by the other command.
+     * Since this is not supported by the superclass this implementation was chosen.
+     * For the future it might be an idea to execute both queries and combine the output.
+     */
     @Override
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
                                                            Duration timeout = Duration.ZERO) {
@@ -186,6 +193,12 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             BufferValue memory = safelyCastToBufferValue(jobResult["MinMemoryNode"])
             Integer cores = withCaughtAndLoggedException { jobResult["MinCPUsNode"] as Integer }
             Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"]?.split("-")?.last() as Integer }
+
+            /**
+             * Here the Minimum requirements for the Node the job is running on are used.
+             * The Info about the actual limits and the usedResources are not available,
+             * but to be consistent with the output expected of queryExtendedJobStateById they are both set here.
+             **/
             jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
 
@@ -256,6 +269,11 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             cores = cores == 0 ? null : cores
             Integer nodes = withCaughtAndLoggedException { jsonEntry["allocation_nodes"] as Integer }
 
+            /**
+             * Here the actual limits the job has requested are used.
+             * The Info about usedResources is not available, but to be consistent with the output expected
+             * of queryExtendedJobStateById they are both set here.
+             **/
             jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
             jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
             jobInfo.runTime = runTime
