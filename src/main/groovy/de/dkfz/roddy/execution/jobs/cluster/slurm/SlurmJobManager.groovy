@@ -216,11 +216,12 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     Duration safelyParseColonSeparatedDuration(String value) {
         withCaughtAndLoggedException {
-            Duration duration = parseColonSeparatedHHMMSSDuration(value.substring(value.lastIndexOf("-") + 1))
             if (value.contains("-")) {
-                duration += Duration.ofDays(value.substring(0, value.lastIndexOf("-")).toLong())
+                return Duration.ofDays(value.substring(0, value.lastIndexOf("-")).toLong())+
+                        parseColonSeparatedHHMMSSDuration(value.substring(value.lastIndexOf("-") + 1))
+            } else {
+                return parseColonSeparatedHHMMSSDuration(value)
             }
-            return duration
         }
     }
 
