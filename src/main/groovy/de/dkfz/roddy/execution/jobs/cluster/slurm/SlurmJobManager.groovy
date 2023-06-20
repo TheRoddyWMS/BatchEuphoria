@@ -190,6 +190,10 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             Duration runLimit = safelyParseColonSeparatedDuration(jobResult["TimeLimit"])
             Duration runTime = safelyParseColonSeparatedDuration(jobResult["RunTime"])
             jobInfo.runTime = runTime
+            // MinMemoryNode and MinCPUsNode are the request of the minimum available
+            // on the cluster node. In contrast, for LSF `ResourceSet.memory` and `cores` are **additionally**
+            // the maxima, beyond which the job will be killed because too many resources
+            // are used.
             BufferValue memory = safelyCastToBufferValue(jobResult["MinMemoryNode"])
             Integer cores = withCaughtAndLoggedException { jobResult["MinCPUsNode"] as Integer }
             Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"]?.split("-")?.last() as Integer }
