@@ -242,12 +242,29 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             return result
         }
 
+        Object jsonEntry
         Object parsedJson = new JsonSlurper().parseText(rawJson)
         List records = (List) parsedJson["jobs"]
-        if (records.size() != 1) {
-            throw new BEException("There is a problem with the sacct output. Record size ${records.size()}")
+        if (records.size() == 0) {
+            return result
+        } else if (records.size() != 1) {
+            log.debug("There were ${records.size()} records.")
+            records.each {
+                if (jsonEntry["state"]["current"] == "REQUEUED") {
+                    log.debug("There were ${records.size()} records.")
+                    return
+                }
+                if (jsonEntry) {
+                    log.warn("Overwriting entry, state was: ${jsonEntry["state"]["current"]}")
+                }
+                jsonEntry = it
+            }
+            if (!jsonEntry) {
+                throw new BEException("There is a problem with the sacct output. No valid entry found.")
+            }
+        } else {
+            jsonEntry = records[0]
         }
-        Object jsonEntry = records[0]
         GenericJobInfo jobInfo
         BEJobID jobID
         String JOBID = jsonEntry["job_id"]
