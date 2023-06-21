@@ -72,6 +72,10 @@ public enum JobState implements Serializable {
         return this == DUMMY;
     }
 
+    public boolean isStarted() {
+        return this == STARTED;
+    }
+
     public boolean isRunning() {
         return this == JobState.RUNNING;
     }
@@ -89,4 +93,7 @@ public enum JobState implements Serializable {
         return this == COMPLETED_SUCCESSFUL;
     }
 
+    public boolean isFailed() { return Arrays.asList(JobState.FAILED, JobState.ABORTED).contains(this); }
+
+    public boolean isCompleted() { return Arrays.asList(JobState.COMPLETED_SUCCESSFUL, JobState.COMPLETED_UNKNOWN).contains(this); }
 }
