@@ -250,14 +250,14 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         } else if (records.size() != 1) {
             log.debug("There were ${records.size()} records.")
             for (entry in records) {
-                if (jsonEntry["state"]["current"] == "REQUEUED") {
-                    log.debug("There were ${records.size()} records.")
-                    return
+                if (entry["state"]["current"] == "REQUEUED") {
+                    log.debug("Found requeued record.")
+                } else {
+                    if (jsonEntry) {
+                        log.warn("Overwriting entry, state was: ${entry["state"]["current"]}")
+                    }
+                    jsonEntry = entry
                 }
-                if (jsonEntry) {
-                    log.warn("Overwriting entry, state was: ${jsonEntry["state"]["current"]}")
-                }
-                jsonEntry = entry
             }
             if (!jsonEntry) {
                 throw new BEException("There is a problem with the sacct output. No valid entry found.")

@@ -109,4 +109,12 @@ class SlurmJobManagerSpec extends Specification {
         jobInfo.startTime.toInstant().toEpochMilli() / 1000 == 1687234198
         jobInfo.endTime.toInstant().toEpochMilli() / 1000 == 1687234436
     }
+
+    def "test processExtendedOutputFromJson with sacct_requeued.json"() {
+        when:
+        GenericJobInfo jobInfo = jobManager.processExtendedOutputFromJson(getResourceFile("sacct_requeued.json").text)
+
+        then:
+        jobInfo.executionHosts == ["compute015"]
+    }
 }
