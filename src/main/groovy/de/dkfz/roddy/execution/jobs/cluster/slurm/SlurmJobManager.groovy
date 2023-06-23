@@ -15,8 +15,10 @@ import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
 import groovy.json.JsonSlurper
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 
+import java.lang.reflect.Field
 import java.time.*
 import java.time.format.DateTimeFormatter
 
@@ -130,7 +132,10 @@ class SlurmJobManager extends GridEngineBasedJobManager {
                 genericJobInfo = this.processExtendedOutput(er.stdout.join("\n"))
                 er = executionService.execute("sacct -j ${jobIds[i]} --json")
                 if (er?.successful) {
-                    genericJobInfo = this.processExtendedOutputFromJson(er.stdout.join("\n"), genericJobInfo)
+                    GenericJobInfo primary = this.processExtendedOutputFromJson(er.stdout.join("\n"))
+                    if (primary) {
+                        genericJobInfo = mergeGenericJobInfo(primary, genericJobInfo)
+                    }
                 }
             } else {
                 er = executionService.execute("sacct -j ${jobIds[i]} --json")
@@ -140,10 +145,27 @@ class SlurmJobManager extends GridEngineBasedJobManager {
                     throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
                 }
             }
-            queriedExtendedStates << [(jobIds[i]): genericJobInfo]
+            if (genericJobInfo) {
+                queriedExtendedStates << [(jobIds[i]): genericJobInfo]
+            } else {
+                log.warn("Could not query extended states for ${jobIds[i]}")
+            }
         }
 
         return queriedExtendedStates
+    }
+
+    @CompileDynamic
+    protected static GenericJobInfo mergeGenericJobInfo(GenericJobInfo primary, GenericJobInfo secondary) {
+        if (!secondary) {
+            return primary
+        }
+        primary.properties.findAll { k, v->
+            if (!v && secondary."${k}") {
+                primary."${k}" = secondary."${k}"
+            }
+        }
+        return primary
     }
 
     /**
@@ -159,19 +181,8 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         if (splitted.size() <= 1) {
             return null
         }
+        Map<String, String> jobResult = parseExtendedOutput(splitted)
 
-        Map<String, String> jobResult = [:]
-
-        for (int i = 0; i < splitted.size(); i++) {
-            String[] jobKeyValue = splitted[i].split("=|,")
-            if (jobKeyValue.size() == 2) {
-                jobResult.put(jobKeyValue[0].trim(), jobKeyValue[1].trim())
-            } else if (jobKeyValue.size() % 2 == 1) { //TRES=cpu=76,mem=300G,node=1,billing=151
-                for (int j = 1; j < jobKeyValue.size(); j++) {
-                    jobResult.put(jobKeyValue[j].trim(), jobKeyValue[++j].trim())
-                }
-            }
-        }
         BEJobID jobID
         String JOBID = jobResult["JobId"]
         try {
@@ -221,6 +232,21 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         return jobInfo
     }
 
+    private static Map<String, String> parseExtendedOutput(Collection<String> splitted) {
+        Map<String, String> jobResult = [:]
+        for (int i = 0; i < splitted.size(); i++) {
+            String[] jobKeyValue = splitted[i].split("=|,")
+            if (jobKeyValue.size() == 2) { //JobId=267858
+                jobResult.put(jobKeyValue[0].trim(), jobKeyValue[1].trim())
+            } else if (jobKeyValue.size() % 2 == 1) { //TRES=cpu=76,mem=300G,node=1,billing=151
+                for (int j = 1; j < jobKeyValue.size(); j++) {
+                    jobResult.put(jobKeyValue[j].trim(), jobKeyValue[++j].trim())
+                }
+            }
+        }
+        return jobResult
+    }
+
     protected static Duration safelyParseColonSeparatedDuration(String value) {
         withCaughtAndLoggedException {
             if (value.contains("-")) {
@@ -237,16 +263,16 @@ class SlurmJobManager extends GridEngineBasedJobManager {
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    protected GenericJobInfo processExtendedOutputFromJson(String rawJson, GenericJobInfo result = null) {
+    protected GenericJobInfo processExtendedOutputFromJson(String rawJson) {
         if (!rawJson) {
-            return result
+            return null
         }
 
         Object jsonEntry
         Object parsedJson = new JsonSlurper().parseText(rawJson)
         List records = (List) parsedJson["jobs"]
         if (records.size() == 0) {
-            return result
+            return null
         } else if (records.size() != 1) {
             log.debug("There were ${records.size()} records.")
             for (entry in records) {
@@ -275,7 +301,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         }
 
         List<String> dependIDs = []
-        jobInfo = result ?: new GenericJobInfo(jsonEntry["name"] as String, null, jobID, null, dependIDs)
+        jobInfo = new GenericJobInfo(jsonEntry["name"] as String, null, jobID, null, dependIDs)
 
         /** Common */
         jobInfo.user = jsonEntry["user"]

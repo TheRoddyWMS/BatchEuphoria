@@ -1,5 +1,6 @@
 package de.dkfz.roddy.execution.jobs.cluster.slurm
 
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
@@ -116,5 +117,24 @@ class SlurmJobManagerSpec extends Specification {
 
         then:
         jobInfo.executionHosts == ["compute015"]
+    }
+
+    def "test mergeGenericJobInfo"() {
+        given:
+        GenericJobInfo primary = new GenericJobInfo("jobName", new File("command"), new BEJobID("1"), [:], [])
+        primary.user = "User"
+        primary.userGroup = "User Group"
+        GenericJobInfo secondary = new GenericJobInfo("jobName", new File("command"), new BEJobID("1"), [:], [])
+        secondary.userGroup = "Other User Group"
+        secondary.account = "Account"
+        GenericJobInfo result
+
+        when:
+        result = jobManager.mergeGenericJobInfo(primary, secondary)
+
+        then:
+        result.user == "User"
+        result.userGroup == "User Group"
+        result.account == "Account"
     }
 }
