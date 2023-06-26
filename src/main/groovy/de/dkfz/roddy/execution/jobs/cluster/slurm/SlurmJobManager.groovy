@@ -18,7 +18,6 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 
-import java.lang.reflect.Field
 import java.time.*
 import java.time.format.DateTimeFormatter
 
@@ -129,18 +128,18 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             ExecutionResult er = executionService.execute("${getExtendedQueryJobStatesCommand()} ${jobIds[i]} -o")
             GenericJobInfo genericJobInfo
             if (er?.successful) {
-                genericJobInfo = this.processExtendedOutput(er.stdout.join("\n"))
+                genericJobInfo = this.processSControlOutput(er.stdout.join("\n"))
                 er = executionService.execute("sacct -j ${jobIds[i]} --json")
                 if (er?.successful) {
-                    GenericJobInfo primary = this.processExtendedOutputFromJson(er.stdout.join("\n"))
+                    GenericJobInfo primary = this.processSacctOutputFromJson(er.stdout.join("\n"))
                     if (primary) {
-                        genericJobInfo = mergeGenericJobInfo(primary, genericJobInfo)
+                        genericJobInfo = fillFromSupplement(primary, genericJobInfo)
                     }
                 }
             } else {
                 er = executionService.execute("sacct -j ${jobIds[i]} --json")
                 if (er?.successful) {
-                    genericJobInfo = this.processExtendedOutputFromJson(er.stdout.join("\n"))
+                    genericJobInfo = this.processSacctOutputFromJson(er.stdout.join("\n"))
                 } else {
                     throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
                 }
@@ -156,13 +155,13 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     }
 
     @CompileDynamic
-    protected static GenericJobInfo mergeGenericJobInfo(GenericJobInfo primary, GenericJobInfo secondary) {
-        if (!secondary) {
+    protected static GenericJobInfo fillFromSupplement(GenericJobInfo primary, GenericJobInfo supplement) {
+        if (!supplement) {
             return primary
         }
         primary.properties.findAll { k, v->
-            if (!v && secondary."${k}") {
-                primary."${k}" = secondary."${k}"
+            if (!v && supplement."${k}") {
+                primary."${k}" = supplement."${k}"
             }
         }
         return primary
@@ -173,7 +172,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
      * @param resultLines - Input of ExecutionResult object
      * @return GenericJobInfo
      */
-    protected GenericJobInfo processExtendedOutput(String stdout) {
+    protected GenericJobInfo processSControlOutput(String stdout) {
         // Create a complex line object which will be used for further parsing.
         ComplexLine line = new ComplexLine(stdout)
 
@@ -263,7 +262,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    protected GenericJobInfo processExtendedOutputFromJson(String rawJson) {
+    protected GenericJobInfo processSacctOutputFromJson(String rawJson) {
         if (!rawJson) {
             return null
         }

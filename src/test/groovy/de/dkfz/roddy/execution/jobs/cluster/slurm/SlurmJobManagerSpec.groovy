@@ -34,9 +34,9 @@ class SlurmJobManagerSpec extends Specification {
         "01:30:15"    | "PT1H30M15S"
     }
 
-    def "test processExtendedOutput with scontrol.txt"() {
+    def "test processSControlOutput with scontrol.txt"() {
         when:
-        GenericJobInfo jobInfo = jobManager.processExtendedOutput(getResourceFile("scontrol.txt").text)
+        GenericJobInfo jobInfo = jobManager.processSControlOutput(getResourceFile("scontrol.txt").text)
 
         then:
         /** Directories and files */
@@ -71,9 +71,9 @@ class SlurmJobManagerSpec extends Specification {
         jobInfo.endTime.toString().startsWith("2023-06-21T03:07:34")
     }
 
-    def "test processExtendedOutputFromJson with sacct.json"() {
+    def "test processSacctOutputFromJson with sacct.json"() {
         when:
-        GenericJobInfo jobInfo = jobManager.processExtendedOutputFromJson(getResourceFile("sacct.json").text)
+        GenericJobInfo jobInfo = jobManager.processSacctOutputFromJson(getResourceFile("sacct.json").text)
 
         then:
         /** Common */
@@ -111,26 +111,26 @@ class SlurmJobManagerSpec extends Specification {
         jobInfo.endTime.toInstant().toEpochMilli() / 1000 == 1687234436
     }
 
-    def "test processExtendedOutputFromJson with sacct_requeued.json"() {
+    def "test processSacctOutputFromJson with sacct_requeued.json"() {
         when:
-        GenericJobInfo jobInfo = jobManager.processExtendedOutputFromJson(getResourceFile("sacct_requeued.json").text)
+        GenericJobInfo jobInfo = jobManager.processSacctOutputFromJson(getResourceFile("sacct_requeued.json").text)
 
         then:
         jobInfo.executionHosts == ["compute015"]
     }
 
-    def "test mergeGenericJobInfo"() {
+    def "test fillFromSupplement"() {
         given:
         GenericJobInfo primary = new GenericJobInfo("jobName", new File("command"), new BEJobID("1"), [:], [])
         primary.user = "User"
         primary.userGroup = "User Group"
-        GenericJobInfo secondary = new GenericJobInfo("jobName", new File("command"), new BEJobID("1"), [:], [])
-        secondary.userGroup = "Other User Group"
-        secondary.account = "Account"
+        GenericJobInfo supplement = new GenericJobInfo("jobName", new File("command"), new BEJobID("1"), [:], [])
+        supplement.userGroup = "Other User Group"
+        supplement.account = "Account"
         GenericJobInfo result
 
         when:
-        result = jobManager.mergeGenericJobInfo(primary, secondary)
+        result = jobManager.fillFromSupplement(primary, supplement)
 
         then:
         result.user == "User"
