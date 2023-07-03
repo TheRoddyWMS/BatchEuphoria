@@ -30,6 +30,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
             "RUNNING"   : JobState.RUNNING,
             "SUSPENDED" : JobState.SUSPENDED,
             "PENDING"   : JobState.HOLD,
+            "CANCELLED" : JobState.ABORTED,
             "CANCELLED+": JobState.ABORTED,
             "COMPLETED" : JobState.COMPLETED_SUCCESSFUL,
             "NODE_FAIL" : JobState.FAILED,
