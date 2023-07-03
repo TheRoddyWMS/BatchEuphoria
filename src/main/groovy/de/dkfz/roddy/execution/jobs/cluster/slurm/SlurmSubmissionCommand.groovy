@@ -100,7 +100,7 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     protected String getAdditionalCommandParameters() {
-        return "${getParsableParameter()} --kill-on-invalid-dep=yes" as String
+        return "${getParsableParameter()} --kill-on-invalid-dep=yes --propagate=none" as String
     }
 
     @Override

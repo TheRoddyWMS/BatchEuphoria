@@ -80,7 +80,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(jobManager, makeJob([:]), "jobname",
                 null, [:], null, "/tmp/test.sh")
         then:
-        cmd.toBashCommandString() == 'sbatch   --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch   --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
 
     def "command with accounting name"() {
@@ -88,7 +88,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(jobManager, makeJob([:], "accountingProject"),
                 "jobname", null, [:], null, "/tmp/test.sh")
         then:
-        cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
 
 }

@@ -1,0 +1,27 @@
+JobId=267858 JobName=r230620
+   UserId=user(192456) GroupId=group(1127598) MCS_label=N/A
+   Priority=1184 Nice=0 Account=group QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=03:21:58 TimeLimit=20:00:00 TimeMin=N/A
+   SubmitTime=2023-06-20T07:07:33 EligibleTime=2023-06-20T07:07:33
+   AccrueTime=2023-06-20T07:07:33
+   StartTime=2023-06-20T07:07:34 EndTime=2023-06-21T03:07:34 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2023-06-20T07:07:34 Scheduler=Main
+   Partition=compute AllocNode:Sid=login1:153631
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=compute038
+   BatchHost=compute038
+   NumNodes=1 NumCPUs=76 NumTasks=1 CPUs/Task=1 ReqB:S:C:T=0:0:1:*
+   TRES=cpu=76,mem=300G,node=1,billing=151
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=75 MinMemoryNode=300G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/path/to/wrapInScript.sh
+   WorkDir=/home/user
+   StdErr=/path/to/errorFile
+   StdIn=/dev/null
+   StdOut=/path/to/outputFile
+   Power=
+   KillOInInvalidDependent=Yes

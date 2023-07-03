@@ -89,6 +89,15 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.1.3
+  - patch: Added getter for JobState enum.
+  - patch: Fix SLURM API.
+    * Reworked queryExtendedJobStateById to always execute both scontrol and sacct and combine the output
+    * Some refactoring and added comments
+    * Fixed time parsing for jobs longer than 24h
+    * Added --propagate=none" to getAdditionalCommandParameters
+    * Added tests
+
 * 0.1.2
   - patch: Fix SLURM API.
     * Always return an asked resource for SLURM with requested memory, cores, and nodes.

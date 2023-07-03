@@ -15,6 +15,7 @@ import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
 import groovy.json.JsonSlurper
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 
 import java.time.*
@@ -26,13 +27,14 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     private final ZoneId TIME_ZONE_ID
 
     private final Map<String, JobState> stateMap = [
-            "RUNNING": JobState.RUNNING,
-            "SUSPENDED": JobState.SUSPENDED,
-            "PENDING": JobState.HOLD,
+            "RUNNING"   : JobState.RUNNING,
+            "SUSPENDED" : JobState.SUSPENDED,
+            "PENDING"   : JobState.HOLD,
+            "CANCELLED" : JobState.ABORTED,
             "CANCELLED+": JobState.ABORTED,
-            "COMPLETED": JobState.COMPLETED_SUCCESSFUL,
-            "NODE_FAIL": JobState.FAILED,
-            "FAILED": JobState.FAILED,
+            "COMPLETED" : JobState.COMPLETED_SUCCESSFUL,
+            "NODE_FAIL" : JobState.FAILED,
+            "FAILED"    : JobState.FAILED,
     ]
 
     SlurmJobManager(BEExecutionService executionService, JobManagerOptions parms) {
@@ -113,161 +115,234 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         return stateMap.get(stateString, JobState.UNKNOWN)
     }
 
+    /**
+     * For SLURM there are two different commands to query extended job states.
+     * One only available during runtime that provides specific runtime info.
+     * And one that can be run at any time, but does not provide the specific runtime info provided by the other command.
+     * Since this is not supported by the superclass this implementation was chosen.
+     */
     @Override
     Map<BEJobID, GenericJobInfo> queryExtendedJobStateById(List<BEJobID> jobIds,
                                                            Duration timeout = Duration.ZERO) {
         Map<BEJobID, GenericJobInfo> queriedExtendedStates = [:]
         for (int i = 0; i < jobIds.size(); i++) {
             ExecutionResult er = executionService.execute("${getExtendedQueryJobStatesCommand()} ${jobIds[i]} -o")
-
+            GenericJobInfo genericJobInfo
             if (er?.successful) {
-                queriedExtendedStates = this.processExtendedOutput(er.stdout.join("\n"), queriedExtendedStates)
+                genericJobInfo = this.processSControlOutput(er.stdout.join("\n"))
+                er = executionService.execute("sacct -j ${jobIds[i]} --json")
+                if (er?.successful) {
+                    GenericJobInfo primary = this.processSacctOutputFromJson(er.stdout.join("\n"))
+                    if (primary) {
+                        genericJobInfo = fillFromSupplement(primary, genericJobInfo)
+                    }
+                }
             } else {
                 er = executionService.execute("sacct -j ${jobIds[i]} --json")
                 if (er?.successful) {
-                    queriedExtendedStates = this.processExtendedOutputFromJson(er.stdout.join("\n"), queriedExtendedStates)
+                    genericJobInfo = this.processSacctOutputFromJson(er.stdout.join("\n"))
                 } else {
                     throw new BEException("Extended job states couldn't be retrieved: ${er.toStatusLine()}")
                 }
+            }
+            if (genericJobInfo) {
+                queriedExtendedStates << [(jobIds[i]): genericJobInfo]
+            } else {
+                log.warn("Could not query extended states for ${jobIds[i]}")
             }
         }
 
         return queriedExtendedStates
     }
 
+    @CompileDynamic
+    protected static GenericJobInfo fillFromSupplement(GenericJobInfo primary, GenericJobInfo supplement) {
+        if (!supplement) {
+            return primary
+        }
+        primary.properties.findAll { k, v->
+            if (!v && supplement."${k}") {
+                primary."${k}" = supplement."${k}"
+            }
+        }
+        return primary
+    }
+
     /**
      * Reads the scontrol output and creates GenericJobInfo objects
      * @param resultLines - Input of ExecutionResult object
-     * @return map with jobid as key
+     * @return GenericJobInfo
      */
-    protected Map<BEJobID, GenericJobInfo> processExtendedOutput(String stdout, Map<BEJobID, GenericJobInfo> result) {
+    protected GenericJobInfo processSControlOutput(String stdout) {
         // Create a complex line object which will be used for further parsing.
         ComplexLine line = new ComplexLine(stdout)
 
         Collection<String> splitted = line.splitBy(" ").findAll { it }
-        if (splitted.size() > 1) {
-            Map<String, String> jobResult = [:]
-
-            for (int i = 0; i < splitted.size(); i++) {
-                String[] jobKeyValue = splitted[i].split("=")
-                if (jobKeyValue.size() > 1) {
-                    jobResult.put(jobKeyValue[0], jobKeyValue[1])
-                }
-            }
-            BEJobID jobID
-            String JOBID = jobResult["JobId"]
-            try {
-                jobID = new BEJobID(JOBID)
-            } catch (Exception exp) {
-                throw new BEException("Job ID '${JOBID}' could not be transformed to BEJobID ")
-            }
-            List<String> dependIDs = []
-            GenericJobInfo jobInfo = new GenericJobInfo(jobResult["JobName"], new File(jobResult["Command"]), jobID, null, dependIDs)
-
-            /** Directories and files */
-            jobInfo.inputFile = new File(jobResult["StdIn"])
-            jobInfo.logFile = new File(jobResult["StdOut"])
-            jobInfo.user = jobResult["UserId"]
-            jobInfo.submissionHost = jobResult["BatchHost"]
-            jobInfo.executionHosts = [jobResult["NodeList"] as String]
-            jobInfo.errorLogFile = new File(jobResult["StdErr"])
-            jobInfo.execHome = jobResult["WorkDir"]
-
-            /** Status info */
-            jobInfo.jobState = parseJobState(jobResult["JobState"])
-            jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["ExitCode"].split(":")[0] as Integer)
-            jobInfo.pendReason = jobResult["Reason"]
-
-            /** Resources */
-            String queue = jobResult["Partition"]
-            Duration runLimit = safelyParseColonSeparatedDuration(jobResult["TimeLimit"])
-            Duration runTime = safelyParseColonSeparatedDuration(jobResult["RunTime"])
-            jobInfo.runTime = runTime
-            BufferValue memory = safelyCastToBufferValue(jobResult["mem"])
-            Integer cores = withCaughtAndLoggedException { jobResult["NumCPUs"] as Integer }
-            Integer nodes = withCaughtAndLoggedException { jobResult["NumNodes"]?.split("-")?.last() as Integer }
-            jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
-            jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
-
-            /** Timestamps */
-            jobInfo.submitTime = parseTime(jobResult["SubmitTime"])
-            jobInfo.eligibleTime = parseTime(jobResult["EligibleTime"])
-            jobInfo.startTime = parseTime(jobResult["StartTime"])
-            jobInfo.endTime = parseTime(jobResult["EndTime"])
-
-            result.put(jobID, jobInfo)
+        if (splitted.size() <= 1) {
+            return null
         }
+        Map<String, String> jobResult = parseExtendedOutput(splitted)
 
-        return result
+        BEJobID jobID
+        String JOBID = jobResult["JobId"]
+        try {
+            jobID = new BEJobID(JOBID)
+        } catch (Exception exp) {
+            throw new BEException("Job ID '${JOBID}' could not be transformed to BEJobID ")
+        }
+        List<String> dependIDs = []
+        GenericJobInfo jobInfo = new GenericJobInfo(jobResult["JobName"], new File(jobResult["Command"]), jobID, null, dependIDs)
+
+        /** Directories and files */
+        jobInfo.inputFile = new File(jobResult["StdIn"])
+        jobInfo.logFile = new File(jobResult["StdOut"])
+        jobInfo.user = jobResult["UserId"]
+        jobInfo.submissionHost = jobResult["BatchHost"]
+        jobInfo.executionHosts = [jobResult["NodeList"] as String]
+        jobInfo.errorLogFile = new File(jobResult["StdErr"])
+        jobInfo.execHome = jobResult["WorkDir"]
+
+        /** Status info */
+        jobInfo.jobState = parseJobState(jobResult["JobState"])
+        jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jobResult["ExitCode"].split(":")[0] as Integer)
+        jobInfo.pendReason = jobResult["Reason"]
+
+        /** Resources */
+        String queue = jobResult["Partition"]
+        Duration runLimit = safelyParseColonSeparatedDuration(jobResult["TimeLimit"])
+        Duration runTime = safelyParseColonSeparatedDuration(jobResult["RunTime"])
+        jobInfo.runTime = runTime
+        BufferValue memory = safelyCastToBufferValue(jobResult["mem"])
+        Integer cores = withCaughtAndLoggedException { jobResult["cpu"] as Integer }
+        Integer nodes = withCaughtAndLoggedException { jobResult["node"]?.split("-")?.last() as Integer }
+
+        /**
+         * The Info about usedResources is not available, but to be consistent with the output expected
+         * of queryExtendedJobStateById they are both set here.
+         **/
+        jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
+        jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
+
+        /** Timestamps */
+        jobInfo.submitTime = parseTime(jobResult["SubmitTime"])
+        jobInfo.eligibleTime = parseTime(jobResult["EligibleTime"])
+        jobInfo.startTime = parseTime(jobResult["StartTime"])
+        jobInfo.endTime = parseTime(jobResult["EndTime"])
+
+        return jobInfo
     }
 
-    Duration safelyParseColonSeparatedDuration(String value) {
+    private static Map<String, String> parseExtendedOutput(Collection<String> splitted) {
+        Map<String, String> jobResult = [:]
+        for (int i = 0; i < splitted.size(); i++) {
+            String[] jobKeyValue = splitted[i].split("=|,")
+            if (jobKeyValue.size() == 2) { //JobId=267858
+                jobResult.put(jobKeyValue[0].trim(), jobKeyValue[1].trim())
+            } else if (jobKeyValue.size() % 2 == 1) { //TRES=cpu=76,mem=300G,node=1,billing=151
+                for (int j = 1; j < jobKeyValue.size(); j++) {
+                    jobResult.put(jobKeyValue[j].trim(), jobKeyValue[++j].trim())
+                }
+            }
+        }
+        return jobResult
+    }
+
+    protected static Duration safelyParseColonSeparatedDuration(String value) {
         withCaughtAndLoggedException {
-            value?.length() > 7 ? parseColonSeparatedHHMMSSDuration(value[-8..-1]) : null
+            if (value.contains("-")) {
+                return Duration.ofDays(value.substring(0, value.lastIndexOf("-")).toLong()) +
+                        parseColonSeparatedHHMMSSDuration(value.substring(value.lastIndexOf("-") + 1))
+            } else {
+                return parseColonSeparatedHHMMSSDuration(value)
+            }
         }
     }
 
     /**
-     * Reads the sacct output as Json and creates GenericJobInfo objects
+     * Reads the sacct output for a single job as Json and creates GenericJobInfo objects
      * @param resultLines - Input of ExecutionResult object
      * @return map with jobid as key
      */
-    protected Map<BEJobID, GenericJobInfo> processExtendedOutputFromJson(String rawJson, Map<BEJobID, GenericJobInfo> result) {
-        if (!rawJson)
-            return result
+    protected GenericJobInfo processSacctOutputFromJson(String rawJson) {
+        if (!rawJson) {
+            return null
+        }
 
+        Object jsonEntry
         Object parsedJson = new JsonSlurper().parseText(rawJson)
         List records = (List) parsedJson["jobs"]
-        for (jsonEntry in records) {
-            GenericJobInfo jobInfo
-            BEJobID jobID
-            String JOBID = jsonEntry["job_id"]
-            try {
-                jobID = new BEJobID(JOBID)
-            } catch (Exception exp) {
-                throw new BEException("Job ID '${JOBID}' could not be transformed to BEJobID ")
+        if (records.size() == 0) {
+            return null
+        } else if (records.size() != 1) {
+            log.debug("There were ${records.size()} records.")
+            for (entry in records) {
+                if (entry["state"]["current"] == "REQUEUED") {
+                    log.debug("Found requeued record.")
+                } else {
+                    if (jsonEntry) {
+                        log.warn("Overwriting entry, state was: ${entry["state"]["current"]}")
+                    }
+                    jsonEntry = entry
+                }
             }
-
-            List<String> dependIDs = []
-            jobInfo = new GenericJobInfo(jsonEntry["name"] as String, null, jobID, null, dependIDs)
-
-            /** Common */
-            jobInfo.user = jsonEntry["user"]
-            jobInfo.userGroup = jsonEntry["group"]
-            jobInfo.jobGroup = jsonEntry["group"]
-            jobInfo.priority = jsonEntry["priority"]
-            jobInfo.executionHosts = [jsonEntry["nodes"] as String]
-
-            /** Status info */
-            jobInfo.jobState = parseJobState(jsonEntry["state"]["current"] as String)
-            jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jsonEntry["exit_code"]["return_code"] as Integer)
-            jobInfo.pendReason = jsonEntry["state"]["reason"]
-
-            /** Resources */
-            String queue = jsonEntry["partition"]
-            Duration runLimit = Duration.ofMinutes(jsonEntry["time"]["limit"] as long)
-            Duration runTime = Duration.ofSeconds(jsonEntry["time"]["elapsed"] as long)
-            BufferValue memory = safelyCastToBufferValue(jsonEntry["required"]["memory"] as String)
-            Integer cores = withCaughtAndLoggedException { jsonEntry["required"]["CPUs"] as Integer }
-            cores = cores == 0 ? null : cores
-            Integer nodes = withCaughtAndLoggedException { jsonEntry["allocation_nodes"] as Integer }
-
-            jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
-            jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
-            jobInfo.runTime = runTime
-
-            /** Directories and files */
-            jobInfo.execHome = jsonEntry["working_directory"]
-
-            /** Timestamps */
-            jobInfo.submitTime = parseTimeOfEpochSecond(jsonEntry["time"]["submission"] as String)
-            jobInfo.eligibleTime = parseTimeOfEpochSecond(jsonEntry["time"]["eligible"] as String)
-            jobInfo.startTime = parseTimeOfEpochSecond(jsonEntry["time"]["start"] as String)
-            jobInfo.endTime = parseTimeOfEpochSecond(jsonEntry["time"]["end"] as String)
-
-            result.put(jobID, jobInfo)
+            if (!jsonEntry) {
+                throw new BEException("There is a problem with the sacct output. No valid entry found.")
+            }
+        } else {
+            jsonEntry = records[0]
         }
-        return result
+        GenericJobInfo jobInfo
+        BEJobID jobID
+        String JOBID = jsonEntry["job_id"]
+        try {
+            jobID = new BEJobID(JOBID)
+        } catch (Exception exp) {
+            throw new BEException("Job ID '${JOBID}' could not be transformed to BEJobID ")
+        }
+
+        List<String> dependIDs = []
+        jobInfo = new GenericJobInfo(jsonEntry["name"] as String, null, jobID, null, dependIDs)
+
+        /** Common */
+        jobInfo.user = jsonEntry["user"]
+        jobInfo.userGroup = jsonEntry["group"]
+        jobInfo.jobGroup = jsonEntry["group"]
+        jobInfo.priority = jsonEntry["priority"]
+        jobInfo.executionHosts = [jsonEntry["nodes"] as String]
+
+        /** Status info */
+        jobInfo.jobState = parseJobState(jsonEntry["state"]["current"] as String)
+        jobInfo.exitCode = jobInfo.jobState == JobState.COMPLETED_SUCCESSFUL ? 0 : (jsonEntry["exit_code"]["return_code"] as Integer)
+        jobInfo.pendReason = jsonEntry["state"]["reason"]
+
+        /** Resources */
+        String queue = jsonEntry["partition"]
+        Duration runLimit = Duration.ofMinutes(jsonEntry["time"]["limit"] as long)
+        Duration runTime = Duration.ofSeconds(jsonEntry["time"]["elapsed"] as long)
+        BufferValue memory = safelyCastToBufferValue(jsonEntry["required"]["memory"] as String)
+        Integer cores = withCaughtAndLoggedException { jsonEntry["required"]["CPUs"] as Integer }
+        cores = cores == 0 ? null : cores
+        Integer nodes = withCaughtAndLoggedException { jsonEntry["allocation_nodes"] as Integer }
+
+        /**
+         * The Info about usedResources is not available, but to be consistent with the output expected
+         * of queryExtendedJobStateById they are both set here.
+         **/
+        jobInfo.askedResources = new ResourceSet(memory, cores, nodes, runLimit, null, queue, null)
+        jobInfo.usedResources = new ResourceSet(memory, cores, nodes, runTime, null, queue, null)
+        jobInfo.runTime = runTime
+
+        /** Directories and files */
+        jobInfo.execHome = jsonEntry["working_directory"]
+
+        /** Timestamps */
+        jobInfo.submitTime = parseTimeOfEpochSecond(jsonEntry["time"]["submission"] as String)
+        jobInfo.eligibleTime = parseTimeOfEpochSecond(jsonEntry["time"]["eligible"] as String)
+        jobInfo.startTime = parseTimeOfEpochSecond(jsonEntry["time"]["start"] as String)
+        jobInfo.endTime = parseTimeOfEpochSecond(jsonEntry["time"]["end"] as String)
+
+
+        return jobInfo
     }
 
     private ZonedDateTime parseTime(String str) {
