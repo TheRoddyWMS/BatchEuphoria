@@ -89,6 +89,11 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.1.4
+  - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
+    * For eligibleTime it is set to null
+    * For startTime it is set to endTime
+
 * 0.1.3
   - patch: Added getter for JobState enum.
   - patch: Fix SLURM API.

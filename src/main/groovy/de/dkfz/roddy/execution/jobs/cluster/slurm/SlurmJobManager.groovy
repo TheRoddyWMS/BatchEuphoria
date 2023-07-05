@@ -160,7 +160,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         if (!supplement) {
             return primary
         }
-        primary.properties.findAll { k, v->
+        primary.properties.findAll { k, v ->
             if (!v && supplement."${k}") {
                 primary."${k}" = supplement."${k}"
             }
@@ -337,9 +337,15 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
         /** Timestamps */
         jobInfo.submitTime = parseTimeOfEpochSecond(jsonEntry["time"]["submission"] as String)
-        jobInfo.eligibleTime = parseTimeOfEpochSecond(jsonEntry["time"]["eligible"] as String)
-        jobInfo.startTime = parseTimeOfEpochSecond(jsonEntry["time"]["start"] as String)
+        String eligibleTime = jsonEntry["time"]["eligible"] as String
+        jobInfo.eligibleTime = eligibleTime != "0" ? parseTimeOfEpochSecond(eligibleTime) : null // convert "0" to null
         jobInfo.endTime = parseTimeOfEpochSecond(jsonEntry["time"]["end"] as String)
+        /**
+         * When startTime is "0", endTime should be used. Otherwise parseTimeOfEpochSecond will return 1970.
+         * Null here is not an option with how this value is currently used.
+         **/
+        String startTime = jsonEntry["time"]["start"] as String
+        jobInfo.startTime = startTime != "0" ? parseTimeOfEpochSecond(startTime) : jobInfo.endTime
 
 
         return jobInfo
