@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "plugin": {
+      "type": "openapi\/dbv0.0.37",
+      "name": "Slurm OpenAPI DB v0.0.37"
+    },
+    "Slurm": {
+      "version": {
+        "major": 22,
+        "micro": 2,
+        "minor": 5
+      },
+      "release": "22.05.2"
+    }
+  },
+  "errors": [
+  ],
+  "jobs": [
+    {
+      "account": "users",
+      "comment": {
+        "administrator": null,
+        "job": null,
+        "system": null
+      },
+      "allocation_nodes": 0,
+      "array": {
+        "job_id": 0,
+        "limits": {
+          "max": {
+            "running": {
+              "tasks": 0
+            }
+          }
+        },
+        "task": null,
+        "task_id": null
+      },
+      "association": {
+        "account": "users",
+        "cluster": "slurm-cluster",
+        "partition": null,
+        "user": "user"
+      },
+      "cluster": "slurm-cluster",
+      "constraints": "",
+      "derived_exit_code": {
+        "status": "SUCCESS",
+        "return_code": 0
+      },
+      "time": {
+        "elapsed": 0,
+        "eligible": 0,
+        "end": 1688498739,
+        "start": 0,
+        "submission": 1688463559,
+        "suspended": 0,
+        "system": {
+          "seconds": 0,
+          "microseconds": 0
+        },
+        "limit": 7200,
+        "total": {
+          "seconds": 0,
+          "microseconds": 0
+        },
+        "user": {
+          "seconds": 0,
+          "microseconds": 0
+        }
+      },
+      "exit_code": {
+        "status": "SUCCESS",
+        "return_code": 0
+      },
+      "flags": [
+      ],
+      "group": "users",
+      "het": {
+        "job_id": 0,
+        "job_offset": null
+      },
+      "job_id": 275097,
+      "name": "jobName",
+      "mcs": {
+        "label": ""
+      },
+      "nodes": "None assigned",
+      "partition": "devel",
+      "priority": 1116,
+      "qos": "normal",
+      "required": {
+        "CPUs": 6,
+        "memory": 102400
+      },
+      "kill_request_user": "user",
+      "reservation": {
+        "id": 0,
+        "name": 0
+      },
+      "state": {
+        "current": "CANCELLED",
+        "reason": "Dependency"
+      },
+      "steps": [
+      ],
+      "tres": {
+        "allocated": [
+        ],
+        "requested": [
+          {
+            "type": "cpu",
+            "name": null,
+            "id": 1,
+            "count": 6
+          },
+          {
+            "type": "mem",
+            "name": null,
+            "id": 2,
+            "count": 102400
+          },
+          {
+            "type": "node",
+            "name": null,
+            "id": 4,
+            "count": 1
+          },
+          {
+            "type": "billing",
+            "name": null,
+            "id": 5,
+            "count": 31
+          }
+        ]
+      },
+      "user": "user",
+      "wckey": {
+        "wckey": "",
+        "flags": [
+        ]
+      },
+      "working_directory": "\/path\/to\/file"
+    }
+  ]
+}

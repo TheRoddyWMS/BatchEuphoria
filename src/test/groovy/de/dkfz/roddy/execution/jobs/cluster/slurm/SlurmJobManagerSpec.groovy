@@ -44,9 +44,9 @@ class SlurmJobManagerSpec extends Specification {
         jobInfo.logFile == new File("/path/to/outputFile")
         jobInfo.user == "user(192456)"
         jobInfo.submissionHost == "compute038"
-        jobInfo.executionHosts ==  ["compute038"]
-        jobInfo.errorLogFile ==  new File("/path/to/errorFile")
-        jobInfo.execHome ==  "/home/user"
+        jobInfo.executionHosts == ["compute038"]
+        jobInfo.errorLogFile == new File("/path/to/errorFile")
+        jobInfo.execHome == "/home/user"
 
         /** Status info */
         jobInfo.jobState == JobState.RUNNING
@@ -59,12 +59,12 @@ class SlurmJobManagerSpec extends Specification {
         jobInfo.askedResources.cores == 76
         jobInfo.askedResources.nodes == 1
         jobInfo.askedResources.walltime == Duration.parse("PT20H")
-        jobInfo.askedResources.queue  == "compute"
+        jobInfo.askedResources.queue == "compute"
         jobInfo.usedResources.mem == new BufferValue(300, BufferUnit.G, BufferUnit.K)
         jobInfo.usedResources.cores == 76
         jobInfo.usedResources.nodes == 1
         jobInfo.usedResources.walltime == Duration.parse("PT3H21M58S")
-        jobInfo.usedResources.queue  == "compute"
+        jobInfo.usedResources.queue == "compute"
         jobInfo.submitTime.toString().startsWith("2023-06-20T07:07:33")
         jobInfo.eligibleTime.toString().startsWith("2023-06-20T07:07:33")
         jobInfo.startTime.toString().startsWith("2023-06-20T07:07:34")
@@ -93,12 +93,12 @@ class SlurmJobManagerSpec extends Specification {
         jobInfo.askedResources.cores == 1
         jobInfo.askedResources.nodes == 1
         jobInfo.askedResources.walltime == Duration.parse("PT5H")
-        jobInfo.askedResources.queue  == "compute"
+        jobInfo.askedResources.queue == "compute"
         jobInfo.usedResources.mem == new BufferValue(7168, BufferUnit.M, BufferUnit.K)
         jobInfo.usedResources.cores == 1
         jobInfo.usedResources.nodes == 1
         jobInfo.usedResources.walltime == Duration.parse("PT3M58S")
-        jobInfo.usedResources.queue  == "compute"
+        jobInfo.usedResources.queue == "compute"
         jobInfo.runTime == Duration.parse("PT3M58S")
 
         /** Directories and files */
@@ -117,6 +117,17 @@ class SlurmJobManagerSpec extends Specification {
 
         then:
         jobInfo.executionHosts == ["compute015"]
+    }
+
+    def "test processSacctOutputFromJson with sacct_not_started.json"() {
+        when:
+        GenericJobInfo jobInfo = jobManager.processSacctOutputFromJson(getResourceFile("sacct_not_started.json").text)
+
+        then:
+        jobInfo.submitTime.toInstant().toEpochMilli() / 1000 == 1688463559
+        !jobInfo.eligibleTime
+        jobInfo.endTime.toInstant().toEpochMilli() / 1000 == 1688498739
+        jobInfo.startTime == jobInfo.endTime
     }
 
     def "test fillFromSupplement"() {
