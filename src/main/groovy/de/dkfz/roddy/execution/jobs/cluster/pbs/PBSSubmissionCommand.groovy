@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
@@ -32,7 +33,7 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     PBSSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
                          List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
-                         List<String> dependencyIDs, String command) {
+                         List<String> dependencyIDs, CommandI command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 

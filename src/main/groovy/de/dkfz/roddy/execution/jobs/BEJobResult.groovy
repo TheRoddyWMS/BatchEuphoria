@@ -23,7 +23,7 @@ class BEJobResult implements Serializable {
     /**
      * The command which was used to create this result.
      */
-    final Command command
+    final BECommand command
     /**
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
@@ -36,7 +36,7 @@ class BEJobResult implements Serializable {
     /**
      * The tool which was run for this job.
      */
-    final File toolID
+    final File tool
     /**
      * Parameters for the job.
      */
@@ -51,13 +51,13 @@ class BEJobResult implements Serializable {
 
     }
 
-    BEJobResult(Command command, BEJob job, ExecutionResult executionResult, File toolID,
+    BEJobResult(BECommand beCommand, BEJob job, ExecutionResult executionResult, File tool,
                 Map<String, String> jobParameters, List<BEJob> parentJobs) {
-        this.command = command
+        this.command = beCommand
         assert (null != job)
         this.job = job
         this.executionResult = executionResult
-        this.toolID = toolID
+        this.tool = tool
         this.jobParameters = jobParameters
         this.parentJobs = parentJobs
     }

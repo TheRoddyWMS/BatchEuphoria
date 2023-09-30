@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import groovy.transform.CompileStatic
 
 /**
- * Base class for all types of commands.
+ * Base class for all types of cluster interaction commands.
  * <p>
  * PBSCommand extends this. Also SGECommand and so on.
  * <p>
@@ -18,7 +18,7 @@ import groovy.transform.CompileStatic
  * @author michael
  */
 @CompileStatic
-abstract class Command {
+abstract class BECommand {
 
     protected static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
 
@@ -53,7 +53,7 @@ abstract class Command {
      * @param environmentVariables
      * @param commandTags
      */
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
+    protected BECommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
         this.parentJobManager = parentJobManager
         this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job

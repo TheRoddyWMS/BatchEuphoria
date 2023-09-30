@@ -141,10 +141,9 @@ class LSFJobManager extends AbstractLSFJobManager {
         return js
     }
 
-    protected Command createCommand(BEJob job) {
+    protected LSFSubmissionCommand createCommand(BEJob job) {
         return new LSFSubmissionCommand(
-                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
-                job.tool?.absolutePath ?: job.toolScript)
+                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.command)
     }
 
     @Override

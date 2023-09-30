@@ -12,7 +12,9 @@ import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.RestExecutionService
+import de.dkfz.roddy.execution.ScriptCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
@@ -81,7 +83,10 @@ class BEIntegrationTest {
         if (!(properties["${system}.host".toString()] != "" && properties["${system}.account".toString()] != "")) return
 
         BatchEuphoriaJobManager jobManager = createJobManagerFor(system)
-        BEJob testJobWithPipedScript = new BEJob(null, "batchEuphoriaTestJob", null, testScript, null, resourceSet, null, ["a": "value"], jobManager, logFile, null)
+        BEJob testJobWithPipedScript = new BEJob(
+                null, "batchEuphoriaTestJob",
+                new Code(testScript), resourceSet, null,
+                ["a": "value"], jobManager, logFile, null)
         jobTest(jobManager, [testJobWithPipedScript])
     }
 
@@ -89,18 +94,56 @@ class BEIntegrationTest {
         if (!(properties["${system}.host".toString()] != "" && properties["${system}.account".toString()] != "")) return
 
         BatchEuphoriaJobManager jobManager = createJobManagerFor(system)
-        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", null, testScript, null, resourceSet, null, ["a": "value"], jobManager, logFile, null)
-        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", null, testScript, null, resourceSet, [testParent], ["a": "value"], jobManager, logFile, null)
-        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", null, testScript, null, resourceSet, [testParent, testJobChild1], ["a": "value"], jobManager, logFile, null)
+        BEJob testParent = new BEJob(
+                null,
+                "batchEuphoriaTestJob_Parent",
+                new Code(testScript),
+                resourceSet,
+                null,
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
+        BEJob testJobChild1 = new BEJob(
+                null,
+                "batchEuphoriaTestJob_Child1",
+                new Code(testScript),
+                resourceSet,
+                [testParent],
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
+        BEJob testJobChild2 = new BEJob(
+                null,
+                "batchEuphoriaTestJob_Child2",
+                new Code(testScript),
+                resourceSet,
+                [testParent, testJobChild1],
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
     void checkAndPossiblyRunJobWithFile(AvailableClusterSystems system) {
-        if (!(properties["${system}.host".toString()] != "" && properties["${system}.account".toString()] != "" && properties["remoteToolPath"] != "")) return
+        if (!(properties["${system}.host".toString()] != "" &&
+                properties["${system}.account".toString()] != "" &&
+                properties["remoteToolPath"] != "")) return
 
         prepareTestScript(system)
         BatchEuphoriaJobManager jobManager = createJobManagerFor(system)
-        BEJob testJobWithFile = new BEJob(null, "batchEuphoriaTestJob", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, logFile, null)
+        BEJob testJobWithFile = new BEJob(
+                null,
+                "batchEuphoriaTestJob",
+                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                resourceSet,
+                null,
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
         jobTest(jobManager, [testJobWithFile])
     }
 
@@ -109,9 +152,36 @@ class BEIntegrationTest {
 
         prepareTestScript(system)
         BatchEuphoriaJobManager jobManager = createJobManagerFor(system)
-        BEJob testParent = new BEJob(null, "batchEuphoriaTestJob_Parent", batchEuphoriaTestScript, null, null, resourceSet, null, ["a": "value"], jobManager, logFile, null)
-        BEJob testJobChild1 = new BEJob(null, "batchEuphoriaTestJob_Child1", batchEuphoriaTestScript, null, null, resourceSet, [testParent], ["a": "value"], jobManager, logFile, null)
-        BEJob testJobChild2 = new BEJob(null, "batchEuphoriaTestJob_Child2", batchEuphoriaTestScript, null, null, resourceSet, [testParent, testJobChild1], ["a": "value"], jobManager, logFile, null)
+        BEJob testParent = new BEJob(
+                null,
+                "batchEuphoriaTestJob_Parent",
+                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                resourceSet,
+                null,
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
+        BEJob testJobChild1 = new BEJob(
+                null,
+                "batchEuphoriaTestJob_Child1",
+                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                resourceSet,
+                [testParent],
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
+        BEJob testJobChild2 = new BEJob(
+                null,
+                "batchEuphoriaTestJob_Child2",
+                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                resourceSet,
+                [testParent, testJobChild1],
+                ["a": "value"],
+                jobManager,
+                logFile,
+                null)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 

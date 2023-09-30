@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.ScriptCommand
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
 import org.slf4j.Logger
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeoutException
  * TODO Refactor: Co-/Contravariance works. This does not have to be a generic class. Remove the template.
  */
 @CompileStatic
-abstract class BatchEuphoriaJobManager<C extends Command> {
+abstract class BatchEuphoriaJobManager<C extends BECommand> {
 
     final static Logger log = LoggerFactory.getLogger(BatchEuphoriaJobManager)
 
@@ -126,7 +127,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         if (forbidFurtherJobSubmission) {
             throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
         }
-        Command command = createCommand(job)
+        BECommand command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command, commandTimeout)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         addToListOfStartedJobs(job)
@@ -324,7 +325,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     /**
      * Called by the execution service after a command was executed.
      */
-    protected BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
+    protected BEJobResult extractAndSetJobResultFromExecutionResult(BECommand command, ExecutionResult res) {
         BEJobResult jobResult
         if (res.successful) {
             String exID
@@ -347,7 +348,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return jobResult
     }
 
-    abstract protected Command createCommand(BEJob job)
+    abstract protected BECommand createCommand(BEJob job)
 
     abstract protected String parseJobID(String commandOutput)
 

@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import groovy.transform.CompileStatic
 
 @CompileStatic
-class DummyCommand extends Command {
+class DummyCommand extends BECommand {
 
     /**
      * Static incremental counter for pipeline commands.

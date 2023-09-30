@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution.jobs.direct.synchronousexecution
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.BECommand
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import groovy.transform.CompileStatic
 
@@ -18,7 +18,7 @@ import groovy.transform.CompileStatic
  * Roddy waits for the processes to exit.
  */
 @CompileStatic
-class DirectCommand extends Command {
+class DirectCommand extends BECommand {
 
     private final List<ProcessingParameters> processingParameters
     private final String command

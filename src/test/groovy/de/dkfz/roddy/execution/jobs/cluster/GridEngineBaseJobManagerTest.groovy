@@ -4,8 +4,9 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.ScriptCommand
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.BECommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
@@ -16,6 +17,8 @@ import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 import org.junit.Before
 import org.junit.Test
+
+import java.nio.file.Paths
 
 @CompileStatic
 class GridEngineBaseJobManagerTest {
@@ -96,7 +99,7 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected Command createCommand(BEJob job) {
+            protected BECommand createCommand(BEJob job) {
                 return null
             }
 
@@ -113,15 +116,38 @@ class GridEngineBaseJobManagerTest {
     }
 
     private BEJob makeJob(Map<String, String> mapOfParameters) {
-        BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"), null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, jobManager, JobLog.none(), null)
+        BEJob job = new BEJob
+                (null,
+                "Test",
+                new ScriptCommand(Paths.get("/tmp/test.sh")),
+                new ResourceSet(ResourceSetSize.l,
+                                new BufferValue(1, BufferUnit.G),
+                                4,
+                                1,
+                                new TimeUnit("1h"),
+                                null,
+                                null,
+                                null),
+                [],
+                mapOfParameters,
+                jobManager,
+                JobLog.none(),
+                null)
         job
     }
 
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
         def mapOfVars = ["a": "a", "b": "b"]
-        GridEngineBasedSubmissionCommand cmd = new GridEngineBasedSubmissionCommand(jobManager, makeJob(mapOfVars),
-                "jobName", null, mapOfVars, null, "/tmp/test.sh") {
+        GridEngineBasedSubmissionCommand cmd =
+                new GridEngineBasedSubmissionCommand(
+                        jobManager,
+                        makeJob(mapOfVars),
+                        "jobName",
+                        null,
+                        mapOfVars,
+                        null,
+                        new ScriptCommand(Paths.get("/tmp/test.sh"))) {
             @Override
             protected String getDependsSuperParameter() {
                 return null

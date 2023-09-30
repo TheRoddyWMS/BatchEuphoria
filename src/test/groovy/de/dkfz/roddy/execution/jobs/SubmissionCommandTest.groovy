@@ -9,9 +9,11 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.ScriptCommand
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
 
+import java.nio.file.Paths
 import java.time.Duration
 
 class SubmissionCommandTest extends Specification {
@@ -82,7 +84,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected Command createCommand(BEJob job) {
+            protected BECommand createCommand(BEJob job) {
                 return null
             }
 
@@ -124,7 +126,8 @@ class SubmissionCommandTest extends Specification {
     }
 
     def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<Boolean> passEnvironment) {
-        return new SubmissionCommand(jobManager, null, null, [], [:] as Map<String,String>, [], "") {
+        return new SubmissionCommand(jobManager, null, null, [], [:] as Map<String,String>, [],
+                new ScriptCommand(Paths.get(""))) {
 
             {
                 this.setPassEnvironment(passEnvironment)

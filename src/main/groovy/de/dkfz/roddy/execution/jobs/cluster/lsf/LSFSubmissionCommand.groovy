@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+import de.dkfz.roddy.execution.CommandI
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
@@ -30,7 +31,7 @@ class LSFSubmissionCommand extends SubmissionCommand {
             List<ProcessingParameters> processingParameters,
             Map<String, String> environmentVariables,
             List<String> dependencyIDs,
-            String command) {
+            CommandI command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
     }
 

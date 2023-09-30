@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution
 
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.Command
+import de.dkfz.roddy.execution.jobs.BECommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestSubmissionCommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
 import groovy.transform.CompileStatic
@@ -138,7 +138,7 @@ class RestExecutionService implements BEExecutionService {
      *  contra-variant, so a *super*type of Command would be a valid parameter type.
      */
     @Override
-    ExecutionResult execute(Command command, Duration timeout) {
+    ExecutionResult execute(BECommand command, Duration timeout) {
         throw new IllegalArgumentException("Not a RestSubmissionCommand: ${command.class.canonicalName}")
     }
     RestResult execute(RestSubmissionCommand restCommand, Duration timeout) {
@@ -149,7 +149,7 @@ class RestExecutionService implements BEExecutionService {
      * Here is the same problem with the LSP and contravariance.
      */
     @Override
-    ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
+    ExecutionResult execute(BECommand command, boolean waitFor, Duration timeout) {
         throw new IllegalArgumentException("Not a RestSubmissionCommand: ${command.class.canonicalName}")
     }
     RestResult execute(RestSubmissionCommand restCommand, boolean waitFor = true,
@@ -285,7 +285,7 @@ class RestExecutionService implements BEExecutionService {
      *  hierarchy" smell.
      */
     @Override
-    ExecutionResult execute(Command command, boolean waitFor = null) {
+    ExecutionResult execute(BECommand command, boolean waitFor = null) {
         throw new NotImplementedException()
     }
 

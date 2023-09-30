@@ -9,8 +9,13 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.Code
+import de.dkfz.roddy.execution.Command
+import de.dkfz.roddy.execution.CommandI
+import de.dkfz.roddy.execution.ScriptCommand
 import groovy.transform.CompileStatic
 
+import javax.annotation.Nullable
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -53,20 +58,10 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     public final long jobCreationCounter = absoluteJobCreationCounter.incrementAndGet()
 
     /**
-     * The tool you want to call.
+     * The command to be executed as BEJob on the cluster.
      */
-    protected File tool
+    protected CommandI command
 
-    /**
-     * MD5 sum of the called tool
-     */
-    protected String toolMD5
-
-    /**
-     * A tool script (the actual code!) which will be piped (or whatever...) to the job manager submission command / method
-     * It is either testScript OR tool
-     */
-    String toolScript
     /**
      * The set of resources for this tool / BEJob
      * Contains values for e.g. maxMemory, walltime and so on.
@@ -109,9 +104,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BEJob(BEJobID jobID,
           String jobName,
-          File tool,
-          String toolScript,
-          String toolMD5,
+          CommandI command,
           ResourceSet resourceSet,
           Collection<BEJob> parentJobs,
           Map<String, String> parameters,
@@ -122,12 +115,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
-        this.tool = tool
-        this.toolScript = toolScript
-        // FakeJobs have neither tool nor toolScript set.
-        if (tool && toolScript)
-            throw new BEException("A job must have exactly one of tool and toolScript set. Found: tool=${tool}, toolScript=${toolScript}")
-        this.toolMD5 = toolMD5
+        this.command = command
         this.resourceSet = resourceSet
         this.parameters = parameters
         this.jobManager = jobManager
@@ -139,7 +127,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
-        this(jobID, null, null, null, null, null, [],
+        this(jobID, null, null, null, [],
                 [:] as Map<String, String>, jobManager, JobLog.none(), null, null)
     }
 
@@ -230,16 +218,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this.jobID
     }
 
-    File getTool() {
-        return tool
-    }
-
-    String getToolScript() {
-        return toolScript
-    }
-
-    String getToolMD5() {
-        return toolMD5
+    CommandI getCommand() {
+        return command
     }
 
     ResourceSet getResourceSet() {
@@ -264,15 +244,37 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     @Override
     String toString() {
-        if (getToolScript()) {
-            return "BEJob: ${jobName} with piped script:\n\t" + getToolScript().readLines().join("\n\t")
+        if (this.command instanceof Code) {
+            return "BEJob: ${jobName} with piped script:\n\t" +
+                    (command as Code).code.join("\n\t")
         } else {
-            return "BEJob: ${jobName} calling tool ${tool?.getAbsolutePath()}"
+            return "BEJob: ${jobName} calling tool " +
+                    (command as Command).command
         }
     }
 
     @Override
     int compareTo(BEJob o) {
         return this.jobID.compareTo(o.jobID)
+    }
+
+    /** This method mimicks old behaviour of this class, in which there were separate tool
+     *  and inline script fields. */
+    @Deprecated
+    @Nullable File getTool() {
+        if (command instanceof ScriptCommand) {
+            (command as ScriptCommand).script.toFile()
+        } else {
+            null
+        }
+    }
+
+    @Deprecated
+    @Nullable String getToolScript() {
+        if (command instanceof Code) {
+            (command as Code).code
+        } else {
+            null
+        }
     }
 }

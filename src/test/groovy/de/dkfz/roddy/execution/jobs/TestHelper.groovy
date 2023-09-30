@@ -10,22 +10,22 @@ class TestHelper {
     static BEExecutionService makeExecutionService() {
         return new BEExecutionService() {
             @Override
-            ExecutionResult execute(Command command) {
+            ExecutionResult execute(BECommand command) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(Command command, boolean waitFor) {
+            ExecutionResult execute(BECommand command, boolean waitFor) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(Command command, Duration timeout) {
+            ExecutionResult execute(BECommand command, Duration timeout) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
+            ExecutionResult execute(BECommand command, boolean waitFor, Duration timeout) {
                 return null
             }
 
