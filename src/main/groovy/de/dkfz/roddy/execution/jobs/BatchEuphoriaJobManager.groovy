@@ -9,7 +9,6 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.ScriptCommand
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
 import org.slf4j.Logger
@@ -334,14 +333,14 @@ abstract class BatchEuphoriaJobManager<C extends BECommand> {
             BEJobID jobID = new BEJobID(exID)
             command.setJobID(jobID)
             job.resetJobID(jobID)
-            jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             synchronized (cacheStatesLock) {
                 cachedStates.put(jobID, isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED)
             }
         } else {
             def job = command.getJob()
-            jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             throw new BEException("Job ${job.jobName ?: "NA"} could not be started. ${res.toStatusLine()}")
         }

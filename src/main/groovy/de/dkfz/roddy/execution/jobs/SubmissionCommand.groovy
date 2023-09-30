@@ -7,8 +7,6 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.Code
-import de.dkfz.roddy.execution.ScriptCommand
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
@@ -28,27 +26,35 @@ abstract class SubmissionCommand extends BECommand {
     /**
      * The command which should be called
      */
-    protected String command
+    protected CommandI commandObj
 
     protected List<String> dependencyIDs
 
     protected final List<ProcessingParameters> processingParameters
+
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
      *
      * @param parentJobManager
      * @param job
      * @param jobName
+     * @param processingParameters
      * @param environmentVariables
+     * @param dependencyIDs
+     * @param commandObj
      *
+     * Unfortunately, *all* these parameters can be null.
      */
-    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager,
+                                BEJob job,
+                                String jobName,
                                 List<ProcessingParameters> processingParameters,
-                                Map<String, String> environmentVariables, List<String> dependencyIDs,
-                                CommandI command) {
+                                Map<String, String> environmentVariables,
+                                List<String> dependencyIDs,
+                                CommandI commandObj) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
-        this.command = command
+        this.commandObj = commandObj
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 
@@ -96,20 +102,20 @@ abstract class SubmissionCommand extends BECommand {
             command << "$environmentString "
         }
 
-        if (job.command instanceof Code) {
+        if (job.code) {
             command <<
                     "echo " <<
                     BashUtils.strongQuote("#!/bin/bash "
                                           + System.lineSeparator()
-                                          + (job.command as Code).code) <<
+                                          + job.code) <<
                     " | "
         }
 
         command << parentJobManager.submissionCommand
         command << " ${parameters.join(" ")} "
 
-        if (job.command instanceof ScriptCommand) {
-            command << " " << (job.command as ScriptCommand).script.toAbsolutePath().toString()
+        if (job.getCommand(true)) {
+            command << " " << job.getCommand(true).join(StringConstants.WHITESPACE)
         }
 
         return command

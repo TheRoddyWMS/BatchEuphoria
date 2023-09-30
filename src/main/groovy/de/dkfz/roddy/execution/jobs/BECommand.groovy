@@ -51,9 +51,11 @@ abstract class BECommand {
      * @param job
      * @param jobName
      * @param environmentVariables
-     * @param commandTags
      */
-    protected BECommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
+    protected BECommand(BatchEuphoriaJobManager parentJobManager,
+                        BEJob job,
+                        String jobName,
+                        Map<String, String> environmentVariables) {
         this.parentJobManager = parentJobManager
         this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job

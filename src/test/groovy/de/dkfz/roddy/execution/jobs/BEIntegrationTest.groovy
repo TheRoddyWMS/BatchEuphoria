@@ -14,13 +14,12 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.RestExecutionService
-import de.dkfz.roddy.execution.ScriptCommand
+import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
 import org.junit.BeforeClass
 import org.junit.Test
-import org.xml.sax.SAXParseException
 
 import java.time.Duration
 
@@ -137,7 +136,7 @@ class BEIntegrationTest {
         BEJob testJobWithFile = new BEJob(
                 null,
                 "batchEuphoriaTestJob",
-                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 null,
                 ["a": "value"],
@@ -155,7 +154,7 @@ class BEIntegrationTest {
         BEJob testParent = new BEJob(
                 null,
                 "batchEuphoriaTestJob_Parent",
-                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 null,
                 ["a": "value"],
@@ -165,7 +164,7 @@ class BEIntegrationTest {
         BEJob testJobChild1 = new BEJob(
                 null,
                 "batchEuphoriaTestJob_Child1",
-                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent],
                 ["a": "value"],
@@ -175,7 +174,7 @@ class BEIntegrationTest {
         BEJob testJobChild2 = new BEJob(
                 null,
                 "batchEuphoriaTestJob_Child2",
-                new ScriptCommand(batchEuphoriaTestScript.toPath()),
+                new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent, testJobChild1],
                 ["a": "value"],

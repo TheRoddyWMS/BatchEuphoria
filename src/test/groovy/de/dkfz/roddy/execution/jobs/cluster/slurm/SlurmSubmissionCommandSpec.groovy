@@ -3,7 +3,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.ScriptCommand
+import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.TestHelper
@@ -22,7 +22,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         BEJob job = new BEJob(
                 null,
                 "Test",
-                new ScriptCommand(Paths.get("/tmp/test.sh")),
+                new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
                         ResourceSetSize.l,
                         new BufferValue(1, BufferUnit.G),
@@ -51,7 +51,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 "jobName",
                 null, mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         then:
         cmd.assembleDependencyParameter([]) == ""
     }
@@ -65,7 +65,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         then:
         cmd.assembleVariableExportParameters() == ""
     }
@@ -80,7 +80,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         then:
         cmd.assembleVariableExportParameters() == "--export=\"a=a,b\""
     }
@@ -94,7 +94,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         cmd.passEnvironment = Optional.of(true)
         then:
         cmd.assembleVariableExportParameters() == "--get-user-env "
@@ -110,7 +110,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         cmd.passEnvironment = Optional.of(true)
         then:
         cmd.assembleVariableExportParameters() == "--get-user-env  --export=\"a=a,b\""
@@ -125,7 +125,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         then:
         cmd.toBashCommandString() == 'sbatch   --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
@@ -140,7 +140,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         then:
         cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }

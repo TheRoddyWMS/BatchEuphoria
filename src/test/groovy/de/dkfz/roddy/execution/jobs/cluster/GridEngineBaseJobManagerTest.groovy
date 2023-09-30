@@ -4,7 +4,7 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.ScriptCommand
+import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BECommand
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -119,7 +119,7 @@ class GridEngineBaseJobManagerTest {
         BEJob job = new BEJob
                 (null,
                 "Test",
-                new ScriptCommand(Paths.get("/tmp/test.sh")),
+                new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(ResourceSetSize.l,
                                 new BufferValue(1, BufferUnit.G),
                                 4,
@@ -147,7 +147,7 @@ class GridEngineBaseJobManagerTest {
                         null,
                         mapOfVars,
                         null,
-                        new ScriptCommand(Paths.get("/tmp/test.sh"))) {
+                        new Executable(Paths.get("/tmp/test.sh"))) {
             @Override
             protected String getDependsSuperParameter() {
                 return null

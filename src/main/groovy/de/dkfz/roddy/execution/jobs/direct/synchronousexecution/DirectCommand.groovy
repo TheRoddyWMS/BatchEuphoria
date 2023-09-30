@@ -21,14 +21,14 @@ import groovy.transform.CompileStatic
 class DirectCommand extends BECommand {
 
     private final List<ProcessingParameters> processingParameters
-    private final String command
     public static final String PARM_WRAPPED_SCRIPT = "WRAPPED_SCRIPT="
 
 
-    DirectCommand(DirectSynchronousExecutionJobManager parentManager, BEJob job, List<ProcessingParameters> processingParameters, @Deprecated String command = null) {
-        super(parentManager, job, job.tool.name, job.parameters)
+    DirectCommand(DirectSynchronousExecutionJobManager parentManager,
+                  BEJob job,
+                  List<ProcessingParameters> processingParameters) {
+        super(parentManager, job, job.executableFile.name, job.parameters)
         this.processingParameters = processingParameters
-        this.command = command ?: job.tool.absolutePath
     }
 
     /**
@@ -54,19 +54,18 @@ class DirectCommand extends BECommand {
 
         parameterBuilder << parameters.collect { key, value -> "${key}=${value}" }.join(" ")
 
-        // Dependencies are ignored. Direct commands are executed in-sync.
+        // Grouplist is ignored
+        // Umask is ignored
 
-        // Processing commands are ignored BE does not offer job scheduling on its own.
+        // Command assembly should be part of the file system provider?
+        // Maybe there is a need for a local file system provider?
 
-        //TODO email handling? Better not
-
-        //TODO Grouplist is ignored
-
-        //TODO Umask is ignored
-
-        //TODO Command assembly should be part of the file system provider? Maybe there is a need for a local file system provider?
-        //This is very linux specific...
-        commandString << parameterBuilder.toString() << StringConstants.WHITESPACE << command << " &> ${job.jobLog.getOut(job.jobCreationCounter.toString())}";
+        // This is very linux specific...
+        commandString <<
+                parameterBuilder.toString() <<
+                StringConstants.WHITESPACE <<
+                job.getCommand(true).join(StringConstants.WHITESPACE) <<
+                " &> ${job.jobLog.getOut(job.jobCreationCounter.toString())}";
 
         return commandString.toString()
     }

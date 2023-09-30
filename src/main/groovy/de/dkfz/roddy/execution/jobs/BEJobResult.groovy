@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 eilslabs.
+ * Copyright (c) 2023 eilslabs.
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/eilslabs/Roddy/LICENSE.txt).
  */
@@ -8,6 +8,8 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
+
+import javax.annotation.Nonnull
 
 /**
  * Result of a job run.
@@ -23,7 +25,7 @@ class BEJobResult implements Serializable {
     /**
      * The command which was used to create this result.
      */
-    final BECommand command
+    final BECommand beCommand
     /**
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
@@ -33,10 +35,7 @@ class BEJobResult implements Serializable {
      * The execution result object containing additional details about the execution (exit code and output).
      */
     final ExecutionResult executionResult
-    /**
-     * The tool which was run for this job.
-     */
-    final File tool
+
     /**
      * Parameters for the job.
      */
@@ -51,13 +50,29 @@ class BEJobResult implements Serializable {
 
     }
 
+    /** The tool parameter should be removed. This is only kept for backwards compatibility. */
+    @Deprecated
     BEJobResult(BECommand beCommand, BEJob job, ExecutionResult executionResult, File tool,
                 Map<String, String> jobParameters, List<BEJob> parentJobs) {
-        this.command = beCommand
+        this.beCommand = beCommand
+        assert (null != job)
+        assert tool == job.executableFile
+        this.job = job
+        this.executionResult = executionResult
+        this.jobParameters = jobParameters
+        this.parentJobs = parentJobs
+        // NOTE: tool is not used anymore.
+    }
+    
+    BEJobResult(BECommand beCommand,
+                @Nonnull BEJob job,
+                ExecutionResult executionResult,
+                Map<String, String> jobParameters,
+                List<BEJob> parentJobs) {
+        this.beCommand = beCommand
         assert (null != job)
         this.job = job
         this.executionResult = executionResult
-        this.tool = tool
         this.jobParameters = jobParameters
         this.parentJobs = parentJobs
     }

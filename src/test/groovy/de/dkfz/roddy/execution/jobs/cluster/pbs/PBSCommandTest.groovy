@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.ScriptCommand
+import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.TestHelper
@@ -40,7 +40,7 @@ class PBSCommandTest {
         BEJob job = new BEJob(
                 null,
                 "Test",
-                new ScriptCommand(Paths.get("/tmp/test.sh")),
+                new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
                         ResourceSetSize.l,
                         new BufferValue(1, BufferUnit.G),
@@ -67,7 +67,7 @@ class PBSCommandTest {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         assert cmd.assembleVariableExportParameters() == ""
     }
 
@@ -81,7 +81,7 @@ class PBSCommandTest {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         assert cmd.assembleVariableExportParameters() == "-v \"a=a,b\""
     }
 
@@ -94,7 +94,7 @@ class PBSCommandTest {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-V"
     }
@@ -109,7 +109,7 @@ class PBSCommandTest {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-V -v \"a=a,b\""
     }

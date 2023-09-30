@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.ScriptCommand
+import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.TestHelper
@@ -28,7 +28,7 @@ class LSFSubmissionCommandSpec extends Specification {
         BEJob job = new BEJob(
                 null,
                 "Test",
-                new ScriptCommand(Paths.get("/tmp/test.sh")),
+                new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
                         ResourceSetSize.l,
                         new BufferValue(1, BufferUnit.G),
@@ -53,7 +53,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         then:
         cmd.assembleDependencyParameter([]) == ""
     }
@@ -67,7 +67,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
 
         then:
         cmd.assembleVariableExportParameters() == "-env \"none\""
@@ -83,7 +83,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
 
         then:
         cmd.assembleVariableExportParameters() == "-env \"a=a, b\""
@@ -98,7 +98,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         cmd.passEnvironment = Optional.of(true)
 
         then:
@@ -115,7 +115,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 mapOfVars,
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
         cmd.passEnvironment = Optional.of(true)
 
         then:
@@ -131,7 +131,7 @@ class LSFSubmissionCommandSpec extends Specification {
         null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
 
         then:
         cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none"  -J jobname -H -cwd $HOME -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
@@ -146,7 +146,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 [:],
                 null,
-                new ScriptCommand(Paths.get("/tmp/test.sh")))
+                new Executable(Paths.get("/tmp/test.sh")))
 
         then:
         cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none" -P "accountingProject" -J jobname -H -cwd $HOME -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'

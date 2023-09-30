@@ -29,7 +29,7 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
     @Override
     protected PBSSubmissionCommand createCommand(BEJob job) {
         return new PBSSubmissionCommand(
-                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.command)
+                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.commandObj)
     }
 
     @Override

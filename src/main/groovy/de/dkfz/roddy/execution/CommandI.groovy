@@ -16,50 +16,91 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 
+/** Types of executable code or command. These are used as arguments for BEJob. The
+ *  class hierarchy represents and abstract data type (ADT).
+ */
 @CompileStatic
-interface CommandI {}
+abstract class CommandI {}
 
-
+/** A command reference is opposed to the command code. Both are executable, but the command
+ *  reference only represents a short name for a piece of code, usually on the filesystem.
+ */
 @CompileStatic
-class ScriptCommand implements CommandI {
+abstract class CommandReferenceI extends CommandI {
 
-    private Path script
+    /** The path to the executable file that will be executed. */
+    abstract Path getExecutablePath()
+
+    /** Get a list with command components, e.g. for Bash.
+     *
+     * @param absolutePath  Whether to call toAbsolutePath() on the executable's path.
+     * @return
+     */
+    abstract List<String> getCommand(boolean absolutePath)
+
+}
+
+/** A self-contained command that does not take any command-line parameters. This is mostly
+ *  used for Roddy tools, which are entirely configured via environment variables.
+ */
+@CompileStatic
+class Executable extends CommandReferenceI {
+
+    private Path path
 
     private @Nullable String md5
 
-    ScriptCommand(@Nonnull Path script,
-                  @Nullable String md5 = null) {
-        this.script = script
+    Executable(@Nonnull Path path,
+               @Nullable String md5 = null) {
+        this.path = path
         this.md5 = md5
     }
 
-    Path getScript() {
-        this.script
+    @Override
+    Path getExecutablePath() {
+        this.path
+    }
+
+    @Override
+    List<String> getCommand(boolean absolutePath = false) {
+        if (absolutePath) {
+            [path.toAbsolutePath().toString()]
+        } else {
+            [path.toString()]
+        }
     }
 
     Optional<String> getMd5() {
         Optional.ofNullable(this.md5)
     }
 
-    Command toCommand() {
-        new Command([this.script.toString()])
-    }
-
 }
 
-
+/** A command is an executable with 0 or more arguments.
+ */
 @CompileStatic
-class Command implements CommandI {
+class Command extends CommandReferenceI {
 
-    private List<String> command
+    private Executable executable
 
-    Command(@Nonnull List<String> command) {
-        assert(command.size() > 0)
-        this.command = command.asImmutable()
+    private List<String> arguments
+
+    Command(@Nonnull Executable executable,
+            @Nonnull List<String> arguments) {
+        this.executable = executable
+        this.arguments = arguments.asImmutable()
     }
 
-    List<String> getCommand() {
-        this.command
+    Executable getExecutable() {
+        executable
+    }
+
+    Path getExecutablePath() {
+        executable.getExecutablePath()
+    }
+
+    List<String> getCommand(boolean absolutePath = false) {
+        executable.getCommand(absolutePath) + arguments
     }
 
     /** Append the Code as script to the command. The result is a Code object, not a
@@ -70,11 +111,12 @@ class Command implements CommandI {
      * @return
      */
     Code cliAppend(@Nonnull Code other,
+                   boolean absolutePath = false,
                    @Nonnull Path interpreter = Paths.get("/bin/bash"),  // Could be Command
                    @Nonnull String terminator = "batch_euphoria_" +
                            RandomStringUtils.random(10, true, true)) {
         new Code("""\
-                    |${this.command.join(" ")} <<$terminator
+                    |${this.getCommand(absolutePath).join(" ")} <<$terminator
                     |#!${other.interpreter}
                     |${other.code}
                     |$terminator
@@ -90,11 +132,18 @@ class Command implements CommandI {
      * @param quote     Whether to quote the appended Command.
      * @return
      */
-    Command cliAppend(@Nonnull Command other, quote=false) {
+    Command cliAppend(@Nonnull CommandReferenceI other,
+                      boolean absolutePath = false,
+                      boolean quote = false) {
         if (!quote) {
-            new Command(this.command + other.command)
+            new Command(
+                    executable,
+                    this.arguments + other.getCommand(absolutePath))
         } else {
-            new Command(this.command + BashUtils.strongQuote(other.command.join(" ")))
+            new Command(
+                    executable,
+                    this.arguments +
+                            BashUtils.strongQuote(other.getCommand(absolutePath).join(" ")))
         }
     }
 
@@ -103,17 +152,25 @@ class Command implements CommandI {
 
 /** Take actual code to be executed. */
 @CompileStatic
-class Code implements CommandI {
+class Code extends CommandI {
 
-    final String code
+    private String code
 
-    final Path interpreter
+    private Path interpreter
 
     Code(@Nonnull String code,
          @Nonnull Path interpreter = Paths.get("/bin/bash")) {
         assert(code.size() > 0)
         this.code = code
         this.interpreter = interpreter
+    }
+
+    String getCode() {
+        code
+    }
+
+    Path getInterpreter() {
+        interpreter
     }
 
 }

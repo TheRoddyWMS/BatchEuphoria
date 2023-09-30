@@ -137,7 +137,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
                 throw new BEException("Execution of Job ${jobID} failed: ${res.toStatusLine()}")
         }
 
-        jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+        jobResult = new BEJobResult(command, job, res, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
 
         return jobResult

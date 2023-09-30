@@ -102,20 +102,20 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         // --- Parameters Area ---
         List<String> jobParts = []
-        if (job.tool) {
-            jobParts << createJobPart("COMMAND", job.tool?.absolutePath as String, "COMMANDTORUN")
+        if (job.getCommand(true)) {
+            jobParts << createJobPart("COMMAND", job.getCommand(true).join(" "), "COMMANDTORUN")
         } else {
             jobParts << createJobPart("COMMAND", "${job.jobName},upload" as String, "COMMANDTORUN", "file")
         }
         if (job.getJobName()) {
-            jobParts << createJobPart("JOB_NAME", job.getJobName())
+            jobParts << createJobPart("JOB_NAME", job.jobName)
         }
         jobParts << createJobPart("EXTRA_PARAMS", prepareExtraParams(job))
         ContentWithHeaders jobPartsWithHeader = joinParts(jobParts)
         requestParts << createRequestPart("data", jobPartsWithHeader.content, jobPartsWithHeader.headers)
 
-        if (job.toolScript) {
-            requestParts << createRequestPart("f1", job.toolScript, [
+        if (job.code) {
+            requestParts << createRequestPart("f1", job.code, [
                     new BasicHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString()),
             ] as List<Header>, job.jobName)
         }

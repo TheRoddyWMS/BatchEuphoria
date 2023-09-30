@@ -45,7 +45,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     @Override
     protected SlurmSubmissionCommand createCommand(BEJob job) {
         SlurmSubmissionCommand ssc = new SlurmSubmissionCommand(
-                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.command)
+                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.commandObj)
         return ssc
     }
 
