@@ -21,6 +21,7 @@ class SlurmSubmissionCommandSpec extends Specification {
     private BEJob makeJob(Map<String, String> mapOfParameters, String accountingProject = null) {
         BEJob job = new BEJob(
                 null,
+                jobManager,
                 "Test",
                 new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
@@ -33,8 +34,8 @@ class SlurmSubmissionCommandSpec extends Specification {
                         null,
                         null),
                 [],
-                mapOfParameters,
-                jobManager,
+                mapOfParameters
+                ,
                 JobLog.none(),
                 null,
                 accountingProject)

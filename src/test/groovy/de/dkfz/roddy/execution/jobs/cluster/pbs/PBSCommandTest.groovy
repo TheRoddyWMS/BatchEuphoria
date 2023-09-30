@@ -39,6 +39,7 @@ class PBSCommandTest {
     private BEJob makeJob(Map<String, String> mapOfParameters) {
         BEJob job = new BEJob(
                 null,
+                jobManager,
                 "Test",
                 new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
@@ -51,8 +52,8 @@ class PBSCommandTest {
                         null,
                         null),
                 [],
-                mapOfParameters,
-                jobManager,
+                mapOfParameters
+                ,
                 JobLog.none(),
                 null)
         job

@@ -25,13 +25,14 @@ class BEJobID implements Comparable<BEJobID> {
 
     private static AtomicLong unkownIdCounter = new AtomicLong(0L)
 
-    BEJobID() {
-        id = nextUnknownID()
-    }
-
     BEJobID(String id) {
         this.id = id.split(/\./)[0]
     }
+
+    static BEJobID getUnknown() {
+        new BEJobID(nextUnknownID())
+    }
+
 
     protected static String nextUnknownID(String prefix = "UnkownJobID-") {
         return prefix + unkownIdCounter.incrementAndGet()

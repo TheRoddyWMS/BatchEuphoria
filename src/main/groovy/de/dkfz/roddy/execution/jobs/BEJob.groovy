@@ -6,16 +6,16 @@
 
 package de.dkfz.roddy.execution.jobs
 
-
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.execution.Code
-import de.dkfz.roddy.execution.Command
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.CommandReferenceI
 import de.dkfz.roddy.execution.Executable
 import groovy.transform.CompileStatic
 
+import javax.annotation.Nonnull
 import javax.annotation.Nullable
 import java.util.concurrent.atomic.AtomicLong
 
@@ -103,17 +103,17 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(BEJobID jobID,
-          String jobName,
-          CommandI commandObj,
-          ResourceSet resourceSet,
-          Collection<BEJob> parentJobs,
-          Map<String, String> parameters,
-          BatchEuphoriaJobManager jobManager,
-          JobLog jobLog,
-          File workingDirectory,
-          String accountingName = null) {
-        this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
+    BEJob(@Nonnull BEJobID jobID,
+          @Nonnull BatchEuphoriaJobManager jobManager,
+          @Nullable String jobName = null,
+          @Nullable CommandI commandObj = null,
+          @Nonnull ResourceSet resourceSet = new EmptyResourceSet(),
+          @Nonnull Collection<BEJob> parentJobs = [],
+          @Nonnull Map<String, String> parameters = [:],
+          @Nullable JobLog jobLog = JobLog.none(),
+          @Nullable File workingDirectory = null,
+          @Nullable String accountingName = null) {
+        this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.unknown)
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.commandObj = commandObj
@@ -125,11 +125,6 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.workingDirectory = workingDirectory
         this.accountingName = accountingName
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
-    }
-
-    BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
-        this(jobID, null, null, null, [],
-                [:] as Map<String, String>, jobManager, JobLog.none(), null, null)
     }
 
     BEJob addParentJobs(Collection<BEJob> parentJobs) {
@@ -211,7 +206,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     void resetJobID() {
-        resetJobID(new BEJobID())
+        resetJobID(BEJobID.unknown)
     }
 
 

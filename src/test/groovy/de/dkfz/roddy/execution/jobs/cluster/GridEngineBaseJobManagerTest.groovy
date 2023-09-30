@@ -118,21 +118,21 @@ class GridEngineBaseJobManagerTest {
     private BEJob makeJob(Map<String, String> mapOfParameters) {
         BEJob job = new BEJob
                 (null,
-                "Test",
-                new Executable(Paths.get("/tmp/test.sh")),
-                new ResourceSet(ResourceSetSize.l,
-                                new BufferValue(1, BufferUnit.G),
-                                4,
-                                1,
-                                new TimeUnit("1h"),
-                                null,
-                                null,
-                                null),
-                [],
-                mapOfParameters,
-                jobManager,
-                JobLog.none(),
-                null)
+                 jobManager,
+                 "Test",
+                 new Executable(Paths.get("/tmp/test.sh")),
+                 new ResourceSet(ResourceSetSize.l,
+                                 new BufferValue(1, BufferUnit.G),
+                                 4,
+                                 1,
+                                 new TimeUnit("1h"),
+                                 null,
+                                 null,
+                                 null),
+                 [],
+                 mapOfParameters,
+                 JobLog.none(),
+                        null)
         job
     }
 

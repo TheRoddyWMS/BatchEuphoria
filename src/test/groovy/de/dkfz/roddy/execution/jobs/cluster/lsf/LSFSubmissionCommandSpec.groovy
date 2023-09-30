@@ -27,6 +27,7 @@ class LSFSubmissionCommandSpec extends Specification {
     private BEJob makeJob(Map<String, String> mapOfParameters, String accountingProject = null) {
         BEJob job = new BEJob(
                 null,
+                jobManager,
                 "Test",
                 new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
@@ -38,7 +39,7 @@ class LSFSubmissionCommandSpec extends Specification {
                         null,
                         null,
                         null),
-                [], mapOfParameters, jobManager, JobLog.none(), null, accountingProject)
+                [], mapOfParameters, JobLog.none(), null, accountingProject)
         job
     }
 
