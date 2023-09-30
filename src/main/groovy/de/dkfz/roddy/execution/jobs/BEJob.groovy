@@ -6,17 +6,17 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import com.google.common.base.Preconditions
+import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.CommandReferenceI
 import de.dkfz.roddy.execution.Executable
 import groovy.transform.CompileStatic
+import org.jetbrains.annotations.NotNull
 
-import javax.annotation.Nonnull
-import javax.annotation.Nullable
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -103,16 +103,16 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(@Nonnull BEJobID jobID,
-          @Nonnull BatchEuphoriaJobManager jobManager,
-          @Nullable String jobName = null,
-          @Nullable CommandI commandObj = null,
-          @Nonnull ResourceSet resourceSet = new EmptyResourceSet(),
-          @Nonnull Collection<BEJob> parentJobs = [],
-          @Nonnull Map<String, String> parameters = [:],
-          @Nullable JobLog jobLog = JobLog.none(),
-          @Nullable File workingDirectory = null,
-          @Nullable String accountingName = null) {
+    BEJob(@NotNull BEJobID jobID,
+          @NotNull BatchEuphoriaJobManager jobManager,
+          String jobName = null,
+          CommandI commandObj = null,
+          @NotNull ResourceSet resourceSet = new EmptyResourceSet(),
+          @NotNull Collection<BEJob> parentJobs = [],
+          @NotNull Map<String, String> parameters = [:],
+          JobLog jobLog = JobLog.none(),
+          File workingDirectory = null,
+          String accountingName = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.unknown)
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -120,21 +120,22 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.resourceSet = resourceSet
         this.parameters = parameters
         this.jobManager = jobManager
-        assert jobLog: "jobLog not set"
+        Preconditions.checkArgument(jobLog != null, "jobLog not set")
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
         this.accountingName = accountingName
         this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
     }
 
-    BEJob addParentJobs(Collection<BEJob> parentJobs) {
-        assert (null != parentJobs)
+    BEJob addParentJobs(@NotNull Collection<BEJob> parentJobs) {
+        Preconditions.checkArgument(parentJobs != null)
         this.parentJobs.addAll(parentJobs)
         return this
     }
 
-    BEJob addParentJobIDs(List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
-        assert (null != parentJobIDs)
+    BEJob addParentJobIDs(@NotNull List<BEJobID> parentJobIDs,
+                          @NotNull BatchEuphoriaJobManager jobManager) {
+        Preconditions.checkArgument(parentJobIDs != null)
         this.parentJobs.addAll(parentJobIDs.collect { new BEJob(it, jobManager) })
         return this
     }
@@ -144,7 +145,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     BEJob setRunResult(JR result) {
-        assert (this.jobID == result.jobID)
+        Preconditions.checkArgument(this.jobID == result.jobID)
         this.runResult = result
         return this
     }
@@ -200,8 +201,8 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this.workingDirectory
     }
 
-    void resetJobID(BEJobID jobID) {
-        assert (null != jobID)
+    void resetJobID(@NotNull BEJobID jobID) {
+        Preconditions.checkArgument(jobID != null)
         this.jobID = jobID
     }
 
@@ -258,7 +259,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
      *  of tools, tool scripts, and (new) commands (with arguments).
      */
 
-    @Nullable File getExecutableFile() {
+    File getExecutableFile() {
         if (commandObj instanceof Executable) {
             (commandObj as Executable).executablePath.toFile()
         } else {
@@ -266,15 +267,15 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    @Nullable List<String> getCommand(boolean absolutePath) {
+    List<String> getCommand(boolean absolutePath) {
         if (commandObj instanceof CommandReferenceI) {
-            (commandObj as CommandReferenceI).getCommand(absolutePath)
+            (commandObj as CommandReferenceI).toList(absolutePath)
         } else {
             null
         }
     }
 
-    @Nullable String getCode() {
+    String getCode() {
         if (commandObj instanceof Code) {
             (commandObj as Code).code
         } else {

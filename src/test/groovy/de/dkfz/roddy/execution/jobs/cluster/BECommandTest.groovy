@@ -12,10 +12,10 @@ import groovy.transform.CompileStatic
  * Created by heinold on 14.07.16.
  */
 @CompileStatic
-class CommandTest extends GroovyTestCase {
+class BECommandTest extends GroovyTestCase {
     void testGetParametersForParameterFile() {
         // Roddy specfic? How do we handle parameter files?
-//        def context = MockupExecutionContextBuilder.createSimpleContext(CommandTest)
+//        def context = MockupExecutionContextBuilder.createSimpleContext(BECommandTest)
 //        Command mock = new Command(new BEJob.FakeBEJob(context), context, "MockupCommand", [
 //                "ParmA": "Value",
 //                "arr"  : "(a b c )",

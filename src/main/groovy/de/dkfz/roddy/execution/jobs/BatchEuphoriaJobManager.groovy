@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import com.google.common.base.Preconditions
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
@@ -82,7 +83,7 @@ abstract class BatchEuphoriaJobManager<C extends BECommand> {
     Duration commandTimeout
 
     BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
-        assert (executionService)
+        Preconditions.checkArgument(executionService != null)
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.userIdForJobQueries as boolean

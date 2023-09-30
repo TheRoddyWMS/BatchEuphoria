@@ -6,10 +6,10 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import com.google.common.base.Preconditions
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
-
-import javax.annotation.Nonnull
+import org.jetbrains.annotations.NotNull
 
 /**
  * Result of a job run.
@@ -55,8 +55,8 @@ class BEJobResult implements Serializable {
     BEJobResult(BECommand beCommand, BEJob job, ExecutionResult executionResult, File tool,
                 Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.beCommand = beCommand
-        assert (null != job)
-        assert tool == job.executableFile
+        Preconditions.checkArgument(job != null)
+        Preconditions.checkArgument(tool == job.executableFile)
         this.job = job
         this.executionResult = executionResult
         this.jobParameters = jobParameters
@@ -65,12 +65,12 @@ class BEJobResult implements Serializable {
     }
     
     BEJobResult(BECommand beCommand,
-                @Nonnull BEJob job,
+                @NotNull BEJob job,
                 ExecutionResult executionResult,
                 Map<String, String> jobParameters,
                 List<BEJob> parentJobs) {
         this.beCommand = beCommand
-        assert (null != job)
+        Preconditions.checkArgument(job != null)
         this.job = job
         this.executionResult = executionResult
         this.jobParameters = jobParameters

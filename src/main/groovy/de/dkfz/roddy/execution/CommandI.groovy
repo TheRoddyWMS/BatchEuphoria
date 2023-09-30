@@ -6,15 +6,15 @@
 
 package de.dkfz.roddy.execution
 
+import com.google.common.base.Preconditions
 import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import org.apache.commons.lang3.RandomStringUtils
+import org.jetbrains.annotations.NotNull
 
-import javax.annotation.Nonnull
-import javax.annotation.Nullable
 import java.nio.file.Path
 import java.nio.file.Paths
-
 
 /** Types of executable code or command. These are used as arguments for BEJob. The
  *  class hierarchy represents and abstract data type (ADT).
@@ -36,7 +36,7 @@ abstract class CommandReferenceI extends CommandI {
      * @param absolutePath  Whether to call toAbsolutePath() on the executable's path.
      * @return
      */
-    abstract List<String> getCommand(boolean absolutePath)
+    abstract List<String> toList(boolean absolutePath)
 
 }
 
@@ -44,14 +44,15 @@ abstract class CommandReferenceI extends CommandI {
  *  used for Roddy tools, which are entirely configured via environment variables.
  */
 @CompileStatic
+@EqualsAndHashCode
 class Executable extends CommandReferenceI {
 
     private Path path
 
-    private @Nullable String md5
+    private String md5
 
-    Executable(@Nonnull Path path,
-               @Nullable String md5 = null) {
+    Executable(@NotNull Path path,
+               String md5 = null) {
         this.path = path
         this.md5 = md5
     }
@@ -62,7 +63,7 @@ class Executable extends CommandReferenceI {
     }
 
     @Override
-    List<String> getCommand(boolean absolutePath = false) {
+    List<String> toList(boolean absolutePath = false) {
         if (absolutePath) {
             [path.toAbsolutePath().toString()]
         } else {
@@ -79,14 +80,15 @@ class Executable extends CommandReferenceI {
 /** A command is an executable with 0 or more arguments.
  */
 @CompileStatic
+@EqualsAndHashCode
 class Command extends CommandReferenceI {
 
     private Executable executable
 
     private List<String> arguments
 
-    Command(@Nonnull Executable executable,
-            @Nonnull List<String> arguments) {
+    Command(@NotNull Executable executable,
+            @NotNull List<String> arguments = []) {
         this.executable = executable
         this.arguments = arguments.asImmutable()
     }
@@ -99,28 +101,30 @@ class Command extends CommandReferenceI {
         executable.getExecutablePath()
     }
 
-    List<String> getCommand(boolean absolutePath = false) {
-        executable.getCommand(absolutePath) + arguments
+    List<String> toList(boolean absolutePath = false) {
+        executable.toList(absolutePath) + arguments
     }
 
     /** Append the Code as script to the command. The result is a Code object, not a
      *  SimpleCommand, because the appending is done via a HERE document
      *
      * @param other
-     * @param terminator
+     * @param terminator_prefix
      * @return
      */
-    Code cliAppend(@Nonnull Code other,
+    Code cliAppend(@NotNull Code other,
                    boolean absolutePath = false,
-                   @Nonnull Path interpreter = Paths.get("/bin/bash"),  // Could be Command
-                   @Nonnull String terminator = "batch_euphoria_" +
+                   @NotNull Path interpreter = Paths.get("/bin/bash"),  // Could be Command
+                   @NotNull String terminator_prefix = "batch_euphoria_",
+                   @NotNull String terminator_random =
                            RandomStringUtils.random(10, true, true)) {
+        String terminator = terminator_prefix + "_" + terminator_random
         new Code("""\
-                    |${this.getCommand(absolutePath).join(" ")} <<$terminator
+                    |${this.toList(absolutePath).join(" ")} <<$terminator
                     |#!${other.interpreter}
                     |${other.code}
                     |$terminator
-                    |""",
+                    |""".stripMargin(),
                  interpreter)
     }
 
@@ -132,18 +136,18 @@ class Command extends CommandReferenceI {
      * @param quote     Whether to quote the appended Command.
      * @return
      */
-    Command cliAppend(@Nonnull CommandReferenceI other,
+    Command cliAppend(@NotNull CommandReferenceI other,
                       boolean absolutePath = false,
                       boolean quote = false) {
         if (!quote) {
             new Command(
                     executable,
-                    this.arguments + other.getCommand(absolutePath))
+                    this.arguments + other.toList(absolutePath))
         } else {
             new Command(
                     executable,
                     this.arguments +
-                            BashUtils.strongQuote(other.getCommand(absolutePath).join(" ")))
+                            BashUtils.strongQuote(other.toList(absolutePath).join(" ")))
         }
     }
 
@@ -152,15 +156,16 @@ class Command extends CommandReferenceI {
 
 /** Take actual code to be executed. */
 @CompileStatic
+@EqualsAndHashCode
 class Code extends CommandI {
 
     private String code
 
     private Path interpreter
 
-    Code(@Nonnull String code,
-         @Nonnull Path interpreter = Paths.get("/bin/bash")) {
-        assert(code.size() > 0)
+    Code(@NotNull String code,
+         @NotNull Path interpreter = Paths.get("/bin/bash")) {
+        Preconditions.checkArgument(code.size() > 0)
         this.code = code
         this.interpreter = interpreter
     }

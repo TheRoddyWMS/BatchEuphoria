@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
+import com.google.common.base.Preconditions
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
@@ -65,7 +66,7 @@ abstract class ClusterJobManager<C extends BECommand> extends BatchEuphoriaJobMa
 
     @Override
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
-        assert resourceSet
+        Preconditions.checkArgument(resourceSet != null)
 
         LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
 

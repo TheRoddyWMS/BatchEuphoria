@@ -1,0 +1,41 @@
+package de.dkfz.roddy.execution
+
+
+import spock.lang.Specification
+
+import java.nio.file.Path
+import java.nio.file.Paths
+
+class BindSpecTest extends Specification {
+
+    private Path hostPath = Paths.get("hostPath")
+    private Path contPath = Paths.get("contPath")
+
+    def "bind options"() {
+        expect:
+        new BindSpec(hostPath, contPath).toBindOption() == "hostPath:contPath:ro"
+
+        new BindSpec(hostPath).toBindOption() == "hostPath:ro"
+
+        new BindSpec(hostPath, null, BindSpec.Mode.RW).toBindOption() == "hostPath:rw"
+    }
+
+    def "bind spec null check path"() {
+        when:
+        new BindSpec(null, null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "bind spec null check mode"() {
+        when:
+        new BindSpec(hostPath, null, null)
+        then:
+        final IllegalArgumentException exception = thrown()
+
+    }
+
+
+
+
+}
