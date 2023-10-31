@@ -4,7 +4,7 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BECommand
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.JobManagerOptionsBuilder
 import spock.lang.Shared
 import spock.lang.Specification
@@ -19,22 +19,22 @@ class AbstractLSFJobManagerSpec extends Specification {
     def setupSpec() {
         jobManager = new LSFJobManager(new BEExecutionService() {
             @Override
-            ExecutionResult execute(BECommand command) {
+            ExecutionResult execute(Command command) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(BECommand command, boolean waitFor) {
+            ExecutionResult execute(Command command, boolean waitFor) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(BECommand command, Duration timeout) {
+            ExecutionResult execute(Command command, Duration timeout) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(BECommand command, boolean waitFor, Duration timeout) {
+            ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
                 return null
             }
 

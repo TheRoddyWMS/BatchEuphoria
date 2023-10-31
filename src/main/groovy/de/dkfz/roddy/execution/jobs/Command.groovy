@@ -18,7 +18,7 @@ import groovy.transform.CompileStatic
  * @author michael
  */
 @CompileStatic
-abstract class BECommand {
+abstract class Command {
 
     protected static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
 
@@ -52,10 +52,10 @@ abstract class BECommand {
      * @param jobName
      * @param environmentVariables
      */
-    protected BECommand(BatchEuphoriaJobManager parentJobManager,
-                        BEJob job,
-                        String jobName,
-                        Map<String, String> environmentVariables) {
+    protected Command(BatchEuphoriaJobManager parentJobManager,
+                      BEJob job,
+                      String jobName,
+                      Map<String, String> environmentVariables) {
         this.parentJobManager = parentJobManager
         this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job

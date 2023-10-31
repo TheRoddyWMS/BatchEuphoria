@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.BECommand
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import groovy.transform.CompileStatic
 import org.junit.BeforeClass
@@ -29,22 +29,22 @@ class PBSCommandParserTest {
     static void setup() {
         testJobManager = new PBSJobManager(new BEExecutionService() {
             @Override
-            ExecutionResult execute(BECommand command) {
+            ExecutionResult execute(Command command) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(BECommand command, boolean waitFor) {
+            ExecutionResult execute(Command command, boolean waitFor) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(BECommand command, Duration timeout) {
+            ExecutionResult execute(Command command, Duration timeout) {
                 return null
             }
 
             @Override
-            ExecutionResult execute(BECommand command, boolean waitFor, Duration timeout) {
+            ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
                 return null
             }
 

@@ -14,7 +14,7 @@ import groovy.transform.CompileStatic
 import static de.dkfz.roddy.StringConstants.EMPTY
 
 @CompileStatic
-abstract class SubmissionCommand extends BECommand {
+abstract class SubmissionCommand extends Command {
 
     /**
      *  Should the local environment during the submission be copied to the execution hosts?

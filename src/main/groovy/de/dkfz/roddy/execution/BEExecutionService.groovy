@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution
 
 import de.dkfz.roddy.execution.io.ExecutionResult
-import de.dkfz.roddy.execution.jobs.BECommand
+import de.dkfz.roddy.execution.jobs.Command
 import groovy.transform.CompileStatic
 
 import java.time.Duration
@@ -19,13 +19,13 @@ import java.time.Duration
 @CompileStatic
 interface BEExecutionService {
 
-    ExecutionResult execute(BECommand command)
+    ExecutionResult execute(Command command)
 
-    ExecutionResult execute(BECommand command, boolean waitFor)
+    ExecutionResult execute(de.dkfz.roddy.execution.jobs.Command command, boolean waitFor)
 
-    ExecutionResult execute(BECommand command, Duration timeout)
+    ExecutionResult execute(Command command, Duration timeout)
 
-    ExecutionResult execute(BECommand command, boolean waitFor, Duration timeout)
+    ExecutionResult execute(Command command, boolean waitFor, Duration timeout)
 
 
     @Deprecated

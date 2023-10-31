@@ -13,7 +13,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.BECommand
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import groovy.transform.CompileStatic
@@ -27,7 +27,7 @@ import java.time.Duration
  * This mainly defines variables and constants which can be set via the config.
  */
 @CompileStatic
-abstract class ClusterJobManager<C extends BECommand> extends BatchEuphoriaJobManager<C> {
+abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
     final static Logger log = LoggerFactory.getLogger(ClusterJobManager.class)
 
     ClusterJobManager(BEExecutionService executionService, JobManagerOptions parms) {

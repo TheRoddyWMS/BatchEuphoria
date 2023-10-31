@@ -89,6 +89,11 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.2.0
+  - major: CommandI classes to model commands and code
+  - minor: ApptainerCommmandBuilder to create a wrapping command to run code in containers
+  - patch: Library updates
+
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
     * For eligibleTime it is set to null

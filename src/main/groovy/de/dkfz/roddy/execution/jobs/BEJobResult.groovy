@@ -25,7 +25,7 @@ class BEJobResult implements Serializable {
     /**
      * The command which was used to create this result.
      */
-    final BECommand beCommand
+    final Command beCommand
     /**
      * The current job's id, i.e. qsub id.
      * Used for dependencies.
@@ -52,7 +52,7 @@ class BEJobResult implements Serializable {
 
     /** The tool parameter should be removed. This is only kept for backwards compatibility. */
     @Deprecated
-    BEJobResult(BECommand beCommand, BEJob job, ExecutionResult executionResult, File tool,
+    BEJobResult(Command beCommand, BEJob job, ExecutionResult executionResult, File tool,
                 Map<String, String> jobParameters, List<BEJob> parentJobs) {
         this.beCommand = beCommand
         Preconditions.checkArgument(job != null)
@@ -64,7 +64,7 @@ class BEJobResult implements Serializable {
         // NOTE: tool is not used anymore.
     }
     
-    BEJobResult(BECommand beCommand,
+    BEJobResult(Command beCommand,
                 @NotNull BEJob job,
                 ExecutionResult executionResult,
                 Map<String, String> jobParameters,

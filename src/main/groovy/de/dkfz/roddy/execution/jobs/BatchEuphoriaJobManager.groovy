@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException
  * TODO Refactor: Co-/Contravariance works. This does not have to be a generic class. Remove the template.
  */
 @CompileStatic
-abstract class BatchEuphoriaJobManager<C extends BECommand> {
+abstract class BatchEuphoriaJobManager<C extends Command> {
 
     final static Logger log = LoggerFactory.getLogger(BatchEuphoriaJobManager)
 
@@ -129,7 +129,7 @@ abstract class BatchEuphoriaJobManager<C extends BECommand> {
                     "You are not allowed to submit further jobs." +
                     "You called waitForJobs() before.")
         }
-        BECommand command = createCommand(job)
+        Command command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command, commandTimeout)
         extractAndSetJobResultFromExecutionResult(command, executionResult)
         addToListOfStartedJobs(job)
@@ -327,7 +327,7 @@ abstract class BatchEuphoriaJobManager<C extends BECommand> {
     /**
      * Called by the execution service after a command was executed.
      */
-    protected BEJobResult extractAndSetJobResultFromExecutionResult(BECommand command, ExecutionResult res) {
+    protected BEJobResult extractAndSetJobResultFromExecutionResult(Command command, ExecutionResult res) {
         BEJobResult jobResult
         if (res.successful) {
             String exID
@@ -350,7 +350,7 @@ abstract class BatchEuphoriaJobManager<C extends BECommand> {
         return jobResult
     }
 
-    abstract protected BECommand createCommand(BEJob job)
+    abstract protected Command createCommand(BEJob job)
 
     abstract protected String parseJobID(String commandOutput)
 

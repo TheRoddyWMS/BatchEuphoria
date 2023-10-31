@@ -12,7 +12,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BECommand
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
@@ -30,7 +30,7 @@ import java.time.ZonedDateTime
 import java.util.regex.Matcher
 
 @CompileStatic
-abstract class GridEngineBasedJobManager<C extends BECommand> extends ClusterJobManager<C> {
+abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobManager<C> {
 
     public static final String WITH_DELIMITER = '(?=(%1$s))'
     private final ZoneId TIME_ZONE_ID

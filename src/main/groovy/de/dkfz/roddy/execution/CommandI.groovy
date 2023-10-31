@@ -47,7 +47,7 @@ abstract class CommandReferenceI extends CommandI {
  */
 @CompileStatic
 @EqualsAndHashCode
-class Executable extends CommandReferenceI {
+final class Executable extends CommandReferenceI {
 
     private Path path
 
@@ -85,7 +85,7 @@ class Executable extends CommandReferenceI {
  */
 @CompileStatic
 @EqualsAndHashCode
-class Command extends CommandReferenceI {
+final class Command extends CommandReferenceI {
 
     private Executable executable
 
@@ -121,6 +121,7 @@ class Command extends CommandReferenceI {
      * @param terminator_prefix
      * @return
      */
+    @CompileDynamic
     Code cliAppend(@NotNull Code other,
                    boolean absolutePath = false,
                    @NotNull Path interpreter = Paths.get("/bin/bash"),  // Could be Command
@@ -145,6 +146,7 @@ class Command extends CommandReferenceI {
      * @param quote     Whether to quote the appended Command.
      * @return
      */
+    @CompileDynamic
     Command cliAppend(@NotNull CommandReferenceI other,
                       boolean absolutePath = false,
                       boolean quote = false) {
@@ -166,7 +168,7 @@ class Command extends CommandReferenceI {
 /** Take actual code to be executed. */
 @CompileStatic
 @EqualsAndHashCode
-class Code extends CommandI {
+final class Code extends CommandI {
 
     @NotNull private String code
 

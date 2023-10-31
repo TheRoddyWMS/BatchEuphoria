@@ -84,7 +84,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected BECommand createCommand(BEJob job) {
+            protected Command createCommand(BEJob job) {
                 return null
             }
 

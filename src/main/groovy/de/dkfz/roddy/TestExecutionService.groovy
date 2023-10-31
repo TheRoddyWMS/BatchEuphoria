@@ -8,8 +8,8 @@ package de.dkfz.roddy
 
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.LocalExecutionHelper
-import de.dkfz.roddy.execution.jobs.BECommand
 import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 
@@ -30,7 +30,7 @@ class TestExecutionService implements BEExecutionService {
     }
 
     @Override
-    ExecutionResult execute(BECommand command, boolean waitFor = true,
+    ExecutionResult execute(Command command, boolean waitFor = true,
                             Duration timeout = Duration.ZERO) {
         return execute(command.toBashCommandString(), waitFor, timeout)
     }
@@ -64,7 +64,7 @@ class TestExecutionService implements BEExecutionService {
     }
 
     @Override
-    ExecutionResult execute(BECommand command, Duration timeout) {
+    ExecutionResult execute(Command command, Duration timeout) {
         return execute(command, true, timeout)
     }
 

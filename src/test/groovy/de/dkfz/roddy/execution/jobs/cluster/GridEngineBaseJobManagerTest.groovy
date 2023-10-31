@@ -6,7 +6,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BECommand
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
@@ -99,7 +99,7 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected BECommand createCommand(BEJob job) {
+            protected Command createCommand(BEJob job) {
                 return null
             }
 
