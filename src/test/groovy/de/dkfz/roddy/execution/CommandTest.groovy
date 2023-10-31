@@ -8,6 +8,13 @@ import java.nio.file.Paths
 class CommandTest extends Specification {
 
 
+    def "Constructor"() {
+        when:
+        new Command(new Executable(Paths.get("somePath")), [null as String])
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
     def "GetExecutablePath"() {
         given:
         Command command = new Command(new Executable(Paths.get("somePath")), [])

@@ -27,7 +27,7 @@ class BindSpec {
 
     @NotNull final Path hostPath
     final Path containerPath
-    @NotNull final String mode
+    @NotNull final Mode mode
 
     BindSpec(@NotNull Path hostPath,
              Path containerPath = null,
@@ -54,7 +54,7 @@ class ApptainerCommandBuilder {
 
     private @NotNull Path apptainerExecutable = Paths.get("apptainer")
 
-    private List<String> engineArgs
+    private @NotNull List<String> engineArgs
 
     /** Create a command that will be wrapped into a singularity/apptainer call.
      *  For this to work all remote paths (i.e. on the execution node) need to be

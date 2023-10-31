@@ -12,6 +12,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import org.apache.commons.lang3.RandomStringUtils
 import org.jetbrains.annotations.NotNull
+import sun.security.provider.MD5
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -53,7 +54,9 @@ class Executable extends CommandReferenceI {
 
     Executable(@NotNull Path path,
                String md5 = null) {
+        Preconditions.checkArgument(path != null)
         this.path = path
+        Preconditions.checkArgument(md5 == null || md5.size() == 32)
         this.md5 = md5
     }
 
@@ -90,6 +93,11 @@ class Command extends CommandReferenceI {
     Command(@NotNull Executable executable,
             @NotNull List<String> arguments = []) {
         this.executable = executable
+        arguments.forEach {
+            Preconditions.checkArgument(it != null,
+                    "Command.arguments must not contain null for executable: " +
+                            executable.executablePath.toString())
+        }
         this.arguments = arguments.asImmutable()
     }
 
@@ -159,14 +167,16 @@ class Command extends CommandReferenceI {
 @EqualsAndHashCode
 class Code extends CommandI {
 
-    private String code
+    @NotNull private String code
 
-    private Path interpreter
+    @NotNull private Path interpreter
 
     Code(@NotNull String code,
          @NotNull Path interpreter = Paths.get("/bin/bash")) {
+        Preconditions.checkArgument(code != null)
         Preconditions.checkArgument(code.size() > 0)
         this.code = code
+        Preconditions.checkArgument(interpreter != null)
         this.interpreter = interpreter
     }
 

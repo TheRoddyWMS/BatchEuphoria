@@ -65,7 +65,6 @@ dependencies {
     implementation 'com.google.guava:guava:30.0-android'
     implementation 'com.github.theroddywms:RoddyToolLib:2.4.0'
 
-
     // Runtime retention of @NonNull and annotations.
     implementation 'com.github.bbottema:jetbrains-runtime-annotations:1.0.1'
 }
