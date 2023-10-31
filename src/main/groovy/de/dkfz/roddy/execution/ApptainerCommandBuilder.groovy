@@ -9,7 +9,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 @CompileStatic
-class BindSpec {
+class BindSpec implements Comparable<BindSpec> {
 
     enum Mode {
         RO("ro"),
@@ -17,11 +17,15 @@ class BindSpec {
 
         String stringValue
 
-        Mode(String value) {
+        private Mode(String value) {
             stringValue = value
         }
 
         String toString() { stringValue; }
+
+        static Mode from(String value) {
+            value.toUpperCase() as Mode
+        }
 
     }
 
@@ -42,6 +46,24 @@ class BindSpec {
     String toBindOption() {
         if (containerPath == null) "$hostPath:$mode"
         else "$hostPath:$containerPath:$mode"
+    }
+
+    String toString() {
+        toBindOption()
+    }
+
+    @Override
+    int compareTo(BindSpec other) {
+        Integer result = this.hostPath.compareTo(other.hostPath)
+        if (result != 0) return result
+
+        result = this.mode.compareTo(other.mode)
+        if (result != 0) return result
+
+        result = this.containerPath.compareTo(other.containerPath)
+        if (result != 0) return result
+
+        return 0
     }
 
 }
@@ -70,11 +92,14 @@ class ApptainerCommandBuilder {
      *
      * @param bindSpecifications     Specification of the directories to bind into the container.
      * @param engineArgs             Further CLI arguments for apptainer/singularity.
+     * @param apptainerExecutable    Path to executable. Defaults to "apptainer" (relative path)
      */
     ApptainerCommandBuilder(@NotNull List<BindSpec> bindSpecifications,
-                            @NotNull List<String> engineArgs = ["run", "--contain"]) {
+                            @NotNull List<String> engineArgs = ["run", "--contain"],
+                            @NotNull Path apptainerExecutable = Paths.get("apptainer")) {
         this.bindSpecifications = bindSpecifications
         this.engineArgs = engineArgs
+        this.apptainerExecutable = apptainerExecutable
     }
 
     /**
@@ -86,10 +111,7 @@ class ApptainerCommandBuilder {
      * This only uses the apparent path, but does not account for symbolic links.
      */
     private static List<BindSpec> sortMounts(@NotNull List<BindSpec> specs) {
-        // Simply use the compareTo method of Path. It will sort the paths by character sequence
-        // representation, which is a total order. This implies that the original order gets
-        // completely lost, but at is a super-easy and working way to achieve a topological order.
-        specs.sort { [it.containerPath, it.mode, it.hostPath] }.unique()
+        specs.sort().unique()
     }
 
     /**
@@ -144,7 +166,7 @@ class ApptainerCommandBuilder {
         }
     }
 
-    Command getCommand() {
+    Command build() {
         new Command(new Executable(apptainerExecutable), ["exec"] + bindOptions + engineArgs)
     }
 

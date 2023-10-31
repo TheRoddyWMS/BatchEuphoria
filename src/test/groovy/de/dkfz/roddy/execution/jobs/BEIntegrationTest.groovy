@@ -83,9 +83,13 @@ class BEIntegrationTest {
 
         BatchEuphoriaJobManager jobManager = createJobManagerFor(system)
         BEJob testJobWithPipedScript = new BEJob(
-                null, jobManager, "batchEuphoriaTestJob",
-                new Code(testScript), resourceSet, null,
-                ["a": "value"], logFile, null)
+                null,
+                jobManager,
+                "batchEuphoriaTestJob",
+                new Code(testScript), resourceSet,
+                [],
+                ["a": "value"],
+                logFile)
         jobTest(jobManager, [testJobWithPipedScript])
     }
 
@@ -99,11 +103,9 @@ class BEIntegrationTest {
                 "batchEuphoriaTestJob_Parent",
                 new Code(testScript),
                 resourceSet,
-                null,
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                [],
+                ["a": "value"],
+                logFile)
         BEJob testJobChild1 = new BEJob(
                 null,
                 jobManager,
@@ -111,10 +113,8 @@ class BEIntegrationTest {
                 new Code(testScript),
                 resourceSet,
                 [testParent],
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                ["a": "value"],
+                logFile)
         BEJob testJobChild2 = new BEJob(
                 null,
                 jobManager,
@@ -122,10 +122,8 @@ class BEIntegrationTest {
                 new Code(testScript),
                 resourceSet,
                 [testParent, testJobChild1],
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                ["a": "value"],
+                logFile)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 
@@ -142,11 +140,9 @@ class BEIntegrationTest {
                 "batchEuphoriaTestJob",
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
-                null,
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                [],
+                ["a": "value"],
+                logFile)
         jobTest(jobManager, [testJobWithFile])
     }
 
@@ -161,11 +157,9 @@ class BEIntegrationTest {
                 "batchEuphoriaTestJob_Parent",
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
-                null,
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                [],
+                ["a": "value"],
+                logFile)
         BEJob testJobChild1 = new BEJob(
                 null,
                 jobManager,
@@ -173,10 +167,8 @@ class BEIntegrationTest {
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent],
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                ["a": "value"],
+                logFile)
         BEJob testJobChild2 = new BEJob(
                 null,
                 jobManager,
@@ -184,10 +176,8 @@ class BEIntegrationTest {
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent, testJobChild1],
-                ["a": "value"]
-                ,
-                logFile,
-                null)
+                ["a": "value"],
+                logFile)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
 

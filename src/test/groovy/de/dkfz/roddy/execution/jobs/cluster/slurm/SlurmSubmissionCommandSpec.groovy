@@ -34,8 +34,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         null,
                         null),
                 [],
-                mapOfParameters
-                ,
+                mapOfParameters,
                 JobLog.none(),
                 null,
                 accountingProject)

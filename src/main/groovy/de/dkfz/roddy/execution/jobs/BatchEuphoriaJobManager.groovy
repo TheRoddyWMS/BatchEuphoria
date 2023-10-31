@@ -125,7 +125,9 @@ abstract class BatchEuphoriaJobManager<C extends BECommand> {
     BEJobResult submitJob(BEJob job)
             throws TimeoutException, BEException {
         if (forbidFurtherJobSubmission) {
-            throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
+            throw new BEException(
+                    "You are not allowed to submit further jobs." +
+                    "You called waitForJobs() before.")
         }
         BECommand command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command, commandTimeout)

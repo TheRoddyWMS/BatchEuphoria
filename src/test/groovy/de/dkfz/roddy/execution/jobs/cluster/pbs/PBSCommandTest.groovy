@@ -52,8 +52,7 @@ class PBSCommandTest {
                         null,
                         null),
                 [],
-                mapOfParameters
-                ,
+                mapOfParameters,
                 JobLog.none(),
                 null)
         job

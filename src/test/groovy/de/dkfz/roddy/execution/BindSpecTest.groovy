@@ -11,6 +11,12 @@ class BindSpecTest extends Specification {
     private Path hostPath = Paths.get("hostPath")
     private Path contPath = Paths.get("contPath")
 
+    def "mode creation from string"() {
+        expect:
+        BindSpec.Mode.from("rO") == BindSpec.Mode.RO
+        BindSpec.Mode.from("Rw") == BindSpec.Mode.RW
+    }
+
     def "bind options"() {
         expect:
         new BindSpec(hostPath, contPath).toBindOption() == "hostPath:contPath:ro"

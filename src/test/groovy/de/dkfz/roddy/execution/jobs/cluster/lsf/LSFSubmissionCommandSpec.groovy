@@ -39,7 +39,11 @@ class LSFSubmissionCommandSpec extends Specification {
                         null,
                         null,
                         null),
-                [], mapOfParameters, JobLog.none(), null, accountingProject)
+                [],
+                mapOfParameters,
+                JobLog.none(),
+                null,
+                accountingProject)
         job
     }
 

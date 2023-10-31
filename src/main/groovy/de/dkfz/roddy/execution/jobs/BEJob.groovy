@@ -103,28 +103,31 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(@NotNull BEJobID jobID,
-          @NotNull BatchEuphoriaJobManager jobManager,
+    BEJob(BEJobID jobID,                        // can be null for FakeBEJob
+          BatchEuphoriaJobManager jobManager,   // can be null for FakeBEJob
           String jobName = null,
           CommandI commandObj = null,
           @NotNull ResourceSet resourceSet = new EmptyResourceSet(),
           @NotNull Collection<BEJob> parentJobs = [],
           @NotNull Map<String, String> parameters = [:],
-          JobLog jobLog = JobLog.none(),
+          @NotNull JobLog jobLog = JobLog.none(),
           File workingDirectory = null,
           String accountingName = null) {
-        this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.unknown)
+        this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.getNewUnknown())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
         this.commandObj = commandObj
+        Preconditions.checkArgument(resourceSet != null)
         this.resourceSet = resourceSet
+        Preconditions.checkArgument(parameters != null)
         this.parameters = parameters
         this.jobManager = jobManager
-        Preconditions.checkArgument(jobLog != null, "jobLog not set")
+        Preconditions.checkArgument(jobLog != null)
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
         this.accountingName = accountingName
-        this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
+        Preconditions.checkArgument(parentJobs != null)
+        this.addParentJobs(parentJobs)
     }
 
     BEJob addParentJobs(@NotNull Collection<BEJob> parentJobs) {
@@ -207,7 +210,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     void resetJobID() {
-        resetJobID(BEJobID.unknown)
+        resetJobID(BEJobID.getNewUnknown())
     }
 
 

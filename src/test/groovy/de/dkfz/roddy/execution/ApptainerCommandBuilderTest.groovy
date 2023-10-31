@@ -11,7 +11,7 @@ class ApptainerCommandBuilderTest extends Specification {
         given:
         ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
         expect:
-        builder.command.toList() == ["apptainer", "exec"]
+        builder.build().toList() == ["apptainer", "exec"]
     }
 
     def "command with duplicate paths on same target"() {
@@ -22,7 +22,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.command.toList() == [
+        builder.build().toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c:ro"]
     }
@@ -35,7 +35,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.command.toList() == [
+        builder.build().toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c:rw"]
     }
@@ -48,7 +48,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.command.toList() == [
+        builder.build().toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c1:ro",
                 "-B", "/a/b/c:/a/b/c2:rw"]
@@ -62,11 +62,11 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.command.toList() == [
+        // Don't attempt to solve such complex situations.
+        builder.build().toList() == [
                 "apptainer", "exec",
-                // Don't attempt to solve such complex situations.
                 "-B", "/a/b:/a/b:ro",
-                "-B", "/a/b/c:/a/b/c:ro",
+                "-B", "/a/b/c:/a/b/c:ro"
         ]
     }
 
@@ -79,7 +79,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.command.toList() == [
+        builder.build().toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b:/a/b:rw",
                 "-B", "/a/b/c:/a/b/c:ro"
@@ -92,6 +92,7 @@ class ApptainerCommandBuilderTest extends Specification {
                 new BindSpec(Paths.get("/a/b/c1"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b/c2"), Paths.get("/a/b/c"), BindSpec.Mode.RW),
         ], [])
+        builder.build()
         then:
         final IllegalArgumentException exception = thrown()
 

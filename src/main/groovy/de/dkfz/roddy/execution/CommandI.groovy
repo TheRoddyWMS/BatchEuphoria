@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution
 
 import com.google.common.base.Preconditions
 import de.dkfz.roddy.tools.BashUtils
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import org.apache.commons.lang3.RandomStringUtils

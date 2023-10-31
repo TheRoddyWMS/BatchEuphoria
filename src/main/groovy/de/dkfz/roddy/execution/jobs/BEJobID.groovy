@@ -29,7 +29,7 @@ class BEJobID implements Comparable<BEJobID> {
         this.id = id.split(/\./)[0]
     }
 
-    static BEJobID getUnknown() {
+    static BEJobID getNewUnknown() {
         new BEJobID(nextUnknownID())
     }
 

@@ -130,9 +130,7 @@ class GridEngineBaseJobManagerTest {
                                  null,
                                  null),
                  [],
-                 mapOfParameters,
-                 JobLog.none(),
-                        null)
+                 mapOfParameters)
         job
     }
 
