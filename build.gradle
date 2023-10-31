@@ -31,9 +31,9 @@ def getVersionName() {
 rootProject.version = getVersionName()
 
 // Set -Pchecked on the command line to change this compiler parameter.
-if (!project.hasProperty("checked") || !project.checked) {
-    compileJava.options.compilerArgs = ["-Xlint:unchecked"]
-    compileGroovy.options.compilerArgs = ["-Xlint:unchecked"]
+if (project.hasProperty("checked") && !project.checked) {
+    compileJava.options.compilerArgs = ["-Xlint:unchecked", "-Xlint:deprecation"]
+    compileGroovy.options.compilerArgs = ["-Xlint:unchecked", "-Xlint:deprecation"]
 }
 
 repositories {
