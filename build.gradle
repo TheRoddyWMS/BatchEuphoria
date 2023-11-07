@@ -16,8 +16,8 @@ apply plugin: 'maven'
 group = "com.github.theroddywms"
 
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 /*
  * Gets the version name from the current Git tag. If the current commit is not tagged,
@@ -30,10 +30,12 @@ def getVersionName() {
 
 rootProject.version = getVersionName()
 
+compileJava.options.compilerArgs = ["-release", targetCompatibility]
+
 // Set -Pchecked on the command line to change this compiler parameter.
 if (project.hasProperty("checked") && !project.checked) {
-    compileJava.options.compilerArgs = ["-Xlint:unchecked", "-Xlint:deprecation"]
-    compileGroovy.options.compilerArgs = ["-Xlint:unchecked", "-Xlint:deprecation"]
+    compileJava.options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation"]
+    compileGroovy.options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation"]
 }
 
 repositories {

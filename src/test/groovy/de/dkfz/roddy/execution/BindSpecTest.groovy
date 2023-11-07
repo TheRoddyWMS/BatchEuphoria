@@ -17,8 +17,18 @@ class BindSpecTest extends Specification {
         BindSpec.Mode.from("Rw") == BindSpec.Mode.RW
     }
 
+    def "initialization"() {
+        when:
+        BindSpec spec = new BindSpec(hostPath)
+        then:
+        spec.containerPath == spec.hostPath
+        spec.mode == BindSpec.Mode.RO
+    }
+
     def "bind options"() {
         expect:
+        new BindSpec(hostPath, hostPath).toBindOption() == "hostPath:ro"
+
         new BindSpec(hostPath, contPath).toBindOption() == "hostPath:contPath:ro"
 
         new BindSpec(hostPath).toBindOption() == "hostPath:ro"

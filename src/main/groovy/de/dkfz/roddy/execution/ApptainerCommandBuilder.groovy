@@ -38,13 +38,17 @@ class BindSpec implements Comparable<BindSpec> {
              @NotNull Mode opts = Mode.RO) {
         Preconditions.checkArgument(hostPath != null)
         this.hostPath = hostPath
-        this.containerPath = containerPath
+        if (containerPath == null) {
+            this.containerPath = hostPath
+        } else {
+            this.containerPath = containerPath
+        }
         Preconditions.checkArgument(opts != null)
         this.mode = opts
     }
 
     String toBindOption() {
-        if (containerPath == null) "$hostPath:$mode"
+        if (containerPath == hostPath) "$hostPath:$mode"
         else "$hostPath:$containerPath:$mode"
     }
 

@@ -23,11 +23,6 @@ abstract class SubmissionCommand extends Command {
      */
     Optional<Boolean> passEnvironment = Optional.empty()
 
-    /**
-     * The command which should be called
-     */
-    protected CommandI commandObj
-
     protected List<String> dependencyIDs
 
     protected final List<ProcessingParameters> processingParameters
@@ -54,7 +49,6 @@ abstract class SubmissionCommand extends Command {
                                 CommandI commandObj) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
-        this.commandObj = commandObj
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 

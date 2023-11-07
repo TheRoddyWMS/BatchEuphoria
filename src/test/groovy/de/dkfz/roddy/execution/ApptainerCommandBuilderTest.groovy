@@ -24,7 +24,7 @@ class ApptainerCommandBuilderTest extends Specification {
         expect:
         builder.build().toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b/c:/a/b/c:ro"]
+                "-B", "/a/b/c:ro"]
     }
 
     def "command with duplicate paths on same target more accessible"() {
@@ -37,7 +37,7 @@ class ApptainerCommandBuilderTest extends Specification {
         expect:
         builder.build().toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b/c:/a/b/c:rw"]
+                "-B", "/a/b/c:rw"]
     }
 
     def "command with duplicate paths on other target more accessible"() {
@@ -65,8 +65,8 @@ class ApptainerCommandBuilderTest extends Specification {
         // Don't attempt to solve such complex situations.
         builder.build().toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b:/a/b:ro",
-                "-B", "/a/b/c:/a/b/c:ro"
+                "-B", "/a/b:ro",
+                "-B", "/a/b/c:ro"
         ]
     }
 
@@ -81,8 +81,8 @@ class ApptainerCommandBuilderTest extends Specification {
         expect:
         builder.build().toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b:/a/b:rw",
-                "-B", "/a/b/c:/a/b/c:ro"
+                "-B", "/a/b:rw",
+                "-B", "/a/b/c:ro"
         ]
     }
 

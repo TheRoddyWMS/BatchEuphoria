@@ -261,10 +261,9 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /** The following methods simplify the porting of the old code to the CommandI-based handling
      *  of tools, tool scripts, and (new) commands (with arguments).
      */
-
     File getExecutableFile() {
-        if (commandObj instanceof Executable) {
-            (commandObj as Executable).executablePath.toFile()
+        if (commandObj instanceof CommandReferenceI) {
+            (commandObj as CommandReferenceI).executablePath.toFile()
         } else {
             null
         }

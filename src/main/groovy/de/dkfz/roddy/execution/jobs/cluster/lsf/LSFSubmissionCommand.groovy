@@ -52,7 +52,7 @@ class LSFSubmissionCommand extends SubmissionCommand {
 
     @Override
     protected String getWorkingDirectoryParameter() {
-        return "-cwd ${job.workingDirectory ?: WORKING_DIRECTORY_DEFAULT}" as String
+        return "-cwd \"${job.workingDirectory ?: WORKING_DIRECTORY_DEFAULT}\"" as String
     }
 
     @Override
