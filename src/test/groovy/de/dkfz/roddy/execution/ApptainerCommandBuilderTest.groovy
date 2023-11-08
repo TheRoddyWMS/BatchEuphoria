@@ -11,7 +11,7 @@ class ApptainerCommandBuilderTest extends Specification {
         given:
         ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
         expect:
-        builder.build().toList() == ["apptainer", "exec"]
+        builder.build("image").toList() == ["apptainer", "exec", "image"]
     }
 
     def "command with duplicate paths on same target"() {
@@ -22,9 +22,10 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.build().toList() == [
+        builder.build("image").toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b/c:ro"]
+                "-B", "/a/b/c:ro",
+                "image"]
     }
 
     def "command with duplicate paths on same target more accessible"() {
@@ -35,9 +36,10 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.build().toList() == [
+        builder.build("someImage").toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b/c:rw"]
+                "-B", "/a/b/c:rw",
+                "someImage"]
     }
 
     def "command with duplicate paths on other target more accessible"() {
@@ -48,10 +50,11 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.build().toList() == [
+        builder.build("image").toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c1:ro",
-                "-B", "/a/b/c:/a/b/c2:rw"]
+                "-B", "/a/b/c:/a/b/c2:rw",
+                "image"]
     }
 
     def "command with superpath"() {
@@ -63,10 +66,11 @@ class ApptainerCommandBuilderTest extends Specification {
         ], [])
         expect:
         // Don't attempt to solve such complex situations.
-        builder.build().toList() == [
+        builder.build("image").toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b:ro",
-                "-B", "/a/b/c:ro"
+                "-B", "/a/b/c:ro",
+                "image"
         ]
     }
 
@@ -79,10 +83,11 @@ class ApptainerCommandBuilderTest extends Specification {
 
         ], [])
         expect:
-        builder.build().toList() == [
+        builder.build("someImage").toList() == [
                 "apptainer", "exec",
                 "-B", "/a/b:rw",
-                "-B", "/a/b/c:ro"
+                "-B", "/a/b/c:ro",
+                "someImage"
         ]
     }
 
@@ -92,10 +97,44 @@ class ApptainerCommandBuilderTest extends Specification {
                 new BindSpec(Paths.get("/a/b/c1"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b/c2"), Paths.get("/a/b/c"), BindSpec.Mode.RW),
         ], [])
+        builder.build("image")
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if missing image name"() {
+        when:
+        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
         builder.build()
         then:
         final IllegalArgumentException exception = thrown()
+    }
 
+    def "error if invalid image name"() {
+        when:
+        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
+        builder.build("")
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if invalid image name during construction"() {
+        when:
+        ApptainerCommandBuilder builder =
+                new ApptainerCommandBuilder([], [], Paths.get("/bin/bash"), "")
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "use class-level default image name and apptainer executable"() {
+        when:
+        ApptainerCommandBuilder builder =
+                new ApptainerCommandBuilder([], [], Paths.get("/bin/executable"), "image")
+        then:
+        builder.build().toList() == [
+                "/bin/executable", "exec",
+                "image"
+        ]
     }
 
 

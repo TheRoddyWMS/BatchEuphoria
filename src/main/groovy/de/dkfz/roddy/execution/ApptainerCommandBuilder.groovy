@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions
 import groovy.transform.CompileStatic
 import org.jetbrains.annotations.NotNull
 
+import javax.annotation.Nullable
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -82,6 +83,8 @@ class ApptainerCommandBuilder {
 
     private @NotNull List<String> engineArgs
 
+    private String imageId
+
     /** Create a command that will be wrapped into a singularity/apptainer call.
      *  For this to work all remote paths (i.e. on the execution node) need to be
      *  bound into the container. This includes
@@ -100,10 +103,17 @@ class ApptainerCommandBuilder {
      */
     ApptainerCommandBuilder(@NotNull List<BindSpec> bindSpecifications,
                             @NotNull List<String> engineArgs = ["run", "--contain"],
-                            @NotNull Path apptainerExecutable = Paths.get("apptainer")) {
+                            @NotNull Path apptainerExecutable = Paths.get("apptainer"),
+                            @Nullable String imageId = null) {
         this.bindSpecifications = bindSpecifications
         this.engineArgs = engineArgs
         this.apptainerExecutable = apptainerExecutable
+        Preconditions.checkArgument(imageId == null || imageId.length() > 0)
+        this.imageId = imageId
+    }
+
+    Optional<String> getImageId() {
+        Optional.ofNullable(this.imageId)
     }
 
     /**
@@ -170,8 +180,22 @@ class ApptainerCommandBuilder {
         }
     }
 
-    Command build() {
-        new Command(new Executable(apptainerExecutable), ["exec"] + bindOptions + engineArgs)
+    /** Compose the information into a valid apptainer/singularity call. This fails, if the
+     *  imageId is obviously invalid (null or zero length; no more checks).
+     *
+     * @param imageId      Optional imageId. Fall back to the instance-level configured image,
+     *                     if it exists.
+     * @return
+     */
+    Command build(String imageId) {
+        String _imageId = this.imageId
+        if (imageId != null) {
+            _imageId = imageId
+        }
+        Preconditions.checkArgument(_imageId != null && _imageId.length() > 0)
+        new Command(
+                new Executable(apptainerExecutable),
+                ["exec"] + bindOptions + engineArgs + [_imageId])
     }
 
 }

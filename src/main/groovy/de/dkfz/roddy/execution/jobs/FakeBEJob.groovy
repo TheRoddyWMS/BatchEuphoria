@@ -6,8 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.config.EmptyResourceSet
-import de.dkfz.roddy.config.JobLog
+
 import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
 

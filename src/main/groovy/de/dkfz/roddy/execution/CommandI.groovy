@@ -13,7 +13,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import org.apache.commons.lang3.RandomStringUtils
 import org.jetbrains.annotations.NotNull
-import sun.security.provider.MD5
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -51,6 +50,10 @@ final class Executable extends CommandReferenceI {
 
     private Path path
 
+    /** An executable is a file, e.g. a script, for which there can be an MD5 sum. This is
+     *  important in some cases (which is why it is allowed to be `null`) if a script is
+     *  uploaded to the cluster.
+     */
     private String md5
 
     Executable(@NotNull Path path,
@@ -170,8 +173,14 @@ final class Command extends CommandReferenceI {
 @EqualsAndHashCode
 final class Code extends CommandI {
 
+    /** Code will usually be a script, maybe with a shebang line. Code may or may not be provided
+     *  to the job submission command (e.g. bsub) via the standard input instead of as file.
+     */
     @NotNull private String code
 
+    /** An interpreter for the code. This can is bash by default, but could (probably) also be
+     *  python3, perl, or whatever.
+     */
     @NotNull private Path interpreter
 
     Code(@NotNull String code,
