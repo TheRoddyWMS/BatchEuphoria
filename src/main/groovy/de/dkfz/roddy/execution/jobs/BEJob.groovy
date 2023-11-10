@@ -13,7 +13,6 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.CommandReferenceI
-import de.dkfz.roddy.execution.Executable
 import groovy.transform.CompileStatic
 import org.jetbrains.annotations.NotNull
 

@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution
 
 import com.google.common.base.Preconditions
-import de.dkfz.roddy.tools.BashUtils
+import de.dkfz.roddy.tools.shell.bash.Service as BashService
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -161,7 +161,7 @@ final class Command extends CommandReferenceI {
             new Command(
                     executable,
                     this.arguments +
-                            BashUtils.strongQuote(other.toList(absolutePath).join(" ")))
+                    BashService.escape(other.toList(absolutePath).join(" ")))
         }
     }
 
