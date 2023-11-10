@@ -28,7 +28,7 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
                          List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
                          List<String> dependencyIDs, CommandI command) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
     }
 
     @Override
@@ -129,4 +129,5 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     protected String getDependsSuperParameter() {
         return WHITESPACE
     }
+
 }

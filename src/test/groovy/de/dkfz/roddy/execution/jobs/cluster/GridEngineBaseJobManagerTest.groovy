@@ -144,11 +144,15 @@ class GridEngineBaseJobManagerTest {
                         "jobName",
                         null,
                         mapOfVars,
-                        null,
-                        new Executable(Paths.get("/tmp/test.sh"))) {
+                        null) {
             @Override
             protected String getDependsSuperParameter() {
                 return null
+            }
+
+            @Override
+            protected Boolean getQuoteCommand() {
+                true
             }
 
             @Override

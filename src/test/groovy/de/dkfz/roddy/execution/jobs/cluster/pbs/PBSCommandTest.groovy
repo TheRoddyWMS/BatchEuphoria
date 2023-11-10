@@ -66,8 +66,7 @@ class PBSCommandTest {
                 "jobName",
                 null,
                 [:],
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         assert cmd.assembleVariableExportParameters() == ""
     }
 
@@ -80,8 +79,7 @@ class PBSCommandTest {
                 "jobName",
                 null,
                 mapOfVars,
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         assert cmd.assembleVariableExportParameters() == "-v \"a=a,b\""
     }
 
@@ -93,8 +91,7 @@ class PBSCommandTest {
                 "jobName",
                 null,
                 [:],
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-V"
     }
@@ -108,8 +105,7 @@ class PBSCommandTest {
                 "jobName",
                 null,
                 mapOfVars,
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == "-V -v \"a=a,b\""
     }

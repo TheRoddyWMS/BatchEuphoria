@@ -121,7 +121,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         ExecutionResult res
 
         /** For direct execution, there may be parent jobs, which failed or were aborted.
-         *  Don't start, if this is the case.  **/
+         *  Don't start, if this is the case. **/
         if (job.parentJobs.findAll {
             BEJob pJob = it as BEJob
             !(pJob.jobState == JobState.COMPLETED_SUCCESSFUL || pJob.jobState == JobState.UNKNOWN)
@@ -129,7 +129,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
             jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
             command.setJobID(jobID)
         } else {
-            jobID = new BEJobID(job.jobCreationCounter.toString()) // Needs to be set before job.run, because console output will be wrong otherwise.
+            // Needs to be set before job.run, because console output will be wrong otherwise.
+            jobID = new BEJobID(job.jobCreationCounter.toString())
             command.job.resetJobID(jobID)
             command.setJobID(jobID)
             res = executionService.execute(command, walltime)

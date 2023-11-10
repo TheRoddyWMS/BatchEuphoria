@@ -9,46 +9,43 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "command without paths"() {
         given:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create()
         expect:
         builder.build("image").toList() == ["apptainer", "exec", "image"]
     }
 
     def "command with duplicate paths on same target"() {
         given:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([
-                new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
-                new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
-
-        ], [])
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create().withAddedBindingSpecs([
+            new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
+            new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
+        ])
         expect:
         builder.build("image").toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b/c:ro",
+                "-B", "/a/b/c:/a/b/c:ro",
                 "image"]
     }
 
     def "command with duplicate paths on same target more accessible"() {
         given:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create().withAddedBindingSpecs([
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RW),
-
-        ], [])
+        ])
         expect:
         builder.build("someImage").toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b/c:rw",
+                "-B", "/a/b/c:/a/b/c:rw",
                 "someImage"]
     }
 
     def "command with duplicate paths on other target more accessible"() {
         given:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create().withAddedBindingSpecs([
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c1"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c2"), BindSpec.Mode.RW),
-
-        ], [])
+        ])
         expect:
         builder.build("image").toList() == [
                 "apptainer", "exec",
@@ -59,17 +56,16 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "command with superpath"() {
         given:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create().withAddedBindingSpecs([
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b"), Paths.get("/a/b"), BindSpec.Mode.RO),
-
-        ], [])
+        ])
         expect:
         // Don't attempt to solve such complex situations.
         builder.build("image").toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b:ro",
-                "-B", "/a/b/c:ro",
+                "-B", "/a/b:/a/b:ro",
+                "-B", "/a/b/c:/a/b/c:ro",
                 "image"
         ]
     }
@@ -77,26 +73,25 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "command with superpath writable"() {
         given:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create().withAddedBindingSpecs([
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b"), Paths.get("/a/b"), BindSpec.Mode.RW),
-
-        ], [])
+        ])
         expect:
         builder.build("someImage").toList() == [
                 "apptainer", "exec",
-                "-B", "/a/b:rw",
-                "-B", "/a/b/c:ro",
+                "-B", "/a/b:/a/b:rw",
+                "-B", "/a/b/c:/a/b/c:ro",
                 "someImage"
         ]
     }
 
     def "different sources mounted to same target"() {
         when:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create().withAddedBindingSpecs([
                 new BindSpec(Paths.get("/a/b/c1"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
                 new BindSpec(Paths.get("/a/b/c2"), Paths.get("/a/b/c"), BindSpec.Mode.RW),
-        ], [])
+        ])
         builder.build("image")
         then:
         final IllegalArgumentException exception = thrown()
@@ -104,7 +99,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "error if missing image name"() {
         when:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create()
         builder.build()
         then:
         final IllegalArgumentException exception = thrown()
@@ -112,7 +107,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "error if invalid image name"() {
         when:
-        ApptainerCommandBuilder builder = new ApptainerCommandBuilder([], [])
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder.create()
         builder.build("")
         then:
         final IllegalArgumentException exception = thrown()
@@ -120,20 +115,72 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "error if invalid image name during construction"() {
         when:
-        ApptainerCommandBuilder builder =
-                new ApptainerCommandBuilder([], [], Paths.get("/bin/bash"), "")
+        ApptainerCommandBuilder.
+                create().
+                withImageId("")
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if null mode during construction"() {
+        when:
+        ApptainerCommandBuilder.create().withMode(null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if null engine args during construction"() {
+        when:
+        ApptainerCommandBuilder.create().withAddedEngineArgs(null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if null binding specs during construction"() {
+        when:
+        ApptainerCommandBuilder.create().withAddedBindingSpecs(null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if null executable"() {
+        when:
+        ApptainerCommandBuilder.create().withApptainerExecutable(null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "error if null added exported env vars"() {
+        when:
+        ApptainerCommandBuilder.create().withAddedExportedEnvironmentVariables(null)
         then:
         final IllegalArgumentException exception = thrown()
     }
 
     def "use class-level default image name and apptainer executable"() {
         when:
-        ApptainerCommandBuilder builder =
-                new ApptainerCommandBuilder([], [], Paths.get("/bin/executable"), "image")
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder
+            .create()
+            .withApptainerExecutable(Paths.get("/bin/executable"))
+            .withImageId("image")
         then:
         builder.build().toList() == [
                 "/bin/executable", "exec",
                 "image"
+        ]
+    }
+
+    def "export environment variables into container"() {
+        when:
+        ApptainerCommandBuilder builder = ApptainerCommandBuilder
+            .create()
+            .withAddedEngineArgs(["--contain"])
+            .withAddedExportedEnvironmentVariables(["a"])   // Add variables incrementally.
+            .withAddedExportedEnvironmentVariables(["b"])
+        then:
+        builder.build("someImage").toList() == [
+                "apptainer", "exec", "--env", "a=\$a", "--env", "b=\$b",  // Include all
+                "--contain", "someImage"                    // ... before the additional arguments
         ]
     }
 

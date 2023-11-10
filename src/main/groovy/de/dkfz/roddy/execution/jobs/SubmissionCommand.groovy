@@ -9,6 +9,7 @@ import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.tools.BashUtils
+import de.dkfz.roddy.tools.shell.bash.Service as BashService
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
@@ -36,7 +37,6 @@ abstract class SubmissionCommand extends Command {
      * @param processingParameters
      * @param environmentVariables
      * @param dependencyIDs
-     * @param commandObj
      *
      * Unfortunately, *all* these parameters can be null.
      */
@@ -45,12 +45,13 @@ abstract class SubmissionCommand extends Command {
                                 String jobName,
                                 List<ProcessingParameters> processingParameters,
                                 Map<String, String> environmentVariables,
-                                List<String> dependencyIDs,
-                                CommandI commandObj) {
+                                List<String> dependencyIDs) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
         this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
+
+    protected abstract Boolean getQuoteCommand()
 
     /**
      * Should the local environment be passed?
@@ -109,7 +110,18 @@ abstract class SubmissionCommand extends Command {
         command << " ${parameters.join(" ")} "
 
         if (job.getCommand(true)) {
-            command << " " << job.getCommand(true).join(StringConstants.WHITESPACE)
+            // Commands that are appended to the submission command and its parameters, e.g.,
+            // in `bsub ... command ...` need to be quoted to prevent that expressions and
+            // variables are evaluated on the submission site instead of the actual remote
+            // cluster node.
+            // This won't have any effect unless you have Bash special characters in your command.
+            List<String> commandToBeExecuted = job.getCommand(true)
+            if (quoteCommand) {
+                commandToBeExecuted = commandToBeExecuted.collect { segment ->
+                    BashService.escape(segment)
+                }
+            }
+            command << " " << commandToBeExecuted.join(StringConstants.WHITESPACE)
         }
 
         return command

@@ -27,13 +27,13 @@ class BindSpecTest extends Specification {
 
     def "bind options"() {
         expect:
-        new BindSpec(hostPath, hostPath).toBindOption() == "hostPath:ro"
+        new BindSpec(hostPath, hostPath).toBindOption() == "hostPath:hostPath:ro"
 
         new BindSpec(hostPath, contPath).toBindOption() == "hostPath:contPath:ro"
 
-        new BindSpec(hostPath).toBindOption() == "hostPath:ro"
+        new BindSpec(hostPath).toBindOption() == "hostPath:hostPath:ro"
 
-        new BindSpec(hostPath, null, BindSpec.Mode.RW).toBindOption() == "hostPath:rw"
+        new BindSpec(hostPath, null, BindSpec.Mode.RW).toBindOption() == "hostPath:hostPath:rw"
     }
 
     def "bind spec null check path"() {

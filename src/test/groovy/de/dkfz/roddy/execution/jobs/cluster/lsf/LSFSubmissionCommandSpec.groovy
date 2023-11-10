@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.Command
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
@@ -29,16 +30,15 @@ class LSFSubmissionCommandSpec extends Specification {
                 null,
                 jobManager,
                 "Test",
-                new Executable(Paths.get("/tmp/test.sh")),
-                new ResourceSet(
-                        ResourceSetSize.l,
-                        new BufferValue(1, BufferUnit.G),
-                        4,
-                        1,
-                        new TimeUnit("1h"),
-                        null,
-                        null,
-                        null),
+                new Command(new Executable(Paths.get("/tmp/test.sh")), ["\$someRemoteVariable"]),
+                new ResourceSet(ResourceSetSize.l,
+                                new BufferValue(1, BufferUnit.G),
+                                4,
+                                1,
+                                new TimeUnit("1h"),
+                                null,
+                                null,
+                                null),
                 [],
                 mapOfParameters,
                 JobLog.none(),
@@ -57,8 +57,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobName",
                 null,
                 mapOfVars,
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         then:
         cmd.assembleDependencyParameter([]) == ""
     }
@@ -71,8 +70,7 @@ class LSFSubmissionCommandSpec extends Specification {
                  "jobName",
                 null,
                 [:],
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
 
         then:
         cmd.assembleVariableExportParameters() == "-env \"none\""
@@ -87,8 +85,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobName",
                 null,
                 mapOfVars,
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
 
         then:
         cmd.assembleVariableExportParameters() == "-env \"a=a, b\""
@@ -102,8 +99,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobName",
                 null,
                 [:],
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         cmd.passEnvironment = Optional.of(true)
 
         then:
@@ -119,8 +115,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobName",
                 null,
                 mapOfVars,
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
         cmd.passEnvironment = Optional.of(true)
 
         then:
@@ -135,11 +130,10 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobname",
         null,
                 [:],
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none"  -J jobname -H -cwd "$HOME" -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none"  -J jobname -H -cwd "$HOME" -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh \\$someRemoteVariable'
     }
 
     def "command with accounting name" () {
@@ -150,11 +144,10 @@ class LSFSubmissionCommandSpec extends Specification {
                 "jobname",
                 null,
                 [:],
-                null,
-                new Executable(Paths.get("/tmp/test.sh")))
+                null)
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none" -P "accountingProject" -J jobname -H -cwd "$HOME" -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none" -P "accountingProject" -J jobname -H -cwd "$HOME" -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh \\$someRemoteVariable'
     }
 
 

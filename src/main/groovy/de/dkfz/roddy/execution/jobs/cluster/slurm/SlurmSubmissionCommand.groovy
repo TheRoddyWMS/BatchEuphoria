@@ -25,8 +25,8 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     SlurmSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
                            List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
-                           List<String> dependencyIDs, CommandI command) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
+                           List<String> dependencyIDs) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
     }
 
     @Override

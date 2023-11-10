@@ -30,9 +30,8 @@ class LSFSubmissionCommand extends SubmissionCommand {
             String jobName,
             List<ProcessingParameters> processingParameters,
             Map<String, String> environmentVariables,
-            List<String> dependencyIDs,
-            CommandI command) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
+            List<String> dependencyIDs) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
     }
 
     @Override
@@ -58,6 +57,11 @@ class LSFSubmissionCommand extends SubmissionCommand {
     @Override
     protected String getLoggingParameter(JobLog jobLog) {
         return getLoggingParameters(jobLog)
+    }
+
+    @Override
+    protected Boolean getQuoteCommand() {
+        true
     }
 
     static getLoggingParameters(JobLog jobLog) {

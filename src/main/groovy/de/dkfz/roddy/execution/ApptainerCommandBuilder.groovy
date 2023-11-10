@@ -2,12 +2,14 @@ package de.dkfz.roddy.execution
 
 
 import com.google.common.base.Preconditions
+import groovy.transform.AutoClone
 import groovy.transform.CompileStatic
 import org.jetbrains.annotations.NotNull
 
 import javax.annotation.Nullable
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.prefs.AbstractPreferences
 
 @CompileStatic
 class BindSpec implements Comparable<BindSpec> {
@@ -49,8 +51,7 @@ class BindSpec implements Comparable<BindSpec> {
     }
 
     String toBindOption() {
-        if (containerPath == hostPath) "$hostPath:$mode"
-        else "$hostPath:$containerPath:$mode"
+        "$hostPath:$containerPath:$mode"
     }
 
     String toString() {
@@ -74,8 +75,16 @@ class BindSpec implements Comparable<BindSpec> {
 }
 
 
+@AutoClone
 @CompileStatic
 class ApptainerCommandBuilder {
+
+    /** See `apptainer --help`, where it is called `Command` but there are already too many
+     *  different meanings of "Command" in Roddy and BE. */
+    enum Mode {
+        exec,
+        run
+    }
 
     private @NotNull List<BindSpec> bindSpecifications
 
@@ -83,7 +92,13 @@ class ApptainerCommandBuilder {
 
     private @NotNull List<String> engineArgs
 
-    private String imageId
+    private @Nullable String imageId
+
+    private @NotNull String mode
+
+    private @Nullable Path workingDir
+
+    private @NotNull List<String> exportedEnvironmentVariables
 
     /** Create a command that will be wrapped into a singularity/apptainer call.
      *  For this to work all remote paths (i.e. on the execution node) need to be
@@ -97,23 +112,96 @@ class ApptainerCommandBuilder {
      *  will be bound RW, and everything appended with -B options to the singularity/apptainer
      *  command in a topologically sorted order (i.e. super-directories first).
      *
-     * @param bindSpecifications     Specification of the directories to bind into the container.
-     * @param engineArgs             Further CLI arguments for apptainer/singularity.
-     * @param apptainerExecutable    Path to executable. Defaults to "apptainer" (relative path)
+     * @param mode                   The run mode, e.g., exec, run, etc. Defaults to exec
      */
-    ApptainerCommandBuilder(@NotNull List<BindSpec> bindSpecifications,
-                            @NotNull List<String> engineArgs = ["run", "--contain"],
-                            @NotNull Path apptainerExecutable = Paths.get("apptainer"),
-                            @Nullable String imageId = null) {
-        this.bindSpecifications = bindSpecifications
-        this.engineArgs = engineArgs
-        this.apptainerExecutable = apptainerExecutable
-        Preconditions.checkArgument(imageId == null || imageId.length() > 0)
-        this.imageId = imageId
+    private ApptainerCommandBuilder() {
+        /** Default values for all other variables. Use the with-methods to set these. */
+        this.mode = Mode.exec
+        this.engineArgs = []
+        this.bindSpecifications = []
+        this.apptainerExecutable = Paths.get("apptainer")
+        this.imageId = null
+        this.workingDir = null
+        this.exportedEnvironmentVariables = []
     }
 
-    Optional<String> getImageId() {
-        Optional.ofNullable(this.imageId)
+    /** Seems kind of superfluous, but this fits a bit better into the fluent-API of the builder */
+    static ApptainerCommandBuilder create() {
+        new ApptainerCommandBuilder()
+    }
+
+    // Methods to set the fields. More wordy, but also more structure than a long sequence
+    // of constructor parameters. Groovy's support for named arguments is rudimentary and
+    // clumsy (compared to Scala; e.g. no automatic name-checking).
+
+    ApptainerCommandBuilder withMode(@NotNull Mode mode) {
+        Preconditions.checkArgument(mode != null)
+        ApptainerCommandBuilder copy = clone()
+        copy.mode = mode
+        copy
+    }
+
+    ApptainerCommandBuilder withAddedEngineArgs(@NotNull List<String> newArgs) {
+        Preconditions.checkArgument(newArgs != null)
+        ApptainerCommandBuilder copy = clone()
+        copy.engineArgs += newArgs
+        copy
+    }
+
+    ApptainerCommandBuilder withAddedBindingSpecs(@NotNull List<BindSpec> newSpecs) {
+        Preconditions.checkArgument(newSpecs != null)
+        ApptainerCommandBuilder copy = clone()
+        copy.bindSpecifications += newSpecs
+        copy
+    }
+
+    ApptainerCommandBuilder withApptainerExecutable(@NotNull Path newExec) {
+        Preconditions.checkArgument(newExec != null)
+        ApptainerCommandBuilder copy = clone()
+        copy.apptainerExecutable = newExec
+        copy
+    }
+
+    ApptainerCommandBuilder withImageId(String newId) {
+        Preconditions.checkArgument(newId == null || newId.length() > 0)
+        ApptainerCommandBuilder copy = clone()
+        copy.imageId = newId
+        copy
+    }
+
+    ApptainerCommandBuilder withWorkingDir(@Nullable Path workingDir) {
+        ApptainerCommandBuilder copy = clone()
+        copy.workingDir = workingDir
+        copy
+    }
+
+    ApptainerCommandBuilder withAddedExportedEnvironmentVariables(@NotNull List<String> newNames) {
+        Preconditions.checkArgument(newNames != null)
+        ApptainerCommandBuilder copy = clone()
+        copy.exportedEnvironmentVariables += newNames
+        copy
+    }
+
+    // Helpers for the build() method to create the actual Command object.
+
+    private List<String> getWorkingDirParameter() {
+        if (workingDir != null) {
+            ["-W", workingDir.toString()]
+        } else {
+            []
+        }
+    }
+
+    private List<String> getVariableExportParameters() {
+        exportedEnvironmentVariables.
+                collect { ['--env', "$it=\$$it"] }.
+                flatten() as List<String>
+    }
+
+    private List<String> getFinalEngineArg() {
+        variableExportParameters +
+                workingDirParameter +
+                engineArgs
     }
 
     /**
@@ -187,7 +275,7 @@ class ApptainerCommandBuilder {
      *                     if it exists.
      * @return
      */
-    Command build(String imageId) {
+    Command build(@Nullable String imageId) {
         String _imageId = this.imageId
         if (imageId != null) {
             _imageId = imageId
@@ -195,7 +283,7 @@ class ApptainerCommandBuilder {
         Preconditions.checkArgument(_imageId != null && _imageId.length() > 0)
         new Command(
                 new Executable(apptainerExecutable),
-                ["exec"] + bindOptions + engineArgs + [_imageId])
+                ["exec"] + bindOptions + finalEngineArg + [_imageId])
     }
 
 }

@@ -132,12 +132,16 @@ class SubmissionCommandTest extends Specification {
                 null,
                 [],
                 [:] as Map<String,String>,
-                [],
-                new Executable(Paths.get(""))
+                []
         ) {
 
             {
                 this.setPassEnvironment(passEnvironment)
+            }
+
+            @Override
+            protected Boolean getQuoteCommand() {
+                true
             }
 
             @Override
