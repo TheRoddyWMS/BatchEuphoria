@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull
 import javax.annotation.Nullable
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.prefs.AbstractPreferences
 
 @CompileStatic
 class BindSpec implements Comparable<BindSpec> {
@@ -98,7 +97,9 @@ class ApptainerCommandBuilder {
 
     private @Nullable Path workingDir
 
-    private @NotNull List<String> exportedEnvironmentVariables
+    private @NotNull List<String> environmentVariablesToCopy
+
+    private @NotNull Map<String, String> setEnvironmentVariables
 
     /** Create a command that will be wrapped into a singularity/apptainer call.
      *  For this to work all remote paths (i.e. on the execution node) need to be
@@ -122,7 +123,8 @@ class ApptainerCommandBuilder {
         this.apptainerExecutable = Paths.get("apptainer")
         this.imageId = null
         this.workingDir = null
-        this.exportedEnvironmentVariables = []
+        this.environmentVariablesToCopy = []
+        this.setEnvironmentVariables = [:]
     }
 
     /** Seems kind of superfluous, but this fits a bit better into the fluent-API of the builder */
@@ -134,6 +136,7 @@ class ApptainerCommandBuilder {
     // of constructor parameters. Groovy's support for named arguments is rudimentary and
     // clumsy (compared to Scala; e.g. no automatic name-checking).
 
+    /** Set the execution mode ("command"; subcommand) of the apptainer call. run or exec. */
     ApptainerCommandBuilder withMode(@NotNull Mode mode) {
         Preconditions.checkArgument(mode != null)
         ApptainerCommandBuilder copy = clone()
@@ -141,6 +144,7 @@ class ApptainerCommandBuilder {
         copy
     }
 
+    /** Add container engine arguments. See apptainer run|exec --help. */
     ApptainerCommandBuilder withAddedEngineArgs(@NotNull List<String> newArgs) {
         Preconditions.checkArgument(newArgs != null)
         ApptainerCommandBuilder copy = clone()
@@ -148,6 +152,7 @@ class ApptainerCommandBuilder {
         copy
     }
 
+    /** Add bind mounts. Include all directories needed to run the workload task/job. */
     ApptainerCommandBuilder withAddedBindingSpecs(@NotNull List<BindSpec> newSpecs) {
         Preconditions.checkArgument(newSpecs != null)
         ApptainerCommandBuilder copy = clone()
@@ -155,6 +160,7 @@ class ApptainerCommandBuilder {
         copy
     }
 
+    /** The path to the apptainer/singularity executable on the execution side (maybe cluster). */
     ApptainerCommandBuilder withApptainerExecutable(@NotNull Path newExec) {
         Preconditions.checkArgument(newExec != null)
         ApptainerCommandBuilder copy = clone()
@@ -162,6 +168,7 @@ class ApptainerCommandBuilder {
         copy
     }
 
+    /** The path or URI of the container image to wrap the command in. */
     ApptainerCommandBuilder withImageId(String newId) {
         Preconditions.checkArgument(newId == null || newId.length() > 0)
         ApptainerCommandBuilder copy = clone()
@@ -169,18 +176,37 @@ class ApptainerCommandBuilder {
         copy
     }
 
+    /** The working directory inside the container. */
     ApptainerCommandBuilder withWorkingDir(@Nullable Path workingDir) {
         ApptainerCommandBuilder copy = clone()
         copy.workingDir = workingDir
         copy
     }
 
-    ApptainerCommandBuilder withAddedExportedEnvironmentVariables(@NotNull List<String> newNames) {
+    /** List of variables that will be copied from the calling environment of the apptainer/
+     *  singularity command. This will usually be e.g. LSB_JOBID or LSB_JOBNAME, but may include
+     *  others to configure the program that you want to run in the container.
+     */
+    ApptainerCommandBuilder withCopiedEnvironmentVariables(@NotNull List<String> newNames) {
         Preconditions.checkArgument(newNames != null)
         ApptainerCommandBuilder copy = clone()
-        copy.exportedEnvironmentVariables += newNames
+        copy.environmentVariablesToCopy += newNames
         copy
     }
+
+    /** Environment variables names and values that will be set on the container.
+     *  Note that this will not check the syntactic (bash) correctness of the variable names
+     *  or values. Also no quoting will be done, such that you can e.g. do something like
+     *  ["renamedVariableName": "originalVariableValue"]
+     */
+    ApptainerCommandBuilder withAddedEnvironmentVariables(
+            @NotNull Map<String, String> newNameValues) {
+        Preconditions.checkArgument(newNameValues != null)
+        ApptainerCommandBuilder copy = clone()
+        copy.setEnvironmentVariables += newNameValues
+        copy
+    }
+
 
     // Helpers for the build() method to create the actual Command object.
 
@@ -192,16 +218,35 @@ class ApptainerCommandBuilder {
         }
     }
 
-    private List<String> getVariableExportParameters() {
-        exportedEnvironmentVariables.
-                collect { ['--env', "$it=\$$it"] }.
+    private Map<String, String> getExportedEnvironmentVariables() {
+        this.environmentVariablesToCopy.collectEntries { variableName ->
+            [variableName, "\$$variableName"]
+        }
+    }
+
+    /** This is similar to `getExportedLocalEnvironmentVariables()`, but here we actually set
+     *  variables to (possibly new) values. Note that the values are *not* quoted. We leave it to
+     *  the caller, to quote values correctly, if necessary.
+     */
+    private Map<String, String> getExplicitlySetVariables() {
+        setEnvironmentVariables
+    }
+
+    /** Combine the copied (calling environment) variables and the explicitly set variables.
+     *  Variables are not returned in an explicitly fixed order.
+     */
+    private List<String> getEnviromnentExportParameters() {
+        (exportedEnvironmentVariables + explicitlySetVariables).
+            collect { Map.Entry<String, String> kv ->
+                    ["--env", "${kv.key}=${kv.value}"]
+                }.
                 flatten() as List<String>
     }
 
     private List<String> getFinalEngineArg() {
-        variableExportParameters +
-                workingDirParameter +
-                engineArgs
+        enviromnentExportParameters +
+        workingDirParameter +
+        engineArgs
     }
 
     /**
@@ -222,7 +267,6 @@ class ApptainerCommandBuilder {
      *  (RW > RO) access mode.
      *
      *  This only uses the apparent paths, but does not account for symbolic links.
-     * @param specs
      */
     private static List<BindSpec> deduplicateAndCheckBindSpecs(@NotNull List<BindSpec> specs) {
         LinkedHashMap<Path, BindSpec> containerPathIndex = [:]

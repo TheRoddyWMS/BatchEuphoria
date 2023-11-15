@@ -153,6 +153,7 @@ final class Command extends CommandReferenceI {
     Command cliAppend(@NotNull CommandReferenceI other,
                       boolean absolutePath = false,
                       boolean quote = false) {
+        Preconditions.checkArgument(other != null)
         if (!quote) {
             new Command(
                     executable,

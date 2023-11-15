@@ -152,7 +152,7 @@ class ApptainerCommandBuilderTest extends Specification {
 
     def "error if null added exported env vars"() {
         when:
-        ApptainerCommandBuilder.create().withAddedExportedEnvironmentVariables(null)
+        ApptainerCommandBuilder.create().withCopiedEnvironmentVariables(null)
         then:
         final IllegalArgumentException exception = thrown()
     }
@@ -170,19 +170,21 @@ class ApptainerCommandBuilderTest extends Specification {
         ]
     }
 
-    def "export environment variables into container"() {
+    def "copy environment variables into container"() {
         when:
         ApptainerCommandBuilder builder = ApptainerCommandBuilder
             .create()
             .withAddedEngineArgs(["--contain"])
-            .withAddedExportedEnvironmentVariables(["a"])   // Add variables incrementally.
-            .withAddedExportedEnvironmentVariables(["b"])
+            .withCopiedEnvironmentVariables(["a"])   // Add variables incrementally.
+            .withCopiedEnvironmentVariables(["b"])
+            .withAddedEnvironmentVariables(["a": "\$c"])    // Explicit override of variable value.
         then:
         builder.build("someImage").toList() == [
-                "apptainer", "exec", "--env", "a=\$a", "--env", "b=\$b",  // Include all
-                "--contain", "someImage"                    // ... before the additional arguments
+                "apptainer", "exec",
+                "--env", "a=\$c",
+                "--env", "b=\$b",
+                "--contain", "someImage"
         ]
     }
-
 
 }
