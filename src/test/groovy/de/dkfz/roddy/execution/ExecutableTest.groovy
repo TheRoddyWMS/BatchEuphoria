@@ -14,6 +14,13 @@ class ExecutableTest extends Specification {
         executable.md5 == Optional.empty()
     }
 
+    def "throw with null path"() {
+        when:
+        new Executable(null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
     def "ToList"() {
         given:
         Executable executable = new Executable(

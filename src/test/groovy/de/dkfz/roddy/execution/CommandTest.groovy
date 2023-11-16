@@ -4,9 +4,7 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
-
 class CommandTest extends Specification {
-
 
     def "Constructor"() {
         when:
@@ -20,6 +18,20 @@ class CommandTest extends Specification {
         Command command = new Command(new Executable(Paths.get("somePath")), [])
         expect:
         command.executablePath == Paths.get("somePath")
+    }
+
+    def "throw with null Executable"() {
+        when:
+        new Command(null as Executable, [])
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "throw with null argument list"() {
+        when:
+        new Command(new Executable(Paths.get("somePath")), null as List<String>)
+        then:
+        final IllegalArgumentException exception = thrown()
     }
 
     def "GetExecutable"() {

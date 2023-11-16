@@ -18,4 +18,18 @@ class CodeTest extends Specification {
         code2.interpreter == Paths.get("/usr/bin/python3")
     }
 
+    def "throw with null code"() {
+        when:
+        new Code(null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
+    def "throw with null interpreter"() {
+        when:
+        new Code("echo hallo; sleep 50;", null)
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
 }
