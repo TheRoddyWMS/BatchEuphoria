@@ -13,11 +13,12 @@ import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
+import groovy.transform.CompileStatic
 
 /**
  * @author michael
  */
-@groovy.transform.CompileStatic
+@CompileStatic
 class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
 
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {

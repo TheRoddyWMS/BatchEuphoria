@@ -37,7 +37,7 @@ abstract class CommandReferenceI extends CommandI {
      * @param absolutePath  Whether to call toAbsolutePath() on the executable's path.
      * @return
      */
-    abstract List<String> toList(boolean absolutePath)
+    abstract List<String> toCommandSegmentList(boolean absolutePath)
 
 }
 
@@ -70,7 +70,7 @@ final class Executable extends CommandReferenceI {
     }
 
     @Override
-    List<String> toList(boolean absolutePath = false) {
+    List<String> toCommandSegmentList(boolean absolutePath = false) {
         if (absolutePath) {
             [path.toAbsolutePath().toString()]
         } else {
@@ -113,8 +113,8 @@ final class Command extends CommandReferenceI {
         executable.getExecutablePath()
     }
 
-    List<String> toList(boolean absolutePath = false) {
-        executable.toList(absolutePath) + arguments
+    List<String> toCommandSegmentList(boolean absolutePath = false) {
+        executable.toCommandSegmentList(absolutePath) + arguments
     }
 
     /** Append the Code as script to the command. The result is a Code object, not a
@@ -133,7 +133,7 @@ final class Command extends CommandReferenceI {
                            RandomStringUtils.random(10, true, true)) {
         String terminator = terminator_prefix + "_" + terminator_random
         new Code("""\
-                    |${this.toList(absolutePath).join(" ")} <<$terminator
+                    |${this.toCommandSegmentList(absolutePath).join(" ")} <<$terminator
                     |#!${other.interpreter}
                     |${other.code}
                     |$terminator
@@ -157,12 +157,12 @@ final class Command extends CommandReferenceI {
         if (!quote) {
             new Command(
                     executable,
-                    this.arguments + other.toList(absolutePath))
+                    this.arguments + other.toCommandSegmentList(absolutePath))
         } else {
             new Command(
                     executable,
                     this.arguments +
-                    BashService.escape(other.toList(absolutePath).join(" ")))
+                    BashService.escape(other.toCommandSegmentList(absolutePath).join(" ")))
         }
     }
 

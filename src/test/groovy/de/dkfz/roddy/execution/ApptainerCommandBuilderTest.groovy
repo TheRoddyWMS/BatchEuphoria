@@ -11,7 +11,7 @@ class ApptainerCommandBuilderTest extends Specification {
         given:
         ApptainerCommandBuilder builder = ApptainerCommandBuilder.create()
         expect:
-        builder.build("image").toList() == ["apptainer", "exec", "image"]
+        builder.build("image").toCommandSegmentList() == ["apptainer", "exec", "image"]
     }
 
     def "command with duplicate paths on same target"() {
@@ -21,7 +21,7 @@ class ApptainerCommandBuilderTest extends Specification {
             new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RO),
         ])
         expect:
-        builder.build("image").toList() == [
+        builder.build("image").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c:ro",
                 "image"]
@@ -34,7 +34,7 @@ class ApptainerCommandBuilderTest extends Specification {
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c"), BindSpec.Mode.RW),
         ])
         expect:
-        builder.build("someImage").toList() == [
+        builder.build("someImage").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c:rw",
                 "someImage"]
@@ -47,7 +47,7 @@ class ApptainerCommandBuilderTest extends Specification {
                 new BindSpec(Paths.get("/a/b/c"), Paths.get("/a/b/c2"), BindSpec.Mode.RW),
         ])
         expect:
-        builder.build("image").toList() == [
+        builder.build("image").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "-B", "/a/b/c:/a/b/c1:ro",
                 "-B", "/a/b/c:/a/b/c2:rw",
@@ -62,7 +62,7 @@ class ApptainerCommandBuilderTest extends Specification {
         ])
         expect:
         // Don't attempt to solve such complex situations.
-        builder.build("image").toList() == [
+        builder.build("image").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "-B", "/a/b:/a/b:ro",
                 "-B", "/a/b/c:/a/b/c:ro",
@@ -78,7 +78,7 @@ class ApptainerCommandBuilderTest extends Specification {
                 new BindSpec(Paths.get("/a/b"), Paths.get("/a/b"), BindSpec.Mode.RW),
         ])
         expect:
-        builder.build("someImage").toList() == [
+        builder.build("someImage").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "-B", "/a/b:/a/b:rw",
                 "-B", "/a/b/c:/a/b/c:ro",
@@ -164,7 +164,7 @@ class ApptainerCommandBuilderTest extends Specification {
             .withApptainerExecutable(Paths.get("/bin/executable"))
             .withImageId("image")
         then:
-        builder.build().toList() == [
+        builder.build().toCommandSegmentList() == [
                 "/bin/executable", "exec",
                 "image"
         ]
@@ -179,7 +179,7 @@ class ApptainerCommandBuilderTest extends Specification {
             .withCopiedEnvironmentVariables(["b"])
             .withAddedEnvironmentVariables(["a": "\$c"])    // Explicit override of variable value.
         then:
-        builder.build("someImage").toList() == [
+        builder.build("someImage").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "--env", "a=\$c",
                 "--env", "b=\$b",

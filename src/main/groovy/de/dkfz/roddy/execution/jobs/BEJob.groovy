@@ -15,6 +15,7 @@ import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.CommandReferenceI
 import groovy.transform.CompileStatic
 import org.jetbrains.annotations.NotNull
+import org.jetbrains.annotations.Nullable
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -217,7 +218,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this.jobID
     }
 
-    CommandI getCommandObj() {
+    @Nullable CommandI getCommandObj() {
         return commandObj
     }
 
@@ -270,7 +271,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     List<String> getCommand(boolean absolutePath) {
         if (commandObj instanceof CommandReferenceI) {
-            (commandObj as CommandReferenceI).toList(absolutePath)
+            (commandObj as CommandReferenceI).toCommandSegmentList(absolutePath)
         } else {
             null
         }

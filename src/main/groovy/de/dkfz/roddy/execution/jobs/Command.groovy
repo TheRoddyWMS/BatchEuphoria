@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import com.google.common.base.Preconditions
 import groovy.transform.CompileStatic
 
 /**
@@ -63,6 +64,7 @@ abstract class Command {
     }
 
     final void setJobID(BEJobID id) {
+        Preconditions.checkArgument(id != null)
         this.jobID = id
     }
 

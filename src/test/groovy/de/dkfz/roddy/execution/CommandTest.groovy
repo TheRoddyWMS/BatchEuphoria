@@ -6,7 +6,7 @@ import java.nio.file.Paths
 
 class CommandTest extends Specification {
 
-    def "Constructor"() {
+    def "throw with null string argument"() {
         when:
         new Command(new Executable(Paths.get("somePath")), [null as String])
         then:
@@ -18,6 +18,30 @@ class CommandTest extends Specification {
         Command command = new Command(new Executable(Paths.get("somePath")), [])
         expect:
         command.executablePath == Paths.get("somePath")
+    }
+
+    def "CommandHashCode"() {
+        given:
+        Command command1 = new Command(new Executable(Paths.get("somePath")), [])
+        Command command2 = new Command(new Executable(Paths.get("somePath")), [])
+        Command command3 = new Command(new Executable(Paths.get("otherPath")), [])
+        Command command4 = new Command(new Executable(Paths.get("somePath")), ["otherArg"])
+        expect:
+        command1.hashCode() == command2.hashCode()
+        command2.hashCode() != command3.hashCode()
+        command1.hashCode() != command4.hashCode()
+    }
+
+    def "CommandEquals"() {
+        given:
+        Command command1 = new Command(new Executable(Paths.get("somePath")), [])
+        Command command2 = new Command(new Executable(Paths.get("somePath")), [])
+        Command command3 = new Command(new Executable(Paths.get("otherPath")), [])
+        Command command4 = new Command(new Executable(Paths.get("somePath")), ["otherArg"])
+        expect:
+        command1 == command2
+        command2 != command3
+        command1 != command4
     }
 
     def "throw with null Executable"() {
@@ -48,13 +72,13 @@ class CommandTest extends Specification {
         Command commandWithArgs = new Command(new Executable(
                 Paths.get("someOtherPath")), ["a", "b", "c"])
         expect:
-        commandWithoutArgs.toList() ==
+        commandWithoutArgs.toCommandSegmentList() ==
                 ["somePath"]
-        commandWithoutArgs.toList(true) ==
+        commandWithoutArgs.toCommandSegmentList(true) ==
                 [Paths.get("somePath").toAbsolutePath().toString()]
-        commandWithArgs.toList() ==
+        commandWithArgs.toCommandSegmentList() ==
                 ["someOtherPath", "a", "b", "c"]
-        commandWithArgs.toList(true) ==
+        commandWithArgs.toCommandSegmentList(true) ==
                 [Paths.get("someOtherPath").toAbsolutePath().toString(), "a", "b", "c"]
     }
 
@@ -64,10 +88,10 @@ class CommandTest extends Specification {
         Command command2 = new Command(new Executable(Paths.get("someTool")), ["toolarg1"])
         Executable executable = new Executable(Paths.get("executableX"))
         expect:
-        command1.cliAppend(command2).toList() == [
+        command1.cliAppend(command2).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "someTool", "toolarg1"
         ]
-        command1.cliAppend(executable).toList() == [
+        command1.cliAppend(executable).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "executableX"
         ]
     }

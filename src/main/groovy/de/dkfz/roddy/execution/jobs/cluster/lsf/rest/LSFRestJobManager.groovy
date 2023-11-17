@@ -102,8 +102,9 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         // --- Parameters Area ---
         List<String> jobParts = []
-        if (job.getCommand(true)) {
-            jobParts << createJobPart("COMMAND", job.getCommand(true).join(" "), "COMMANDTORUN")
+        List<String> command = job.getCommand(true)
+        if (command) {
+            jobParts << createJobPart("COMMAND", command.join(" "), "COMMANDTORUN")
         } else {
             jobParts << createJobPart("COMMAND", "${job.jobName},upload" as String, "COMMANDTORUN", "file")
         }
