@@ -273,6 +273,7 @@ class LSFJobManagerSpec extends Specification {
         when:
         ZonedDateTime result = manager.parseTime(timestamp, referenceDate)
         LocalDateTime resultTime = result.toLocalDateTime()
+        int currentYear = ZonedDateTime.now().year
 
         then:
         result.monthValue == LSFJobManager.MONTH_VALUE[month]
@@ -284,9 +285,9 @@ class LSFJobManagerSpec extends Specification {
 
         where:
         month | day  | hour | minute | second | year   | suffix | expectedYear | referenceDate
-        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | 2022         | ZonedDateTime.of(2022, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2022         | ZonedDateTime.of(2022, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | 2022         | ZonedDateTime.of(2022, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | currentYear | ZonedDateTime.of(currentYear, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | currentYear | ZonedDateTime.of(currentYear, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | currentYear | ZonedDateTime.of(currentYear, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
         "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     | 1000         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
         "Apr" | "04" | "01" | "02"   | ""     | "1001" | "L"    | 1001         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
         "May" | "5"  | "01" | "02"   | "03"   | "1002" | ""     | 1002         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
@@ -355,7 +356,14 @@ class LSFJobManagerSpec extends Specification {
         jobInfo.jobID == new BEJobID("22005")
 
         // The year-parsing/inference is checked in another test. Here just take the parsed value.
-        ZonedDateTime testTime = ZonedDateTime.of(jobInfo.submitTime.year, 12, 28, 19, 56, 0, 0, ZoneId.systemDefault())
+        ZonedDateTime testTime = ZonedDateTime.of(jobInfo.submitTime.year,
+                                                  12,
+                                                  28,
+                                                  19,
+                                                  56,
+                                                  0,
+                                                  0,
+                                                  ZoneId.systemDefault())
         jobInfo.submitTime == testTime
         jobInfo.eligibleTime == null
         jobInfo.startTime == testTime
