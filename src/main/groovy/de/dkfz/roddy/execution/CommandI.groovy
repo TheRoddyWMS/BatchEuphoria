@@ -96,7 +96,9 @@ final class Command extends CommandReferenceI {
 
     Command(@NotNull Executable executable,
             @NotNull List<String> arguments = []) {
+        Preconditions.checkArgument(executable != null)
         this.executable = executable
+        Preconditions.checkArgument(arguments != null)
         arguments.forEach {
             Preconditions.checkArgument(it != null,
                     "Command.arguments must not contain null for executable: " +
@@ -131,6 +133,10 @@ final class Command extends CommandReferenceI {
                    @NotNull String terminator_prefix = "batch_euphoria_",
                    @NotNull String terminator_random =
                            RandomStringUtils.random(10, true, true)) {
+        Preconditions.checkArgument(other != null)
+        Preconditions.checkArgument(interpreter != null)
+        Preconditions.checkArgument(terminator_prefix != null)
+        Preconditions.checkArgument(terminator_random != null)
         String terminator = terminator_prefix + "_" + terminator_random
         new Code("""\
                     |${this.toCommandSegmentList(absolutePath).join(" ")} <<$terminator

@@ -43,8 +43,8 @@ class ExecutableTest extends Specification {
 
     def "ExecutableHashcode"() {
         given:
-        Executable executable1 = new Executable(Paths.get("somePath"))
-        Executable executable2 = new Executable(Paths.get("somePath"))
+        Executable executable1 = new Executable(Paths.get("samePath"))
+        Executable executable2 = new Executable(Paths.get("samePath"))
         Executable executable3 = new Executable(Paths.get("otherPath"))
         expect:
         executable1.hashCode() == executable2.hashCode()
@@ -54,8 +54,8 @@ class ExecutableTest extends Specification {
 
     def "ExecutableEquals"() {
         given:
-        Executable executable1 = new Executable(Paths.get("somePath"))
-        Executable executable2 = new Executable(Paths.get("somePath"))
+        Executable executable1 = new Executable(Paths.get("samePath"))
+        Executable executable2 = new Executable(Paths.get("samePath"))
         Executable executable3 = new Executable(Paths.get("otherPath"))
         expect:
         executable1 == executable2
