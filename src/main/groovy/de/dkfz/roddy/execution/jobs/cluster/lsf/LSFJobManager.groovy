@@ -77,7 +77,7 @@ class LSFJobManager extends AbstractLSFJobManager {
             }
             day = Integer.parseInt(matcher.group("day"))
             month = MONTH_VALUE[matcher.group("month")]
-            year = saveGet("year", LocalDateTime.now().year)
+            year = saveGet("year", referenceDate.year)
             hour = Integer.parseInt(matcher.group("hour"))
             minute = Integer.parseInt(matcher.group("minute"))
             second = saveGet("second", 0)

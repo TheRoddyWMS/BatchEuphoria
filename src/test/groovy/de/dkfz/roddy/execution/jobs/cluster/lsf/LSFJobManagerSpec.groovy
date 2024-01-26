@@ -253,6 +253,9 @@ class LSFJobManagerSpec extends Specification {
                 equals(laterLastYear.truncatedTo(ChronoUnit.MINUTES))
     }
 
+    @Shared
+    Integer currentYear = ZonedDateTime.now().year
+
     @Unroll
     void "parseTime, parses all known formats (#month #day #hour:#minute:#second #year #suffix #expectedYear)"() {
         given:
@@ -271,9 +274,11 @@ class LSFJobManagerSpec extends Specification {
         String timestamp = [month, day, time, year, suffix].findAll { it != "" }.join(" ")
 
         when:
+        // NOTE: parseTime is not referentially transparent. Different calls may yield different
+        //       results, because it interprets the timestamp dependent on the comparison of the
+        //       reference time and the **current** time, to resolve (guess) the year.
         ZonedDateTime result = manager.parseTime(timestamp, referenceDate)
         LocalDateTime resultTime = result.toLocalDateTime()
-        int currentYear = ZonedDateTime.now().year
 
         then:
         result.monthValue == LSFJobManager.MONTH_VALUE[month]
@@ -284,14 +289,14 @@ class LSFJobManagerSpec extends Specification {
         resultTime.second == (second ? Integer.parseInt(second) : 0)
 
         where:
-        month | day  | hour | minute | second | year   | suffix | expectedYear | referenceDate
-        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | currentYear | ZonedDateTime.of(currentYear, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | currentYear | ZonedDateTime.of(currentYear, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | currentYear | ZonedDateTime.of(currentYear, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     | 1000         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Apr" | "04" | "01" | "02"   | ""     | "1001" | "L"    | 1001         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "May" | "5"  | "01" | "02"   | "03"   | "1002" | ""     | 1002         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
-        "Jun" | "6"  | "01" | "02"   | "03"   | "1003" | "L"    | 1003         | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        month | day  | hour | minute | second | year   | suffix | expectedYear    | referenceDate
+        "Jan" | "01" | "01" | "02"   | ""     | ""     | ""     | currentYear     | ZonedDateTime.of(currentYear, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | currentYear - 1 | ZonedDateTime.of(currentYear, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Feb" | "02" | "01" | "02"   | ""     | ""     | "L"    | currentYear     | ZonedDateTime.of(currentYear, 2,  3, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Mar" | "03" | "01" | "02"   | ""     | "1000" | ""     | 1000            | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Apr" | "04" | "01" | "02"   | ""     | "1001" | "L"    | 1001            | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "May" | "5"  | "01" | "02"   | "03"   | "1002" | ""     | 1002            | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
+        "Jun" | "6"  | "01" | "02"   | "03"   | "1003" | "L"    | 1003            | ZonedDateTime.of(2021, 1, 29, 19, 56, 0, 0, ZoneId.systemDefault())
     }
 
 //    void "test queryExtendedJobStateById with overdue date"() {
