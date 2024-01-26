@@ -7,6 +7,7 @@
 package de.dkfz.roddy.execution
 
 import com.google.common.base.Preconditions
+import com.google.common.collect.ImmutableList
 import de.dkfz.roddy.tools.shell.bash.Service as BashService
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
@@ -45,16 +46,17 @@ abstract class CommandReferenceI extends CommandI {
  *  used for Roddy tools, which are entirely configured via environment variables.
  */
 @CompileStatic
-@EqualsAndHashCode
+@EqualsAndHashCode(includeFields = true,
+                   excludes = ["executablePath", "md5"]) // without this getMd5 will be used, but results in different Optional instances.
 final class Executable extends CommandReferenceI {
 
-    private Path path
+    private final Path path
 
     /** An executable is a file, e.g. a script, for which there can be an MD5 sum. This is
      *  important in some cases (which is why it is allowed to be `null`) if a script is
      *  uploaded to the cluster.
      */
-    private String md5
+    private final String md5
 
     Executable(@NotNull Path path,
                String md5 = null) {
@@ -87,12 +89,12 @@ final class Executable extends CommandReferenceI {
 /** A command is an executable with 0 or more arguments.
  */
 @CompileStatic
-@EqualsAndHashCode
+@EqualsAndHashCode(includeFields = true)
 final class Command extends CommandReferenceI {
 
-    private Executable executable
+    private final Executable executable
 
-    private List<String> arguments
+    private final ImmutableList<String> arguments
 
     Command(@NotNull Executable executable,
             @NotNull List<String> arguments = []) {
@@ -104,7 +106,7 @@ final class Command extends CommandReferenceI {
                     "Command.arguments must not contain null for executable: " +
                             executable.executablePath.toString())
         }
-        this.arguments = arguments.asImmutable()
+        this.arguments = ImmutableList.copyOf(arguments)
     }
 
     Executable getExecutable() {
@@ -177,18 +179,18 @@ final class Command extends CommandReferenceI {
 
 /** Take actual code to be executed. */
 @CompileStatic
-@EqualsAndHashCode
+@EqualsAndHashCode(includeFields = true)
 final class Code extends CommandI {
 
     /** Code will usually be a script, maybe with a shebang line. Code may or may not be provided
      *  to the job submission command (e.g. bsub) via the standard input instead of as file.
      */
-    @NotNull private String code
+    @NotNull private final String code
 
     /** An interpreter for the code. This can is bash by default, but could (probably) also be
      *  python3, perl, or whatever.
      */
-    @NotNull private Path interpreter
+    @NotNull private final Path interpreter
 
     Code(@NotNull String code,
          @NotNull Path interpreter = Paths.get("/bin/bash")) {

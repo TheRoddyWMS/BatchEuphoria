@@ -47,6 +47,7 @@ class ExecutableTest extends Specification {
         Executable executable2 = new Executable(Paths.get("samePath"))
         Executable executable3 = new Executable(Paths.get("otherPath"))
         expect:
+        executable1.hashCode() == executable1.hashCode()
         executable1.hashCode() == executable2.hashCode()
         executable2.hashCode() != executable3.hashCode()
         executable1.hashCode() != executable3.hashCode()
@@ -58,6 +59,7 @@ class ExecutableTest extends Specification {
         Executable executable2 = new Executable(Paths.get("samePath"))
         Executable executable3 = new Executable(Paths.get("otherPath"))
         expect:
+        executable1 == executable1
         executable1 == executable2
         executable2 != executable3
         executable1 != executable3
