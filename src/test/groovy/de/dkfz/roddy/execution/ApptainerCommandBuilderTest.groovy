@@ -61,7 +61,8 @@ class ApptainerCommandBuilderTest extends Specification {
                 new BindSpec(Paths.get("/a/b"), Paths.get("/a/b"), BindSpec.Mode.RO),
         ])
         expect:
-        // Don't attempt to solve such complex situations.
+        // Don't attempt to solve such complex situations: Although /a/b is a superpath of /a/b/c
+        // and both are ro, we do not unify them to just /a/b:ro.
         builder.build("image").toCommandSegmentList() == [
                 "apptainer", "exec",
                 "-B", "/a/b:/a/b:ro",
