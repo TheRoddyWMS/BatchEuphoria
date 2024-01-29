@@ -127,35 +127,35 @@ class ApptainerCommandBuilderTest extends Specification {
         when:
         ApptainerCommandBuilder.create().withMode(null)
         then:
-        final IllegalArgumentException exception = thrown()
+        final NullPointerException exception = thrown()
     }
 
     def "error if null engine args during construction"() {
         when:
         ApptainerCommandBuilder.create().withAddedEngineArgs(null)
         then:
-        final IllegalArgumentException exception = thrown()
+        final NullPointerException exception = thrown()
     }
 
     def "error if null binding specs during construction"() {
         when:
         ApptainerCommandBuilder.create().withAddedBindingSpecs(null)
         then:
-        final IllegalArgumentException exception = thrown()
+        final NullPointerException exception = thrown()
     }
 
     def "error if null executable"() {
         when:
         ApptainerCommandBuilder.create().withApptainerExecutable(null)
         then:
-        final IllegalArgumentException exception = thrown()
+        final NullPointerException exception = thrown()
     }
 
     def "error if null added exported env vars"() {
         when:
         ApptainerCommandBuilder.create().withCopiedEnvironmentVariables(null)
         then:
-        final IllegalArgumentException exception = thrown()
+        final NullPointerException exception = thrown()
     }
 
     def "use class-level default image name and apptainer executable"() {

@@ -38,14 +38,14 @@ class BindSpec implements Comparable<BindSpec> {
     BindSpec(@NotNull Path hostPath,
              Path containerPath = null,
              @NotNull Mode opts = Mode.RO) {
-        Preconditions.checkArgument(hostPath != null)
+        Preconditions.checkNotNull(hostPath)
         this.hostPath = hostPath
         if (containerPath == null) {
             this.containerPath = hostPath
         } else {
             this.containerPath = containerPath
         }
-        Preconditions.checkArgument(opts != null)
+        Preconditions.checkNotNull(opts)
         this.mode = opts
     }
 
@@ -138,7 +138,7 @@ class ApptainerCommandBuilder {
 
     /** Set the execution mode ("command"; subcommand) of the apptainer call. run or exec. */
     ApptainerCommandBuilder withMode(@NotNull Mode mode) {
-        Preconditions.checkArgument(mode != null)
+        Preconditions.checkNotNull(mode, "mode cannot be null")
         ApptainerCommandBuilder copy = clone()
         copy.mode = mode
         copy
@@ -146,7 +146,7 @@ class ApptainerCommandBuilder {
 
     /** Add container engine arguments. See apptainer run|exec --help. */
     ApptainerCommandBuilder withAddedEngineArgs(@NotNull List<String> newArgs) {
-        Preconditions.checkArgument(newArgs != null)
+        Preconditions.checkNotNull(newArgs, "newArgs cannot be null")
         ApptainerCommandBuilder copy = clone()
         copy.engineArgs += newArgs
         copy
@@ -154,7 +154,7 @@ class ApptainerCommandBuilder {
 
     /** Add bind mounts. Include all directories needed to run the workload task/job. */
     ApptainerCommandBuilder withAddedBindingSpecs(@NotNull List<BindSpec> newSpecs) {
-        Preconditions.checkArgument(newSpecs != null)
+        Preconditions.checkNotNull(newSpecs, "newSpecs cannot be null")
         ApptainerCommandBuilder copy = clone()
         copy.bindSpecifications += newSpecs
         copy
@@ -162,7 +162,7 @@ class ApptainerCommandBuilder {
 
     /** The path to the apptainer/singularity executable on the execution side (maybe cluster). */
     ApptainerCommandBuilder withApptainerExecutable(@NotNull Path newExec) {
-        Preconditions.checkArgument(newExec != null)
+        Preconditions.checkNotNull(newExec, "newExec cannot be null")
         ApptainerCommandBuilder copy = clone()
         copy.apptainerExecutable = newExec
         copy
@@ -170,7 +170,8 @@ class ApptainerCommandBuilder {
 
     /** The path or URI of the container image to wrap the command in. */
     ApptainerCommandBuilder withImageId(String newId) {
-        Preconditions.checkArgument(newId == null || newId.length() > 0)
+        Preconditions.checkArgument(newId == null || newId.length() > 0,
+                                    "newId cannot be null and must not be empty")
         ApptainerCommandBuilder copy = clone()
         copy.imageId = newId
         copy
@@ -188,7 +189,7 @@ class ApptainerCommandBuilder {
      *  others to configure the program that you want to run in the container.
      */
     ApptainerCommandBuilder withCopiedEnvironmentVariables(@NotNull List<String> newNames) {
-        Preconditions.checkArgument(newNames != null)
+        Preconditions.checkNotNull(newNames, "newNames cannot be null")
         ApptainerCommandBuilder copy = clone()
         copy.environmentVariablesToCopy += newNames
         copy
@@ -201,7 +202,7 @@ class ApptainerCommandBuilder {
      */
     ApptainerCommandBuilder withAddedEnvironmentVariables(
             @NotNull Map<String, String> newNameValues) {
-        Preconditions.checkArgument(newNameValues != null)
+        Preconditions.checkNotNull(newNameValues, "newNameValues cannot be null")
         ApptainerCommandBuilder copy = clone()
         copy.setEnvironmentVariables += newNameValues
         copy
@@ -324,7 +325,8 @@ class ApptainerCommandBuilder {
         if (imageId != null) {
             _imageId = imageId
         }
-        Preconditions.checkArgument(_imageId != null && _imageId.length() > 0)
+        Preconditions.checkArgument(_imageId != null && _imageId.length() > 0,
+                                    "imageId cannot be null and must not be empty")
         new Command(
                 new Executable(apptainerExecutable),
                 ["exec"] + bindOptions + finalEngineArg + [_imageId])

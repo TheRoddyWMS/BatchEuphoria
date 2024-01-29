@@ -17,6 +17,13 @@ class BindSpecTest extends Specification {
         BindSpec.Mode.from("Rw") == BindSpec.Mode.RW
     }
 
+    def "failing mode creation from string"() {
+        when:
+        BindSpec.Mode.from("r")
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
     def "initialization"() {
         when:
         BindSpec spec = new BindSpec(hostPath)
@@ -40,15 +47,14 @@ class BindSpecTest extends Specification {
         when:
         new BindSpec(null, null)
         then:
-        final IllegalArgumentException exception = thrown()
+        final NullPointerException exception = thrown()
     }
 
     def "bind spec null check mode"() {
         when:
         new BindSpec(hostPath, null, null)
         then:
-        final IllegalArgumentException exception = thrown()
-
+        final NullPointerException exception = thrown()
     }
 
 

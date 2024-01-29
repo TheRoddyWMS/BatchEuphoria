@@ -9,11 +9,9 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
 
-import java.nio.file.Paths
 import java.time.Duration
 
 class SubmissionCommandTest extends Specification {
