@@ -3,6 +3,8 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.Code
+import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
@@ -18,12 +20,15 @@ class SlurmSubmissionCommandSpec extends Specification {
 
     SlurmJobManager jobManager = new SlurmJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
 
-    private BEJob makeJob(Map<String, String> mapOfParameters, String accountingProject = null) {
+    private BEJob makeJob(
+            Map<String, String> mapOfParameters,
+            CommandI command,
+            String accountingProject = null) {
         BEJob job = new BEJob(
                 null,
                 jobManager,
                 "Test",
-                new Executable(Paths.get("/tmp/test.sh")),
+                command,
                 new ResourceSet(
                         ResourceSetSize.l,
                         new BufferValue(1, BufferUnit.G),
@@ -44,10 +49,12 @@ class SlurmSubmissionCommandSpec extends Specification {
     def "assemble dependency string without dependencies"() throws Exception {
         when:
         def mapOfVars = ["a": "a", "b": "b"]
-        BEJob job = makeJob(mapOfVars)
+        BEJob job = makeJob(mapOfVars,
+                            new Executable(Paths.get("/tmp/test.sh")))
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob(mapOfVars),
+                makeJob(mapOfVars,
+                        new Executable(Paths.get("/tmp/test.sh"))),
                 "jobName",
                 null, mapOfVars,
                 null)
@@ -59,7 +66,8 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:]),
+                makeJob([:],
+                        new Executable(Paths.get("/tmp/test.sh"))),
                 "jobName",
                 null,
                 [:],
@@ -73,7 +81,8 @@ class SlurmSubmissionCommandSpec extends Specification {
         Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob(mapOfVars),
+                makeJob(mapOfVars,
+                        new Executable(Paths.get("/tmp/test.sh"))),
                 "jobName",
                 null,
                 mapOfVars,
@@ -86,7 +95,8 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:] as LinkedHashMap<String, String>),
+                makeJob([:] as LinkedHashMap<String, String>,
+                        new Executable(Paths.get("/tmp/test.sh"))),
                 "jobName",
                 null,
                 [:],
@@ -101,7 +111,8 @@ class SlurmSubmissionCommandSpec extends Specification {
         Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob(mapOfVars as LinkedHashMap<String, String>),
+                makeJob(mapOfVars as LinkedHashMap<String, String>,
+                        new Executable(Paths.get("/tmp/test.sh"))),
                 "jobName",
                 null,
                 mapOfVars,
@@ -115,7 +126,8 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:]),
+                makeJob([:],
+                        new Executable(Paths.get("/tmp/test.sh"))),
                 "jobname",
                 null,
                 [:],
@@ -129,6 +141,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 makeJob([:],
+                        new Executable(Paths.get("/tmp/test.sh")),
                         "accountingProject"),
                 "jobname",
                 null,
@@ -136,6 +149,24 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null)
         then:
         cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
+    }
+
+    def "submit script as code"() {
+        given:
+        BEJob job = makeJob([:],
+                            new Code("echo 'Hello World'"))
+
+        when:
+        SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
+                jobManager,
+                job,
+                "jobname",
+                null,
+                [:],
+                null)
+        then:
+        cmd.toBashCommandString() == "echo -e '#!/bin/bash\necho '\\''Hello World'\\''' | sbatch   --job-name jobname --hold --chdir \$HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
+
     }
 
 }

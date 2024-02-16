@@ -9,7 +9,9 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.Command
+import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
@@ -25,12 +27,15 @@ class LSFSubmissionCommandSpec extends Specification {
 
     LSFJobManager jobManager = new LSFJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
 
-    private BEJob makeJob(Map<String, String> mapOfParameters, String accountingProject = null) {
+    private BEJob makeJob(Map<String, String> mapOfParameters,
+                          CommandI command = new Command(new Executable(Paths.get("/tmp/test.sh")),
+                                                         ["\$someRemoteVariable"]),
+                          String accountingProject = null) {
         BEJob job = new BEJob(
                 null,
                 jobManager,
                 "Test",
-                new Command(new Executable(Paths.get("/tmp/test.sh")), ["\$someRemoteVariable"]),
+                command,
                 new ResourceSet(ResourceSetSize.l,
                                 new BufferValue(1, BufferUnit.G),
                                 4,
@@ -140,7 +145,10 @@ class LSFSubmissionCommandSpec extends Specification {
         when:
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
-                makeJob([:], "accountingProject"),
+                makeJob([:],
+                        new Command(new Executable(Paths.get("/tmp/test.sh")),
+                                                         ["\$someRemoteVariable"]),
+                        "accountingProject"),
                 "jobname",
                 null,
                 [:],
@@ -148,6 +156,22 @@ class LSFSubmissionCommandSpec extends Specification {
 
         then:
         cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env "none" -P "accountingProject" -J jobname -H -cwd "$HOME" -o /dev/null    -M 1024 -R "rusage[mem=1024]" -W 60 -n 4 -R "span[hosts=1]"    /tmp/test.sh \\$someRemoteVariable'
+    }
+
+    def "submitting a script as code"() {
+        given:
+        Code code = new Code("echo 'Hello World'")
+        when:
+        LSFSubmissionCommand cmd = new LSFSubmissionCommand(
+                jobManager,
+                makeJob([:],
+                        code),
+                "jobname",
+                null,
+                [:],
+                null)
+        then:
+        cmd.toBashCommandString() == "echo -e '#!/bin/bash\necho '\\''Hello World'\\''' | LSB_NTRIES=5 bsub -env \"none\"  -J jobname -H -cwd \"\$HOME\" -o /dev/null    -M 1024 -R \"rusage[mem=1024]\" -W 60 -n 4 -R \"span[hosts=1]\"   "
     }
 
 

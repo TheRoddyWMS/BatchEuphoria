@@ -145,18 +145,18 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     protected String composeCommandString(List<String> parameters) {
         StringBuilder command = new StringBuilder(EMPTY)
 
-        if (environmentString) {
-            command << "$environmentString "
-        }
-
         if (job.code) {
             command <<
-                "echo " <<
+                "echo -e " <<
                 // SLURM must have a shebang line for the job script.
-                BashUtils.strongQuote("#!/bin/bash "
+                BashUtils.strongQuote("#!/bin/bash"
                                       + System.lineSeparator()
                                       + job.code) <<
                 " | "
+        }
+
+        if (environmentString) {
+            command << "$environmentString "
         }
 
         command << getSubmissionExecutableName()

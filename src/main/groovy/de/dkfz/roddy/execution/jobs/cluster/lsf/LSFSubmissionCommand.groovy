@@ -148,18 +148,18 @@ class LSFSubmissionCommand extends SubmissionCommand {
     protected String composeCommandString(List<String> parameters) {
         StringBuilder command = new StringBuilder(EMPTY)
 
-        if (environmentString) {
-            command << "$environmentString "
-        }
-
         if (job.code) {
             // LSF can just read the script to execute from the standard input.
             command <<
-                "echo " <<
-                BashUtils.strongQuote("#!/bin/bash "
+                "echo -e " <<
+                BashUtils.strongQuote("#!/bin/bash"
                                       + System.lineSeparator()
                                       + job.code) <<
                 " | "
+        }
+
+        if (environmentString) {
+            command << "$environmentString "
         }
 
         command << getSubmissionExecutableName()

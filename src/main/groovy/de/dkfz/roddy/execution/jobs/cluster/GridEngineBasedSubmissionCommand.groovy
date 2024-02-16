@@ -83,14 +83,10 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
     protected String composeCommandString(List<String> parameters) {
                 StringBuilder command = new StringBuilder(EMPTY)
 
-        if (environmentString) {
-            command << "$environmentString "
-        }
-
         if (job.code) {
             command <<
-                "echo " <<
-                BashUtils.strongQuote("#!/bin/bash "
+                "echo -e " <<
+                BashUtils.strongQuote("#!/bin/bash"
                                       + System.lineSeparator()
                                       + job.code) <<
                 " | "
