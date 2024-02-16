@@ -141,7 +141,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         return js
     }
 
-    protected LSFSubmissionCommand createCommand(BEJob job) {
+    LSFSubmissionCommand createCommand(BEJob job) {
         return new LSFSubmissionCommand(
                 this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id)
     }
@@ -365,11 +365,6 @@ class LSFJobManager extends AbstractLSFJobManager {
             throw new BEException("Could not parse raw ID from: '${commandOutput}'")
         String exID = result.substring(1, result.length() - 1)
         return exID
-    }
-
-    @Override
-    String getSubmissionCommand() {
-        return "bsub"
     }
 
     @Override

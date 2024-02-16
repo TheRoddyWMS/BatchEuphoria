@@ -6,12 +6,17 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
+import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
+import de.dkfz.roddy.tools.BashUtils
+import de.dkfz.roddy.tools.shell.bash.Service
 import groovy.transform.CompileStatic
 import org.apache.http.Header
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
+
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * This class is used to create REST commands
@@ -41,6 +46,11 @@ class RestSubmissionCommand extends SubmissionCommand {
         this.requestBody = requestBody
         this.requestHeaders = requestHeaders
         this.httpMethod = httpMethod
+    }
+
+    @Override
+    String getSubmissionExecutableName() {
+        return null
     }
 
     @Override
@@ -108,5 +118,10 @@ class RestSubmissionCommand extends SubmissionCommand {
         false
     }
 
+
+    @Override
+    protected String composeCommandString(List<String> parameters) {
+        throw new NotImplementedException()
+    }
 
 }

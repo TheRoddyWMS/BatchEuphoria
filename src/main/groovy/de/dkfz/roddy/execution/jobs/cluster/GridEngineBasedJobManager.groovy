@@ -44,11 +44,6 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
 
-    @Override
-    String getSubmissionCommand() {
-        return "qsub"
-    }
-
     protected int getColumnOfJobID() {
         return 0
     }

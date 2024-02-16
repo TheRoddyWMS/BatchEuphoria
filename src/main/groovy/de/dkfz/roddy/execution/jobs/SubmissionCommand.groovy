@@ -7,7 +7,6 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.tools.BashUtils
 import de.dkfz.roddy.tools.shell.bash.Service as BashService
 import groovy.transform.CompileStatic
@@ -68,8 +67,9 @@ abstract class SubmissionCommand extends Command {
         passEnvironment.orElse(parentJobManager.passEnvironment)
     }
 
-    @Override
-    String toBashCommandString() {
+    abstract String getSubmissionExecutableName()
+
+    private List<String> collectParameters() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
@@ -90,41 +90,14 @@ abstract class SubmissionCommand extends Command {
         parameters << assembleDependencyParameter(creatingJob.parentJobIDs)
         parameters << getAdditionalCommandParameters()
 
-        // create job submission command call
-        StringBuilder command = new StringBuilder(EMPTY)
+        return parameters
+    }
 
-        if (environmentString) {
-            command << "$environmentString "
-        }
+    abstract protected String composeCommandString(List<String> parameters)
 
-        if (job.code) {
-            command <<
-                    "echo " <<
-                    BashUtils.strongQuote("#!/bin/bash "
-                                          + System.lineSeparator()
-                                          + job.code) <<
-                    " | "
-        }
-
-        command << parentJobManager.submissionCommand
-        command << " ${parameters.join(" ")} "
-
-        if (job.getCommand(true)) {
-            // Commands that are appended to the submission command and its parameters, e.g.,
-            // in `bsub ... command ...` need to be quoted to prevent that expressions and
-            // variables are evaluated on the submission site instead of the actual remote
-            // cluster node.
-            // This won't have any effect unless you have Bash special characters in your command.
-            List<String> commandToBeExecuted = job.getCommand(true)
-            if (quoteCommand) {
-                commandToBeExecuted = commandToBeExecuted.collect { segment ->
-                    BashService.escape(segment)
-                }
-            }
-            command << " " << commandToBeExecuted.join(StringConstants.WHITESPACE)
-        }
-
-        return command
+    @Override
+    String toBashCommandString() {
+        return composeCommandString(collectParameters())
     }
 
     abstract protected String getJobNameParameter()

@@ -21,7 +21,8 @@ import java.time.Duration
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
 
-    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerOptions parms) {
+    DirectSynchronousExecutionJobManager(BEExecutionService executionService,
+                                         JobManagerOptions parms) {
         super(executionService, parms)
     }
 
@@ -162,11 +163,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     protected JobState parseJobState(String stateString) {
-        return null
-    }
-
-    @Override
-    String getSubmissionCommand() {
         return null
     }
 

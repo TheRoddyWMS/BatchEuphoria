@@ -93,7 +93,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
      "--bqJky99mlBWa-ZuqjC53mG6EzbmlxB--\r\n"
      */
     @Override
-    protected RestSubmissionCommand createCommand(BEJob job) {
+    RestSubmissionCommand createCommand(BEJob job) {
         List<Header> headers = []
         headers << new BasicHeader("Accept", "text/xml,application/xml;")
 
@@ -436,13 +436,6 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         updateJobStatistics(jobDetailsResult)
         return jobDetailsResult
     }
-
-
-    @Override
-    String getSubmissionCommand() {
-        return null
-    }
-
 
     @Override
     String getQueryJobStatesCommand() {

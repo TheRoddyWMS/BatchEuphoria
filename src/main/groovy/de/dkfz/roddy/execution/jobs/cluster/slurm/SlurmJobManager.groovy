@@ -43,7 +43,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     }
 
     @Override
-    protected SlurmSubmissionCommand createCommand(BEJob job) {
+    SlurmSubmissionCommand createCommand(BEJob job) {
         SlurmSubmissionCommand ssc = new SlurmSubmissionCommand(
                 this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id)
         return ssc
@@ -458,11 +458,6 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     @Override
     String getQueueVariable() {
         return "SLURM_JOB_PARTITION"
-    }
-
-    @Override
-    String getSubmissionCommand() {
-        return "sbatch"
     }
 
 }

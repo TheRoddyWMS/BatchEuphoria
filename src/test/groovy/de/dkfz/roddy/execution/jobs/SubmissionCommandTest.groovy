@@ -57,11 +57,6 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            String getSubmissionCommand() {
-                return null
-            }
-
-            @Override
             String getQueryJobStatesCommand() {
                 return null
             }
@@ -82,7 +77,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected Command createCommand(BEJob job) {
+            Command createCommand(BEJob job) {
                 return null
             }
 
@@ -135,6 +130,11 @@ class SubmissionCommandTest extends Specification {
 
             {
                 this.setPassEnvironment(passEnvironment)
+            }
+
+            @Override
+            String getSubmissionExecutableName() {
+                return null
             }
 
             @Override
@@ -195,6 +195,11 @@ class SubmissionCommandTest extends Specification {
             @Override
             protected String getEnvironmentString() {
                 return ""
+            }
+
+            @Override
+            protected String composeCommandString(List<String> parameters) {
+                return null
             }
         }
     }

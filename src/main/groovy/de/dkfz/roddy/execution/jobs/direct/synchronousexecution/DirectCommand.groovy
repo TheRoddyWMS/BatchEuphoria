@@ -13,7 +13,7 @@ import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import groovy.transform.CompileStatic
 
 /**
- * Local commands run locally and, if the workflow requires and supports it, concurrent.
+ * Local commands run locally and, if the workflow requires and supports it, concurrently.
  * They are called in a local process with waitFor after each call. Dependencies are therefore automatically resolved.
  * Roddy waits for the processes to exit.
  */
@@ -57,7 +57,6 @@ class DirectCommand extends Command {
         // Grouplist is ignored
         // Umask is ignored
 
-        // Command assembly should be part of the file system provider?
         // Maybe there is a need for a local file system provider?
 
         // This is very linux specific...

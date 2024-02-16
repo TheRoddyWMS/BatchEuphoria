@@ -82,7 +82,8 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean holdJobsIsEnabled
     Duration commandTimeout
 
-    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
+    BatchEuphoriaJobManager(BEExecutionService executionService,
+                            JobManagerOptions parms) {
         Preconditions.checkArgument(executionService != null)
         this.executionService = executionService
 
@@ -299,8 +300,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return false
     }
 
-    abstract String getSubmissionCommand()
-
     abstract String getQueryJobStatesCommand()
 
     abstract String getExtendedQueryJobStatesCommand()
@@ -350,7 +349,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return jobResult
     }
 
-    abstract protected Command createCommand(BEJob job)
+    // This needs to be public, because the RoddyCore's NativeWorkflow breaks the abstraction
+    // (not just by calling this, but by actually messing with the JobManager interna).
+    abstract Command createCommand(BEJob job)
 
     abstract protected String parseJobID(String commandOutput)
 

@@ -99,7 +99,7 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected Command createCommand(BEJob job) {
+            Command createCommand(BEJob job) {
                 return null
             }
 
@@ -217,6 +217,11 @@ class GridEngineBaseJobManagerTest {
 
             @Override
             protected String assembleVariableExportParameters() {
+                return null
+            }
+
+            @Override
+            protected String composeCommandString(List<String> parameters) {
                 return null
             }
         }
