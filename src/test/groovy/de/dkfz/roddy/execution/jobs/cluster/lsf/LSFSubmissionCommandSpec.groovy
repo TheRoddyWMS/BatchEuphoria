@@ -147,7 +147,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 jobManager,
                 makeJob([:],
                         new Command(new Executable(Paths.get("/tmp/test.sh")),
-                                                         ["\$someRemoteVariable"]),
+                                    ["\$someRemoteVariable"]),
                         "accountingProject"),
                 "jobname",
                 null,
