@@ -13,6 +13,7 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import org.apache.commons.lang3.RandomStringUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.jetbrains.annotations.NotNull
 
 import java.nio.file.Path
@@ -22,7 +23,11 @@ import java.nio.file.Paths
  *  class hierarchy represents and abstract data type (ADT).
  */
 @CompileStatic
-abstract class CommandI {}
+abstract class CommandI {
+
+    abstract String toCommandString()
+
+}
 
 /** A command reference is opposed to the command code. Both are executable, but the command
  *  reference only represents a short name for a piece of code, usually on the filesystem.
@@ -35,10 +40,17 @@ abstract class CommandReferenceI extends CommandI {
 
     /** Get a list with command components, e.g. for Bash.
      *
-     * @param absolutePath  Whether to call toAbsolutePath() on the executable's path.
      * @return
      */
-    abstract List<String> toCommandSegmentList(boolean absolutePath)
+    abstract List<String> toCommandSegmentList()
+
+    /** Returns the command as string. Each command segment needs to be quoted for this. */
+    @Override
+    String toCommandString() {
+        return toCommandSegmentList().collect {
+            StringEscapeUtils.escapeXSI(it)
+        }.join(' ')
+    }
 
 }
 
@@ -72,12 +84,8 @@ final class Executable extends CommandReferenceI {
     }
 
     @Override
-    List<String> toCommandSegmentList(boolean absolutePath = false) {
-        if (absolutePath) {
-            [path.toAbsolutePath().toString()]
-        } else {
-            [path.toString()]
-        }
+    List<String> toCommandSegmentList() {
+        [path.toString()]
     }
 
     Optional<String> getMd5() {
@@ -117,8 +125,8 @@ final class Command extends CommandReferenceI {
         executable.getExecutablePath()
     }
 
-    List<String> toCommandSegmentList(boolean absolutePath = false) {
-        executable.toCommandSegmentList(absolutePath) + arguments
+    List<String> toCommandSegmentList() {
+        executable.toCommandSegmentList() + arguments
     }
 
     /** Append the Code as script to the command. The result is a Code object, not a
@@ -130,8 +138,7 @@ final class Command extends CommandReferenceI {
      */
     @CompileDynamic
     Code cliAppend(@NotNull Code other,
-                   boolean absolutePath = false,
-                   @NotNull Path interpreter = Paths.get("/bin/bash"),  // Could be Command
+                   @NotNull CommandReferenceI interpreter, // = new Executable(Paths.get("/bin/bash")),  This gives a "Bad type on operand stack" error
                    @NotNull String terminator_prefix = "batch_euphoria_",
                    @NotNull String terminator_random =
                            RandomStringUtils.random(10, true, true)) {
@@ -141,8 +148,8 @@ final class Command extends CommandReferenceI {
         Preconditions.checkArgument(terminator_random != null)
         String terminator = terminator_prefix + "_" + terminator_random
         new Code("""\
-                    |${this.toCommandSegmentList(absolutePath).join(" ")} <<$terminator
-                    |#!${other.interpreter}
+                    |${this.toCommandSegmentList().join(" ")} <<$terminator
+                    |#!${other.interpreter.toCommandString()}
                     |${other.code}
                     |$terminator
                     |""".stripMargin(),
@@ -154,23 +161,22 @@ final class Command extends CommandReferenceI {
      *  `singularity run $other`.
      *
      * @param other
-     * @param quote     Whether to quote the appended Command.
+     * @param asString     Whether to quote the appended Command.
      * @return
      */
     @CompileDynamic
     Command cliAppend(@NotNull CommandReferenceI other,
-                      boolean absolutePath = false,
-                      boolean quote = false) {
+                      boolean asString = false) {
         Preconditions.checkArgument(other != null)
-        if (!quote) {
+        if (!asString) {
             new Command(
                     executable,
-                    this.arguments + other.toCommandSegmentList(absolutePath))
+                    this.arguments + other.toCommandSegmentList())
         } else {
             new Command(
                     executable,
                     this.arguments +
-                    BashService.escape(other.toCommandSegmentList(absolutePath).join(" ")))
+                    other.toCommandSegmentList().join(" "))
         }
     }
 
@@ -187,13 +193,19 @@ final class Code extends CommandI {
      */
     @NotNull private final String code
 
-    /** An interpreter for the code. This can is bash by default, but could (probably) also be
-     *  python3, perl, or whatever.
+    /** An interpreter for the code. This is bash by default, but could (probably) also be
+     *  python3, perl, or whatever. It is also possible to use commands with arguments as
+     *  interpreters, e.g. `/bin/bash -xe`
      */
-    @NotNull private final Path interpreter
+    @NotNull private final CommandReferenceI interpreter
 
     Code(@NotNull String code,
          @NotNull Path interpreter = Paths.get("/bin/bash")) {
+        this(code, new Executable(interpreter))
+    }
+
+    Code(@NotNull String code,
+         @NotNull CommandReferenceI interpreter) {
         Preconditions.checkArgument(code != null)
         Preconditions.checkArgument(code.size() > 0)
         this.code = code
@@ -205,8 +217,13 @@ final class Code extends CommandI {
         code
     }
 
-    Path getInterpreter() {
+    CommandReferenceI getInterpreter() {
         interpreter
+    }
+
+    /** Create a little script. Note that no newline is appended. */
+    String toCommandString() {
+        return "#!${interpreter.toCommandString()}\n${code}"
     }
 
 }

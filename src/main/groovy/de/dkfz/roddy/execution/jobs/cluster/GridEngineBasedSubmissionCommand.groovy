@@ -85,10 +85,8 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
 
         if (job.code) {
             command <<
-                "echo -e " <<
-                BashUtils.strongQuote("#!/bin/bash"
-                                      + System.lineSeparator()
-                                      + job.code) <<
+                "echo -ne " <<
+                escapeScriptForEval(job.code) <<
                 " | "
         }
 
@@ -96,13 +94,13 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
 
         command << " ${parameters.join(" ")} "
 
-        if (job.getCommand(true)) {
+        if (job.command) {
             // Commands that are appended to the submission command and its parameters, e.g.,
             // in `bsub ... command ...` need to be quoted to prevent that expressions and
             // variables are evaluated on the submission site instead of the actual remote
             // cluster node.
             // This won't have any effect unless you have Bash special characters in your command.
-            List<String> commandToBeExecuted = job.getCommand(true)
+            List<String> commandToBeExecuted = job.command
             if (quoteCommand) {
                 commandToBeExecuted = commandToBeExecuted.collect { segment ->
                     Service.escape(segment)

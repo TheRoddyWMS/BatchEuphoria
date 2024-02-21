@@ -154,7 +154,7 @@ class SlurmSubmissionCommandSpec extends Specification {
     def "submit script as code"() {
         given:
         BEJob job = makeJob([:],
-                            new Code("echo 'Hello World'"))
+                            new Code("echo 'Hello World'\n"))
 
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
@@ -165,7 +165,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 [:],
                 null)
         then:
-        cmd.toBashCommandString() == "echo -e '#!/bin/bash\necho '\\''Hello World'\\''' | sbatch   --job-name jobname --hold --chdir \$HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
+        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | sbatch   --job-name jobname --hold --chdir \$HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
 
     }
 

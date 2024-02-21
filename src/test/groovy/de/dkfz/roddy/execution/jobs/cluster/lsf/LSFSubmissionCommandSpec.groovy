@@ -160,7 +160,7 @@ class LSFSubmissionCommandSpec extends Specification {
 
     def "submitting a script as code"() {
         given:
-        Code code = new Code("echo 'Hello World'")
+        Code code = new Code("echo 'Hello World'\n")
         when:
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
@@ -171,7 +171,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 [:],
                 null)
         then:
-        cmd.toBashCommandString() == "echo -e '#!/bin/bash\necho '\\''Hello World'\\''' | LSB_NTRIES=5 bsub -env \"none\"  -J jobname -H -cwd \"\$HOME\" -o /dev/null    -M 1024 -R \"rusage[mem=1024]\" -W 60 -n 4 -R \"span[hosts=1]\"   "
+        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | LSB_NTRIES=5 bsub -env \"none\"  -J jobname -H -cwd \"\$HOME\" -o /dev/null    -M 1024 -R \"rusage[mem=1024]\" -W 60 -n 4 -R \"span[hosts=1]\"   "
     }
 
 

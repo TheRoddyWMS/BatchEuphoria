@@ -102,7 +102,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         // --- Parameters Area ---
         List<String> jobParts = []
-        List<String> command = job.getCommand(true)
+        List<String> command = job.command
         if (command) {
             jobParts << createJobPart("COMMAND", command.join(" "), "COMMANDTORUN")
         } else {

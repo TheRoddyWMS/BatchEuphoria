@@ -16,6 +16,7 @@ import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import de.dkfz.roddy.tools.BashUtils
 import de.dkfz.roddy.tools.shell.bash.Service
 import groovy.transform.CompileStatic
+import org.apache.commons.text.StringEscapeUtils
 
 import static de.dkfz.roddy.StringConstants.*
 
@@ -147,12 +148,10 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
         if (job.code) {
             command <<
-                "echo -e " <<
-                // SLURM must have a shebang line for the job script.
-                BashUtils.strongQuote("#!/bin/bash"
-                                      + System.lineSeparator()
-                                      + job.code) <<
-                " | "
+            "echo -ne " <<
+            // SLURM must have a shebang line for the job script.
+            escapeScriptForEval(job.code) <<
+            " | "
         }
 
         if (environmentString) {
@@ -163,13 +162,13 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
         command << " ${parameters.join(" ")} "
 
-        if (job.getCommand(true)) {
+        if (job.command) {
             // Commands that are appended to the submission command and its parameters, e.g.,
             // in `bsub ... command ...` need to be quoted to prevent that expressions and
             // variables are evaluated on the submission site instead of the actual remote
             // cluster node.
             // This won't have any effect unless you have Bash special characters in your command.
-            List<String> commandToBeExecuted = job.getCommand(true)
+            List<String> commandToBeExecuted = job.command
             if (quoteCommand) {
                 commandToBeExecuted = commandToBeExecuted.collect { segment ->
                     Service.escape(segment)

@@ -63,7 +63,7 @@ class DirectCommand extends Command {
         commandString <<
                 parameterBuilder.toString() <<
                 StringConstants.WHITESPACE <<
-                job.getCommand(true).join(StringConstants.WHITESPACE) <<
+                job.command.join(StringConstants.WHITESPACE) <<
                 " &> ${job.jobLog.getOut(job.jobCreationCounter.toString())}";
 
         return commandString.toString()

@@ -10,6 +10,7 @@ import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.tools.BashUtils
 import de.dkfz.roddy.tools.shell.bash.Service as BashService
 import groovy.transform.CompileStatic
+import org.apache.commons.text.StringEscapeUtils
 
 import static de.dkfz.roddy.StringConstants.EMPTY
 
@@ -143,5 +144,17 @@ abstract class SubmissionCommand extends Command {
             commands << StringConstants.WHITESPACE << command.getProcessingCommandString()
         }
         return commands.toString()
+    }
+
+
+    /** To escape a script, such that it can be used with `echo -e` in a Bash command,
+     *  all shell specials have to be escaped. */
+    protected static String escapeScriptForEval(String scriptCode) {
+        // StringEscapeUtils.escapeXSI does not escape exclamation marks. In Bash, these can
+        // actually not get just escaped with backslash, but must be enclosed in single-ticks.
+        return StringEscapeUtils.escapeXSI(scriptCode.replace("\n", "\\n")).
+                replace("!", "'!'")
+
+
     }
 }

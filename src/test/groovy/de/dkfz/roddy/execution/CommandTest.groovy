@@ -74,12 +74,12 @@ class CommandTest extends Specification {
         expect:
         commandWithoutArgs.toCommandSegmentList() ==
                 ["somePath"]
-        commandWithoutArgs.toCommandSegmentList(true) ==
-                [Paths.get("somePath").toAbsolutePath().toString()]
+        commandWithoutArgs.toCommandSegmentList() ==
+                [Paths.get("somePath").toString()]
         commandWithArgs.toCommandSegmentList() ==
                 ["someOtherPath", "a", "b", "c"]
-        commandWithArgs.toCommandSegmentList(true) ==
-                [Paths.get("someOtherPath").toAbsolutePath().toString(), "a", "b", "c"]
+        commandWithArgs.toCommandSegmentList() ==
+                [Paths.get("someOtherPath").toString(), "a", "b", "c"]
     }
 
     def "CliAppendCommandExecutable"() {
@@ -91,6 +91,9 @@ class CommandTest extends Specification {
         command1.cliAppend(command2).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "someTool", "toolarg1"
         ]
+        command1.cliAppend(command2, true).toCommandSegmentList() == [
+                "strace", "stracearg1", "--", "someTool toolarg1"
+        ]
         command1.cliAppend(executable).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "executableX"
         ]
@@ -99,19 +102,18 @@ class CommandTest extends Specification {
     def "CliAppendCode"() {
         given:
         Code code1 = new Code("echo hallo; sleep 50;")
-        Executable executable = new Executable(Paths.get("strace"))
         expect:
-        new Command(executable).cliAppend(
+        new Command(new Executable(Paths.get("cat")), ["-"]).cliAppend(
                 code1,
-                false,
-                Paths.get("/bin/bash"),
+                new Executable(Paths.get("/bin/tcsh")),
                 "prefix",
-                "test").code == """\
-                |strace <<prefix_test
-                |#!/bin/bash
-                |echo hallo; sleep 50;
-                |prefix_test
-                |""".stripMargin()
+                "test").toCommandString() == """\
+                    |#!/bin/tcsh
+                    |cat - <<prefix_test
+                    |#!/bin/bash
+                    |echo hallo; sleep 50;
+                    |prefix_test
+                    |""".stripMargin()
     }
 
 }

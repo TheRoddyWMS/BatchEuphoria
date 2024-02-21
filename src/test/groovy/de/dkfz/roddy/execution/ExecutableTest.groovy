@@ -29,9 +29,7 @@ class ExecutableTest extends Specification {
                 "595f44fec1e92a71d3e9e77456ba80d1")
         expect:
         executable.md5 == Optional.of("595f44fec1e92a71d3e9e77456ba80d1")
-        executable.toCommandSegmentList(false) == ["a"]
-        executable.toCommandSegmentList(true) == [Paths.get("a").
-                toAbsolutePath().toString()]
+        executable.toCommandSegmentList() == ["a"]
     }
 
     def "InvalidMd5"() {

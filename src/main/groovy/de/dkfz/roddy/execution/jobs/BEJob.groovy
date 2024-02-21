@@ -249,7 +249,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
                     code.join("\n\t")
         } else {
             return "BEJob: ${jobName} calling command " +
-                    getCommand(false).join(" ")
+                    getCommand().join(" ")
         }
     }
 
@@ -269,9 +269,9 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    List<String> getCommand(boolean absolutePath) {
+    List<String> getCommand() {
         if (commandObj instanceof CommandReferenceI) {
-            (commandObj as CommandReferenceI).toCommandSegmentList(absolutePath)
+            (commandObj as CommandReferenceI).toCommandSegmentList()
         } else {
             null
         }
@@ -279,7 +279,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     String getCode() {
         if (commandObj instanceof Code) {
-            (commandObj as Code).code
+            (commandObj as Code).toCommandString()
         } else {
             null
         }
