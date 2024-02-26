@@ -3,12 +3,14 @@ package de.dkfz.roddy.execution
 import spock.lang.Specification
 
 import java.nio.file.Paths
+import static de.dkfz.roddy.execution.EscapableString.*
 
 class CommandTest extends Specification {
 
     def "throw with null string argument"() {
         when:
-        new Command(new Executable(Paths.get("somePath")), [null as String])
+        new Command(new Executable(Paths.get("somePath")),
+                    [null as AnyEscapableString])
         then:
         final IllegalArgumentException exception = thrown()
     }
@@ -25,7 +27,9 @@ class CommandTest extends Specification {
         Command command1 = new Command(new Executable(Paths.get("somePath")), [])
         Command command2 = new Command(new Executable(Paths.get("somePath")), [])
         Command command3 = new Command(new Executable(Paths.get("otherPath")), [])
-        Command command4 = new Command(new Executable(Paths.get("somePath")), ["otherArg"])
+        Command command4 = new Command(new Executable(
+                Paths.get("somePath")),
+                [u("otherArg")])
         expect:
         command1.hashCode() == command2.hashCode()
         command2.hashCode() != command3.hashCode()
@@ -37,7 +41,8 @@ class CommandTest extends Specification {
         Command command1 = new Command(new Executable(Paths.get("somePath")), [])
         Command command2 = new Command(new Executable(Paths.get("somePath")), [])
         Command command3 = new Command(new Executable(Paths.get("otherPath")), [])
-        Command command4 = new Command(new Executable(Paths.get("somePath")), ["otherArg"])
+        Command command4 = new Command(new Executable(Paths.get("somePath")),
+                                       [u("otherArg")])
         expect:
         command1 == command2
         command2 != command3
@@ -53,7 +58,7 @@ class CommandTest extends Specification {
 
     def "throw with null argument list"() {
         when:
-        new Command(new Executable(Paths.get("somePath")), null as List<String>)
+        new Command(new Executable(Paths.get("somePath")), null as List<AnyEscapableString>)
         then:
         final IllegalArgumentException exception = thrown()
     }
@@ -70,44 +75,52 @@ class CommandTest extends Specification {
         Command commandWithoutArgs = new Command(new Executable(
                 Paths.get("somePath")), [])
         Command commandWithArgs = new Command(new Executable(
-                Paths.get("someOtherPath")), ["a", "b", "c"])
+                Paths.get("someOtherPath")), [u("a"), u("b"), u("c")])
         expect:
         commandWithoutArgs.toCommandSegmentList() ==
-                ["somePath"]
+                ["somePath"].collect { u(it) }
         commandWithoutArgs.toCommandSegmentList() ==
-                [Paths.get("somePath").toString()]
+                [Paths.get("somePath").toString()].collect { u(it) }
         commandWithArgs.toCommandSegmentList() ==
-                ["someOtherPath", "a", "b", "c"]
+                ["someOtherPath", "a", "b", "c"].collect { u(it) }
         commandWithArgs.toCommandSegmentList() ==
-                [Paths.get("someOtherPath").toString(), "a", "b", "c"]
+                [Paths.get("someOtherPath").toString(), "a", "b", "c"].collect { u(it) }
     }
 
     def "CliAppendCommandExecutable"() {
         given:
-        Command command1 = new Command(new Executable(Paths.get("strace")), ["stracearg1", "--"])
-        Command command2 = new Command(new Executable(Paths.get("someTool")), ["toolarg1"])
+        Command command1 = new Command(new Executable(Paths.get("strace")),
+                                       ["stracearg1", "--"].collect { u(it) })
+        Command command2 = new Command(new Executable(Paths.get("someTool")),
+                                       ["toolarg1"].collect { u(it) })
         Executable executable = new Executable(Paths.get("executableX"))
+
         expect:
         command1.cliAppend(command2).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "someTool", "toolarg1"
-        ]
+        ].collect { u(it) } as List<AnyEscapableString>
+
         command1.cliAppend(command2, true).toCommandSegmentList() == [
-                "strace", "stracearg1", "--", "someTool toolarg1"
-        ]
+                u("strace"), u("stracearg1"), u("--"),
+                c(e("someTool"), e(" "), e("toolarg1"))
+        ] as List<AnyEscapableString>
+
         command1.cliAppend(executable).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "executableX"
-        ]
+        ].collect { u(it)} as List<AnyEscapableString>
     }
 
     def "CliAppendCode"() {
         given:
         Code code1 = new Code("echo hallo; sleep 50;")
+        AnyEscapableString result =
+                new Command(new Executable(Paths.get("cat")), ["-"].collect { u(it) }).
+                        cliAppend(code1,
+                                  new Executable(Paths.get("/bin/tcsh")),
+                                  "prefix",
+                                  "test").toEscapableString()
         expect:
-        new Command(new Executable(Paths.get("cat")), ["-"]).cliAppend(
-                code1,
-                new Executable(Paths.get("/bin/tcsh")),
-                "prefix",
-                "test").toCommandString() == """\
+        BashInterpreter.instance.interpret(result) == """\
                     |#!/bin/tcsh
                     |cat - <<prefix_test
                     |#!/bin/bash

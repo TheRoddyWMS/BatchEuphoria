@@ -6,19 +6,25 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.execution.BashInterpreter
+import de.dkfz.roddy.execution.EscapableString
 import groovy.transform.CompileStatic
+import org.omg.CORBA.Any
 
 import java.text.ParseException
 import java.util.regex.Pattern
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  */
 @CompileStatic
 class ProcessingParameters implements Serializable {
 
-    private LinkedHashMultimap<String, String> parameters = null
+    private LinkedHashMultimap<String, AnyEscapableString> parameters = null
 
-    ProcessingParameters(LinkedHashMultimap<String, String> parameters) {
+    ProcessingParameters(LinkedHashMultimap<String, AnyEscapableString> parameters) {
         assert (null != parameters)
         this.parameters = parameters
     }
@@ -34,11 +40,13 @@ class ProcessingParameters implements Serializable {
      */
     static ProcessingParameters fromString(String parameterString) {
         def pattern = Pattern.compile(/(?<optionName>[^\s=]+)(?:[\s+=](?<optionValue>.+?\s*))?/)
-        LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
+        LinkedHashMultimap<String, AnyEscapableString> parameters = LinkedHashMultimap.create()
         parameterString.split(/(^|\s+)(?=-)/).findAll { it != '' }.eachWithIndex { String option, int i ->
             def matcher = pattern.matcher(option)
             if (matcher.matches()) {
-                parameters.put(matcher.group("optionName"), matcher.group("optionValue"))
+                String key = matcher.group("optionName")
+                String value = matcher.group("optionValue")
+                parameters.put(key, value != null ? u(value) : null)
                 matcher.reset()
             } else {
                 matcher.reset()
@@ -48,18 +56,22 @@ class ProcessingParameters implements Serializable {
         return new ProcessingParameters(parameters)
     }
 
-    String getProcessingCommandString() {
-        // Careful with this method. We had one problem where an Integer value was in one of the Collections inside the map.
-        // In this particular case, Groovy said there is something wrong with the Integer [1].
-        (parameters.asMap() as Map<String, Collection<String>>).collect { k, vs ->
-            vs.collect { v ->
-                k + ' ' + v
-            }.join(' ')
-        }.join(' ')
+    AnyEscapableString getProcessingCommandString() {
+        // Careful with this method. We had one problem where an Integer value was in one of the
+        // Collections inside the map. In this particular case, Groovy said there is something
+        // wrong with the Integer [1].
+        join(((parameters.asMap() as Map<String, Collection<AnyEscapableString>>).collect {
+            String k, Collection<AnyEscapableString> vs ->
+                // Note that all values are separated by escaped spaces, here. I.e. all parameter values with the
+                // same key are concatenated to a single argument string. E.g.
+                // -R "span[hosts=1] rusage[mem=1000] select[mem>1000] select[cpufamily==Intel_Xeon_E5_2680_v3]"
+                // TODO Not sure why this is in the general code, and not just for LSF.
+                u(k) + u(" ") + join(vs.findAll { it != null } as List<AnyEscapableString>, e(' '))
+        } as List<AnyEscapableString>), u(' '))
     }
 
     @Override
     String toString() {
-        return "" + processingCommandString
+        return BashInterpreter.instance.interpret(processingCommandString)
     }
 }

@@ -8,7 +8,10 @@ package de.dkfz.roddy.execution.jobs
 
 
 import de.dkfz.roddy.core.InfoObject
+import de.dkfz.roddy.execution.AnyEscapableString
 import groovy.transform.CompileStatic
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  * Created by heinold on 27.02.17.
@@ -17,11 +20,11 @@ import groovy.transform.CompileStatic
 class FakeBEJob extends BEJob {
 
     FakeBEJob(BEFakeJobID jobID) {
-        super(jobID, null, 'Fakejob')
+        super(jobID, null, u('Fakejob'))
     }
 
     FakeBEJob() {
-        super(null, null, 'Fakejob')
+        super(null, null, u('Fakejob'))
     }
 
     FakeBEJob(InfoObject context) {

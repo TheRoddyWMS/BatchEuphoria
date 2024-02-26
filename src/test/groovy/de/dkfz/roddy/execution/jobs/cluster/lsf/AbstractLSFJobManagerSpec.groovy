@@ -2,7 +2,9 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.BashInterpreter
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.JobManagerOptionsBuilder
@@ -10,6 +12,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 class AbstractLSFJobManagerSpec extends Specification {
 
@@ -72,7 +76,8 @@ class AbstractLSFJobManagerSpec extends Specification {
 
     def "test conversion of core and node resources with createComputeParameter"(ResourceSet input, LinkedHashMap results) {
         when:
-        LinkedHashMultimap<String, String> parameters = new LinkedHashMultimap<>(1, 1)
+        LinkedHashMultimap<String, AnyEscapableString> parameters =
+                LinkedHashMultimap.create(1, 1)
         jobManager.createComputeParameter(input, parameters)
 
         then:
@@ -80,14 +85,14 @@ class AbstractLSFJobManagerSpec extends Specification {
         // You also cannot use Groovy methods on the class
         parameters.size() == results.size()
         // It is also incredibly hard to compare the LinkedHashMultimap with "normal" maps.
-        results["-n"].toString() == parameters.get("-n").toString()
+        results["-n"] == parameters.get("-n").collect { BashInterpreter.instance.interpret(it) }
 
         where:
         input                                                  | results
-        new ResourceSet(null, 4, -2, null, null, null, null)   | [("-n"): ['4 -R "span[hosts=1]"']]
-        new ResourceSet(null, 4, null, null, null, null, null) | [("-n"): ['4 -R "span[hosts=1]"']]
-        new ResourceSet(null, 4, 0, null, null, null, null)    | [("-n"): ['4 -R "span[hosts=1]"']]
-        new ResourceSet(null, 4, 1, null, null, null, null)    | [("-n"): ['4 -R "span[hosts=1]"']]
-        new ResourceSet(null, 4, 2, null, null, null, null)    | [("-n"): ['8 -R "span[ptile=4]"']]
+        new ResourceSet(null, 4, -2, null, null, null, null)   | [("-n"): ['4'], ("-R"): ['span\\[hosts\\=1]']]
+        new ResourceSet(null, 4, null, null, null, null, null) | [("-n"): ['4'], ("-R"): ['span\\[hosts\\=1]']]
+        new ResourceSet(null, 4, 0, null, null, null, null)    | [("-n"): ['4'], ("-R"): ['span\\[hosts\\=1]']]
+        new ResourceSet(null, 4, 1, null, null, null, null)    | [("-n"): ['4'], ("-R"): ['span\\[hosts\\=1]']]
+        new ResourceSet(null, 4, 2, null, null, null, null)    | [("-n"): ['8'], ("-R"): ['span\\[ptile\\=4]']]
     }
 }

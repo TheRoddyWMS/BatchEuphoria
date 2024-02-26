@@ -3,6 +3,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.Executable
@@ -16,18 +17,20 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
+import static de.dkfz.roddy.execution.EscapableString.*
+
 class SlurmSubmissionCommandSpec extends Specification {
 
     SlurmJobManager jobManager = new SlurmJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
 
     private BEJob makeJob(
-            Map<String, String> mapOfParameters,
+            Map<String, AnyEscapableString> mapOfParameters,
             CommandI command,
-            String accountingProject = null) {
+            AnyEscapableString accountingProject = null) {
         BEJob job = new BEJob(
                 null,
                 jobManager,
-                "Test",
+                u("Test"),
                 command,
                 new ResourceSet(
                         ResourceSetSize.l,
@@ -48,107 +51,109 @@ class SlurmSubmissionCommandSpec extends Specification {
 
     def "assemble dependency string without dependencies"() throws Exception {
         when:
-        def mapOfVars = ["a": "a", "b": "b"]
+        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": u("b")]
         BEJob job = makeJob(mapOfVars,
                             new Executable(Paths.get("/tmp/test.sh")))
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars,
                         new Executable(Paths.get("/tmp/test.sh"))),
-                "jobName",
+                u("jobName"),
                 null, mapOfVars,
                 null)
         then:
-        cmd.assembleDependencyParameter([]) == ""
+        cmd.assembleDependencyParameter([]) == c()
     }
 
     def "assemble variable export parameters with no variables"() {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:],
+                makeJob([:] as Map<String, AnyEscapableString>,
                         new Executable(Paths.get("/tmp/test.sh"))),
-                "jobName",
+                u("jobName"),
                 null,
                 [:],
                 null)
         then:
-        cmd.assembleVariableExportParameters() == ""
+        cmd.assembleVariableExportParameters() == c()
     }
 
     def "assemble variable export parameters with only variables"() {
         when:
-        Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
+        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": null]
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars,
                         new Executable(Paths.get("/tmp/test.sh"))),
-                "jobName",
+                u("jobName"),
                 null,
                 mapOfVars,
                 null)
         then:
-        cmd.assembleVariableExportParameters() == "--export=\"a=a,b\""
+        cmd.assembleVariableExportParameters() ==
+            c(u("--export="), u("a"), e("="), u("a"), u(","), u("b"))
     }
 
     def "assemble variable export parameters with 'all' variables"() {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:] as LinkedHashMap<String, String>,
+                makeJob([:] as LinkedHashMap<String, AnyEscapableString>,
                         new Executable(Paths.get("/tmp/test.sh"))),
-                "jobName",
+                u("jobName"),
                 null,
                 [:],
                 null)
         cmd.passEnvironment = Optional.of(true)
         then:
-        cmd.assembleVariableExportParameters() == "--get-user-env "
+        cmd.assembleVariableExportParameters() == c(u("--get-user-env "))
     }
 
     def "assemble variable export parameters with 'all' and explicit variables"() {
         when:
-        Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
+        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": null]
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars as LinkedHashMap<String, String>,
                         new Executable(Paths.get("/tmp/test.sh"))),
-                "jobName",
+                u("jobName"),
                 null,
                 mapOfVars,
                 null)
         cmd.passEnvironment = Optional.of(true)
         then:
-        cmd.assembleVariableExportParameters() == "--get-user-env  --export=\"a=a,b\""
+        cmd.assembleVariableExportParameters() ==
+            c(u("--get-user-env "), u("--export="), u("a"), e("="), u("a"), u(","), u("b"))
     }
 
     def "command without accounting name"() {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:],
+                makeJob([:] as Map<String, AnyEscapableString>,
                         new Executable(Paths.get("/tmp/test.sh"))),
-                "jobname",
+                u("jobname"),
                 null,
                 [:],
                 null)
         then:
-        cmd.toBashCommandString() == 'sbatch   --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
 
     def "command with accounting name"() {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:],
+                makeJob([:] as Map<String, AnyEscapableString>,
                         new Executable(Paths.get("/tmp/test.sh")),
-                        "accountingProject"),
-                "jobname",
+                        u("accountingProject")),
+                u("jobname"),
                 null,
                 [:],
                 null)
         then:
-        cmd.toBashCommandString() == 'sbatch  --account="accountingProject" --job-name jobname --hold --chdir $HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch --account=accountingProject --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
 
     def "submit script as code"() {
@@ -160,12 +165,12 @@ class SlurmSubmissionCommandSpec extends Specification {
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 job,
-                "jobname",
+                u("jobname"),
                 null,
                 [:],
                 null)
         then:
-        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | sbatch   --job-name jobname --hold --chdir \$HOME     --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4  --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
+        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | sbatch --job-name jobname --hold --chdir \"\$HOME\"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
 
     }
 

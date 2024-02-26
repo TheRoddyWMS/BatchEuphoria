@@ -11,6 +11,7 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.RestExecutionService
@@ -23,6 +24,7 @@ import org.junit.Test
 
 import java.time.Duration
 
+import static de.dkfz.roddy.execution.EscapableString.*
 /**
  *
  * Only the tests are executed for which the cluster configuration are set in the "integrationTest.properties"
@@ -85,10 +87,11 @@ class BEIntegrationTest {
         BEJob testJobWithPipedScript = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob",
-                new Code(testScript), resourceSet,
+                u("batchEuphoriaTestJob"),
+                new Code(u(testScript)),
+                resourceSet,
                 [],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         jobTest(jobManager, [testJobWithPipedScript])
     }
@@ -100,29 +103,29 @@ class BEIntegrationTest {
         BEJob testParent = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob_Parent",
-                new Code(testScript),
+                u("batchEuphoriaTestJob_Parent"),
+                new Code(u(testScript)),
                 resourceSet,
                 [],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         BEJob testJobChild1 = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob_Child1",
-                new Code(testScript),
+                u("batchEuphoriaTestJob_Child1"),
+                new Code(u(testScript)),
                 resourceSet,
                 [testParent],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         BEJob testJobChild2 = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob_Child2",
-                new Code(testScript),
+                u("batchEuphoriaTestJob_Child2"),
+                new Code(u(testScript)),
                 resourceSet,
                 [testParent, testJobChild1],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
@@ -137,11 +140,11 @@ class BEIntegrationTest {
         BEJob testJobWithFile = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob",
+                u("batchEuphoriaTestJob"),
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         jobTest(jobManager, [testJobWithFile])
     }
@@ -154,29 +157,29 @@ class BEIntegrationTest {
         BEJob testParent = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob_Parent",
+                u("batchEuphoriaTestJob_Parent"),
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         BEJob testJobChild1 = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob_Child1",
+                u("batchEuphoriaTestJob_Child1"),
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         BEJob testJobChild2 = new BEJob(
                 null,
                 jobManager,
-                "batchEuphoriaTestJob_Child2",
+                u("batchEuphoriaTestJob_Child2"),
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent, testJobChild1],
-                ["a": "value"],
+                ["a": u("value")] as Map<String, AnyEscapableString>,
                 logFile)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
@@ -194,8 +197,9 @@ class BEIntegrationTest {
             ensureProperJobStates(maxSleep, testJobs, [JobState.HOLD], jobManager)
 
             jobManager.startHeldJobs(testJobs)
-            // Wait for some seconds and see, if the status changes from HOLD to queued or running and from queued to running
-            // The queued to running check can take a lot more time. Also the default update time for queries to the job system
+            // Wait for some seconds and see, if the status changes from HOLD to queued or running
+            // and from queued to running. The queued to running check can take a lot more time.
+            // Also the default update time for queries to the job system
             // is too long for tests. We force updates everytime we run queryJobStatus
             ensureProperJobStates(maxSleep, testJobs, [JobState.QUEUED, JobState.RUNNING], jobManager)
         } else {

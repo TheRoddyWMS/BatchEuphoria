@@ -12,6 +12,8 @@ import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import groovy.transform.CompileStatic
 
+import static de.dkfz.roddy.execution.EscapableString.*
+
 /**
  * Local commands run locally and, if the workflow requires and supports it, concurrently.
  * They are called in a local process with waitFor after each call. Dependencies are therefore automatically resolved.
@@ -27,7 +29,8 @@ class DirectCommand extends Command {
     DirectCommand(DirectSynchronousExecutionJobManager parentManager,
                   BEJob job,
                   List<ProcessingParameters> processingParameters) {
-        super(parentManager, job, job.executableFile.name, job.parameters)
+        super(parentManager,
+              job, e(job.executableFile.name), job.parameters)
         this.processingParameters = processingParameters
     }
 

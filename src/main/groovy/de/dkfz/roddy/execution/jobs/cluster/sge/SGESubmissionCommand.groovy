@@ -6,18 +6,18 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
-
 import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.CommandI
-import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.COMMA
-import static de.dkfz.roddy.StringConstants.EMPTY
 import static de.dkfz.roddy.StringConstants.WHITESPACE
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  * Created by michael on 20.05.14.
@@ -25,60 +25,68 @@ import static de.dkfz.roddy.StringConstants.WHITESPACE
 @CompileStatic
 class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
 
-    SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
-                         List<ProcessingParameters> processingParameters, Map<String, String> environmentVariables,
-                         List<String> dependencyIDs, CommandI command) {
+    SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager,
+                         BEJob job, AnyEscapableString jobName,
+                         List<ProcessingParameters> processingParameters,
+                         Map<String, AnyEscapableString> environmentVariables,
+                         List<String> dependencyIDs,
+                         CommandI command) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
     }
 
     @Override
-    protected String getJobNameParameter() {
-        return "-N ${jobName}" as String
+    protected AnyEscapableString getJobNameParameter() {
+        u("-N ") + jobName
     }
 
     @Override
-    protected String getHoldParameter() {
-        return "-h"
+    protected AnyEscapableString getHoldParameter() {
+        u("-h")
     }
 
     @Override
-    protected String getAccountNameParameter() {
-        return job.accountingName != null ? "-A \"${job.accountingName}\"" : ""
+    protected AnyEscapableString getAccountNameParameter() {
+        job.accountingName != null ? u("-A ") + job.accountingName : c()
     }
 
     @Override
-    protected String getWorkingDirectoryParameter() {
-        return "-wd ${job.getWorkingDirectory() ?: WORKING_DIRECTORY_DEFAULT}" as String
+    protected AnyEscapableString getWorkingDirectoryParameter() {
+        u("-wd ") + e(job.getWorkingDirectory().toString()) ?: WORKING_DIRECTORY_DEFAULT
     }
 
     @Override
-    protected String getLoggingParameter(JobLog jobLog) {
+    protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
-            return "-o /dev/null -e /dev/null"
+            u("-o /dev/null -e /dev/null")
         } else if (jobLog.out == jobLog.error) {
-            return "${joinLogParameter} -o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$JOB_ID')}\""
+            joinLogParameter + u(" -o ") + e(jobLog.out.replace(JobLog.JOB_ID, '\\$JOB_ID'))
         } else {
-            return "-o \"${jobLog.out.replace(JobLog.JOB_ID, '\\$JOB_ID')} -e ${jobLog.error.replace(JobLog.JOB_ID, '\\$JOB_ID')}\""
+            join([
+                         u("-o"),
+                         e(jobLog.out.replace(JobLog.JOB_ID, '\\$JOB_ID')),
+                         u("-e"),
+                         e(jobLog.error.replace(JobLog.JOB_ID, '\\$JOB_ID'))
+                ], " ")
         }
     }
 
     @Override
-    protected String getEmailParameter(String address) {
-        return address ? " -M " + address : ""
+    protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+        address ? u(" -M ") + address : c()
     }
 
-    protected String getJoinLogParameter() {
-        return "-j y"
-    }
-
-    @Override
-    protected String getGroupListParameter(String groupList) {
-        return EMPTY
+    protected AnyEscapableString getJoinLogParameter() {
+        u("-j y")
     }
 
     @Override
-    protected String getUmaskString(String umask) {
-        return WHITESPACE
+    protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+        c()
+    }
+
+    @Override
+    protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+        u(WHITESPACE)
     }
 
     @Override
@@ -97,33 +105,33 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected String getAdditionalCommandParameters() {
-        return " -S /bin/bash "
+    protected AnyEscapableString getAdditionalCommandParameters() {
+        u(" -S /bin/bash ")
     }
 
     @Override
-    protected String getEnvironmentString() {
-        return ""
+    protected AnyEscapableString getEnvironmentString() {
+        c()
     }
 
     @Override
-    protected String assembleVariableExportParameters() {
-        List<String> parameterStrings = []
+    protected AnyEscapableString assembleVariableExportParameters() {
+        List<AnyEscapableString> parameterStrings = []
 
         if (passLocalEnvironment)
-            parameterStrings << "-V"
+            parameterStrings += u("-V")
 
         List<String> environmentStrings = parameters.collect { key, value ->
             if (null == value)
-                "${key}"              // returning just the variable name makes qsub take the value form the qsub-commands execution environment
+                u(key) // returning just the variable name makes qsub take the value form the qsub-commands execution environment
             else
-                "${key}=${value}"     // sets value to value
+                u("$key=") + value     // sets value to value
         } as List<String>
 
         if (!environmentStrings.empty)
-            parameterStrings << "-v \"${environmentStrings.join(",")}\"".toString()
+            parameterStrings += u("-v ") + e(environmentStrings.join(","))
 
-        return parameterStrings.join(" ")
+        join(parameterStrings, " ")
     }
 
     protected String getDependsSuperParameter() {

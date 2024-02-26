@@ -9,7 +9,9 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
+import de.dkfz.roddy.execution.BashInterpreter
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.lsf.AbstractLSFJobManager
@@ -28,6 +30,8 @@ import org.apache.http.protocol.HTTP
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  * REST job manager for cluster systems.
@@ -102,9 +106,9 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         // --- Parameters Area ---
         List<String> jobParts = []
-        List<String> command = job.command
+        List<AnyEscapableString> command = job.command
         if (command) {
-            jobParts << createJobPart("COMMAND", command.join(" "), "COMMANDTORUN")
+            jobParts << createJobPart("COMMAND", BashInterpreter.instance.interpret(join(command, " ")), "COMMANDTORUN")
         } else {
             jobParts << createJobPart("COMMAND", "${job.jobName},upload" as String, "COMMANDTORUN", "file")
         }
@@ -116,7 +120,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
         requestParts << createRequestPart("data", jobPartsWithHeader.content, jobPartsWithHeader.headers)
 
         if (job.code) {
-            requestParts << createRequestPart("f1", job.code, [
+            requestParts << createRequestPart("f1", BashInterpreter.instance.interpret(job.code), [
                     new BasicHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.toString()),
             ] as List<Header>, job.jobName)
         }

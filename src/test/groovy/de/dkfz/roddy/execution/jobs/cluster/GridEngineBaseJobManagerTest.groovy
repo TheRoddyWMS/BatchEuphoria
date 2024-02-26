@@ -4,6 +4,7 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.Command
@@ -19,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 
 import java.nio.file.Paths
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 @CompileStatic
 class GridEngineBaseJobManagerTest {
@@ -115,11 +118,11 @@ class GridEngineBaseJobManagerTest {
         }
     }
 
-    private BEJob makeJob(Map<String, String> mapOfParameters) {
+    private BEJob makeJob(Map<String, AnyEscapableString> mapOfParameters) {
         BEJob job = new BEJob
                 (null,
                  jobManager,
-                 "Test",
+                 u("Test"),
                  new Executable(Paths.get("/tmp/test.sh")),
                  new ResourceSet(ResourceSetSize.l,
                                  new BufferValue(1, BufferUnit.G),
@@ -136,12 +139,12 @@ class GridEngineBaseJobManagerTest {
 
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
-        def mapOfVars = ["a": "a", "b": "b"]
+        def mapOfVars = ["a": u("a"), "b": u("b")] as Map<String, AnyEscapableString>
         GridEngineBasedSubmissionCommand cmd =
                 new GridEngineBasedSubmissionCommand(
                         jobManager,
                         makeJob(mapOfVars),
-                        "jobName",
+                        u("jobName"),
                         null,
                         mapOfVars,
                         null) {
@@ -171,61 +174,61 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected String getJobNameParameter() {
+            protected AnyEscapableString getJobNameParameter() {
                 return null
             }
 
             @Override
-            protected String getHoldParameter() {
+            protected AnyEscapableString getHoldParameter() {
                 return null
             }
 
             @Override
-            protected String getWorkingDirectoryParameter() {
+            protected AnyEscapableString getWorkingDirectoryParameter() {
                 return null
             }
 
             @Override
-            protected String getLoggingParameter(JobLog jobLog) {
+            protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
                 return null
             }
 
             @Override
-            protected String getEmailParameter(String address) {
+            protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
                 return null
             }
 
             @Override
-            protected String getGroupListParameter(String groupList) {
+            protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
                 return null
             }
 
             @Override
-            protected String getUmaskString(String umask) {
+            protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
                 return null
             }
 
             @Override
-            protected String getAdditionalCommandParameters() {
+            protected AnyEscapableString getAdditionalCommandParameters() {
                 return null
             }
 
             @Override
-            protected String getEnvironmentString() {
-                return ""
+            protected AnyEscapableString getEnvironmentString() {
+                return u("")
             }
 
             @Override
-            protected String assembleVariableExportParameters() {
+            protected AnyEscapableString assembleVariableExportParameters() {
                 return null
             }
 
             @Override
-            protected String composeCommandString(List<String> parameters) {
+            protected String composeCommandString(List<AnyEscapableString> parameters) {
                 return null
             }
         }
-        assert cmd.assembleDependencyParameter([]) == ""
+        assert cmd.assembleDependencyParameter([]) == c()
     }
 
 }

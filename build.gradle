@@ -6,6 +6,7 @@
 
 plugins {
     id 'org.ajoberstar.grgit' version '1.7.2'
+    id 'pmd'
 }
 
 apply plugin: 'groovy'
@@ -63,10 +64,10 @@ dependencies {
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.0'
     implementation group: 'org.apache.commons', name: 'commons-text', version: '1.11.0'
-    implementation 'com.google.guava:guava:30.0-android'
+    implementation 'com.google.guava:guava:32.0.0-android'
     implementation 'com.github.theroddywms:RoddyToolLib:2.4.1'
 
-    // Runtime retention of @NonNull and annotations.
+    // Runtime retention of @NotNull and annotations.
     implementation 'com.github.bbottema:jetbrains-runtime-annotations:1.0.1'
 }
 

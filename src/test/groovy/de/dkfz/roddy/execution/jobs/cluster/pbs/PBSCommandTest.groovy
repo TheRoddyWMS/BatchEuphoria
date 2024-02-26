@@ -9,6 +9,8 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.execution.BashInterpreter
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
@@ -21,6 +23,8 @@ import org.junit.Before
 import org.junit.Test
 
 import java.nio.file.Paths
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  * Created by heinold on 26.03.17.
@@ -36,11 +40,11 @@ class PBSCommandTest {
         jobManager = new PBSJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
     }
 
-    private BEJob makeJob(Map<String, String> mapOfParameters) {
+    private BEJob makeJob(Map<String, AnyEscapableString> mapOfParameters) {
         BEJob job = new BEJob(
                 null,
                 jobManager,
-                "Test",
+                u("Test"),
                 new Executable(Paths.get("/tmp/test.sh")),
                 new ResourceSet(
                         ResourceSetSize.l,
@@ -63,50 +67,54 @@ class PBSCommandTest {
         PBSSubmissionCommand cmd = new PBSSubmissionCommand(
                 jobManager,
                 makeJob([:]),
-                "jobName",
+                u("jobName"),
                 null,
-                [:],
+                [:] as Map<String, AnyEscapableString>,
                 null)
-        assert cmd.assembleVariableExportParameters() == ""
+        assert cmd.assembleVariableExportParameters() == c()
     }
 
     @Test
     void testAssembleVariableExportParameters_onlyVars() {
-        Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
+        Map<String, AnyEscapableString> mapOfVars =
+                ["a": u("a"), "b": null] as LinkedHashMap<String, AnyEscapableString>
         PBSSubmissionCommand cmd = new PBSSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars),
-                "jobName",
+                u("jobName"),
                 null,
                 mapOfVars,
                 null)
-        assert cmd.assembleVariableExportParameters() == "-v \"a=a,b\""
+        assert cmd.assembleVariableExportParameters() ==
+               c(u("-v "), u("a"), e("="), u("a"), u(","), u("b"))
     }
 
     @Test
     void testAssembleVariableExportParameters_allVars() {
         PBSSubmissionCommand cmd = new PBSSubmissionCommand(
                 jobManager,
-                makeJob([:] as LinkedHashMap<String, String>),
-                "jobName",
+                makeJob([:] as LinkedHashMap<String, AnyEscapableString>),
+                u("jobName"),
                 null,
-                [:],
+                [:] as Map<String, AnyEscapableString>,
                 null)
         cmd.passEnvironment = Optional.of(true)
-        assert cmd.assembleVariableExportParameters() == "-V"
+        assert cmd.assembleVariableExportParameters() == c(u("-V"))
     }
 
     @Test
     void testAssembleVariableExportParameters_allVarsAndExplicit() {
-        Map<String, String> mapOfVars = ["a": "a", "b": null] as LinkedHashMap<String, String>
+        Map<String, AnyEscapableString> mapOfVars =
+                ["a": e("a!"), "b": null] as LinkedHashMap<String, AnyEscapableString>
         PBSSubmissionCommand cmd = new PBSSubmissionCommand(
                 jobManager,
-                makeJob(mapOfVars as LinkedHashMap<String, String>),
-                "jobName",
+                makeJob(mapOfVars),
+                u("jobName"),
                 null,
                 mapOfVars,
                 null)
         cmd.passEnvironment = Optional.of(true)
-        assert cmd.assembleVariableExportParameters() == "-V -v \"a=a,b\""
+        assert BashInterpreter.instance.interpret(cmd.assembleVariableExportParameters()) ==
+               "-V -v a\\=a'!',b"
     }
 }

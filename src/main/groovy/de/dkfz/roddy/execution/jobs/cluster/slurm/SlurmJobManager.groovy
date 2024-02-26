@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
@@ -20,6 +21,8 @@ import groovy.transform.CompileStatic
 
 import java.time.*
 import java.time.format.DateTimeFormatter
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 @CompileStatic
 class SlurmJobManager extends GridEngineBasedJobManager {
@@ -45,7 +48,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     @Override
     SlurmSubmissionCommand createCommand(BEJob job) {
         SlurmSubmissionCommand ssc = new SlurmSubmissionCommand(
-                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id)
+                this, job, e(job.jobName), [], job.parameters, job.parentJobIDs*.id)
         return ssc
     }
 
@@ -156,13 +159,14 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     }
 
     @CompileDynamic
-    protected static GenericJobInfo fillFromSupplement(GenericJobInfo primary, GenericJobInfo supplement) {
+    protected static GenericJobInfo fillFromSupplement(GenericJobInfo primary,
+                                                       GenericJobInfo supplement) {
         if (!supplement) {
             return primary
         }
-        primary.properties.findAll { k, v ->
-            if (!v && supplement."${k}") {
-                primary."${k}" = supplement."${k}"
+        primary.properties.findAll { key, value ->
+            if (!value && supplement."$key") {
+                primary."$key" = supplement."$key"
             }
         }
         return primary
@@ -404,30 +408,36 @@ class SlurmJobManager extends GridEngineBasedJobManager {
     }
 
     @Override
-    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+    void createComputeParameter(ResourceSet resourceSet,
+                                LinkedHashMultimap<String, AnyEscapableString> parameters) {
         int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
         String nVal = "--nodes=" + nodes
         String cVal = " --cores-per-socket=" + cores
-        parameters.put(nVal, cVal)
+        parameters.put(nVal, u(cVal))
     }
 
-    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
-        parameters.put('-p', queue)
-    }
-
-    @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('--time=' + TimeUnit.fromDuration(resourceSet.walltime).toHourString(), " ")
+    void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                              String queue) {
+        parameters.put('-p', e(queue))
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('--mem=' + resourceSet.getMem().toString(BufferUnit.M), " ")
+    void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                                 ResourceSet resourceSet) {
+        parameters.put('--time=' + TimeUnit.fromDuration(resourceSet.walltime).toHourString(),
+                       u(" "))  // What a hack.
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+    void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                               ResourceSet resourceSet) {
+        parameters.put('--mem=' + resourceSet.getMem().toString(BufferUnit.M), u(" "))
+    }
+
+    @Override
+    void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                                 ResourceSet resourceSet) {
     }
 
     @Override

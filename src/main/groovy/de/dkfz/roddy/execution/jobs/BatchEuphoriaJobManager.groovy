@@ -12,6 +12,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
+import org.jetbrains.annotations.Nullable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -280,7 +281,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return holdJobsIsEnabled
     }
 
-    String getUserEmail() {
+    @Nullable String getUserEmail() {
         return userEmail
     }
 

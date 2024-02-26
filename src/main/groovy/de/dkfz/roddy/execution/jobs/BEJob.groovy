@@ -10,6 +10,8 @@ import com.google.common.base.Preconditions
 import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.execution.BashInterpreter
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.CommandReferenceI
@@ -19,6 +21,8 @@ import org.jetbrains.annotations.Nullable
 
 import java.util.concurrent.atomic.AtomicLong
 
+import static de.dkfz.roddy.execution.EscapableString.*
+
 /**
  * The job class represents a generic and abstract form of cluster job which can be run using a job manager.
  * When a job is executed with the JM, the used Command and a BEJobResult object will be created and added to this
@@ -27,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong
 @CompileStatic
 class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
-    public static final String PARM_JOBCREATIONCOUNTER = "JOB_CREATION_COUNTER"
+    public static final AnyEscapableString PARM_JOBCREATIONCOUNTER = u("JOB_CREATION_COUNTER")
 
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
 
@@ -39,13 +43,13 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * The descriptive name of the job. Can be passed to the execution system.
      */
-    public final String jobName
+    public final AnyEscapableString jobName
 
     /**
      * The accounting name under which the job runs. It is the responsibility of the execution system to use this
      * information.
      */
-    public final String accountingName
+    public final AnyEscapableString accountingName
 
 
     /**
@@ -72,7 +76,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * Parameters for the tool you want to call
      */
-    protected final Map<String, String> parameters
+    protected final Map<String, AnyEscapableString> parameters
 
     protected SortedSet<BEJob> parentJobs = new TreeSet<BEJob>()
 
@@ -92,6 +96,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     // Now come some job / command specific settings
     //////////////////////////////////////////////////////////////
 
+    @Nullable
     protected File workingDirectory
 
     /**
@@ -105,14 +110,14 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BEJob(BEJobID jobID,                        // can be null for FakeBEJob
           BatchEuphoriaJobManager jobManager,   // can be null for FakeBEJob
-          String jobName = null,
+          AnyEscapableString jobName = null,
           CommandI commandObj = null,
           @NotNull ResourceSet resourceSet = new EmptyResourceSet(),
           @NotNull Collection<BEJob> parentJobs = [],
-          @NotNull Map<String, String> parameters = [:],
+          @NotNull Map<String, AnyEscapableString> parameters = [:],
           @NotNull JobLog jobLog = JobLog.none(),
           File workingDirectory = null,
-          String accountingName = null) {
+          AnyEscapableString accountingName = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.getNewUnknown())
         this.jobName = jobName
         this.currentJobState = JobState.UNSTARTED
@@ -170,7 +175,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.processingParameters.add(processingParameters)
     }
 
-    Map<String, String> getParameters() {
+    Map<String, AnyEscapableString> getParameters() {
         return parameters
     }
 
@@ -200,7 +205,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return parentJobs.collect { it.jobID }
     }
 
-    File getWorkingDirectory() {
+    @Nullable File getWorkingDirectory() {
         return this.workingDirectory
     }
 
@@ -246,10 +251,12 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     String toString() {
         if (this.code) {
             return "BEJob: ${jobName} with code:\n\t" +
-                    code.join("\n\t")
+                    BashInterpreter.instance.interpret(code).
+                            split("\n").
+                            join("\n\t")
         } else {
             return "BEJob: ${jobName} calling command " +
-                    getCommand().join(" ")
+                    BashInterpreter.instance.interpret(join(command, " "))
         }
     }
 
@@ -269,7 +276,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    List<String> getCommand() {
+    List<AnyEscapableString> getCommand() {
         if (commandObj instanceof CommandReferenceI) {
             (commandObj as CommandReferenceI).toCommandSegmentList()
         } else {
@@ -277,9 +284,9 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    String getCode() {
+    AnyEscapableString getCode() {
         if (commandObj instanceof Code) {
-            (commandObj as Code).toCommandString()
+            (commandObj as Code).toEscapableString()
         } else {
             null
         }

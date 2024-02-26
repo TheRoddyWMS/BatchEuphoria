@@ -18,6 +18,8 @@ import groovy.transform.CompileStatic
 import java.time.*
 import java.util.regex.Matcher
 
+import static de.dkfz.roddy.execution.EscapableString.*
+
 /**
  * Factory for the management of LSF cluster systems.
  *
@@ -143,7 +145,7 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     LSFSubmissionCommand createCommand(BEJob job) {
         return new LSFSubmissionCommand(
-                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id)
+                this, job, e(job.jobName), [], job.parameters, job.parentJobIDs*.id)
     }
 
     @Override
@@ -182,7 +184,8 @@ class LSFJobManager extends AbstractLSFJobManager {
             throw new BEException(error)
         }
 
-        Map<BEJobID, Map<String, String>> result = convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
+        Map<BEJobID, Map<String, String>> result =
+                convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
         return result; //filterJobMapByAge(result, maxTrackingTimeForFinishedJobs)
     }
 
@@ -340,7 +343,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         } else if (executionService.execute(
                 "LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null",
                 commandTimeout).firstStdoutLine == "directory") {
-            return new File(path, "${jobID.getId()}.${fileTypeSuffix}")
+            return new File(path, "${jobID.id}.$fileTypeSuffix")
         } else {
             return new File(path)
         }
@@ -348,13 +351,13 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "${getEnvironmentString()} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
+        String command = "$environmentString $LSF_COMMAND_DELETE_JOBS ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false, commandTimeout)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        String command = "${getEnvironmentString()} bresume ${jobIDs*.id.join(" ")}"
+        String command = "$environmentString bresume ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false, commandTimeout)
     }
 
@@ -362,7 +365,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     String parseJobID(String commandOutput) {
         String result = commandOutput.find(/<[0-9]+>/)
         if (result == null)
-            throw new BEException("Could not parse raw ID from: '${commandOutput}'")
+            throw new BEException("Could not parse raw ID from: '$commandOutput'")
         String exID = result.substring(1, result.length() - 1)
         return exID
     }

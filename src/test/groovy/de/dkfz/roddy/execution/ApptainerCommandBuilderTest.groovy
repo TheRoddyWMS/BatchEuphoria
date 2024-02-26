@@ -3,6 +3,7 @@ package de.dkfz.roddy.execution
 import spock.lang.Specification
 
 import java.nio.file.Paths
+import static de.dkfz.roddy.execution.EscapableString.*
 
 
 class ApptainerCommandBuilderTest extends Specification {
@@ -11,7 +12,8 @@ class ApptainerCommandBuilderTest extends Specification {
         given:
         ApptainerCommandBuilder builder = ApptainerCommandBuilder.create()
         expect:
-        builder.build("image").toCommandSegmentList() == ["apptainer", "exec", "image"]
+        builder.build("image").toCommandSegmentList() == \
+            [u("apptainer"), u("exec"), e("image")]
     }
 
     def "command with duplicate paths on same target"() {
@@ -22,9 +24,9 @@ class ApptainerCommandBuilderTest extends Specification {
         ])
         expect:
         builder.build("image").toCommandSegmentList() == [
-                "apptainer", "exec",
-                "-B", "/a/b/c:/a/b/c:ro",
-                "image"]
+                u("apptainer"), u("exec"),
+                u("-B"), e("/a/b/c:/a/b/c:ro"),
+                e("image")]
     }
 
     def "command with duplicate paths on same target more accessible"() {
@@ -35,9 +37,9 @@ class ApptainerCommandBuilderTest extends Specification {
         ])
         expect:
         builder.build("someImage").toCommandSegmentList() == [
-                "apptainer", "exec",
-                "-B", "/a/b/c:/a/b/c:rw",
-                "someImage"]
+                u("apptainer"), u("exec"),
+                u("-B"), e("/a/b/c:/a/b/c:rw"),
+                e("someImage")]
     }
 
     def "command with duplicate paths on other target more accessible"() {
@@ -48,10 +50,10 @@ class ApptainerCommandBuilderTest extends Specification {
         ])
         expect:
         builder.build("image").toCommandSegmentList() == [
-                "apptainer", "exec",
-                "-B", "/a/b/c:/a/b/c1:ro",
-                "-B", "/a/b/c:/a/b/c2:rw",
-                "image"]
+                u("apptainer"), u("exec"),
+                u("-B"), e("/a/b/c:/a/b/c1:ro"),
+                u("-B"), e("/a/b/c:/a/b/c2:rw"),
+                e("image")]
     }
 
     def "command with superpath"() {
@@ -64,10 +66,10 @@ class ApptainerCommandBuilderTest extends Specification {
         // Don't attempt to solve such complex situations: Although /a/b is a superpath of /a/b/c
         // and both are ro, we do not unify them to just /a/b:ro.
         builder.build("image").toCommandSegmentList() == [
-                "apptainer", "exec",
-                "-B", "/a/b:/a/b:ro",
-                "-B", "/a/b/c:/a/b/c:ro",
-                "image"
+                u("apptainer"), u("exec"),
+                u("-B"), e("/a/b:/a/b:ro"),
+                u("-B"), e("/a/b/c:/a/b/c:ro"),
+                e("image")
         ]
     }
 
@@ -80,10 +82,10 @@ class ApptainerCommandBuilderTest extends Specification {
         ])
         expect:
         builder.build("someImage").toCommandSegmentList() == [
-                "apptainer", "exec",
-                "-B", "/a/b:/a/b:rw",
-                "-B", "/a/b/c:/a/b/c:ro",
-                "someImage"
+                u("apptainer"), u("exec"),
+                u("-B"), e("/a/b:/a/b:rw"),
+                u("-B"), e("/a/b/c:/a/b/c:ro"),
+                e("someImage")
         ]
     }
 
@@ -166,8 +168,8 @@ class ApptainerCommandBuilderTest extends Specification {
             .withImageId("image")
         then:
         builder.build().toCommandSegmentList() == [
-                "/bin/executable", "exec",
-                "image"
+                u("/bin/executable"), u("exec"),
+                e("image")
         ]
     }
 
@@ -178,13 +180,14 @@ class ApptainerCommandBuilderTest extends Specification {
             .withAddedEngineArgs(["--contain"])
             .withCopiedEnvironmentVariables(["a"])   // Add variables incrementally.
             .withCopiedEnvironmentVariables(["b"])
-            .withAddedEnvironmentVariables(["a": "\$c"])    // Explicit override of variable value.
+            .withAddedEnvironmentVariables(["a": u("\$c")])    // Explicit override of variable value.
         then:
         builder.build("someImage").toCommandSegmentList() == [
-                "apptainer", "exec",
-                "--env", "a=\$c",
-                "--env", "b=\$b",
-                "--contain", "someImage"
+                u("apptainer"), u("exec"),
+                u("--env"), c(u("a"), e("="), u("\$c")),
+                u("--env"), c(u("b"), e("="), e("\$b")),
+                u("--contain"),
+                e("someImage")
         ]
     }
 

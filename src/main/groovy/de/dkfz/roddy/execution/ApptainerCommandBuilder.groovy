@@ -4,11 +4,15 @@ package de.dkfz.roddy.execution
 import com.google.common.base.Preconditions
 import groovy.transform.AutoClone
 import groovy.transform.CompileStatic
-import org.jetbrains.annotations.NotNull
 
-import javax.annotation.Nullable
+import org.jetbrains.annotations.NotNull
+import org.jetbrains.annotations.Nullable
+
 import java.nio.file.Path
 import java.nio.file.Paths
+
+import static de.dkfz.roddy.execution.EscapableString.*
+
 
 @CompileStatic
 class BindSpec implements Comparable<BindSpec> {
@@ -99,7 +103,7 @@ class ApptainerCommandBuilder {
 
     private @NotNull List<String> environmentVariablesToCopy
 
-    private @NotNull Map<String, String> setEnvironmentVariables
+    private @NotNull Map<String, AnyEscapableString> setEnvironmentVariables
 
     /** Create a command that will be wrapped into a singularity/apptainer call.
      *  For this to work all remote paths (i.e. on the execution node) need to be
@@ -201,27 +205,26 @@ class ApptainerCommandBuilder {
      *  ["renamedVariableName": "originalVariableValue"]
      */
     ApptainerCommandBuilder withAddedEnvironmentVariables(
-            @NotNull Map<String, String> newNameValues) {
-        Preconditions.checkNotNull(newNameValues, "newNameValues cannot be null")
+            @NotNull Map<String, AnyEscapableString> newNameValues) {
+        Preconditions.checkNotNull(newNameValues, "newNameValues must not be null")
         ApptainerCommandBuilder copy = clone()
         copy.setEnvironmentVariables += newNameValues
         copy
     }
 
-
     // Helpers for the build() method to create the actual Command object.
 
-    private List<String> getWorkingDirParameter() {
+    private List<AnyEscapableString> getWorkingDirParameter() {
         if (workingDir != null) {
-            ["-W", workingDir.toString()]
+            [u("-W"), e(workingDir.toString())] as List<AnyEscapableString>
         } else {
             []
         }
     }
 
-    private Map<String, String> getExportedEnvironmentVariables() {
+    private Map<String, AnyEscapableString> getExportedEnvironmentVariables() {
         this.environmentVariablesToCopy.collectEntries { variableName ->
-            [variableName, "\$$variableName"]
+            [variableName, e("\$$variableName")]
         }
     }
 
@@ -229,25 +232,25 @@ class ApptainerCommandBuilder {
      *  variables to (possibly new) values. Note that the values are *not* quoted. We leave it to
      *  the caller, to quote values correctly, if necessary.
      */
-    private Map<String, String> getExplicitlySetVariables() {
+    private Map<String, AnyEscapableString> getExplicitlySetVariables() {
         setEnvironmentVariables
     }
 
     /** Combine the copied (calling environment) variables and the explicitly set variables.
      *  Variables are not returned in an explicitly fixed order.
      */
-    private List<String> getEnviromnentExportParameters() {
+    private List<AnyEscapableString> getEnvironmentExportParameters() {
         (exportedEnvironmentVariables + explicitlySetVariables).
-            collect { Map.Entry<String, String> kv ->
-                    ["--env", "${kv.key}=${kv.value}"]
+            collect { Map.Entry<String, AnyEscapableString> kv ->
+                    [u("--env"), u(kv.key) + e("=") + kv.value]
                 }.
-                flatten() as List<String>
+                flatten() as List<AnyEscapableString>
     }
 
-    private List<String> getFinalEngineArg() {
-        enviromnentExportParameters +
+    private List<AnyEscapableString> getFinalEngineArg() {
+        environmentExportParameters +
         workingDirParameter +
-        engineArgs
+        (engineArgs.collect { String it -> u(it) } as List<AnyEscapableString>)
     }
 
     /**
@@ -303,11 +306,11 @@ class ApptainerCommandBuilder {
      * Translate the bind specifications into command-line parameters for apptainer/singularity.
      * @return
      */
-    private List<String> getBindOptions() {
+    private List<AnyEscapableString> getBindOptions() {
         if (bindSpecifications.size() > 0) {
             prepareBindSpecs(bindSpecifications).
-                    collect { ["-B", it.toBindOption()] }.
-                    flatten() as List<String>
+                    collect { [u("-B"), e(it.toBindOption())] }.
+                    flatten() as List<AnyEscapableString>
         } else {
             []
         }
@@ -329,7 +332,10 @@ class ApptainerCommandBuilder {
                                     "imageId cannot be null and must not be empty")
         new Command(
                 new Executable(apptainerExecutable),
-                ["exec"] + bindOptions + finalEngineArg + [_imageId])
+                ([u("exec")] as List<AnyEscapableString>) +
+                bindOptions +
+                finalEngineArg +
+                ([e(_imageId)] as List<AnyEscapableString>))
     }
 
 }

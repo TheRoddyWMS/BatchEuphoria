@@ -7,9 +7,12 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.base.Preconditions
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
 import org.jetbrains.annotations.NotNull
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  * Result of a job run.
@@ -39,7 +42,7 @@ class BEJobResult implements Serializable {
     /**
      * Parameters for the job.
      */
-    final Map<String, String> jobParameters
+    final Map<String, AnyEscapableString> jobParameters
     /**
      * Parent jobs.
      */
@@ -59,7 +62,8 @@ class BEJobResult implements Serializable {
         Preconditions.checkArgument(tool == job.executableFile)
         this.job = job
         this.executionResult = executionResult
-        this.jobParameters = jobParameters
+        this.jobParameters =
+                jobParameters.collectEntries { k, v -> [k, e(v)] } as Map<String, AnyEscapableString>
         this.parentJobs = parentJobs
         // NOTE: tool is not used anymore.
     }
@@ -67,7 +71,7 @@ class BEJobResult implements Serializable {
     BEJobResult(Command beCommand,
                 @NotNull BEJob job,
                 ExecutionResult executionResult,
-                Map<String, String> jobParameters,
+                Map<String, AnyEscapableString> jobParameters,
                 List<BEJob> parentJobs) {
         this.beCommand = beCommand
         Preconditions.checkArgument(job != null)

@@ -3,7 +3,7 @@ package de.dkfz.roddy.execution
 import spock.lang.Specification
 
 import java.nio.file.Paths
-
+import static de.dkfz.roddy.execution.EscapableString.*
 
 class ExecutableTest extends Specification {
     
@@ -29,7 +29,7 @@ class ExecutableTest extends Specification {
                 "595f44fec1e92a71d3e9e77456ba80d1")
         expect:
         executable.md5 == Optional.of("595f44fec1e92a71d3e9e77456ba80d1")
-        executable.toCommandSegmentList() == ["a"]
+        executable.toCommandSegmentList() == [u("a")]
     }
 
     def "InvalidMd5"() {

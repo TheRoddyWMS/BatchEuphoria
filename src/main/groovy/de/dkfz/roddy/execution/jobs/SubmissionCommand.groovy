@@ -7,12 +7,10 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.BashUtils
-import de.dkfz.roddy.tools.shell.bash.Service as BashService
+import de.dkfz.roddy.execution.AnyEscapableString
 import groovy.transform.CompileStatic
-import org.apache.commons.text.StringEscapeUtils
 
-import static de.dkfz.roddy.StringConstants.EMPTY
+import static de.dkfz.roddy.execution.EscapableString.*
 
 @CompileStatic
 abstract class SubmissionCommand extends Command {
@@ -42,9 +40,9 @@ abstract class SubmissionCommand extends Command {
      */
     protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager,
                                 BEJob job,
-                                String jobName,
+                                AnyEscapableString jobName,
                                 List<ProcessingParameters> processingParameters,
-                                Map<String, String> environmentVariables,
+                                Map<String, AnyEscapableString> environmentVariables,
                                 List<String> dependencyIDs) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
@@ -70,60 +68,60 @@ abstract class SubmissionCommand extends Command {
 
     abstract String getSubmissionExecutableName()
 
-    private List<String> collectParameters() {
+    private List<AnyEscapableString> collectParameters() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         // collect parameters for job submission
-        List<String> parameters = []
+        List<AnyEscapableString> parameters = []
         parameters << assembleVariableExportParameters()
         parameters << getAccountNameParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getWorkingDirectoryParameter()
         parameters << getLoggingParameter(job.jobLog)
-        parameters << getEmailParameter(email)
-        if (groupList && groupList != "UNDEFINED") parameters << getGroupListParameter(groupList)
-        parameters << getUmaskString(umask)
+        if (email) parameters << getEmailParameter(e(email))
+        if (groupList && groupList != "UNDEFINED") parameters << getGroupListParameter(e(groupList))
+        if (umask) parameters << getUmaskString(e(umask))
         parameters << assembleProcessingCommands()
         parameters << assembleDependencyParameter(creatingJob.parentJobIDs)
         parameters << getAdditionalCommandParameters()
 
-        return parameters
+        parameters
     }
 
-    abstract protected String composeCommandString(List<String> parameters)
+    abstract protected String composeCommandString(List<AnyEscapableString> parameters)
 
     @Override
     String toBashCommandString() {
         return composeCommandString(collectParameters())
     }
 
-    abstract protected String getJobNameParameter()
+    abstract protected AnyEscapableString getJobNameParameter()
 
-    abstract protected String getHoldParameter()
+    abstract protected AnyEscapableString getHoldParameter()
 
-    protected String getAccountNameParameter() {
-        return ""
+    protected AnyEscapableString getAccountNameParameter() {
+        return c()
     }
 
-    abstract protected String getWorkingDirectoryParameter()
+    abstract protected AnyEscapableString getWorkingDirectoryParameter()
 
-    abstract protected String getLoggingParameter(JobLog jobLog)
+    abstract protected AnyEscapableString getLoggingParameter(JobLog jobLog)
 
-    abstract protected String getEmailParameter(String address)
+    abstract protected AnyEscapableString getEmailParameter(AnyEscapableString address)
 
-    abstract protected String getGroupListParameter(String groupList)
+    abstract protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList)
 
-    abstract protected String getUmaskString(String umask)
+    abstract protected AnyEscapableString getUmaskString(AnyEscapableString umask)
 
-    abstract protected String assembleDependencyParameter(List<BEJobID> jobIds)
+    abstract protected AnyEscapableString assembleDependencyParameter(List<BEJobID> jobIds)
 
-    abstract protected String getAdditionalCommandParameters()
+    abstract protected AnyEscapableString getAdditionalCommandParameters()
 
-    abstract protected String getEnvironmentString()
+    abstract protected AnyEscapableString getEnvironmentString()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
@@ -132,29 +130,18 @@ abstract class SubmissionCommand extends Command {
      *
      * @return A set of parameters for the submission command to achieve the requested variable exports.
      */
-    abstract protected String assembleVariableExportParameters()
+    abstract protected AnyEscapableString assembleVariableExportParameters()
 
-    String assembleProcessingCommands() {
-        StringBuilder commands = new StringBuilder()
+    AnyEscapableString assembleProcessingCommands() {
+        AnyEscapableString commands = c()
         for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
-            if (!(pcmd instanceof ProcessingParameters)) continue
-            ProcessingParameters command = (ProcessingParameters) pcmd
-            if (command == null)
-                continue
-            commands << StringConstants.WHITESPACE << command.getProcessingCommandString()
+            if (pcmd instanceof ProcessingParameters) {
+                ProcessingParameters command = (ProcessingParameters) pcmd
+                if (command != null)
+                    commands += u(StringConstants.WHITESPACE) + command.getProcessingCommandString()
+            }
         }
-        return commands.toString()
+        commands
     }
 
-
-    /** To escape a script, such that it can be used with `echo -e` in a Bash command,
-     *  all shell specials have to be escaped. */
-    protected static String escapeScriptForEval(String scriptCode) {
-        // StringEscapeUtils.escapeXSI does not escape exclamation marks. In Bash, these can
-        // actually not get just escaped with backslash, but must be enclosed in single-ticks.
-        return StringEscapeUtils.escapeXSI(scriptCode.replace("\n", "\\n")).
-                replace("!", "'!'")
-
-
-    }
 }

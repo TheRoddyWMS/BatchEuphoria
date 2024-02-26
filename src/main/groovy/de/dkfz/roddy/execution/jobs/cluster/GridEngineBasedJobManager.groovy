@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BEJobID
@@ -285,7 +286,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
     }
 
     @Override
-    void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters) {
+    void createDefaultManagerParameters(LinkedHashMultimap<String, AnyEscapableString> parameters) {
 
     }
 }
