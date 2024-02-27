@@ -242,7 +242,7 @@ class ApptainerCommandBuilder {
     private List<AnyEscapableString> getEnvironmentExportParameters() {
         (exportedEnvironmentVariables + explicitlySetVariables).
             collect { Map.Entry<String, AnyEscapableString> kv ->
-                    [u("--env"), u(kv.key) + e("=") + kv.value]
+                    [u("--env"), u(kv.key) + u("=") + kv.value]
                 }.
                 flatten() as List<AnyEscapableString>
     }

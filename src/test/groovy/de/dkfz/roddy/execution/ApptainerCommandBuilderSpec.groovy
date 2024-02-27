@@ -6,7 +6,7 @@ import java.nio.file.Paths
 import static de.dkfz.roddy.execution.EscapableString.*
 
 
-class ApptainerCommandBuilderTest extends Specification {
+class ApptainerCommandBuilderSpec extends Specification {
 
     def "command without paths"() {
         given:
@@ -184,8 +184,8 @@ class ApptainerCommandBuilderTest extends Specification {
         then:
         builder.build("someImage").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("--env"), c(u("a"), e("="), u("\$c")),
-                u("--env"), c(u("b"), e("="), e("\$b")),
+                u("--env"), c(u("a"), u("="), u("\$c")),
+                u("--env"), c(u("b"), u("="), e("\$b")),
                 u("--contain"),
                 e("someImage")
         ]

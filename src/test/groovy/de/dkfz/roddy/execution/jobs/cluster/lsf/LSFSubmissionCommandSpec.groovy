@@ -143,7 +143,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 null)
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024]\\ span\\[hosts\\=1] -W 60 -n 4   /tmp/test.sh\\ \\$someRemoteVariable'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4   /tmp/test.sh\\ \\$someRemoteVariable'
     }
 
     def "command with accounting name" () {
@@ -160,12 +160,12 @@ class LSFSubmissionCommandSpec extends Specification {
                 null)
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none -P accountingProject -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024]\\ span\\[hosts\\=1] -W 60 -n 4   /tmp/test.sh\\ \\\$someRemoteVariable'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none -P accountingProject -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4   /tmp/test.sh\\ \\\$someRemoteVariable'
     }
 
     def "submitting a script as code"() {
         given:
-        Code code = new Code("echo 'Hello World'\n")
+        Code code = new Code("echo 'Hello World';\\n")
         when:
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
@@ -176,7 +176,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 [:],
                 null)
         then:
-        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd \"\$HOME\" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024]\\ span\\[hosts\\=1] -W 60 -n 4  "
+        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\;\\\\n | LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd \"\$HOME\" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4  "
     }
 
 

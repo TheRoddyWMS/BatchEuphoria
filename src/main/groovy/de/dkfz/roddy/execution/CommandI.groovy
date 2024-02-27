@@ -133,6 +133,7 @@ final class Command extends CommandReferenceI {
      *  SimpleCommand, because the appending is done via a HERE document
      *
      * @param other
+     * @param interpreter        The interpreter must be Bash. The executable must be `bash`.
      * @param terminator_prefix
      * @return
      */
@@ -145,6 +146,7 @@ final class Command extends CommandReferenceI {
                            RandomStringUtils.random(10, true, true)) {
         Preconditions.checkArgument(other != null)
         Preconditions.checkArgument(interpreter != null)
+        Preconditions.checkArgument(interpreter.executablePath.getFileName().toString() == "bash")
         Preconditions.checkArgument(terminator_prefix != null)
         Preconditions.checkArgument(terminator_random != null)
         String terminator = terminator_prefix + "_" + terminator_random
@@ -152,7 +154,7 @@ final class Command extends CommandReferenceI {
                    this.toEscapableString() + " <<$terminator" + "\n" +
                     "#!" + other.interpreter.toEscapableString() + "\n" +
                     other.code + "\n" +
-                    terminator + "\n"
+                    terminator + "\n"   // Termination with terminator + "\n" is important for Bash.
                    ]),
                  interpreter)
     }
@@ -162,14 +164,14 @@ final class Command extends CommandReferenceI {
      *  `singularity run $other`.
      *
      * @param other
-     * @param asString     Whether to quote the appended Command.
+     * @param appendAsString     Whether to quote the appended Command.
      * @return
      */
     @CompileDynamic
     Command cliAppend(@NotNull CommandReferenceI other,
-                      boolean asString = false) {
+                      boolean appendAsString = false) {
         Preconditions.checkArgument(other != null)
-        if (!asString) {
+        if (!appendAsString) {
             new Command(
                     executable,
                     this.arguments +
@@ -234,9 +236,21 @@ final class Code extends CommandI {
         interpreter
     }
 
-    /** Create a little script. Note that no newline is appended. */
+    /** Create a little script. Note that the escapable string does *not* have automatically an
+     *  newline appended, because it depends on the client context whether this is useful. For
+     *  instance, a newline may be unnecessary in many cases, but for a HERE document the terminator
+     *  must be followed by newline. */
+    AnyEscapableString toEscapableString(boolean terminate) {
+        AnyEscapableString result = u("#!") + interpreter.toEscapableString() + "\n" + code
+        if (terminate) {
+            result += "\n"
+        }
+        return result
+    }
+
+    @Override
     AnyEscapableString toEscapableString() {
-        return u("#!") + interpreter.toEscapableString() + "\n" + code
+        toEscapableString(false)
     }
 
 }

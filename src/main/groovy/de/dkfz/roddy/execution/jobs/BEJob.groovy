@@ -31,7 +31,7 @@ import static de.dkfz.roddy.execution.EscapableString.*
 @CompileStatic
 class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob> {
 
-    public static final AnyEscapableString PARM_JOBCREATIONCOUNTER = u("JOB_CREATION_COUNTER")
+    public static final String PARM_JOBCREATIONCOUNTER = "JOB_CREATION_COUNTER"
 
     private static AtomicLong absoluteJobCreationCounter = new AtomicLong()
 
@@ -43,24 +43,24 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * The descriptive name of the job. Can be passed to the execution system.
      */
-    public final AnyEscapableString jobName
+    private final AnyEscapableString jobNameEscapable
 
     /**
      * The accounting name under which the job runs. It is the responsibility of the execution system to use this
      * information.
      */
-    public final AnyEscapableString accountingName
+    private final AnyEscapableString accountingName
 
 
     /**
      * Jobs can be marked as dirty if they are in a directed acyclic graph of job dependency modelling a workflow.
      */
-    public boolean isDirty
+    protected boolean isDirty
 
     /**
      * An internal job creation count. Has nothing to do with e.g. PBS / cluster / process id's!
      */
-    public final long jobCreationCounter = absoluteJobCreationCounter.incrementAndGet()
+    protected final long jobCreationCounter = absoluteJobCreationCounter.incrementAndGet()
 
     /**
      * The command to be executed as BEJob on the cluster.
@@ -110,7 +110,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BEJob(BEJobID jobID,                        // can be null for FakeBEJob
           BatchEuphoriaJobManager jobManager,   // can be null for FakeBEJob
-          AnyEscapableString jobName = null,
+          AnyEscapableString jobNameEscapable = null,
           CommandI commandObj = null,
           @NotNull ResourceSet resourceSet = new EmptyResourceSet(),
           @NotNull Collection<BEJob> parentJobs = [],
@@ -119,7 +119,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
           File workingDirectory = null,
           AnyEscapableString accountingName = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.getNewUnknown())
-        this.jobName = jobName
+        this.jobNameEscapable = jobNameEscapable
         this.currentJobState = JobState.UNSTARTED
         this.commandObj = commandObj
         Preconditions.checkArgument(resourceSet != null)
@@ -162,7 +162,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         jobID.toString()
         if (this instanceof FakeBEJob)
             return true
-        if (jobName != null && jobName.equals("Fakejob"))
+        if (jobNameEscapable != null && jobNameEscapable.equals("Fakejob"))
             return true
         String jobID = jobID
         if (jobID == null)
@@ -223,6 +223,18 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this.jobID
     }
 
+    AnyEscapableString getAccountingName() {
+        return this.accountingName
+    }
+
+    boolean getIsDirty() {
+        return this.isDirty
+    }
+
+    long getJobCreationCounter() {
+        return this.jobCreationCounter
+    }
+
     @Nullable CommandI getCommandObj() {
         return commandObj
     }
@@ -232,7 +244,11 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     String getJobName() {
-        return jobName
+        return forBash(jobNameEscapable)
+    }
+
+    AnyEscapableString getJobNameEscapable() {
+        return jobNameEscapable
     }
 
     void setJobState(JobState js) {

@@ -6,7 +6,7 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class BindSpecTest extends Specification {
+class BindSpecSpec extends Specification {
 
     private Path hostPath = Paths.get("hostPath")
     private Path contPath = Paths.get("contPath")

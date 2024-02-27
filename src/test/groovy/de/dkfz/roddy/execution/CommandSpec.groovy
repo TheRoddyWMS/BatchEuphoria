@@ -5,7 +5,7 @@ import spock.lang.Specification
 import java.nio.file.Paths
 import static de.dkfz.roddy.execution.EscapableString.*
 
-class CommandTest extends Specification {
+class CommandSpec extends Specification {
 
     def "throw with null string argument"() {
         when:
@@ -116,12 +116,12 @@ class CommandTest extends Specification {
         AnyEscapableString result =
                 new Command(new Executable(Paths.get("cat")), ["-"].collect { u(it) }).
                         cliAppend(code1,
-                                  new Executable(Paths.get("/bin/tcsh")),
+                                  new Executable(Paths.get("/bin/bash")),
                                   "prefix",
                                   "test").toEscapableString()
         expect:
         BashInterpreter.instance.interpret(result) == """\
-                    |#!/bin/tcsh
+                    |#!/bin/bash
                     |cat - <<prefix_test
                     |#!/bin/bash
                     |echo hallo; sleep 50;

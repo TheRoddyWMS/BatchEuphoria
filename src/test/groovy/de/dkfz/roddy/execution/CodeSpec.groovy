@@ -5,7 +5,7 @@ import spock.lang.Specification
 import java.nio.file.Paths
 import static de.dkfz.roddy.execution.EscapableString.*
 
-class CodeTest extends Specification {
+class CodeSpec extends Specification {
 
     def "GetInterpreter"() {
         given:
@@ -35,11 +35,11 @@ class CodeTest extends Specification {
 
     def "create command string"() {
         when:
-        Code code1 = new Code("echo hallo; sleep 50;\n",
+        Code code1 = new Code("echo hallo; sleep 50;",
                               new Command(new Executable(Paths.get("/bin/bash")),
                                           [u("-xe")] as List<AnyEscapableString>))
         then:
-        BashInterpreter.instance.interpret(code1.toEscapableString()) == """\
+        BashInterpreter.instance.interpret(code1.toEscapableString(true)) == """\
             |#!/bin/bash -xe
             |echo hallo; sleep 50;
             |""".stripMargin()

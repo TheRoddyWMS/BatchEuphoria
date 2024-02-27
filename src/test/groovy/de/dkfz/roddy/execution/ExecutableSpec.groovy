@@ -5,7 +5,7 @@ import spock.lang.Specification
 import java.nio.file.Paths
 import static de.dkfz.roddy.execution.EscapableString.*
 
-class ExecutableTest extends Specification {
+class ExecutableSpec extends Specification {
     
     def "GetExecutablePath"() {
         given:

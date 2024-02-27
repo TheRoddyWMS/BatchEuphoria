@@ -235,6 +235,10 @@ class EscapableString {
         join(list, u(separator))
     }
 
+    static String forBash(AnyEscapableString string) {
+        string.interpreted(BashInterpreter.instance)
+    }
+
 }
 
 @CompileStatic
