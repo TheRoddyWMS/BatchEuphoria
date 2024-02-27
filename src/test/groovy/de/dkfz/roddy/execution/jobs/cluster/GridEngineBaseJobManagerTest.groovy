@@ -146,8 +146,7 @@ class GridEngineBaseJobManagerTest {
                         makeJob(mapOfVars),
                         u("jobName"),
                         null,
-                        mapOfVars,
-                        null) {
+                        mapOfVars) {
             @Override
             protected String getDependsSuperParameter() {
                 return null

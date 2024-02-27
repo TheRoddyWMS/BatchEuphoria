@@ -126,8 +126,7 @@ class SubmissionCommandTest extends Specification {
                 null,
                 null as AnyEscapableString,
                 [],
-                [:] as Map<String, AnyEscapableString>,
-                []
+                [:] as Map<String, AnyEscapableString>
         ) {
 
             {

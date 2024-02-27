@@ -28,10 +28,8 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager,
                          BEJob job, AnyEscapableString jobName,
                          List<ProcessingParameters> processingParameters,
-                         Map<String, AnyEscapableString> environmentVariables,
-                         List<String> dependencyIDs,
-                         CommandI command) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
+                         Map<String, AnyEscapableString> environmentVariables) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
     @Override

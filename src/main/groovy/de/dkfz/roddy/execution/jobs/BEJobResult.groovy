@@ -11,6 +11,7 @@ import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
 import org.jetbrains.annotations.NotNull
+import org.jetbrains.annotations.Nullable
 
 import static de.dkfz.roddy.execution.EscapableString.*
 
@@ -55,15 +56,20 @@ class BEJobResult implements Serializable {
 
     /** The tool parameter should be removed. This is only kept for backwards compatibility. */
     @Deprecated
-    BEJobResult(Command beCommand, BEJob job, ExecutionResult executionResult, File tool,
-                Map<String, String> jobParameters, List<BEJob> parentJobs) {
+    BEJobResult(@Nullable Command beCommand,
+                BEJob job,
+                @Nullable ExecutionResult executionResult, File tool,
+                @Nullable Map<String, String> jobParameters,
+                @Nullable List<BEJob> parentJobs) {
         this.beCommand = beCommand
         Preconditions.checkArgument(job != null)
         Preconditions.checkArgument(tool == job.executableFile)
         this.job = job
         this.executionResult = executionResult
         this.jobParameters =
-                jobParameters.collectEntries { k, v -> [k, e(v)] } as Map<String, AnyEscapableString>
+                jobParameters?.collectEntries { k, v ->
+                    [k, v != null ? e(v) : v]
+                } as Map<String, AnyEscapableString>
         this.parentJobs = parentJobs
         // NOTE: tool is not used anymore.
     }

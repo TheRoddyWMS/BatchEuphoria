@@ -42,7 +42,7 @@ class RestSubmissionCommand extends SubmissionCommand {
      * @param httpMethod - http Method POST or GET
      */
     RestSubmissionCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod) {
-        super(null, null, null, null, null,null)
+        super(null, null, null, null, null)
         this.resource = resource
         this.requestBody = requestBody
         this.requestHeaders = requestHeaders

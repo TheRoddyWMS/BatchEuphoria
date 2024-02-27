@@ -59,8 +59,8 @@ class SlurmSubmissionCommandSpec extends Specification {
                 makeJob(mapOfVars,
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
-                null, mapOfVars,
-                null)
+                null,
+                mapOfVars)
         then:
         cmd.assembleDependencyParameter([]) == c()
     }
@@ -73,8 +73,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
                 null,
-                [:],
-                null)
+                [:])
         then:
         cmd.assembleVariableExportParameters() == c()
     }
@@ -88,8 +87,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
         then:
         cmd.assembleVariableExportParameters() ==
             c(u("--export="), u("a"), e("="), u("a"), u(","), u("b"))
@@ -103,8 +101,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
                 null,
-                [:],
-                null)
+                [:])
         cmd.passEnvironment = Optional.of(true)
         then:
         cmd.assembleVariableExportParameters() == c(u("--get-user-env "))
@@ -119,8 +116,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
         cmd.passEnvironment = Optional.of(true)
         then:
         cmd.assembleVariableExportParameters() ==
@@ -135,8 +131,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobname"),
                 null,
-                [:],
-                null)
+                [:])
         then:
         cmd.toBashCommandString() == 'sbatch --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
@@ -150,8 +145,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                         u("accountingProject")),
                 u("jobname"),
                 null,
-                [:],
-                null)
+                [:])
         then:
         cmd.toBashCommandString() == 'sbatch --account=accountingProject --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
     }
@@ -167,8 +161,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 job,
                 u("jobname"),
                 null,
-                [:],
-                null)
+                [:])
         then:
         cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | sbatch --job-name jobname --hold --chdir \"\$HOME\"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
 

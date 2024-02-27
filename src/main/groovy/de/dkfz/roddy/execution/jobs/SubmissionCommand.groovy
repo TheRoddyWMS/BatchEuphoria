@@ -22,8 +22,6 @@ abstract class SubmissionCommand extends Command {
      */
     Optional<Boolean> passEnvironment = Optional.empty()
 
-    protected List<String> dependencyIDs
-
     protected final List<ProcessingParameters> processingParameters
 
     /**
@@ -34,7 +32,6 @@ abstract class SubmissionCommand extends Command {
      * @param jobName
      * @param processingParameters
      * @param environmentVariables
-     * @param dependencyIDs
      *
      * Unfortunately, *all* these parameters can be null.
      */
@@ -42,11 +39,9 @@ abstract class SubmissionCommand extends Command {
                                 BEJob job,
                                 AnyEscapableString jobName,
                                 List<ProcessingParameters> processingParameters,
-                                Map<String, AnyEscapableString> environmentVariables,
-                                List<String> dependencyIDs) {
+                                Map<String, AnyEscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
-        this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
 
     protected abstract Boolean getQuoteCommand()

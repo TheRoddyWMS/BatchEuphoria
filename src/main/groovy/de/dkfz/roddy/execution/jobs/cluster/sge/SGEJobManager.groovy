@@ -31,7 +31,7 @@ class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
     @Override
     SGESubmissionCommand createCommand(BEJob job) {
         return new SGESubmissionCommand(
-                this, job, e(job.jobName), [], job.parameters, job.parentJobIDs*.id, job.commandObj)
+                this, job, e(job.jobName), [], job.parameters)
     }
 
     @Override

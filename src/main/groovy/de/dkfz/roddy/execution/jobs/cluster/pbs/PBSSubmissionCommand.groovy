@@ -32,9 +32,8 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
     PBSSubmissionCommand(BatchEuphoriaJobManager parentJobManager,
                          BEJob job, AnyEscapableString jobName,
                          List<ProcessingParameters> processingParameters,
-                         Map<String, AnyEscapableString> environmentVariables,
-                         List<String> dependencyIDs) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
+                         Map<String, AnyEscapableString> environmentVariables) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
     @Override

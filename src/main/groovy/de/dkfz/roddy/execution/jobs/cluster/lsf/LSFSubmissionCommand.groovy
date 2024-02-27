@@ -28,9 +28,8 @@ class LSFSubmissionCommand extends SubmissionCommand {
             BEJob job,
             AnyEscapableString jobName,
             List<ProcessingParameters> processingParameters,
-            Map<String, AnyEscapableString> environmentVariables,
-            List<String> dependencyIDs) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
+            Map<String, AnyEscapableString> environmentVariables) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
     @Override
@@ -111,11 +110,11 @@ class LSFSubmissionCommand extends SubmissionCommand {
         if (validJobIds.size() > 0) {
             AnyEscapableString joinedParentJobs =
                     join(validJobIds.collect {
-                        e("done(${it})")
+                        u("done(${it})")
                     } as List<AnyEscapableString>, u(" && "))
 
             // -ti: Immediate orphan job termination for jobs with failed dependencies.
-            u("-ti -w  ") + joinedParentJobs
+            u("-ti -w  ") + e(joinedParentJobs)
         } else {
             c()
         }
@@ -146,7 +145,7 @@ class LSFSubmissionCommand extends SubmissionCommand {
                 u(key)
             else
                 // Set value to value
-                u(key) + e("=") + value
+                u(key) + u("=") + value
         } as List<AnyEscapableString>
 
         if (passLocalEnvironment) {

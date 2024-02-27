@@ -39,7 +39,7 @@ class BEJobID implements Comparable<BEJobID> {
     }
 
     boolean isValidID() {
-        return !BEFakeJobID.isFakeJobID(this.getId()) && getId() != null && getId() != "none"
+        return !BEFakeJobID.isFakeJobID(id) && id != null && id != "none"
     }
 
     String getId() {

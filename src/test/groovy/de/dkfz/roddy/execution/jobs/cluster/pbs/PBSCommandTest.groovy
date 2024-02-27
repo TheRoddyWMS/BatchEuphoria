@@ -69,8 +69,7 @@ class PBSCommandTest {
                 makeJob([:]),
                 u("jobName"),
                 null,
-                [:] as Map<String, AnyEscapableString>,
-                null)
+                [:] as Map<String, AnyEscapableString>)
         assert cmd.assembleVariableExportParameters() == c()
     }
 
@@ -83,8 +82,7 @@ class PBSCommandTest {
                 makeJob(mapOfVars),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
         assert cmd.assembleVariableExportParameters() ==
                c(u("-v "), u("a"), e("="), u("a"), u(","), u("b"))
     }
@@ -96,8 +94,7 @@ class PBSCommandTest {
                 makeJob([:] as LinkedHashMap<String, AnyEscapableString>),
                 u("jobName"),
                 null,
-                [:] as Map<String, AnyEscapableString>,
-                null)
+                [:] as Map<String, AnyEscapableString>)
         cmd.passEnvironment = Optional.of(true)
         assert cmd.assembleVariableExportParameters() == c(u("-V"))
     }
@@ -111,8 +108,7 @@ class PBSCommandTest {
                 makeJob(mapOfVars),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
         cmd.passEnvironment = Optional.of(true)
         assert BashInterpreter.instance.interpret(cmd.assembleVariableExportParameters()) ==
                "-V -v a\\=a'!',b"

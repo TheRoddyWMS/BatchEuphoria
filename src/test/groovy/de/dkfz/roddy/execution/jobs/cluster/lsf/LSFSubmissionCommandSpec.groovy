@@ -11,6 +11,7 @@ import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
 import de.dkfz.roddy.execution.*
 import de.dkfz.roddy.execution.jobs.BEJob
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.TestHelper
 import de.dkfz.roddy.tools.BufferUnit
@@ -45,7 +46,8 @@ class LSFSubmissionCommandSpec extends Specification {
                                 null,
                                 null,
                                 null),
-                [],
+                [new BEJob(new BEJobID("a"), jobManager, u("a")),
+                 new BEJob(new BEJobID("b"), jobManager, u("b"))],
                 mapOfParameters,
                 JobLog.none(),
                 null,
@@ -62,8 +64,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 makeJob(mapOfVars),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
         then:
         cmd.assembleDependencyParameter([]) == c()
     }
@@ -75,8 +76,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 makeJob([:]),
                  u("jobName"),
                 null,
-                [:],
-                null)
+                [:])
 
         then:
         cmd.assembleVariableExportParameters() ==
@@ -92,12 +92,11 @@ class LSFSubmissionCommandSpec extends Specification {
                 makeJob(mapOfVars),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
 
         then:
         cmd.assembleVariableExportParameters() ==
-            c(u("-env"), u(" "), u("a"), e("="), e("a"), e(", "), u("b"))
+            c(u("-env"), u(" "), u("a"), u("="), e("a"), e(", "), u("b"))
     }
 
     def "assemble variable export parameters with 'all' variables" () {
@@ -107,8 +106,7 @@ class LSFSubmissionCommandSpec extends Specification {
                 makeJob([:] as LinkedHashMap<String, AnyEscapableString>),
                 u("jobName"),
                 null,
-                [:],
-                null)
+                [:])
         cmd.passEnvironment = Optional.of(true)
 
         then:
@@ -123,13 +121,12 @@ class LSFSubmissionCommandSpec extends Specification {
                 makeJob(mapOfVars),
                 u("jobName"),
                 null,
-                mapOfVars,
-                null)
+                mapOfVars)
         cmd.passEnvironment = Optional.of(true)
 
         then:
         cmd.assembleVariableExportParameters() ==
-            c(u("-env"), u(" "), u("all"), e(", "), u("a"), e("="), u("a"), e(", "), u("b"))
+            c(u("-env"), u(" "), u("all"), e(", "), u("a"), u("="), u("a"), e(", "), u("b"))
     }
 
     def "command without accounting name" () {
@@ -139,11 +136,10 @@ class LSFSubmissionCommandSpec extends Specification {
                 makeJob([:]),
                 u("jobname"),
         null,
-                [:],
-                null)
+                [:])
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4   /tmp/test.sh\\ \\$someRemoteVariable'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4 -ti -w  done\\(a\\)\\ \\&\\&\\ done\\(b\\)   /tmp/test.sh\\ \\$someRemoteVariable'
     }
 
     def "command with accounting name" () {
@@ -156,11 +152,10 @@ class LSFSubmissionCommandSpec extends Specification {
                         u("accountingProject")),
                 u("jobname"),
                 null,
-                [:],
-                null)
+                [:])
 
         then:
-        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none -P accountingProject -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4   /tmp/test.sh\\ \\\$someRemoteVariable'
+        cmd.toBashCommandString() == 'LSB_NTRIES=5 bsub -env none -P accountingProject -J jobname -H -cwd "$HOME" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4 -ti -w  done\\(a\\)\\ \\&\\&\\ done\\(b\\)   /tmp/test.sh\\ \\\$someRemoteVariable'
     }
 
     def "submitting a script as code"() {
@@ -173,10 +168,9 @@ class LSFSubmissionCommandSpec extends Specification {
                         code),
                 u("jobname"),
                 null,
-                [:],
-                null)
+                [:])
         then:
-        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\;\\\\n | LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd \"\$HOME\" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4  "
+        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\;\\\\n | LSB_NTRIES=5 bsub -env none  -J jobname -H -cwd \"\$HOME\" -o /dev/null  -M 1024 -R rusage\\[mem\\=1024] -R span\\[hosts\\=1] -W 60 -n 4 -ti -w  done\\(a\\)\\ \\&\\&\\ done\\(b\\)  "
     }
 
 

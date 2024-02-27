@@ -34,9 +34,8 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
                                      BEJob job,
                                      AnyEscapableString jobName,
                                      List<ProcessingParameters> processingParameters,
-                                     Map<String, AnyEscapableString> environmentVariables,
-                                     List<String> dependencyIDs) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs)
+                                     Map<String, AnyEscapableString> environmentVariables) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
 
@@ -45,9 +44,9 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
         AnyEscapableString qsubCall = c()
         LinkedList<AnyEscapableString> tempDependencies =
                 jobIds.findAll {
-                    it.getId() != "" && it.getId() != NONE && it.getId() != "-1"
+                    it.id != "" && it.id != NONE && it.id != "-1"
                 }.collect {
-                    e(it.getId().split("\\.")[0])
+                    e(it.id.split("\\.")[0])
                     // Keep the command line short. GE accepts the job number for dependencies.
                 } as LinkedList<AnyEscapableString>
         if (tempDependencies.size() > 0) {
