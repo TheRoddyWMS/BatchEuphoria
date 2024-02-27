@@ -180,12 +180,12 @@ class ApptainerCommandBuilderSpec extends Specification {
             .withAddedEngineArgs(["--contain"])
             .withCopiedEnvironmentVariables(["a"])   // Add variables incrementally.
             .withCopiedEnvironmentVariables(["b"])
-            .withAddedEnvironmentVariables(["a": u("\$c")])    // Explicit override of variable value.
+            .withAddedEnvironmentVariables(["a": e("\$c")])    // Explicit override of variable value.
         then:
         builder.build("someImage").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("--env"), c(u("a"), u("="), u("\$c")),
-                u("--env"), c(u("b"), u("="), e("\$b")),
+                u("--env"), c(u("a"), u("="), e("\$c")),
+                u("--env"), c(u("b"), u("="), u("\$b")),
                 u("--contain"),
                 e("someImage")
         ]

@@ -282,7 +282,7 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         } else {
             return null
         }
-        new File(fileName.replace("\$${getJobIdVariable()}", jobId))
+        new File(fileName.replace("\$$jobIdVariable", jobId))
     }
 
     @Override

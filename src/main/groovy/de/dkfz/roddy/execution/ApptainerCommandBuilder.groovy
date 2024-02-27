@@ -224,7 +224,7 @@ class ApptainerCommandBuilder {
 
     private Map<String, AnyEscapableString> getExportedEnvironmentVariables() {
         this.environmentVariablesToCopy.collectEntries { variableName ->
-            [variableName, e("\$$variableName")]
+            [variableName, u("\$$variableName")]
         }
     }
 
