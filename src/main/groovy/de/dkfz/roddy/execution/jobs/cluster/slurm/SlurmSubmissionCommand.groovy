@@ -122,7 +122,7 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     protected AnyEscapableString getAdditionalCommandParameters() {
-        u(parsableParameter) + u(" --kill-on-invalid-dep=yes --propagate=none")
+        u(parsableParameter) + u(" --kill-on-invalid-dep=yes --propagate=NONE")
     }
 
     @Override
