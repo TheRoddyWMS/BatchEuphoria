@@ -62,7 +62,7 @@ class UnescapedString extends AnyEscapableString {
 
     @Override
     String toString() {
-        value
+        "u($value)"
     }
 
     @Override
@@ -265,7 +265,7 @@ class BashInterpreter extends EscapableStringInterpreter {
 
     @Override
     String from(UnescapedString string) {
-        string
+        string.value
     }
 
     @Override

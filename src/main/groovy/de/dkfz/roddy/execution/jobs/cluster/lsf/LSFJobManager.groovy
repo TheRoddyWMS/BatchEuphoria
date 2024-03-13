@@ -166,7 +166,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended,
                                                Duration timeout = Duration.ZERO) {
         StringBuilder queryCommand = new StringBuilder()
-        queryCommand << "${environmentString} "
+        queryCommand << forBash(environmentString) + " "
         queryCommand << (extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
@@ -351,13 +351,13 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "$environmentString $LSF_COMMAND_DELETE_JOBS ${jobIDs*.id.join(" ")}"
+        String command = forBash(environmentString) + " $LSF_COMMAND_DELETE_JOBS ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false, commandTimeout)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        String command = "$environmentString bresume ${jobIDs*.id.join(" ")}"
+        String command = forBash(environmentString) + " bresume ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false, commandTimeout)
     }
 

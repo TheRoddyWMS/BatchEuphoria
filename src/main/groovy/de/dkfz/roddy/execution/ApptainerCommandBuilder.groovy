@@ -95,7 +95,7 @@ class ApptainerCommandBuilder {
 
     private @NotNull List<String> engineArgs
 
-    private @Nullable String imageId
+    private @Nullable AnyEscapableString imageId
 
     private @NotNull String mode
 
@@ -173,12 +173,15 @@ class ApptainerCommandBuilder {
     }
 
     /** The path or URI of the container image to wrap the command in. */
-    ApptainerCommandBuilder withImageId(String newId) {
-        Preconditions.checkArgument(newId == null || newId.length() > 0,
+    ApptainerCommandBuilder withImageId(AnyEscapableString newId) {
+        Preconditions.checkArgument(newId == null || newId.size() > 0,
                                     "newId cannot be null and must not be empty")
         ApptainerCommandBuilder copy = clone()
         copy.imageId = newId
         copy
+    }
+    ApptainerCommandBuilder withImageId(String newId) {
+        withImageId(u(newId))
     }
 
     /** The working directory inside the container. */
@@ -309,7 +312,7 @@ class ApptainerCommandBuilder {
     private List<AnyEscapableString> getBindOptions() {
         if (bindSpecifications.size() > 0) {
             prepareBindSpecs(bindSpecifications).
-                    collect { [u("-B"), e(it.toBindOption())] }.
+                    collect { [u("-B"), u(it.toBindOption())] }.
                     flatten() as List<AnyEscapableString>
         } else {
             []
@@ -323,19 +326,26 @@ class ApptainerCommandBuilder {
      *                     if it exists.
      * @return
      */
-    Command build(@Nullable String imageId) {
-        String _imageId = this.imageId
+    Command build(@Nullable AnyEscapableString imageId) {
+        AnyEscapableString _imageId = this.imageId
         if (imageId != null) {
             _imageId = imageId
         }
-        Preconditions.checkArgument(_imageId != null && _imageId.length() > 0,
+        Preconditions.checkArgument(_imageId != null && _imageId.size() > 0,
                                     "imageId cannot be null and must not be empty")
         new Command(
                 new Executable(apptainerExecutable),
                 ([u("exec")] as List<AnyEscapableString>) +
                 bindOptions +
                 finalEngineArg +
-                ([e(_imageId)] as List<AnyEscapableString>))
+                ([_imageId] as List<AnyEscapableString>))
+    }
+    Command build(@Nullable String imageId = null) {
+        if (imageId == null) {
+            build(null as AnyEscapableString)
+        } else {
+            build(u(imageId))
+        }
     }
 
 }

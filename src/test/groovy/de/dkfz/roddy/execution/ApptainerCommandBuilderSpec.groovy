@@ -13,7 +13,7 @@ class ApptainerCommandBuilderSpec extends Specification {
         ApptainerCommandBuilder builder = ApptainerCommandBuilder.create()
         expect:
         builder.build("image").toCommandSegmentList() == \
-            [u("apptainer"), u("exec"), e("image")]
+            [u("apptainer"), u("exec"), u("image")]
     }
 
     def "command with duplicate paths on same target"() {
@@ -25,8 +25,8 @@ class ApptainerCommandBuilderSpec extends Specification {
         expect:
         builder.build("image").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("-B"), e("/a/b/c:/a/b/c:ro"),
-                e("image")]
+                u("-B"), u("/a/b/c:/a/b/c:ro"),
+                u("image")]
     }
 
     def "command with duplicate paths on same target more accessible"() {
@@ -38,8 +38,8 @@ class ApptainerCommandBuilderSpec extends Specification {
         expect:
         builder.build("someImage").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("-B"), e("/a/b/c:/a/b/c:rw"),
-                e("someImage")]
+                u("-B"), u("/a/b/c:/a/b/c:rw"),
+                u("someImage")]
     }
 
     def "command with duplicate paths on other target more accessible"() {
@@ -51,9 +51,9 @@ class ApptainerCommandBuilderSpec extends Specification {
         expect:
         builder.build("image").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("-B"), e("/a/b/c:/a/b/c1:ro"),
-                u("-B"), e("/a/b/c:/a/b/c2:rw"),
-                e("image")]
+                u("-B"), u("/a/b/c:/a/b/c1:ro"),
+                u("-B"), u("/a/b/c:/a/b/c2:rw"),
+                u("image")]
     }
 
     def "command with superpath"() {
@@ -67,9 +67,9 @@ class ApptainerCommandBuilderSpec extends Specification {
         // and both are ro, we do not unify them to just /a/b:ro.
         builder.build("image").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("-B"), e("/a/b:/a/b:ro"),
-                u("-B"), e("/a/b/c:/a/b/c:ro"),
-                e("image")
+                u("-B"), u("/a/b:/a/b:ro"),
+                u("-B"), u("/a/b/c:/a/b/c:ro"),
+                u("image")
         ]
     }
 
@@ -83,9 +83,9 @@ class ApptainerCommandBuilderSpec extends Specification {
         expect:
         builder.build("someImage").toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
-                u("-B"), e("/a/b:/a/b:rw"),
-                u("-B"), e("/a/b/c:/a/b/c:ro"),
-                e("someImage")
+                u("-B"), u("/a/b:/a/b:rw"),
+                u("-B"), u("/a/b/c:/a/b/c:ro"),
+                u("someImage")
         ]
     }
 
@@ -168,8 +168,7 @@ class ApptainerCommandBuilderSpec extends Specification {
             .withImageId("image")
         then:
         builder.build().toCommandSegmentList() == [
-                u("/bin/executable"), u("exec"),
-                e("image")
+                u("/bin/executable"), u("exec"), u("image")
         ]
     }
 
@@ -182,7 +181,7 @@ class ApptainerCommandBuilderSpec extends Specification {
             .withCopiedEnvironmentVariables(["b"])
             .withAddedEnvironmentVariables(["a": e("\$c")])    // Explicit override of variable value.
         then:
-        builder.build("someImage").toCommandSegmentList() == [
+        builder.build(e("someImage")).toCommandSegmentList() == [
                 u("apptainer"), u("exec"),
                 u("--env"), c(u("a"), u("="), e("\$c")),
                 u("--env"), c(u("b"), u("="), u("\$b")),

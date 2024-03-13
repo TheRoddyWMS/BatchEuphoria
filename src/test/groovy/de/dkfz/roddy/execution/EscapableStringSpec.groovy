@@ -43,8 +43,8 @@ class EscapableStringSpec extends Specification {
 
         then:
         interpreter.interpret(unescapedString) == "test"
-        unescapedString.escaped.toString() == "e(test)"
-        unescapedString.escaped.escaped.toString() == "e(e(test))"
+        unescapedString.escaped.toString() == "e(u(test))"
+        unescapedString.escaped.escaped.toString() == "e(e(u(test)))"
     }
 
     def "equals"() {

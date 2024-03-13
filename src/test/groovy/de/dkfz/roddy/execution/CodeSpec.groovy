@@ -39,7 +39,7 @@ class CodeSpec extends Specification {
                               new Command(new Executable(Paths.get("/bin/bash")),
                                           [u("-xe")] as List<AnyEscapableString>))
         then:
-        BashInterpreter.instance.interpret(code1.toEscapableString(true)) == """\
+        forBash(code1.toEscapableString(true)) == """\
             |#!/bin/bash -xe
             |echo hallo; sleep 50;
             |""".stripMargin()
