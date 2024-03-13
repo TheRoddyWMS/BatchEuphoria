@@ -133,7 +133,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:])
         then:
-        cmd.toBashCommandString() == 'sbatch --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=NONE  /tmp/test.sh'
     }
 
     def "command with accounting name"() {
@@ -147,7 +147,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:])
         then:
-        cmd.toBashCommandString() == 'sbatch --account=accountingProject --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /tmp/test.sh'
+        cmd.toBashCommandString() == 'sbatch --account=accountingProject --job-name jobname --hold --chdir "$HOME"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=NONE  /tmp/test.sh'
     }
 
     def "submit script as code"() {
@@ -163,7 +163,7 @@ class SlurmSubmissionCommandSpec extends Specification {
                 null,
                 [:])
         then:
-        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | sbatch --job-name jobname --hold --chdir \"\$HOME\"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=none  /dev/stdin"
+        cmd.toBashCommandString() == "echo -ne \\#'!'/bin/bash\\\\necho\\ \\'Hello\\ World\\'\\\\n | sbatch --job-name jobname --hold --chdir \"\$HOME\"  --mem=1024M   --time=1:00:00   --nodes=1  --cores-per-socket=4 --parsable --kill-on-invalid-dep=yes --propagate=NONE  /dev/stdin"
 
     }
 

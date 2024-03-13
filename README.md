@@ -94,6 +94,7 @@ To start the integration tests, please fill in host and user settings (password 
   - minor: ApptainerCommmandBuilder to create a wrapping command to run code in containers
     * Submission as container works for LSF and SLURM, probably also PBS and SGE. It won't work for REST-based submission to LSF though.
   - patch: Library updates
+  - patch: Fix `--propagate=none` for SLURM to `--propagate=NONE`
 
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
@@ -106,7 +107,7 @@ To start the integration tests, please fill in host and user settings (password 
     * Reworked queryExtendedJobStateById to always execute both scontrol and sacct and combine the output
     * Some refactoring and added comments
     * Fixed time parsing for jobs longer than 24h
-    * Added --propagate=none" to getAdditionalCommandParameters
+    * Added `--propagate=none` to getAdditionalCommandParameters
     * Added tests
 
 * 0.1.2
