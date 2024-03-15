@@ -17,6 +17,13 @@ class BindSpecSpec extends Specification {
         BindSpec.Mode.from("Rw") == BindSpec.Mode.RW
     }
 
+    def "throw on uninterpretable mode string"() {
+        when:
+        BindSpec.Mode.from("invalid")
+        then:
+        final IllegalArgumentException exception = thrown()
+    }
+
     def "failing mode creation from string"() {
         when:
         BindSpec.Mode.from("r")

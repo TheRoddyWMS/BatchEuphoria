@@ -14,6 +14,7 @@ import java.nio.file.Paths
 import static de.dkfz.roddy.execution.EscapableString.*
 
 
+/** A bind specification for mounting a host directory into a container. */
 @CompileStatic
 class BindSpec implements Comparable<BindSpec> {
 
@@ -35,8 +36,11 @@ class BindSpec implements Comparable<BindSpec> {
 
     }
 
+    /** The path of the mount as seen from the host-system (outside the container). */
     @NotNull final Path hostPath
+    /** The path of the mount as seen from inside the container. If null, the hostPath is used. */
     final Path containerPath
+    /** The mode of the mount, e.g. read-only or read-write. */
     @NotNull final Mode mode
 
     BindSpec(@NotNull Path hostPath,
@@ -260,7 +264,8 @@ class ApptainerCommandBuilder {
      * Ensure that if a bind-point is below another bind_point in the container, that the
      * high bind-point appears first in the list.
      *
-     * This does not preserve the input order of paths.
+     * This does *intentionally* not preserve the input order of paths. Rather the paths should
+     * by ordered logically, with parent-paths appearing before their children.
      *
      * This only uses the apparent path, but does not account for symbolic links.
      */

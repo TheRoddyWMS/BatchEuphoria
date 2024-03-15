@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.slurm
 
-import de.dkfz.roddy.StringConstants
+
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BashInterpreter
@@ -15,10 +15,10 @@ import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
-import de.dkfz.roddy.tools.shell.bash.Service
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.StringConstants.*
+import static de.dkfz.roddy.StringConstants.COLON
+import static de.dkfz.roddy.StringConstants.COMMA
 import static de.dkfz.roddy.execution.EscapableString.*
 
 @CompileStatic
@@ -62,7 +62,7 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
             // The workingDirectory is a File object. So no variables (such as $HOME) are supported.
             result += e(job.workingDirectory.toString())
         } else {
-            // The $HOME will be quoted with double quotes, but not escaped. The variable should
+            // The $HOME will be enclosed in double quotes, but not escaped. The variable should
             // be expanded on the call-site.
             result += u('"') + WORKING_DIRECTORY_DEFAULT + u('"')
         }

@@ -103,6 +103,9 @@ final class Command extends CommandReferenceI {
     private final ImmutableList<AnyEscapableString> arguments
 
     /** Concerning quoting arguments: Provide arguments like they should be used at the call-site.
+     *
+     * @param executable     The executable to be called.
+     * @param arguments      The arguments to be passed to the executable.
      **/
     Command(@NotNull Executable executable,
             @NotNull List<AnyEscapableString> arguments = []) {

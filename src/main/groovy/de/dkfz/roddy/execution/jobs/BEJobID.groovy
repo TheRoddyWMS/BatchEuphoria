@@ -23,7 +23,7 @@ class BEJobID implements Comparable<BEJobID> {
 
     private final String id
 
-    private static AtomicLong unkownIdCounter = new AtomicLong(0L)
+    private static AtomicLong unknownIdCounter = new AtomicLong(0L)
 
     BEJobID(String id) {
         this.id = id.split(/\./)[0]
@@ -35,7 +35,7 @@ class BEJobID implements Comparable<BEJobID> {
 
 
     protected static String nextUnknownID(String prefix = "UnkownJobID-") {
-        return prefix + unkownIdCounter.incrementAndGet()
+        return prefix + unknownIdCounter.incrementAndGet()
     }
 
     boolean isValidID() {
