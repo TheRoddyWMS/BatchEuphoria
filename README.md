@@ -91,7 +91,7 @@ To start the integration tests, please fill in host and user settings (password 
 
 * 0.2.0
   - major: `CommandI` classes to model commands and code
-  - minor: `ApptainerCommmandBuilder` to create a wrapping command to run code in containers
+  - minor: `ApptainerCommandBuilder` to create a wrapping command to run code in containers
     * Submission as container works for LSF and SLURM. PBS and SGE might work, but were not tested. It won't work for REST-based submission to LSF, though.
   - patch: Library updates
   - patch: Fix `--propagate=none` for SLURM to `--propagate=NONE`
