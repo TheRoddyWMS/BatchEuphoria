@@ -8,6 +8,8 @@ package de.dkfz.roddy.execution.jobs
 
 import groovy.transform.CompileStatic
 
+import static de.dkfz.roddy.execution.EscapableString.*
+
 @CompileStatic
 class DummyCommand extends Command {
 
@@ -23,7 +25,7 @@ class DummyCommand extends Command {
     private String jobName
 
     DummyCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, boolean isArray) {
-        super(parentJobManager, job, "dummy_" + getNextIDCountValue(), null)
+        super(parentJobManager, job, e("dummy_" + getNextIDCountValue()), null)
         this.jobName = jobName
         setJobID(new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED))
     }

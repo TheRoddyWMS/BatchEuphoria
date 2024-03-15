@@ -8,8 +8,8 @@ package de.dkfz.roddy
 
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.LocalExecutionHelper
-import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.io.ExecutionResult
+import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.tools.BashUtils
 import groovy.transform.CompileStatic
 

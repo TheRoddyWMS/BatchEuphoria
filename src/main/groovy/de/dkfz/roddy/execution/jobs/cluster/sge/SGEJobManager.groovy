@@ -9,15 +9,19 @@ package de.dkfz.roddy.execution.jobs.cluster.sge
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
+import groovy.transform.CompileStatic
+
+import static de.dkfz.roddy.execution.EscapableString.*
 
 /**
  * @author michael
  */
-@groovy.transform.CompileStatic
+@CompileStatic
 class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
 
     SGEJobManager(BEExecutionService executionService, JobManagerOptions parms) {
@@ -25,8 +29,9 @@ class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
     }
 
     @Override
-    protected SGESubmissionCommand createCommand(BEJob job) {
-        return new SGESubmissionCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id, job.tool?.getAbsolutePath() ?: job.getToolScript())
+    SGESubmissionCommand createCommand(BEJob job) {
+        return new SGESubmissionCommand(
+                this, job, e(job.jobName), [], job.parameters)
     }
 
     @Override
@@ -72,26 +77,31 @@ class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
     }
 
     @Override
-    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
-        parameters.put("-pe", "serial ${resourceSet.cores}")
+    void createComputeParameter(ResourceSet resourceSet,
+                                LinkedHashMultimap<String, AnyEscapableString> parameters) {
+        parameters.put("-pe", e("serial ${resourceSet.cores}"))
     }
 
-    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
-        parameters.put('-q', queue)
-    }
-
-    @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put("-l", "h_rt=${TimeUnit.fromDuration(resourceSet.walltime).toHourString()}")
+    void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                              String queue) {
+        parameters.put('-q', e(queue))
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put("-l", "h_rss=${resourceSet.getMem().toString(BufferUnit.M)}")
+    void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                                 ResourceSet resourceSet) {
+        parameters.put("-l", e("h_rt=${TimeUnit.fromDuration(resourceSet.walltime).toHourString()}"))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+    void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                               ResourceSet resourceSet) {
+        parameters.put("-l", e("h_rss=${resourceSet.getMem().toString(BufferUnit.M)}"))
+    }
+
+    @Override
+    void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters,
+                                 ResourceSet resourceSet) {
     }
 
     @Override

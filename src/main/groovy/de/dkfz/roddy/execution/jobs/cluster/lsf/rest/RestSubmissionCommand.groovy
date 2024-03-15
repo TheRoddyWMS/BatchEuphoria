@@ -6,12 +6,18 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
+import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
+import de.dkfz.roddy.tools.BashUtils
+import de.dkfz.roddy.tools.shell.bash.Service
 import groovy.transform.CompileStatic
 import org.apache.http.Header
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
+
+import static de.dkfz.roddy.StringConstants.EMPTY
 
 /**
  * This class is used to create REST commands
@@ -36,11 +42,16 @@ class RestSubmissionCommand extends SubmissionCommand {
      * @param httpMethod - http Method POST or GET
      */
     RestSubmissionCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod) {
-        super(null, null, null, null, null,null, null)
+        super(null, null, null, null, null)
         this.resource = resource
         this.requestBody = requestBody
         this.requestHeaders = requestHeaders
         this.httpMethod = httpMethod
+    }
+
+    @Override
+    String getSubmissionExecutableName() {
+        return null
     }
 
     @Override
@@ -49,57 +60,68 @@ class RestSubmissionCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String assembleVariableExportParameters() {
+    protected AnyEscapableString assembleVariableExportParameters() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getAdditionalCommandParameters() {
+    protected AnyEscapableString getAdditionalCommandParameters() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getEnvironmentString() {
+    protected AnyEscapableString getEnvironmentString() {
         return LSFRestJobManager.environmentString
     }
 
     @Override
-    protected String getWorkingDirectoryParameter() {
+    protected AnyEscapableString getWorkingDirectoryParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String assembleDependencyParameter(List<BEJobID> jobIds) {
+    protected AnyEscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getUmaskString(String umask) {
+    protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getJobNameParameter() {
+    protected AnyEscapableString getJobNameParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getGroupListParameter(String groupList) {
+    protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getHoldParameter() {
+    protected AnyEscapableString getHoldParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getEmailParameter(String address) {
+    protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getLoggingParameter(JobLog jobLog) {
+    protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    protected Boolean getQuoteCommand() {
+        false
+    }
+
+
+    @Override
+    protected String composeCommandString(List<AnyEscapableString> parameters) {
         throw new NotImplementedException()
     }
 

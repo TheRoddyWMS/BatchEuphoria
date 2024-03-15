@@ -89,6 +89,14 @@ To start the integration tests, please fill in host and user settings (password 
 
 # Change Logs
 
+* 0.2.0
+  - major: `CommandI` classes to model commands and code
+  - minor: `ApptainerCommandBuilder` to create a wrapping command to run code in containers
+    * Submission as container works for LSF and SLURM. PBS and SGE might work, but were not tested. It won't work for REST-based submission to LSF, though.
+  - patch: Library updates
+  - patch: Fix `--propagate=none` for SLURM to `--propagate=NONE`
+  - patch: `AnyEscapableString` hierarchy. This should be migrated into the RoddyToolLib.
+
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
     * For eligibleTime it is set to null
@@ -100,7 +108,7 @@ To start the integration tests, please fill in host and user settings (password 
     * Reworked queryExtendedJobStateById to always execute both scontrol and sacct and combine the output
     * Some refactoring and added comments
     * Fixed time parsing for jobs longer than 24h
-    * Added --propagate=none" to getAdditionalCommandParameters
+    * Added `--propagate=none` to getAdditionalCommandParameters
     * Added tests
 
 * 0.1.2
