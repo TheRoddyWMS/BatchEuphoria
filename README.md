@@ -90,11 +90,12 @@ To start the integration tests, please fill in host and user settings (password 
 # Change Logs
 
 * 0.2.0
-  - major: CommandI classes to model commands and code
-  - minor: ApptainerCommmandBuilder to create a wrapping command to run code in containers
-    * Submission as container works for LSF and SLURM, probably also PBS and SGE. It won't work for REST-based submission to LSF though.
+  - major: `CommandI` classes to model commands and code
+  - minor: `ApptainerCommmandBuilder` to create a wrapping command to run code in containers
+    * Submission as container works for LSF and SLURM. PBS and SGE might work, but were not tested. It won't work for REST-based submission to LSF, though.
   - patch: Library updates
   - patch: Fix `--propagate=none` for SLURM to `--propagate=NONE`
+  - patch: `AnyEscapableString` hierarchy. This should be migrated into the RoddyToolLib.
 
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
