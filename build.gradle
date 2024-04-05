@@ -1,3 +1,5 @@
+import org.gradle.api.JavaVersion
+
 /*
  * Copyright (c) 2017 German Cancer Research Center (DKFZ).
  *
@@ -5,20 +7,24 @@
  */
 
 plugins {
-    id 'org.ajoberstar.grgit' version '1.7.2'
+    id 'org.ajoberstar.grgit' version '4.1.1'
+    id 'org.cyclonedx.bom' version '1.8.2'
+    id 'maven-publish'
     id 'pmd'
 }
 
 apply plugin: 'groovy'
 apply plugin: 'idea'
 apply plugin: 'application'
-apply plugin: 'maven'
 
 group = "com.github.theroddywms"
 
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 /*
  * Gets the version name from the current Git tag. If the current commit is not tagged,
@@ -71,21 +77,27 @@ dependencies {
     implementation 'com.github.bbottema:jetbrains-runtime-annotations:1.0.1'
 }
 
-task writePom {
-    doLast {
-        pom {
-            project {
-                version rootProject.version
-                inceptionYear '2017'
+model {
+    tasks.generatePomFileForMavenJavaPublication {
+        destination = file("$buildDir/pom.xml")
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(org.gradle.api.publish.maven.MavenPublication) {
+            from components.java
+            pom {
+                name = 'BatchEuphoria'
+                url = "https://www.github.com/theroddywms/BatchEuphoria"
                 licenses {
                     license {
-                        name 'MIT License'
-                        url 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/master/LICENSE'
-                        distribution 'repo'
+                        name = 'MIT License'
+                        url = 'https://raw.githubusercontent.com/eilslabs/BatchEuphoria/master/LICENSE'
                     }
                 }
             }
-        }.writeTo("$buildDir/pom.xml")
+        }
     }
 }
 
@@ -94,13 +106,13 @@ jar {
 
     manifest {
         attributes("Implementation-Vendor": "German Cancer Research Center (DKFZ)")
-        attributes("Implementation-Title": baseName)
+        attributes("Implementation-Title": archiveBaseName.get())
         attributes 'Implementation-Version': rootProject.version
     }
 
-    dependsOn writePom
     into("META-INF/maven/$project.group/$project.name") {
-        from "$buildDir/pom.xml"
+        from generatePomFileForMavenJavaPublication
+//        from "$buildDir/pom.xml"
     }
 
 }
@@ -114,7 +126,8 @@ task listJars {
 
 task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
     from files(sourceSets.main.output.dirs)
-    from configurations.runtime.asFileTree.files.collect { zipTree(it) }
+    from configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+//    .asFileTree.files.collect { zipTree(it) }
 
     version = getVersionName()
 
