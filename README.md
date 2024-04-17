@@ -96,6 +96,7 @@ To start the integration tests, please fill in host and user settings (password 
   - patch: Library updates
   - patch: Fix `--propagate=none` for SLURM to `--propagate=NONE`
   - patch: `AnyEscapableString` hierarchy. This should be migrated into the RoddyToolLib.
+  - patch: Added Gradle task for CycloneDX SBOM generation
 
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
