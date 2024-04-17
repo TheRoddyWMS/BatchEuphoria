@@ -10,6 +10,7 @@ Currently this library supports the following job schedulers:
 * direct execution
 
 ### Dependencies
+
 * [RoddyToolLib](https://github.com/TheRoddyWMS/RoddyToolLib)
 
 ## Build
@@ -87,7 +88,13 @@ You can find [here](https://github.com/eilslabs/BatchEuphoria/blob/develop/src/m
 
 To start the integration tests, please fill in host and user settings (password for lsf rest) into integrationTest.properties. Then start the tests like you'd start.
 
+
 # Change Logs
+
+* Next
+
+  - patch: Added `listConfigurations`, `allBoms`, and a `...Bom` task for every Gradle configuration set. The `allBoms` and `...Bom` tasks generate JSON CycloneDX SBOMs in `gradleBuild/reports/cyclonedx`.
+  - patch: Updated Gradle
 
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
@@ -134,5 +141,3 @@ To start the integration tests, please fill in host and user settings (password 
 
 * 0.0.7-1 (Release branch 0.0.7)
   - Patch: Fix: A newer LSF release is pickier on the position of the `-o` parameter in `bjobs`. Adapted to this upstream change. Probably code will still work with older LSF versions.
-
-* 0.0.7
