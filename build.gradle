@@ -10,7 +10,6 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.1.1'
     id 'org.cyclonedx.bom' version '1.8.2'
     id 'maven-publish'
-    id 'pmd'
 }
 
 apply plugin: 'groovy'
