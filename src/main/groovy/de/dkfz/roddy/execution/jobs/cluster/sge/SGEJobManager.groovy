@@ -9,14 +9,13 @@ package de.dkfz.roddy.execution.jobs.cluster.sge
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * @author michael

@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
@@ -15,7 +15,7 @@ import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.*
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * This class is used to create and execute qsub commands

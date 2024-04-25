@@ -9,9 +9,8 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.io.ExecutionResult
-import org.omg.CORBA.Any
 import spock.lang.Specification
 
 import java.time.Duration

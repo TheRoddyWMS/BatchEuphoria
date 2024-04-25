@@ -3,7 +3,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.Executable
@@ -17,7 +17,7 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 class SlurmSubmissionCommandSpec extends Specification {
 

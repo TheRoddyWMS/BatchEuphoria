@@ -10,8 +10,8 @@ import com.google.common.base.Preconditions
 import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
-import de.dkfz.roddy.execution.BashInterpreter
+import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.CommandReferenceI
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable
 
 import java.util.concurrent.atomic.AtomicLong
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * The job class represents a generic and abstract form of cluster job which can be run using a job manager.

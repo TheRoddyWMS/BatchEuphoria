@@ -7,10 +7,10 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.base.Preconditions
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * Base class for all types of cluster interaction commands.

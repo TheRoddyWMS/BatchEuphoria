@@ -6,16 +6,15 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
-import de.dkfz.roddy.StringConstants
-import de.dkfz.roddy.execution.AnyEscapableString
-import de.dkfz.roddy.execution.BashInterpreter
-import de.dkfz.roddy.execution.ConcatenatedString
+
+import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.BashInterpreter
+import de.dkfz.roddy.tools.ConcatenatedString
 import de.dkfz.roddy.execution.jobs.*
-import de.dkfz.roddy.tools.shell.bash.Service
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 @CompileStatic
 abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {

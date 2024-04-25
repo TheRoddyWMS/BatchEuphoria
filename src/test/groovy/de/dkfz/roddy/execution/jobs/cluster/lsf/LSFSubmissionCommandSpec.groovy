@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
@@ -21,7 +22,7 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 class LSFSubmissionCommandSpec extends Specification {
 

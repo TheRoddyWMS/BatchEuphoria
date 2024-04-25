@@ -7,8 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.AnyEscapableString
-import de.dkfz.roddy.execution.CommandI
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
@@ -17,7 +16,7 @@ import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.COMMA
 import static de.dkfz.roddy.StringConstants.WHITESPACE
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * Created by michael on 20.05.14.

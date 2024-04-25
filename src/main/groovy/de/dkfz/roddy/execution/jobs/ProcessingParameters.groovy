@@ -6,14 +6,14 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.collect.LinkedHashMultimap
-import de.dkfz.roddy.execution.AnyEscapableString
-import de.dkfz.roddy.execution.BashInterpreter
+import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.BashInterpreter
 import groovy.transform.CompileStatic
 
 import java.text.ParseException
 import java.util.regex.Pattern
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  */

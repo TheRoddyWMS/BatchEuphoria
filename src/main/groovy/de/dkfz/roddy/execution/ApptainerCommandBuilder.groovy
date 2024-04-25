@@ -2,6 +2,7 @@ package de.dkfz.roddy.execution
 
 
 import com.google.common.base.Preconditions
+import de.dkfz.roddy.tools.AnyEscapableString
 import groovy.transform.AutoClone
 import groovy.transform.CompileStatic
 
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.Nullable
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 
 /** A bind specification for mounting a host directory into a container. */

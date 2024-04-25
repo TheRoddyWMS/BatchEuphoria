@@ -11,7 +11,7 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.RestExecutionService
@@ -24,7 +24,7 @@ import org.junit.Test
 
 import java.time.Duration
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 /**
  *
  * Only the tests are executed for which the cluster configuration are set in the "integrationTest.properties"

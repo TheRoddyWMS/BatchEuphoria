@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
@@ -17,7 +17,7 @@ import groovy.transform.CompileStatic
 
 import java.time.Duration
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 @CompileStatic
 abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionCommand> {

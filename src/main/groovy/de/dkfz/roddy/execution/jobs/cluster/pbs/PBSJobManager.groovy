@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -20,7 +20,7 @@ import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 @CompileStatic
 class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {

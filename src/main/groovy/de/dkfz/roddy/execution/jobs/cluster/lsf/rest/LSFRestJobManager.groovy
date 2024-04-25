@@ -9,9 +9,9 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
-import de.dkfz.roddy.execution.BashInterpreter
+import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.execution.RestExecutionService
 import de.dkfz.roddy.execution.jobs.*
 import de.dkfz.roddy.execution.jobs.cluster.lsf.AbstractLSFJobManager
@@ -31,7 +31,7 @@ import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * REST job manager for cluster systems.

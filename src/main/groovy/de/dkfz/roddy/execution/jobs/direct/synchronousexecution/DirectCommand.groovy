@@ -12,7 +12,7 @@ import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * Local commands run locally and, if the workflow requires and supports it, concurrently.

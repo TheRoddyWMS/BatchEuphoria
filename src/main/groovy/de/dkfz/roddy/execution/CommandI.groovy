@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution
 
 import com.google.common.base.Preconditions
 import com.google.common.collect.ImmutableList
+import de.dkfz.roddy.tools.AnyEscapableString
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -17,7 +18,7 @@ import org.jetbrains.annotations.NotNull
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 
 /** Types of executable code or command. These are used as arguments for BEJob. The

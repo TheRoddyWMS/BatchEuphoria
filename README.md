@@ -10,6 +10,7 @@ Currently this library supports the following job schedulers:
 * direct execution
 
 ### Dependencies
+
 * [RoddyToolLib](https://github.com/TheRoddyWMS/RoddyToolLib)
 
 ## Build
@@ -95,8 +96,8 @@ To start the integration tests, please fill in host and user settings (password 
     * Submission as container works for LSF and SLURM. PBS and SGE might work, but were not tested. It won't work for REST-based submission to LSF, though.
   - patch: Library updates
   - patch: Fix `--propagate=none` for SLURM to `--propagate=NONE`
-  - patch: `AnyEscapableString` hierarchy. This should be migrated into the RoddyToolLib.
-  - patch: Added Gradle task for CycloneDX SBOM generation
+  - patch: Added Gradle task `:allBoms` for CycloneDX SBOM generation
+  - patch: Added cyclonedx SBOM and test-report tarballs to GitHub releases
 
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".

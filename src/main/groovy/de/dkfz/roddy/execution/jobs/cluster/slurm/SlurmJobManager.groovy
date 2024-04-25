@@ -9,7 +9,6 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.execution.AnyEscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.*
@@ -22,7 +21,7 @@ import groovy.transform.CompileStatic
 import java.time.*
 import java.time.format.DateTimeFormatter
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 @CompileStatic
 class SlurmJobManager extends GridEngineBasedJobManager {

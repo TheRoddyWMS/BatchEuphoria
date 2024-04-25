@@ -71,7 +71,7 @@ dependencies {
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.0'
     implementation group: 'org.apache.commons', name: 'commons-text', version: '1.11.0'
     implementation 'com.google.guava:guava:32.0.0-android'
-    implementation 'com.github.theroddywms:RoddyToolLib:2.4.1'
+    implementation 'com.github.theroddywms:RoddyToolLib:2.5.0'
 
     // Runtime retention of @NotNull and annotations.
     implementation 'com.github.bbottema:jetbrains-runtime-annotations:1.0.1'

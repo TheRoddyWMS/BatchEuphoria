@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution.jobs
 
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 @CompileStatic
 class DummyCommand extends Command {

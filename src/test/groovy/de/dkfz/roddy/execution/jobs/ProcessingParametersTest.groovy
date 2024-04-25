@@ -6,13 +6,13 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.collect.LinkedHashMultimap
-import de.dkfz.roddy.execution.AnyEscapableString
+import de.dkfz.roddy.tools.AnyEscapableString
 import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.*
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 @CompileStatic
 class ProcessingParametersTest {

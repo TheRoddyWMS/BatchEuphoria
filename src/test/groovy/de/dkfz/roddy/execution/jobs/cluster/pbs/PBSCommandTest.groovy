@@ -9,8 +9,8 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.execution.AnyEscapableString
-import de.dkfz.roddy.execution.BashInterpreter
+import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
@@ -24,7 +24,7 @@ import org.junit.Test
 
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * Created by heinold on 26.03.17.

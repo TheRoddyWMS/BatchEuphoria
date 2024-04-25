@@ -8,14 +8,14 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.AnyEscapableString
-import de.dkfz.roddy.execution.BashInterpreter
-import de.dkfz.roddy.execution.ConcatenatedString
+import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.BashInterpreter
+import de.dkfz.roddy.tools.ConcatenatedString
 import de.dkfz.roddy.execution.jobs.*
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 /**
  * This class is used to create and execute bsub commands.

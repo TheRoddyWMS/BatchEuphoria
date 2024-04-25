@@ -1,9 +1,10 @@
 package de.dkfz.roddy.execution
 
+import de.dkfz.roddy.tools.AnyEscapableString
 import spock.lang.Specification
 
 import java.nio.file.Paths
-import static de.dkfz.roddy.execution.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.*
 
 class CodeSpec extends Specification {
 
