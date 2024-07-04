@@ -149,7 +149,7 @@ class RestExecutionService implements BEExecutionService {
      * Here is the same problem with the LSP and contravariance.
      */
     @Override
-    ExecutionResult execute(de.dkfz.roddy.execution.jobs.Command command, boolean waitFor, Duration timeout) {
+    ExecutionResult execute(Command command, boolean waitFor, Duration timeout) {
         throw new IllegalArgumentException("Not a RestSubmissionCommand: ${command.class.canonicalName}")
     }
     RestResult execute(RestSubmissionCommand restCommand, boolean waitFor = true,

@@ -4,7 +4,7 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.Command
@@ -21,7 +21,7 @@ import org.junit.Test
 
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 class GridEngineBaseJobManagerTest {
@@ -118,7 +118,7 @@ class GridEngineBaseJobManagerTest {
         }
     }
 
-    private BEJob makeJob(Map<String, AnyEscapableString> mapOfParameters) {
+    private BEJob makeJob(Map<String, EscapableString> mapOfParameters) {
         BEJob job = new BEJob
                 (null,
                  jobManager,
@@ -139,7 +139,7 @@ class GridEngineBaseJobManagerTest {
 
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
-        def mapOfVars = ["a": u("a"), "b": u("b")] as Map<String, AnyEscapableString>
+        def mapOfVars = ["a": u("a"), "b": u("b")] as Map<String, EscapableString>
         GridEngineBasedSubmissionCommand cmd =
                 new GridEngineBasedSubmissionCommand(
                         jobManager,
@@ -173,57 +173,57 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected AnyEscapableString getJobNameParameter() {
+            protected EscapableString getJobNameParameter() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getHoldParameter() {
+            protected EscapableString getHoldParameter() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getWorkingDirectoryParameter() {
+            protected EscapableString getWorkingDirectoryParameter() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+            protected EscapableString getLoggingParameter(JobLog jobLog) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+            protected EscapableString getEmailParameter(EscapableString address) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+            protected EscapableString getGroupListParameter(EscapableString groupList) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+            protected EscapableString getUmaskString(EscapableString umask) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getAdditionalCommandParameters() {
+            protected EscapableString getAdditionalCommandParameters() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getEnvironmentString() {
+            protected EscapableString getEnvironmentString() {
                 return u("")
             }
 
             @Override
-            protected AnyEscapableString assembleVariableExportParameters() {
+            protected EscapableString assembleVariableExportParameters() {
                 return null
             }
 
             @Override
-            protected String composeCommandString(List<AnyEscapableString> parameters) {
+            protected String composeCommandString(List<EscapableString> parameters) {
                 return null
             }
         }

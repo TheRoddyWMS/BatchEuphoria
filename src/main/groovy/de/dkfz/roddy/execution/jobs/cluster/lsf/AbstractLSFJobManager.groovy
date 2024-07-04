@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
@@ -17,7 +17,7 @@ import groovy.transform.CompileStatic
 
 import java.time.Duration
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionCommand> {
@@ -69,7 +69,7 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
      *
      * @return a Bash environment variable declaration affecting LSF commands.
      */
-    final static AnyEscapableString getEnvironmentString() {
+    final static EscapableString getEnvironmentString() {
         u("LSB_NTRIES=5")
     }
 
@@ -81,13 +81,13 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
     }
 
     @Override
-    void createDefaultManagerParameters(LinkedHashMultimap<String, AnyEscapableString> parameters) {
+    void createDefaultManagerParameters(LinkedHashMultimap<String, EscapableString> parameters) {
 
     }
 
     @Override
     void createComputeParameter(ResourceSet resourceSet,
-                                LinkedHashMultimap<String, AnyEscapableString> parameters) {
+                                LinkedHashMultimap<String, EscapableString> parameters) {
         int nodes = resourceSet.isNodesSet() && resourceSet.getNodes() > 0 ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
 
@@ -100,8 +100,8 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
         // several nodes. To prevent this, we can add the hosts=1 span attribute. BUT: This only works for a
         // span of 1, not for more. To have more hosts, you need ptile.
 
-        AnyEscapableString span
-        AnyEscapableString effective_cores
+        EscapableString span
+        EscapableString effective_cores
         if (nodes == 1) {
             effective_cores = u(cores.toString())
             span = e("span[hosts=1]")
@@ -114,28 +114,28 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
     }
 
     @Override
-    void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters,
                               String queue) {
         parameters.put('-q', e(queue))
     }
 
     @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
         parameters.put('-W', e(durationToLSFWallTime(resourceSet.getWalltime()).toString()))
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                ResourceSet resourceSet) {
         // LSF does not like the buffer unit at the end and always takes MB
-        AnyEscapableString memval = e(resourceSet.getMem().toResourceStringWithoutUnit(BufferUnit.M))
+        EscapableString memval = e(resourceSet.getMem().toResourceStringWithoutUnit(BufferUnit.M))
         parameters.put("-M", memval)
         parameters.put("-R", e("rusage[mem=") + memval + e("]"))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
 
     }

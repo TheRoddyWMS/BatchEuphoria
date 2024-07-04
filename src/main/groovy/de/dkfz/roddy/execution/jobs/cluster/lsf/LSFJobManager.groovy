@@ -18,7 +18,7 @@ import groovy.transform.CompileStatic
 import java.time.*
 import java.util.regex.Matcher
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * Factory for the management of LSF cluster systems.

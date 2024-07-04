@@ -6,13 +6,13 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.collect.LinkedHashMultimap
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.CompileStatic
 import org.junit.Test
 
 import static org.junit.Assert.*
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 class ProcessingParametersTest {
@@ -20,9 +20,9 @@ class ProcessingParametersTest {
     @Test
     void fromString() throws Exception {
         List<String> values = ["-l", "abc", "-l", "def", "-W", null, "-v", null]
-        LinkedHashMultimap<String, AnyEscapableString> expected = LinkedHashMultimap.create()
+        LinkedHashMultimap<String, EscapableString> expected = LinkedHashMultimap.create()
         values.collate(2).each { String k, String v ->
-            expected.put(k, v != null ? u(v) : null as AnyEscapableString)
+            expected.put(k, v != null ? u(v) : null as EscapableString)
         }
         assertEquals(new ProcessingParameters(expected).toString(),
                      ProcessingParameters.fromString(

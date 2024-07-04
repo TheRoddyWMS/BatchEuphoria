@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import groovy.transform.CompileStatic
@@ -56,57 +56,57 @@ class RestSubmissionCommand extends SubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString assembleVariableExportParameters() {
+    protected EscapableString assembleVariableExportParameters() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getAdditionalCommandParameters() {
+    protected EscapableString getAdditionalCommandParameters() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getEnvironmentString() {
+    protected EscapableString getEnvironmentString() {
         return LSFRestJobManager.environmentString
     }
 
     @Override
-    protected AnyEscapableString getWorkingDirectoryParameter() {
+    protected EscapableString getWorkingDirectoryParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
+    protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+    protected EscapableString getUmaskString(EscapableString umask) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getJobNameParameter() {
+    protected EscapableString getJobNameParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+    protected EscapableString getGroupListParameter(EscapableString groupList) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getHoldParameter() {
+    protected EscapableString getHoldParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+    protected EscapableString getEmailParameter(EscapableString address) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+    protected EscapableString getLoggingParameter(JobLog jobLog) {
         throw new NotImplementedException()
     }
 
@@ -117,7 +117,7 @@ class RestSubmissionCommand extends SubmissionCommand {
 
 
     @Override
-    protected String composeCommandString(List<AnyEscapableString> parameters) {
+    protected String composeCommandString(List<EscapableString> parameters) {
         throw new NotImplementedException()
     }
 

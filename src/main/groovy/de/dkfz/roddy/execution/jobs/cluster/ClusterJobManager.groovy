@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
@@ -69,7 +69,7 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
     ProcessingParameters convertResourceSet(BEJob job, ResourceSet resourceSet) {
         Preconditions.checkArgument(resourceSet != null)
 
-        LinkedHashMultimap<String, AnyEscapableString> parameters = LinkedHashMultimap.create()
+        LinkedHashMultimap<String, EscapableString> parameters = LinkedHashMultimap.create()
 
         createDefaultManagerParameters(parameters)
 
@@ -94,15 +94,15 @@ abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobMana
         return new ProcessingParameters(parameters)
     }
 
-    abstract void createDefaultManagerParameters(LinkedHashMultimap<String, AnyEscapableString> parameters)
+    abstract void createDefaultManagerParameters(LinkedHashMultimap<String, EscapableString> parameters)
 
-    abstract void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, AnyEscapableString> parameters)
+    abstract void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, EscapableString> parameters)
 
-    abstract void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters, String queue)
+    abstract void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters, String queue)
 
-    abstract void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters, ResourceSet resourceSet)
+    abstract void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters, ResourceSet resourceSet)
 
-    abstract void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters, ResourceSet resourceSet)
+    abstract void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters, ResourceSet resourceSet)
 
-    abstract void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters, ResourceSet resourceSet)
+    abstract void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters, ResourceSet resourceSet)
 }

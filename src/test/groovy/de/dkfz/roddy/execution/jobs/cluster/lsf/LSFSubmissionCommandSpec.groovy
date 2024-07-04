@@ -6,7 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
@@ -22,18 +22,18 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 class LSFSubmissionCommandSpec extends Specification {
 
     LSFJobManager jobManager = new LSFJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
 
-    private BEJob makeJob(Map<String, AnyEscapableString> mapOfParameters,
+    private BEJob makeJob(Map<String, EscapableString> mapOfParameters,
                           CommandI command = new Command(new Executable(Paths.get("/tmp/test.sh")),
                                                          [u("\$someRemoteVariable")]),
                           // Here, someRemoteVariable is *not* quoted. The Command should take the values,
                           // like they are supposed to be used at the call site.
-                          AnyEscapableString accountingProject = null) {
+                          EscapableString accountingProject = null) {
         BEJob job = new BEJob(
                 null,
                 jobManager,
@@ -58,7 +58,7 @@ class LSFSubmissionCommandSpec extends Specification {
 
     def "assemble dependency string without dependencies" () throws Exception {
         when:
-        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": u("b")]
+        Map<String, EscapableString> mapOfVars = ["a": u("a"), "b": u("b")]
         BEJob job = makeJob(mapOfVars)
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
@@ -86,7 +86,7 @@ class LSFSubmissionCommandSpec extends Specification {
 
     def "assemble variable export parameters with only variables" () {
         when:
-        Map<String, AnyEscapableString> mapOfVars =
+        Map<String, EscapableString> mapOfVars =
                 ["a": e("a"), "b": null]
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
@@ -104,7 +104,7 @@ class LSFSubmissionCommandSpec extends Specification {
         when:
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
-                makeJob([:] as LinkedHashMap<String, AnyEscapableString>),
+                makeJob([:] as LinkedHashMap<String, EscapableString>),
                 u("jobName"),
                 null,
                 [:])
@@ -116,7 +116,7 @@ class LSFSubmissionCommandSpec extends Specification {
 
     def "assemble variable export parameters with 'all' and explicit variables" () {
         when:
-        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": null]
+        Map<String, EscapableString> mapOfVars = ["a": u("a"), "b": null]
         LSFSubmissionCommand cmd = new LSFSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars),

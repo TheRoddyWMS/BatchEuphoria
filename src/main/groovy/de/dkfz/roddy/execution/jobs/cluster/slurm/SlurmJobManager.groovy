@@ -21,7 +21,7 @@ import groovy.transform.CompileStatic
 import java.time.*
 import java.time.format.DateTimeFormatter
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 class SlurmJobManager extends GridEngineBasedJobManager {
@@ -408,7 +408,7 @@ class SlurmJobManager extends GridEngineBasedJobManager {
 
     @Override
     void createComputeParameter(ResourceSet resourceSet,
-                                LinkedHashMultimap<String, AnyEscapableString> parameters) {
+                                LinkedHashMultimap<String, EscapableString> parameters) {
         int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
         String nVal = "--nodes=" + nodes
@@ -416,26 +416,26 @@ class SlurmJobManager extends GridEngineBasedJobManager {
         parameters.put(nVal, u(cVal))
     }
 
-    void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters,
                               String queue) {
         parameters.put('-p', e(queue))
     }
 
     @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
         parameters.put('--time=' + TimeUnit.fromDuration(resourceSet.walltime).toHourString(),
                        u(" "))  // What a hack.
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                ResourceSet resourceSet) {
         parameters.put('--mem=' + resourceSet.getMem().toString(BufferUnit.M), u(" "))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
     }
 

@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions
 import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable
 
 import java.util.concurrent.atomic.AtomicLong
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * The job class represents a generic and abstract form of cluster job which can be run using a job manager.
@@ -43,13 +43,13 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * The descriptive name of the job. Can be passed to the execution system.
      */
-    private final AnyEscapableString jobNameEscapable
+    private final EscapableString jobNameEscapable
 
     /**
      * The accounting name under which the job runs. It is the responsibility of the execution system to use this
      * information.
      */
-    private final AnyEscapableString accountingName
+    private final EscapableString accountingName
 
 
     /**
@@ -76,7 +76,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * Parameters for the tool you want to call
      */
-    protected final Map<String, AnyEscapableString> parameters
+    protected final Map<String, EscapableString> parameters
 
     protected SortedSet<BEJob> parentJobs = new TreeSet<BEJob>()
 
@@ -110,14 +110,14 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BEJob(BEJobID jobID,                        // can be null for FakeBEJob
           BatchEuphoriaJobManager jobManager,   // can be null for FakeBEJob
-          AnyEscapableString jobNameEscapable = null,
+          EscapableString jobNameEscapable = null,
           CommandI commandObj = null,
           @NotNull ResourceSet resourceSet = new EmptyResourceSet(),
           @NotNull Collection<BEJob> parentJobs = [],
-          @NotNull Map<String, AnyEscapableString> parameters = [:],
+          @NotNull Map<String, EscapableString> parameters = [:],
           @NotNull JobLog jobLog = JobLog.none(),
           File workingDirectory = null,
-          AnyEscapableString accountingName = null) {
+          EscapableString accountingName = null) {
         this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.getNewUnknown())
         this.jobNameEscapable = jobNameEscapable
         this.currentJobState = JobState.UNSTARTED
@@ -175,7 +175,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.processingParameters.add(processingParameters)
     }
 
-    Map<String, AnyEscapableString> getParameters() {
+    Map<String, EscapableString> getParameters() {
         return parameters
     }
 
@@ -223,7 +223,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this.jobID
     }
 
-    AnyEscapableString getAccountingName() {
+    EscapableString getAccountingName() {
         return this.accountingName
     }
 
@@ -247,7 +247,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return forBash(jobNameEscapable)
     }
 
-    AnyEscapableString getJobNameEscapable() {
+    EscapableString getJobNameEscapable() {
         return jobNameEscapable
     }
 
@@ -292,7 +292,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    List<AnyEscapableString> getCommand() {
+    List<EscapableString> getCommand() {
         if (commandObj instanceof CommandReferenceI) {
             (commandObj as CommandReferenceI).toCommandSegmentList()
         } else {
@@ -300,7 +300,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         }
     }
 
-    AnyEscapableString getCode() {
+    EscapableString getCode() {
         if (commandObj instanceof Code) {
             (commandObj as Code).toEscapableString()
         } else {

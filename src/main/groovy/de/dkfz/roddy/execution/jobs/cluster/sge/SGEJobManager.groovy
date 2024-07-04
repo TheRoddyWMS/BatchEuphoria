@@ -15,7 +15,7 @@ import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedJobManager
 import de.dkfz.roddy.tools.*
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * @author michael
@@ -77,29 +77,29 @@ class SGEJobManager extends GridEngineBasedJobManager<SGESubmissionCommand> {
 
     @Override
     void createComputeParameter(ResourceSet resourceSet,
-                                LinkedHashMultimap<String, AnyEscapableString> parameters) {
+                                LinkedHashMultimap<String, EscapableString> parameters) {
         parameters.put("-pe", e("serial ${resourceSet.cores}"))
     }
 
-    void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters,
                               String queue) {
         parameters.put('-q', e(queue))
     }
 
     @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
         parameters.put("-l", e("h_rt=${TimeUnit.fromDuration(resourceSet.walltime).toHourString()}"))
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                ResourceSet resourceSet) {
         parameters.put("-l", e("h_rss=${resourceSet.getMem().toString(BufferUnit.M)}"))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
     }
 

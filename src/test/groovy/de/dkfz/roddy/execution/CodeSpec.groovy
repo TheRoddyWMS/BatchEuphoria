@@ -1,10 +1,10 @@
 package de.dkfz.roddy.execution
 
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import spock.lang.Specification
 
 import java.nio.file.Paths
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 class CodeSpec extends Specification {
 
@@ -22,7 +22,7 @@ class CodeSpec extends Specification {
 
     def "throw with null code"() {
         when:
-        new Code(null as AnyEscapableString)
+        new Code(null as EscapableString)
         then:
         final IllegalArgumentException exception = thrown()
     }
@@ -38,7 +38,7 @@ class CodeSpec extends Specification {
         when:
         Code code1 = new Code("echo hallo; sleep 50;",
                               new Command(new Executable(Paths.get("/bin/bash")),
-                                          [u("-xe")] as List<AnyEscapableString>))
+                                          [u("-xe")] as List<EscapableString>))
         then:
         forBash(code1.toEscapableString(true)) == """\
             |#!/bin/bash -xe

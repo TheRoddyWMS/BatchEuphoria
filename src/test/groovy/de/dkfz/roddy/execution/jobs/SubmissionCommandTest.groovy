@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
 
@@ -123,9 +123,9 @@ class SubmissionCommandTest extends Specification {
         return new SubmissionCommand(
                 jobManager,
                 null,
-                null as AnyEscapableString,
+                null as EscapableString,
                 [],
-                [:] as Map<String, AnyEscapableString>
+                [:] as Map<String, EscapableString>
         ) {
 
             {
@@ -143,62 +143,62 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected AnyEscapableString getJobNameParameter() {
+            protected EscapableString getJobNameParameter() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getHoldParameter() {
+            protected EscapableString getHoldParameter() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getWorkingDirectoryParameter() {
+            protected EscapableString getWorkingDirectoryParameter() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+            protected EscapableString getLoggingParameter(JobLog jobLog) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+            protected EscapableString getEmailParameter(EscapableString address) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+            protected EscapableString getGroupListParameter(EscapableString groupList) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+            protected EscapableString getUmaskString(EscapableString umask) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
+            protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
                 return null
             }
 
             @Override
-            protected AnyEscapableString assembleVariableExportParameters() throws BEException {
+            protected EscapableString assembleVariableExportParameters() throws BEException {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getAdditionalCommandParameters() {
+            protected EscapableString getAdditionalCommandParameters() {
                 return null
             }
 
             @Override
-            protected AnyEscapableString getEnvironmentString() {
+            protected EscapableString getEnvironmentString() {
                 c()
             }
 
             @Override
-            protected String composeCommandString(List<AnyEscapableString> parameters) {
+            protected String composeCommandString(List<EscapableString> parameters) {
                 return null
             }
         }

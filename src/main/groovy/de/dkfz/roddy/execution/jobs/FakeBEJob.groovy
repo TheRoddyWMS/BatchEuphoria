@@ -10,7 +10,7 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * Created by heinold on 27.02.17.

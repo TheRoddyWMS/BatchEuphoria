@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.execution.RestExecutionService
@@ -31,7 +31,7 @@ import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * REST job manager for cluster systems.
@@ -106,7 +106,7 @@ class LSFRestJobManager extends AbstractLSFJobManager {
 
         // --- Parameters Area ---
         List<String> jobParts = []
-        List<AnyEscapableString> command = job.command
+        List<EscapableString> command = job.command
         if (command) {
             jobParts << createJobPart("COMMAND", BashInterpreter.instance.interpret(join(command, " ")), "COMMANDTORUN")
         } else {

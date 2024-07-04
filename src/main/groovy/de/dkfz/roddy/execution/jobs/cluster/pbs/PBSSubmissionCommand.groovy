@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
@@ -15,7 +15,7 @@ import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.*
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * This class is used to create and execute qsub commands
@@ -30,34 +30,34 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
     public static final String PARM_DEPENDS = " -W depend="
 
     PBSSubmissionCommand(BatchEuphoriaJobManager parentJobManager,
-                         BEJob job, AnyEscapableString jobName,
+                         BEJob job, EscapableString jobName,
                          List<ProcessingParameters> processingParameters,
-                         Map<String, AnyEscapableString> environmentVariables) {
+                         Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
     @Override
-    protected AnyEscapableString getJobNameParameter() {
+    protected EscapableString getJobNameParameter() {
         u("-N ") + jobName
     }
 
     @Override
-    protected AnyEscapableString getHoldParameter() {
+    protected EscapableString getHoldParameter() {
         u("-h")
     }
 
     @Override
-    protected AnyEscapableString getAccountNameParameter() {
+    protected EscapableString getAccountNameParameter() {
         job.accountingName != null ? u("-A ") + job.accountingName : c()
     }
 
     @Override
-    protected AnyEscapableString getWorkingDirectoryParameter() {
+    protected EscapableString getWorkingDirectoryParameter() {
         u("-w ") + e(job.getWorkingDirectory().toString()) ?: WORKING_DIRECTORY_DEFAULT
     }
 
     @Override
-    protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+    protected EscapableString getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
             u("-k n")
         } else if (jobLog.out == jobLog.error) {
@@ -73,21 +73,21 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+    protected EscapableString getEmailParameter(EscapableString address) {
         return address ? u(" -M ") + address : c()
     }
 
-    protected AnyEscapableString getJoinLogParameter() {
+    protected EscapableString getJoinLogParameter() {
         u("-j oe")
     }
 
     @Override
-    protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+    protected EscapableString getGroupListParameter(EscapableString groupList) {
         u(" -W group_list=") + groupList
     }
 
     @Override
-    protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+    protected EscapableString getUmaskString(EscapableString umask) {
         umask ? u("-W umask=") + umask : c()
     }
 
@@ -112,28 +112,28 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getAdditionalCommandParameters() {
+    protected EscapableString getAdditionalCommandParameters() {
         u(EMPTY)
     }
 
     @Override
-    protected AnyEscapableString getEnvironmentString() {
+    protected EscapableString getEnvironmentString() {
         c()
     }
 
     @Override
-    AnyEscapableString assembleVariableExportParameters() {
+    EscapableString assembleVariableExportParameters() {
 
-        List<AnyEscapableString> environmentStrings = parameters.collect { key, value ->
+        List<EscapableString> environmentStrings = parameters.collect { key, value ->
             if (null == value)
                 // Returning just the variable name makes qsub take the value form the qsub-commands execution environment
                 u(key)
             else
                 // Sets value to value
                 u(key) + e("=") + value
-        } as List<AnyEscapableString>
+        } as List<EscapableString>
 
-        List<AnyEscapableString> parameterStrings = []
+        List<EscapableString> parameterStrings = []
 
         if (passLocalEnvironment)
             parameterStrings << u("-V")

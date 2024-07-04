@@ -2,7 +2,7 @@ package de.dkfz.roddy.execution
 
 
 import com.google.common.base.Preconditions
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.AutoClone
 import groovy.transform.CompileStatic
 
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 
 /** A bind specification for mounting a host directory into a container. */
@@ -100,7 +100,7 @@ class ApptainerCommandBuilder {
 
     private @NotNull List<String> engineArgs
 
-    private @Nullable AnyEscapableString imageId
+    private @Nullable EscapableString imageId
 
     private @NotNull String mode
 
@@ -108,7 +108,7 @@ class ApptainerCommandBuilder {
 
     private @NotNull List<String> environmentVariablesToCopy
 
-    private @NotNull Map<String, AnyEscapableString> setEnvironmentVariables
+    private @NotNull Map<String, EscapableString> setEnvironmentVariables
 
     /** Create a command that will be wrapped into a singularity/apptainer call.
      *  For this to work all remote paths (i.e. on the execution node) need to be
@@ -178,7 +178,7 @@ class ApptainerCommandBuilder {
     }
 
     /** The path or URI of the container image to wrap the command in. */
-    ApptainerCommandBuilder withImageId(AnyEscapableString newId) {
+    ApptainerCommandBuilder withImageId(EscapableString newId) {
         Preconditions.checkArgument(newId == null || newId.size() > 0,
                                     "newId cannot be null and must not be empty")
         ApptainerCommandBuilder copy = clone()
@@ -213,7 +213,7 @@ class ApptainerCommandBuilder {
      *  ["renamedVariableName": "originalVariableValue"]
      */
     ApptainerCommandBuilder withAddedEnvironmentVariables(
-            @NotNull Map<String, AnyEscapableString> newNameValues) {
+            @NotNull Map<String, EscapableString> newNameValues) {
         Preconditions.checkNotNull(newNameValues, "newNameValues must not be null")
         ApptainerCommandBuilder copy = clone()
         copy.setEnvironmentVariables += newNameValues
@@ -222,15 +222,15 @@ class ApptainerCommandBuilder {
 
     // Helpers for the build() method to create the actual Command object.
 
-    private List<AnyEscapableString> getWorkingDirParameter() {
+    private List<EscapableString> getWorkingDirParameter() {
         if (workingDir != null) {
-            [u("-W"), e(workingDir.toString())] as List<AnyEscapableString>
+            [u("-W"), e(workingDir.toString())] as List<EscapableString>
         } else {
             []
         }
     }
 
-    private Map<String, AnyEscapableString> getExportedEnvironmentVariables() {
+    private Map<String, EscapableString> getExportedEnvironmentVariables() {
         this.environmentVariablesToCopy.collectEntries { variableName ->
             [variableName, u("\$$variableName")]
         }
@@ -240,25 +240,25 @@ class ApptainerCommandBuilder {
      *  variables to (possibly new) values. Note that the values are *not* quoted. We leave it to
      *  the caller, to quote values correctly, if necessary.
      */
-    private Map<String, AnyEscapableString> getExplicitlySetVariables() {
+    private Map<String, EscapableString> getExplicitlySetVariables() {
         setEnvironmentVariables
     }
 
     /** Combine the copied (calling environment) variables and the explicitly set variables.
      *  Variables are not returned in an explicitly fixed order.
      */
-    private List<AnyEscapableString> getEnvironmentExportParameters() {
+    private List<EscapableString> getEnvironmentExportParameters() {
         (exportedEnvironmentVariables + explicitlySetVariables).
-            collect { Map.Entry<String, AnyEscapableString> kv ->
+            collect { Map.Entry<String, EscapableString> kv ->
                     [u("--env"), u(kv.key) + u("=") + kv.value]
                 }.
-                flatten() as List<AnyEscapableString>
+                flatten() as List<EscapableString>
     }
 
-    private List<AnyEscapableString> getFinalEngineArg() {
+    private List<EscapableString> getFinalEngineArg() {
         environmentExportParameters +
         workingDirParameter +
-        (engineArgs.collect { String it -> u(it) } as List<AnyEscapableString>)
+        (engineArgs.collect { String it -> u(it) } as List<EscapableString>)
     }
 
     /**
@@ -315,11 +315,11 @@ class ApptainerCommandBuilder {
      * Translate the bind specifications into command-line parameters for apptainer/singularity.
      * @return
      */
-    private List<AnyEscapableString> getBindOptions() {
+    private List<EscapableString> getBindOptions() {
         if (bindSpecifications.size() > 0) {
             prepareBindSpecs(bindSpecifications).
                     collect { [u("-B"), u(it.toBindOption())] }.
-                    flatten() as List<AnyEscapableString>
+                    flatten() as List<EscapableString>
         } else {
             []
         }
@@ -332,8 +332,8 @@ class ApptainerCommandBuilder {
      *                     if it exists.
      * @return
      */
-    Command build(@Nullable AnyEscapableString imageId) {
-        AnyEscapableString _imageId = this.imageId
+    Command build(@Nullable EscapableString imageId) {
+        EscapableString _imageId = this.imageId
         if (imageId != null) {
             _imageId = imageId
         }
@@ -341,14 +341,14 @@ class ApptainerCommandBuilder {
                                     "imageId cannot be null and must not be empty")
         new Command(
                 new Executable(apptainerExecutable),
-                ([u("exec")] as List<AnyEscapableString>) +
+                ([u("exec")] as List<EscapableString>) +
                 bindOptions +
                 finalEngineArg +
-                ([_imageId] as List<AnyEscapableString>))
+                ([_imageId] as List<EscapableString>))
     }
     Command build(@Nullable String imageId = null) {
         if (imageId == null) {
-            build(null as AnyEscapableString)
+            build(null as EscapableString)
         } else {
             build(u(imageId))
         }

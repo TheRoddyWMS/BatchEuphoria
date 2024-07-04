@@ -1,18 +1,18 @@
 package de.dkfz.roddy.execution
 
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.tools.BashInterpreter
 import spock.lang.Specification
 
 import java.nio.file.Paths
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 class CommandSpec extends Specification {
 
     def "throw with null string argument"() {
         when:
         new Command(new Executable(Paths.get("somePath")),
-                    [null as AnyEscapableString])
+                    [null as EscapableString])
         then:
         final IllegalArgumentException exception = thrown()
     }
@@ -60,7 +60,7 @@ class CommandSpec extends Specification {
 
     def "throw with null argument list"() {
         when:
-        new Command(new Executable(Paths.get("somePath")), null as List<AnyEscapableString>)
+        new Command(new Executable(Paths.get("somePath")), null as List<EscapableString>)
         then:
         final IllegalArgumentException exception = thrown()
     }
@@ -100,22 +100,22 @@ class CommandSpec extends Specification {
         expect:
         command1.cliAppend(command2).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "someTool", "toolarg1"
-        ].collect { u(it) } as List<AnyEscapableString>
+        ].collect { u(it) } as List<EscapableString>
 
         command1.cliAppend(command2, true).toCommandSegmentList() == [
                 u("strace"), u("stracearg1"), u("--"),
                 c(e("someTool"), e(" "), e("toolarg1"))
-        ] as List<AnyEscapableString>
+        ] as List<EscapableString>
 
         command1.cliAppend(executable).toCommandSegmentList() == [
                 "strace", "stracearg1", "--", "executableX"
-        ].collect { u(it)} as List<AnyEscapableString>
+        ].collect { u(it)} as List<EscapableString>
     }
 
     def "CliAppendCode"() {
         given:
         Code code1 = new Code("echo hallo; sleep 50;")
-        AnyEscapableString result =
+        EscapableString result =
                 new Command(new Executable(Paths.get("cat")), ["-"].collect { u(it) }).
                         cliAppend(code1,
                                   new Executable(Paths.get("/bin/bash")),

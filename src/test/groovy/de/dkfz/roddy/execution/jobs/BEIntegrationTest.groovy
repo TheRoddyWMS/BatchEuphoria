@@ -11,7 +11,7 @@ import de.dkfz.roddy.BEException
 import de.dkfz.roddy.TestExecutionService
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.RestExecutionService
@@ -24,7 +24,8 @@ import org.junit.Test
 
 import java.time.Duration
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
+
 /**
  *
  * Only the tests are executed for which the cluster configuration are set in the "integrationTest.properties"
@@ -91,7 +92,7 @@ class BEIntegrationTest {
                 new Code(u(testScript)),
                 resourceSet,
                 [],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         jobTest(jobManager, [testJobWithPipedScript])
     }
@@ -107,7 +108,7 @@ class BEIntegrationTest {
                 new Code(u(testScript)),
                 resourceSet,
                 [],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         BEJob testJobChild1 = new BEJob(
                 null,
@@ -116,7 +117,7 @@ class BEIntegrationTest {
                 new Code(u(testScript)),
                 resourceSet,
                 [testParent],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         BEJob testJobChild2 = new BEJob(
                 null,
@@ -125,7 +126,7 @@ class BEIntegrationTest {
                 new Code(u(testScript)),
                 resourceSet,
                 [testParent, testJobChild1],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }
@@ -144,7 +145,7 @@ class BEIntegrationTest {
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         jobTest(jobManager, [testJobWithFile])
     }
@@ -161,7 +162,7 @@ class BEIntegrationTest {
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         BEJob testJobChild1 = new BEJob(
                 null,
@@ -170,7 +171,7 @@ class BEIntegrationTest {
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         BEJob testJobChild2 = new BEJob(
                 null,
@@ -179,7 +180,7 @@ class BEIntegrationTest {
                 new Executable(batchEuphoriaTestScript.toPath()),
                 resourceSet,
                 [testParent, testJobChild1],
-                ["a": u("value")] as Map<String, AnyEscapableString>,
+                ["a": u("value")] as Map<String, EscapableString>,
                 logFile)
         jobTest(jobManager, [testParent, testJobChild1, testJobChild2])
     }

@@ -2,7 +2,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.execution.io.ExecutionResult
@@ -74,7 +74,7 @@ class AbstractLSFJobManagerSpec extends Specification {
 
     def "test conversion of core and node resources with createComputeParameter"(ResourceSet input, LinkedHashMap results) {
         when:
-        LinkedHashMultimap<String, AnyEscapableString> parameters =
+        LinkedHashMultimap<String, EscapableString> parameters =
                 LinkedHashMultimap.create(1, 1)
         jobManager.createComputeParameter(input, parameters)
 

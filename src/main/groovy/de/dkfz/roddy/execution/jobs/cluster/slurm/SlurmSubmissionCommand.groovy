@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.tools.ConcatenatedString
 import de.dkfz.roddy.execution.jobs.BEJob
@@ -19,7 +19,7 @@ import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.COLON
 import static de.dkfz.roddy.StringConstants.COMMA
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
@@ -29,9 +29,9 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     public static final String PARM_DEPENDS = " --dependency="
 
     SlurmSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job,
-                           AnyEscapableString jobName,
+                           EscapableString jobName,
                            List<ProcessingParameters> processingParameters,
-                           Map<String, AnyEscapableString> environmentVariables) {
+                           Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
@@ -41,22 +41,22 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getJobNameParameter() {
+    protected EscapableString getJobNameParameter() {
         u("--job-name ") + jobName
     }
 
     @Override
-    protected AnyEscapableString getHoldParameter() {
+    protected EscapableString getHoldParameter() {
         u("--hold")
     }
 
     @Override
-    protected AnyEscapableString getAccountNameParameter() {
+    protected EscapableString getAccountNameParameter() {
         job.accountingName != null ? u("--account=") + job.accountingName : c()
     }
 
     @Override
-    protected AnyEscapableString getWorkingDirectoryParameter() {
+    protected EscapableString getWorkingDirectoryParameter() {
         ConcatenatedString result = c(u("--chdir "))
         if (job.workingDirectory) {
             // The workingDirectory is a File object. So no variables (such as $HOME) are supported.
@@ -70,7 +70,7 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
    }
 
     @Override
-    protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+    protected EscapableString getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
             c()
         } else if (jobLog.out == jobLog.error) {
@@ -82,21 +82,21 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+    protected EscapableString getEmailParameter(EscapableString address) {
         address ? u(" --mail-user=") + address : c()
     }
 
-    protected AnyEscapableString getParsableParameter() {
+    protected EscapableString getParsableParameter() {
         u("--parsable")
     }
 
     @Override
-    protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+    protected EscapableString getGroupListParameter(EscapableString groupList) {
         u(" --grid=") + groupList
     }
 
     @Override
-    protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+    protected EscapableString getUmaskString(EscapableString umask) {
         c()
     }
 
@@ -121,29 +121,29 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getAdditionalCommandParameters() {
+    protected EscapableString getAdditionalCommandParameters() {
         u(parsableParameter) + u(" --kill-on-invalid-dep=yes --propagate=NONE")
     }
 
     @Override
-    protected AnyEscapableString getEnvironmentString() {
+    protected EscapableString getEnvironmentString() {
         c()
     }
 
     @Override
-    AnyEscapableString assembleVariableExportParameters() {
+    EscapableString assembleVariableExportParameters() {
         ConcatenatedString parameterStrings = c()
 
         if (passLocalEnvironment)
             parameterStrings += u("--get-user-env ")
 
-        List<AnyEscapableString> environmentStrings =
+        List<EscapableString> environmentStrings =
                 parameters.collect { key, value ->
                     if (null == value)
                         u(key)
                     else
                         u(key) + e("=") + value
-                } as List<AnyEscapableString>
+                } as List<EscapableString>
 
         if (!environmentStrings.empty)
             parameterStrings += u("--export=") + join(environmentStrings, u(COMMA))
@@ -155,7 +155,7 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected String composeCommandString(List<AnyEscapableString> parameters) {
+    protected String composeCommandString(List<EscapableString> parameters) {
         ConcatenatedString command = c()
 
         if (job.code) {

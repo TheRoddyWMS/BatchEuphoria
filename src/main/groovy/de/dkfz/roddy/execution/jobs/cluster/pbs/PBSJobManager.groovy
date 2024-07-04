@@ -9,7 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -20,7 +20,7 @@ import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
@@ -92,7 +92,7 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
 
     @Override
     void createComputeParameter(ResourceSet resourceSet,
-                                LinkedHashMultimap<String, AnyEscapableString> parameters) {
+                                LinkedHashMultimap<String, EscapableString> parameters) {
         int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
         // Currently not active
@@ -114,25 +114,25 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
         }
     }
 
-    void createQueueParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters,
                               String queue) {
         parameters.put('-q', e(queue))
     }
 
     @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
         parameters.put('-l', u('walltime=') + TimeUnit.fromDuration(resourceSet.walltime).toString())
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters,
                                ResourceSet resourceSet) {
         parameters.put('-l', u('mem=') + resourceSet.getMem().toString(BufferUnit.M))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, AnyEscapableString> parameters,
+    void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters,
                                  ResourceSet resourceSet) {
     }
 

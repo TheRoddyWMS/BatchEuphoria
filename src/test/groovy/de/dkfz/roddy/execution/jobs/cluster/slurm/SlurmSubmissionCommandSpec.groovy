@@ -3,7 +3,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
 import de.dkfz.roddy.execution.Executable
@@ -17,16 +17,16 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 class SlurmSubmissionCommandSpec extends Specification {
 
     SlurmJobManager jobManager = new SlurmJobManager(TestHelper.makeExecutionService(), JobManagerOptions.create().build())
 
     private BEJob makeJob(
-            Map<String, AnyEscapableString> mapOfParameters,
+            Map<String, EscapableString> mapOfParameters,
             CommandI command,
-            AnyEscapableString accountingProject = null) {
+            EscapableString accountingProject = null) {
         BEJob job = new BEJob(
                 null,
                 jobManager,
@@ -51,7 +51,7 @@ class SlurmSubmissionCommandSpec extends Specification {
 
     def "assemble dependency string without dependencies"() throws Exception {
         when:
-        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": u("b")]
+        Map<String, EscapableString> mapOfVars = ["a": u("a"), "b": u("b")]
         BEJob job = makeJob(mapOfVars,
                             new Executable(Paths.get("/tmp/test.sh")))
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
@@ -69,7 +69,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:] as Map<String, AnyEscapableString>,
+                makeJob([:] as Map<String, EscapableString>,
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
                 null,
@@ -80,7 +80,7 @@ class SlurmSubmissionCommandSpec extends Specification {
 
     def "assemble variable export parameters with only variables"() {
         when:
-        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": null]
+        Map<String, EscapableString> mapOfVars = ["a": u("a"), "b": null]
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars,
@@ -97,7 +97,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:] as LinkedHashMap<String, AnyEscapableString>,
+                makeJob([:] as LinkedHashMap<String, EscapableString>,
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobName"),
                 null,
@@ -109,7 +109,7 @@ class SlurmSubmissionCommandSpec extends Specification {
 
     def "assemble variable export parameters with 'all' and explicit variables"() {
         when:
-        Map<String, AnyEscapableString> mapOfVars = ["a": u("a"), "b": null]
+        Map<String, EscapableString> mapOfVars = ["a": u("a"), "b": null]
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
                 makeJob(mapOfVars as LinkedHashMap<String, String>,
@@ -127,7 +127,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:] as Map<String, AnyEscapableString>,
+                makeJob([:] as Map<String, EscapableString>,
                         new Executable(Paths.get("/tmp/test.sh"))),
                 u("jobname"),
                 null,
@@ -140,7 +140,7 @@ class SlurmSubmissionCommandSpec extends Specification {
         when:
         SlurmSubmissionCommand cmd = new SlurmSubmissionCommand(
                 jobManager,
-                makeJob([:] as Map<String, AnyEscapableString>,
+                makeJob([:] as Map<String, EscapableString>,
                         new Executable(Paths.get("/tmp/test.sh")),
                         u("accountingProject")),
                 u("jobname"),

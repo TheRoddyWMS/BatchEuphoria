@@ -8,7 +8,7 @@ package de.dkfz.roddy.execution
 
 import com.google.common.base.Preconditions
 import com.google.common.collect.ImmutableList
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 
 /** Types of executable code or command. These are used as arguments for BEJob. The
@@ -27,7 +27,7 @@ import static de.dkfz.roddy.tools.EscapableString.*
 @CompileStatic
 abstract class CommandI {
 
-    abstract AnyEscapableString toEscapableString()
+    abstract EscapableString toEscapableString()
 
 }
 
@@ -44,10 +44,10 @@ abstract class CommandReferenceI extends CommandI {
      *
      * @return
      */
-    abstract List<AnyEscapableString> toCommandSegmentList()
+    abstract List<EscapableString> toCommandSegmentList()
 
     @Override
-    AnyEscapableString toEscapableString() {
+    EscapableString toEscapableString() {
         join(toCommandSegmentList(), " ")
     }
 
@@ -83,8 +83,8 @@ final class Executable extends CommandReferenceI {
     }
 
     @Override
-    List<AnyEscapableString> toCommandSegmentList() {
-        [u(path.toString())] as List<AnyEscapableString>
+    List<EscapableString> toCommandSegmentList() {
+        [u(path.toString())] as List<EscapableString>
     }
 
     Optional<String> getMd5() {
@@ -101,7 +101,7 @@ final class Command extends CommandReferenceI {
 
     private final Executable executable
 
-    private final ImmutableList<AnyEscapableString> arguments
+    private final ImmutableList<EscapableString> arguments
 
     /** Concerning quoting arguments: Provide arguments like they should be used at the call-site.
      *
@@ -109,7 +109,7 @@ final class Command extends CommandReferenceI {
      * @param arguments      The arguments to be passed to the executable.
      **/
     Command(@NotNull Executable executable,
-            @NotNull List<AnyEscapableString> arguments = []) {
+            @NotNull List<EscapableString> arguments = []) {
         Preconditions.checkArgument(executable != null)
         this.executable = executable
         Preconditions.checkArgument(arguments != null)
@@ -129,7 +129,7 @@ final class Command extends CommandReferenceI {
         executable.getExecutablePath()
     }
 
-    List<AnyEscapableString> toCommandSegmentList() {
+    List<EscapableString> toCommandSegmentList() {
         executable.toCommandSegmentList() + arguments
     }
 
@@ -183,7 +183,7 @@ final class Command extends CommandReferenceI {
         } else {
             new Command(
                     executable,
-                    (this.arguments + e(other.toEscapableString())) as List<AnyEscapableString>)
+                    (this.arguments + e(other.toEscapableString())) as List<EscapableString>)
         }
     }
 
@@ -198,7 +198,7 @@ final class Code extends CommandI {
     /** Code will usually be a script, maybe with a shebang line. Code may or may not be provided
      *  to the job submission command (e.g. bsub) via the standard input instead of as file.
      */
-    @NotNull private final AnyEscapableString code
+    @NotNull private final EscapableString code
 
     /** An interpreter for the code. This is bash by default, but could (probably) also be
      *  python3, perl, or whatever. It is also possible to use commands with arguments as
@@ -206,7 +206,7 @@ final class Code extends CommandI {
      */
     @NotNull private final CommandReferenceI interpreter
 
-    Code(@NotNull AnyEscapableString code,
+    Code(@NotNull EscapableString code,
          @NotNull CommandReferenceI interpreter) {
         Preconditions.checkArgument(code != null)
         Preconditions.checkArgument(code.size() > 0)
@@ -222,7 +222,7 @@ final class Code extends CommandI {
         this(u(code), new Executable(interpreter))
     }
 
-    Code(@NotNull AnyEscapableString code,
+    Code(@NotNull EscapableString code,
          @NotNull Path interpreter = Paths.get("/bin/bash")) {
         this(code, new Executable(interpreter))
     }
@@ -232,7 +232,7 @@ final class Code extends CommandI {
         this(u(code), interpreter)
     }
 
-    AnyEscapableString getCode() {
+    EscapableString getCode() {
         code
     }
 
@@ -244,8 +244,8 @@ final class Code extends CommandI {
      *  newline appended, because it depends on the client context whether this is useful. For
      *  instance, a newline may be unnecessary in many cases, but for a HERE document the terminator
      *  must be followed by newline. */
-    AnyEscapableString toEscapableString(boolean terminate) {
-        AnyEscapableString result = u("#!") + interpreter.toEscapableString() + "\n" + code
+    EscapableString toEscapableString(boolean terminate) {
+        EscapableString result = u("#!") + interpreter.toEscapableString() + "\n" + code
         if (terminate) {
             result += "\n"
         }
@@ -253,7 +253,7 @@ final class Code extends CommandI {
     }
 
     @Override
-    AnyEscapableString toEscapableString() {
+    EscapableString toEscapableString() {
         toEscapableString(false)
     }
 

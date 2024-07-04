@@ -7,10 +7,10 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 abstract class SubmissionCommand extends Command {
@@ -37,9 +37,9 @@ abstract class SubmissionCommand extends Command {
      */
     protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager,
                                 BEJob job,
-                                AnyEscapableString jobName,
+                                EscapableString jobName,
                                 List<ProcessingParameters> processingParameters,
-                                Map<String, AnyEscapableString> environmentVariables) {
+                                Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
     }
@@ -63,14 +63,14 @@ abstract class SubmissionCommand extends Command {
 
     abstract String getSubmissionExecutableName()
 
-    private List<AnyEscapableString> collectParameters() {
+    private List<EscapableString> collectParameters() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         // collect parameters for job submission
-        List<AnyEscapableString> parameters = []
+        List<EscapableString> parameters = []
         parameters << assembleVariableExportParameters()
         parameters << getAccountNameParameter()
         parameters << getJobNameParameter()
@@ -87,36 +87,36 @@ abstract class SubmissionCommand extends Command {
         parameters
     }
 
-    abstract protected String composeCommandString(List<AnyEscapableString> parameters)
+    abstract protected String composeCommandString(List<EscapableString> parameters)
 
     @Override
     String toBashCommandString() {
         return composeCommandString(collectParameters())
     }
 
-    abstract protected AnyEscapableString getJobNameParameter()
+    abstract protected EscapableString getJobNameParameter()
 
-    abstract protected AnyEscapableString getHoldParameter()
+    abstract protected EscapableString getHoldParameter()
 
-    protected AnyEscapableString getAccountNameParameter() {
+    protected EscapableString getAccountNameParameter() {
         return c()
     }
 
-    abstract protected AnyEscapableString getWorkingDirectoryParameter()
+    abstract protected EscapableString getWorkingDirectoryParameter()
 
-    abstract protected AnyEscapableString getLoggingParameter(JobLog jobLog)
+    abstract protected EscapableString getLoggingParameter(JobLog jobLog)
 
-    abstract protected AnyEscapableString getEmailParameter(AnyEscapableString address)
+    abstract protected EscapableString getEmailParameter(EscapableString address)
 
-    abstract protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList)
+    abstract protected EscapableString getGroupListParameter(EscapableString groupList)
 
-    abstract protected AnyEscapableString getUmaskString(AnyEscapableString umask)
+    abstract protected EscapableString getUmaskString(EscapableString umask)
 
-    abstract protected AnyEscapableString assembleDependencyParameter(List<BEJobID> jobIds)
+    abstract protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds)
 
-    abstract protected AnyEscapableString getAdditionalCommandParameters()
+    abstract protected EscapableString getAdditionalCommandParameters()
 
-    abstract protected AnyEscapableString getEnvironmentString()
+    abstract protected EscapableString getEnvironmentString()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
@@ -125,10 +125,10 @@ abstract class SubmissionCommand extends Command {
      *
      * @return A set of parameters for the submission command to achieve the requested variable exports.
      */
-    abstract protected AnyEscapableString assembleVariableExportParameters()
+    abstract protected EscapableString assembleVariableExportParameters()
 
-    AnyEscapableString assembleProcessingCommands() {
-        AnyEscapableString commands = c()
+    EscapableString assembleProcessingCommands() {
+        EscapableString commands = c()
         for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
             if (pcmd instanceof ProcessingParameters) {
                 ProcessingParameters command = (ProcessingParameters) pcmd

@@ -7,14 +7,14 @@
 package de.dkfz.roddy.execution.jobs.cluster
 
 
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.tools.ConcatenatedString
 import de.dkfz.roddy.execution.jobs.*
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
@@ -31,29 +31,29 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
      */
     GridEngineBasedSubmissionCommand(BatchEuphoriaJobManager parentJobManager,
                                      BEJob job,
-                                     AnyEscapableString jobName,
+                                     EscapableString jobName,
                                      List<ProcessingParameters> processingParameters,
-                                     Map<String, AnyEscapableString> environmentVariables) {
+                                     Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
 
     @Override
-    protected AnyEscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
-        AnyEscapableString qsubCall = c()
-        LinkedList<AnyEscapableString> tempDependencies =
+    protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
+        EscapableString qsubCall = c()
+        LinkedList<EscapableString> tempDependencies =
                 jobIds.findAll {
                     it.id != "" && it.id != NONE && it.id != "-1"
                 }.collect {
                     e(it.id.split("\\.")[0])
                     // Keep the command line short. GE accepts the job number for dependencies.
-                } as LinkedList<AnyEscapableString>
+                } as LinkedList<EscapableString>
         if (tempDependencies.size() > 0) {
             qsubCall = join([qsubCall,
                              u(getDependsSuperParameter()),
                              u(getDependencyParameterName()),
                              u(getDependencyOptionSeparator())
-                            ],
+                            ] + tempDependencies,
                             getDependencyIDSeparator())
         }
 
@@ -79,7 +79,7 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String composeCommandString(List<AnyEscapableString> parameters) {
+    protected String composeCommandString(List<EscapableString> parameters) {
         StringBuilder command = new StringBuilder(EMPTY)
 
         if (job.code) {

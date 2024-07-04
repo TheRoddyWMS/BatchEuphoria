@@ -6,23 +6,23 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.collect.LinkedHashMultimap
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.tools.BashInterpreter
 import groovy.transform.CompileStatic
 
 import java.text.ParseException
 import java.util.regex.Pattern
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  */
 @CompileStatic
 class ProcessingParameters implements Serializable {
 
-    private LinkedHashMultimap<String, AnyEscapableString> parameters = null
+    private LinkedHashMultimap<String, EscapableString> parameters = null
 
-    ProcessingParameters(LinkedHashMultimap<String, AnyEscapableString> parameters) {
+    ProcessingParameters(LinkedHashMultimap<String, EscapableString> parameters) {
         assert (null != parameters)
         this.parameters = parameters
     }
@@ -38,7 +38,7 @@ class ProcessingParameters implements Serializable {
      */
     static ProcessingParameters fromString(String parameterString) {
         def pattern = Pattern.compile(/(?<optionName>[^\s=]+)(?:[\s+=](?<optionValue>.+?\s*))?/)
-        LinkedHashMultimap<String, AnyEscapableString> parameters = LinkedHashMultimap.create()
+        LinkedHashMultimap<String, EscapableString> parameters = LinkedHashMultimap.create()
         parameterString.split(/(^|\s+)(?=-)/).findAll { it != '' }.eachWithIndex { String option, int i ->
             def matcher = pattern.matcher(option)
             if (matcher.matches()) {
@@ -54,18 +54,18 @@ class ProcessingParameters implements Serializable {
         return new ProcessingParameters(parameters)
     }
 
-    AnyEscapableString getProcessingCommandString() {
+    EscapableString getProcessingCommandString() {
         // Careful with this method. We had one problem where an Integer value was in one of the
         // Collections inside the map. In this particular case, Groovy said there is something
         // wrong with the Integer [1].
-        join(((parameters.asMap() as Map<String, Collection<AnyEscapableString>>).collect {
-            String k, Collection<AnyEscapableString> vs ->
+        join(((parameters.asMap() as Map<String, Collection<EscapableString>>).collect {
+            String k, Collection<EscapableString> vs ->
                 join(vs.findAll { it != null }.
                         collect {
                              u(k) + u(' ') + it
-                         } as List<AnyEscapableString>,
+                         } as List<EscapableString>,
                      u(' '))
-        } as List<AnyEscapableString>), u(' '))
+        } as List<EscapableString>), u(' '))
     }
 
     @Override

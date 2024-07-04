@@ -7,7 +7,7 @@
 package de.dkfz.roddy.execution.jobs.cluster.sge
 
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
 import de.dkfz.roddy.execution.jobs.ProcessingParameters
@@ -16,7 +16,7 @@ import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.COMMA
 import static de.dkfz.roddy.StringConstants.WHITESPACE
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * Created by michael on 20.05.14.
@@ -25,34 +25,34 @@ import static de.dkfz.roddy.tools.EscapableString.*
 class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager,
-                         BEJob job, AnyEscapableString jobName,
+                         BEJob job, EscapableString jobName,
                          List<ProcessingParameters> processingParameters,
-                         Map<String, AnyEscapableString> environmentVariables) {
+                         Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
     @Override
-    protected AnyEscapableString getJobNameParameter() {
+    protected EscapableString getJobNameParameter() {
         u("-N ") + jobName
     }
 
     @Override
-    protected AnyEscapableString getHoldParameter() {
+    protected EscapableString getHoldParameter() {
         u("-h")
     }
 
     @Override
-    protected AnyEscapableString getAccountNameParameter() {
+    protected EscapableString getAccountNameParameter() {
         job.accountingName != null ? u("-A ") + job.accountingName : c()
     }
 
     @Override
-    protected AnyEscapableString getWorkingDirectoryParameter() {
+    protected EscapableString getWorkingDirectoryParameter() {
         u("-wd ") + e(job.getWorkingDirectory().toString()) ?: WORKING_DIRECTORY_DEFAULT
     }
 
     @Override
-    protected AnyEscapableString getLoggingParameter(JobLog jobLog) {
+    protected EscapableString getLoggingParameter(JobLog jobLog) {
         if (!jobLog.out && !jobLog.error) {
             u("-o /dev/null -e /dev/null")
         } else if (jobLog.out == jobLog.error) {
@@ -68,21 +68,21 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getEmailParameter(AnyEscapableString address) {
+    protected EscapableString getEmailParameter(EscapableString address) {
         address ? u(" -M ") + address : c()
     }
 
-    protected AnyEscapableString getJoinLogParameter() {
+    protected EscapableString getJoinLogParameter() {
         u("-j y")
     }
 
     @Override
-    protected AnyEscapableString getGroupListParameter(AnyEscapableString groupList) {
+    protected EscapableString getGroupListParameter(EscapableString groupList) {
         c()
     }
 
     @Override
-    protected AnyEscapableString getUmaskString(AnyEscapableString umask) {
+    protected EscapableString getUmaskString(EscapableString umask) {
         u(WHITESPACE)
     }
 
@@ -102,18 +102,18 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     }
 
     @Override
-    protected AnyEscapableString getAdditionalCommandParameters() {
+    protected EscapableString getAdditionalCommandParameters() {
         u(" -S /bin/bash ")
     }
 
     @Override
-    protected AnyEscapableString getEnvironmentString() {
+    protected EscapableString getEnvironmentString() {
         c()
     }
 
     @Override
-    protected AnyEscapableString assembleVariableExportParameters() {
-        List<AnyEscapableString> parameterStrings = []
+    protected EscapableString assembleVariableExportParameters() {
+        List<EscapableString> parameterStrings = []
 
         if (passLocalEnvironment)
             parameterStrings += u("-V")

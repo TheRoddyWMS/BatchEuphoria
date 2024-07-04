@@ -7,10 +7,10 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.base.Preconditions
-import de.dkfz.roddy.tools.AnyEscapableString
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.tools.EscapableString.*
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * Base class for all types of cluster interaction commands.
@@ -24,12 +24,12 @@ import static de.dkfz.roddy.tools.EscapableString.*
 @CompileStatic
 abstract class Command {
 
-    protected static final AnyEscapableString WORKING_DIRECTORY_DEFAULT = u('$HOME')
+    protected static final EscapableString WORKING_DIRECTORY_DEFAULT = u('$HOME')
 
     /**
      * The job name of this command.
      */
-    protected final AnyEscapableString jobName
+    protected final EscapableString jobName
     /**
      * The id which was created upon execution by the job system.
      */
@@ -44,7 +44,7 @@ abstract class Command {
      * Environment variables to be passed with a specific value or as they are declared in the submission environment.
      * null-valued parameters correspond to environment variables to be forwarded as locally defined.
      */
-    public final LinkedHashMap<String, AnyEscapableString> parameters = [:]
+    public final LinkedHashMap<String, EscapableString> parameters = [:]
 
     protected final BatchEuphoriaJobManager parentJobManager
 
@@ -58,8 +58,8 @@ abstract class Command {
      */
     protected Command(BatchEuphoriaJobManager parentJobManager,
                       BEJob job,
-                      AnyEscapableString jobName,
-                      Map<String, AnyEscapableString> environmentVariables) {
+                      EscapableString jobName,
+                      Map<String, EscapableString> environmentVariables) {
         this.parentJobManager = parentJobManager
         this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job

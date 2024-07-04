@@ -21,7 +21,7 @@ interface BEExecutionService {
 
     ExecutionResult execute(Command command)
 
-    ExecutionResult execute(de.dkfz.roddy.execution.jobs.Command command, boolean waitFor)
+    ExecutionResult execute(Command command, boolean waitFor)
 
     ExecutionResult execute(Command command, Duration timeout)
 
