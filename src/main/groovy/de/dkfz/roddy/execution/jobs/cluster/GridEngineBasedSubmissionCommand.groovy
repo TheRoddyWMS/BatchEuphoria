@@ -53,8 +53,8 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
                              u(getDependsSuperParameter()),
                              u(getDependencyParameterName()),
                              u(getDependencyOptionSeparator())
-                            ] + tempDependencies,
-                            getDependencyIDSeparator())
+                            ], "") +
+                       join(tempDependencies, getDependencyIDSeparator())
         }
 
         qsubCall

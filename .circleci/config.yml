@@ -3,7 +3,7 @@ version: 2.1
 executors:
   docker-executor:
     docker:
-      - image: cimg/openjdk:8.0.322   # Version for Gradle 5.1 should be 11.0.18?
+      - image: cimg/openjdk:8.0.322
 jobs: # a collection of steps
   build-and-test:
     environment:

@@ -3,6 +3,7 @@ package de.dkfz.roddy.execution.jobs.cluster.slurm
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.Code
 import de.dkfz.roddy.execution.CommandI
@@ -63,6 +64,8 @@ class SlurmSubmissionCommandSpec extends Specification {
                 mapOfVars)
         then:
         cmd.assembleDependencyParameter([]) == c()
+        cmd.assembleDependencyParameter([new BEJobID("1"), new BEJobID("2")]) ==
+            c([u(" --dependency="), u("afterok"), u(":"), e("1"), u(":"), e("2")])
     }
 
     def "assemble variable export parameters with no variables"() {

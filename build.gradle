@@ -112,7 +112,6 @@ jar {
 
     into("META-INF/maven/$project.group/$project.name") {
         from generatePomFileForMavenJavaPublication
-//        from "$buildDir/pom.xml"
     }
 
 }
@@ -127,7 +126,6 @@ task listJars {
 task uberjar(type: Jar, dependsOn:[':compileJava',':compileGroovy']) {
     from files(sourceSets.main.output.dirs)
     from configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-//    .asFileTree.files.collect { zipTree(it) }
 
     version = getVersionName()
 
@@ -149,11 +147,11 @@ task listConfigurations {
 }
 
 task allBoms() {
-    // a grouping task to execute the CycloneDxTask for each configuration
     group = "reporting"
+    description = "A grouping task to execute the CycloneDxTask for each configuration"
 }
 
-rootProject.configurations.each { configuration ->
+rootProject.configurations.each { Configuration configuration ->
     String name = configuration.name
     task "${name}Bom"(type: CycloneDxTask) {
         group = "reporting"
