@@ -129,12 +129,9 @@ abstract class SubmissionCommand extends Command {
 
     EscapableString assembleProcessingCommands() {
         EscapableString commands = c()
-        for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
-            if (pcmd instanceof ProcessingParameters) {
-                ProcessingParameters command = (ProcessingParameters) pcmd
-                if (command != null)
-                    commands += u(StringConstants.WHITESPACE) + command.getProcessingCommandString()
-            }
+        for (ProcessingParameters command in job.getListOfProcessingParameters()) {
+            if (command != null)
+                commands += u(StringConstants.WHITESPACE) + command.getProcessingCommandString()
         }
         commands
     }
