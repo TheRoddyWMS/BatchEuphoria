@@ -3,11 +3,14 @@
 # BatchEuphoria
 
 A library for cluster / batch system developers to create batch jobs from Java without any hassle and drama.
-Currently this library supports the following job schedulers:
+Currently, this library supports the following job schedulers:
+
 * PBS (SSH+CLI)
 * LSF (SSH+CLI and REST) Version 10.1 Fix Pack 2 or later
 * SLURM (SSH+CLI)
 * direct execution
+
+> This software is for research-use only (RUO).
 
 ### Dependencies
 * [RoddyToolLib](https://github.com/TheRoddyWMS/RoddyToolLib)
@@ -41,9 +44,9 @@ For LSF REST you need to use the RestExecutionService:
 RestExecutionService executionService = new RestExecutionService("http://yourServer:8080/platform/ws","account","password")
 ```
 
-For PBS you need to implement your own execution service with the `ExecutionService interface`
+For PBS, you need to implement your own execution service with the `ExecutionService interface`
 
-Currently there are two job managers which are `LSFRestJobManager` and `PBSJobManager`.
+Currently, there are two job managers which are `LSFRestJobManager` and `PBSJobManager`.
 For example for LSF you would initialize the job manager like this:
 
 ```groovy
@@ -69,7 +72,7 @@ String script=[ "#!/bin/bash", "sleep 15" ].join("\n")`
 BEJob testJobwithScript = new BEJob("batchEuphoriaTestJob", null, script, null, resourceSet, null, ["a": "value"], null, null, jobManager)`
 ```
 
-**NOTE** Submitted jobs are in HOLD state by default! You need to call startHeldJobs on your job manager instance at the end. Or, if you need it, cancel them e.g. on an error.
+> **NOTE** Submitted jobs are in HOLD state by default! You need to call startHeldJobs on your job manager instance at the end. Or, if you need it, cancel them e.g. on an error.
 
 
 All job managers support the following functions:
@@ -85,9 +88,39 @@ You can find [here](https://github.com/eilslabs/BatchEuphoria/blob/develop/src/m
 
 ## Integration Tests
 
-To start the integration tests, please fill in host and user settings (password for lsf rest) into integrationTest.properties. Then start the tests like you'd start.
+To start the integration tests, please fill in host and user settings (password for lsf rest) into integrationTest.properties. Then start the tests like you'd start any unit tests.
 
-# Change Logs
+## Contributors Information
+
+The full developer information is available in the [Roddy documentation](https://roddy-documentation.readthedocs.io/en/latest/roddyDevelopment/developersGuide.html).
+
+Some basic information:
+
+* We use [Semantic Versioning 2.0](https://semver.org/).
+   * Release versions are named according to the pattern `\d\.\d\.\d(-(RC)?\d+`.
+   * The first three levels are the "major", "minor", and "patch" number. The patch number is occasionally also called "build" number.
+   * Additional to the major, minor, and patch numbers, a "revision" number `-\d+` can be attached.
+   * It is possible to tag release candidate using suffixes `-RC\d+`
+* We use [Github-Flow](https://githubflow.github.io/) as branching models.
+* Additional to the "master" branch for long-term support of older versions it is possible to have dedicated release branches.
+   * Release branches should be named according to the pattern `ReleaseBranch_\d+\.\d+(\.\d+)`.
+* Issues can be marked with the following labels
+  * `in progress`:
+  * `bug::candidate`:
+  * `bug::minor`:
+  * `bug::normal`:
+  * `bug::critical`:
+
+## Change-Log
+
+Change-Log entries have the form
+
+```markdown
+* $version
+   * major: A change that breaks backwards compatibility
+   * minor: A change that adds features, without breaking backwards compatibility
+   * patch: A change that does neither add a feature, nor breaks backwards compatibility
+```
 
 * 0.1.4
   - patch: Changed the conversion of EpochSeconds to ZonedDateTime for the value "0".
