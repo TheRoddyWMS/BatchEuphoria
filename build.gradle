@@ -21,9 +21,12 @@ group = "com.github.theroddywms"
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+// Newer Gradle
+//    toolchain {
+//        languageVersion = JavaLanguageVersion.of(8)
+//    }
 }
 
 /*
