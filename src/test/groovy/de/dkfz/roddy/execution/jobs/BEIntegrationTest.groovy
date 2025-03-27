@@ -198,7 +198,7 @@ class BEIntegrationTest {
             ensureProperJobStates(maxSleep, testJobs, [JobState.HOLD], jobManager)
 
             jobManager.startHeldJobs(testJobs)
-            // Wait for some seconds and see, if the status changes from HOLD to queued or running
+            // Wait for a few seconds and see, if the status changes from HOLD to queued or running
             // and from queued to running. The queued to running check can take a lot more time.
             // Also the default update time for queries to the job system
             // is too long for tests. We force updates everytime we run queryJobStatus

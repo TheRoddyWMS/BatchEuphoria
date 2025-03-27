@@ -68,7 +68,7 @@ dependencies {
     testRuntimeOnly "org.objenesis:objenesis:2.5.1"
     testImplementation 'org.slf4j:slf4j-nop:1.7.25'
     implementation 'org.slf4j:slf4j-api:1.7.25'
-    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.14.0'
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.0'
