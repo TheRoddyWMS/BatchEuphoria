@@ -6,10 +6,6 @@ executors:
       - image: cimg/openjdk:8.0.322
 jobs: # a collection of steps
   build-and-test:
-    environment:
-      # Configure the JVM and Gradle to avoid OOM errors
-      _JAVA_OPTIONS: "-Xmx1800m"
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
     executor: docker-executor
     resource_class: small
     steps:
@@ -22,7 +18,7 @@ jobs: # a collection of steps
       - run:
           name: Run tests
           command: |
-            ./gradlew build check test allBoms $GRADLE_ARGS
+            ./gradlew build check allBoms $GRADLE_ARGS
       - save_cache:
           paths:
             - ~/.gradle/wrapper
