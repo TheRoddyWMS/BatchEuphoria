@@ -18,6 +18,8 @@ import groovy.transform.CompileStatic
 import java.time.*
 import java.util.regex.Matcher
 
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
+
 /**
  * Factory for the management of LSF cluster systems.
  *
@@ -77,7 +79,7 @@ class LSFJobManager extends AbstractLSFJobManager {
             }
             day = Integer.parseInt(matcher.group("day"))
             month = MONTH_VALUE[matcher.group("month")]
-            year = saveGet("year", LocalDateTime.now().year)
+            year = saveGet("year", referenceDate.year)
             hour = Integer.parseInt(matcher.group("hour"))
             minute = Integer.parseInt(matcher.group("minute"))
             second = saveGet("second", 0)
@@ -141,10 +143,9 @@ class LSFJobManager extends AbstractLSFJobManager {
         return js
     }
 
-    protected Command createCommand(BEJob job) {
+    LSFSubmissionCommand createCommand(BEJob job) {
         return new LSFSubmissionCommand(
-                this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
-                job.tool?.absolutePath ?: job.toolScript)
+                this, job, u(job.jobName), [], job.parameters)
     }
 
     @Override
@@ -165,7 +166,7 @@ class LSFJobManager extends AbstractLSFJobManager {
     Map<BEJobID, Map<String, String>> runBjobs(List<BEJobID> jobIDs, boolean extended,
                                                Duration timeout = Duration.ZERO) {
         StringBuilder queryCommand = new StringBuilder()
-        queryCommand << "${environmentString} "
+        queryCommand << forBash(environmentString) + " "
         queryCommand << (extended ? LSF_COMMAND_QUERY_EXTENDED_STATES : LSF_COMMAND_QUERY_STATES)
         // user argument must be passed before the job IDs
         if (isTrackingOfUserJobsEnabled)
@@ -183,7 +184,8 @@ class LSFJobManager extends AbstractLSFJobManager {
             throw new BEException(error)
         }
 
-        Map<BEJobID, Map<String, String>> result = convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
+        Map<BEJobID, Map<String, String>> result =
+                convertBJobsJsonOutputToResultMap(resultLines.join("\n"))
         return result; //filterJobMapByAge(result, maxTrackingTimeForFinishedJobs)
     }
 
@@ -341,7 +343,7 @@ class LSFJobManager extends AbstractLSFJobManager {
         } else if (executionService.execute(
                 "LC_ALL=C stat -c %F ${BashUtils.strongQuote(path)} 2> /dev/null",
                 commandTimeout).firstStdoutLine == "directory") {
-            return new File(path, "${jobID.getId()}.${fileTypeSuffix}")
+            return new File(path, "${jobID.id}.$fileTypeSuffix")
         } else {
             return new File(path)
         }
@@ -349,13 +351,13 @@ class LSFJobManager extends AbstractLSFJobManager {
 
     @Override
     protected ExecutionResult executeKillJobs(List<BEJobID> jobIDs) {
-        String command = "${getEnvironmentString()} ${LSF_COMMAND_DELETE_JOBS} ${jobIDs*.id.join(" ")}"
+        String command = forBash(environmentString) + " $LSF_COMMAND_DELETE_JOBS ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false, commandTimeout)
     }
 
     @Override
     protected ExecutionResult executeStartHeldJobs(List<BEJobID> jobIDs) {
-        String command = "${getEnvironmentString()} bresume ${jobIDs*.id.join(" ")}"
+        String command = forBash(environmentString) + " bresume ${jobIDs*.id.join(" ")}"
         return executionService.execute(command, false, commandTimeout)
     }
 
@@ -363,14 +365,9 @@ class LSFJobManager extends AbstractLSFJobManager {
     String parseJobID(String commandOutput) {
         String result = commandOutput.find(/<[0-9]+>/)
         if (result == null)
-            throw new BEException("Could not parse raw ID from: '${commandOutput}'")
+            throw new BEException("Could not parse raw ID from: '$commandOutput'")
         String exID = result.substring(1, result.length() - 1)
         return exID
-    }
-
-    @Override
-    String getSubmissionCommand() {
-        return "bsub"
     }
 
     @Override

@@ -6,10 +6,14 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import com.google.common.base.Preconditions
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.CompileStatic
 
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
+
 /**
- * Base class for all types of commands.
+ * Base class for all types of cluster interaction commands.
  * <p>
  * PBSCommand extends this. Also SGECommand and so on.
  * <p>
@@ -20,12 +24,12 @@ import groovy.transform.CompileStatic
 @CompileStatic
 abstract class Command {
 
-    protected static final String WORKING_DIRECTORY_DEFAULT = '$HOME'
+    protected static final EscapableString WORKING_DIRECTORY_DEFAULT = u('$HOME')
 
     /**
      * The job name of this command.
      */
-    protected final String jobName
+    protected final EscapableString jobName
     /**
      * The id which was created upon execution by the job system.
      */
@@ -40,7 +44,7 @@ abstract class Command {
      * Environment variables to be passed with a specific value or as they are declared in the submission environment.
      * null-valued parameters correspond to environment variables to be forwarded as locally defined.
      */
-    public final LinkedHashMap<String, String> parameters = [:]
+    public final LinkedHashMap<String, EscapableString> parameters = [:]
 
     protected final BatchEuphoriaJobManager parentJobManager
 
@@ -51,9 +55,11 @@ abstract class Command {
      * @param job
      * @param jobName
      * @param environmentVariables
-     * @param commandTags
      */
-    protected Command(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName, Map<String, String> environmentVariables) {
+    protected Command(BatchEuphoriaJobManager parentJobManager,
+                      BEJob job,
+                      EscapableString jobName,
+                      Map<String, EscapableString> environmentVariables) {
         this.parentJobManager = parentJobManager
         this.parameters.putAll(environmentVariables ?: [:])
         this.creatingJob = job
@@ -61,6 +67,7 @@ abstract class Command {
     }
 
     final void setJobID(BEJobID id) {
+        Preconditions.checkArgument(id != null)
         this.jobID = id
     }
 

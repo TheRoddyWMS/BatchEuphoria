@@ -6,11 +6,13 @@
 
 package de.dkfz.roddy.execution.jobs
 
+import com.google.common.base.Preconditions
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import groovy.transform.CompileStatic
+import org.jetbrains.annotations.Nullable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -81,8 +83,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean holdJobsIsEnabled
     Duration commandTimeout
 
-    BatchEuphoriaJobManager(BEExecutionService executionService, JobManagerOptions parms) {
-        assert (executionService)
+    BatchEuphoriaJobManager(BEExecutionService executionService,
+                            JobManagerOptions parms) {
+        Preconditions.checkArgument(executionService != null)
         this.executionService = executionService
 
         this.isTrackingOfUserJobsEnabled = parms.userIdForJobQueries as boolean
@@ -124,7 +127,9 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     BEJobResult submitJob(BEJob job)
             throws TimeoutException, BEException {
         if (forbidFurtherJobSubmission) {
-            throw new BEException("You are not allowed to submit further jobs. This happens, when you call waitForJobs().")
+            throw new BEException(
+                    "You are not allowed to submit further jobs." +
+                    "You called waitForJobs() before.")
         }
         Command command = createCommand(job)
         ExecutionResult executionResult = executionService.execute(command, commandTimeout)
@@ -276,7 +281,7 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
         return holdJobsIsEnabled
     }
 
-    String getUserEmail() {
+    @Nullable String getUserEmail() {
         return userEmail
     }
 
@@ -295,8 +300,6 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
     boolean executesWithoutJobSystem() {
         return false
     }
-
-    abstract String getSubmissionCommand()
 
     abstract String getQueryJobStatesCommand()
 
@@ -333,21 +336,23 @@ abstract class BatchEuphoriaJobManager<C extends Command> {
             BEJobID jobID = new BEJobID(exID)
             command.setJobID(jobID)
             job.resetJobID(jobID)
-            jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             synchronized (cacheStatesLock) {
                 cachedStates.put(jobID, isHoldJobsEnabled() ? JobState.HOLD : JobState.QUEUED)
             }
         } else {
             def job = command.getJob()
-            jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+            jobResult = new BEJobResult(command, job, res, job.parameters, job.parentJobs as List<BEJob>)
             job.setRunResult(jobResult)
             throw new BEException("Job ${job.jobName ?: "NA"} could not be started. ${res.toStatusLine()}")
         }
         return jobResult
     }
 
-    abstract protected Command createCommand(BEJob job)
+    // This needs to be public, because the RoddyCore's NativeWorkflow breaks the abstraction
+    // (not just by calling this, but by actually messing with the JobManager interna).
+    abstract Command createCommand(BEJob job)
 
     abstract protected String parseJobID(String commandOutput)
 

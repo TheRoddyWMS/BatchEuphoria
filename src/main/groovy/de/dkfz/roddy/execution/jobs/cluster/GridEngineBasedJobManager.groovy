@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.io.ExecutionResult
 import de.dkfz.roddy.execution.jobs.BEJobID
@@ -43,11 +44,6 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
 
     @Override
     boolean getDefaultForHoldJobsEnabled() { return true }
-
-    @Override
-    String getSubmissionCommand() {
-        return "qsub"
-    }
 
     protected int getColumnOfJobID() {
         return 0
@@ -286,11 +282,11 @@ abstract class GridEngineBasedJobManager<C extends Command> extends ClusterJobMa
         } else {
             return null
         }
-        new File(fileName.replace("\$${getJobIdVariable()}", jobId))
+        new File(fileName.replace("\$$jobIdVariable", jobId))
     }
 
     @Override
-    void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters) {
+    void createDefaultManagerParameters(LinkedHashMultimap<String, EscapableString> parameters) {
 
     }
 }

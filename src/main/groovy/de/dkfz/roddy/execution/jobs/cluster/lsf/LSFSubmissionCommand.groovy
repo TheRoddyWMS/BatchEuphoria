@@ -6,16 +6,16 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf
 
+
+import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.tools.EscapableString
+import de.dkfz.roddy.tools.BashInterpreter
+import de.dkfz.roddy.tools.ConcatenatedString
+import de.dkfz.roddy.execution.jobs.*
 import groovy.transform.CompileStatic
 
 import static de.dkfz.roddy.StringConstants.EMPTY
-
-import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.SubmissionCommand
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * This class is used to create and execute bsub commands.
@@ -26,84 +26,108 @@ class LSFSubmissionCommand extends SubmissionCommand {
     LSFSubmissionCommand(
             BatchEuphoriaJobManager parentJobManager,
             BEJob job,
-            String jobName,
+            EscapableString jobName,
             List<ProcessingParameters> processingParameters,
-            Map<String, String> environmentVariables,
-            List<String> dependencyIDs,
-            String command) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
+            Map<String, EscapableString> environmentVariables) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
     @Override
-    protected String getJobNameParameter() {
-        return "-J ${jobName}" as String
+    String getSubmissionExecutableName() {
+        return "bsub"
     }
 
     @Override
-    protected String getHoldParameter() {
-        return "-H"
+    protected EscapableString getJobNameParameter() {
+        u("-J ") + jobName
     }
 
     @Override
-    protected String getAccountNameParameter() {
-        return job.accountingName != null ? "-P \"${job.accountingName}\"" : ""
+    protected EscapableString getHoldParameter() {
+        u("-H")
     }
 
     @Override
-    protected String getWorkingDirectoryParameter() {
-        return "-cwd ${job.workingDirectory ?: WORKING_DIRECTORY_DEFAULT}" as String
+    protected EscapableString getAccountNameParameter() {
+        job.accountingName != null ?
+            u("-P ") + job.accountingName :
+            u("")
     }
 
     @Override
-    protected String getLoggingParameter(JobLog jobLog) {
-        return getLoggingParameters(jobLog)
-    }
-
-    static getLoggingParameters(JobLog jobLog) {
-        if (!jobLog.out && !jobLog.error) {
-            return "-o /dev/null" //always set logging because it interacts with mail options
-        } else if (jobLog.out == jobLog.error) {
-            return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')}"
+    protected EscapableString getWorkingDirectoryParameter() {
+        ConcatenatedString result = c(u("-cwd "))
+        if (job.workingDirectory) {
+            // The workingDirectory is a File object. So no variables (such as $HOME) are supported.
+            result += e(job.workingDirectory.toString())
         } else {
-            return "-oo ${jobLog.out.replace(JobLog.JOB_ID, '%J')} -eo ${jobLog.error.replace(JobLog.JOB_ID, '%J')}"
+            // The $HOME will be quoted with double quotes, but not escaped. The variable should
+            // be expanded on the call-site.
+            result += u('"') + WORKING_DIRECTORY_DEFAULT + u('"')
+        }
+        return result
+    }
+
+    @Override
+    protected EscapableString getLoggingParameter(JobLog jobLog) {
+        getLoggingParameters(jobLog)
+    }
+
+    @Override
+    protected Boolean getQuoteCommand() {
+        true
+    }
+
+    static EscapableString getLoggingParameters(JobLog jobLog) {
+        if (!jobLog.out && !jobLog.error) {
+            u("-o /dev/null") //always set logging because it interacts with mail options
+        } else if (jobLog.out == jobLog.error) {
+            u("-oo ") + e(jobLog.out.replace(JobLog.JOB_ID, '%J'))
+        } else {
+            u( "-oo ") + e(jobLog.out.replace(JobLog.JOB_ID, '%J')) +
+            u(" -eo ") + e(jobLog.error.replace(JobLog.JOB_ID, '%J'))
         }
     }
 
     @Override
-    protected String getEmailParameter(String address) {
-        return address ? "-u ${address}" : ""
+    protected EscapableString getEmailParameter(EscapableString address) {
+        address ? u("-u ") + address : u("")
     }
 
     @Override
-    String getGroupListParameter(String groupList) {
-        return "-G" + groupList
+    EscapableString getGroupListParameter(EscapableString groupList) {
+        u("-G ") + groupList
     }
 
     @Override
-    protected String getUmaskString(String umask) {
-        return EMPTY
+    protected EscapableString getUmaskString(EscapableString umask) {
+        u(EMPTY)
     }
 
     @Override
-    protected String assembleDependencyParameter(List<BEJobID> jobIds) {
+    protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
         List<BEJobID> validJobIds = BEJob.uniqueValidJobIDs(jobIds)
         if (validJobIds.size() > 0) {
-            String joinedParentJobs = validJobIds.collect { "done(${it})" }.join(" && ")
+            EscapableString joinedParentJobs =
+                    join(validJobIds.collect {
+                        u("done(${it})")
+                    } as List<EscapableString>, u(" && "))
+
             // -ti: Immediate orphan job termination for jobs with failed dependencies.
-            return "-ti -w  \"${joinedParentJobs}\" "
+            u("-ti -w  ") + e(joinedParentJobs)
         } else {
-            return EMPTY
+            c()
         }
     }
 
     @Override
-    protected String getAdditionalCommandParameters() {
-        return EMPTY
+    protected EscapableString getAdditionalCommandParameters() {
+        u(EMPTY)
     }
 
     @Override
-    protected String getEnvironmentString() {
-        return LSFJobManager.environmentString
+    protected EscapableString getEnvironmentString() {
+        LSFJobManager.environmentString
     }
 
     // TODO Code duplication with PBSCommand. Check also DirectSynchronousCommand.
@@ -113,22 +137,53 @@ class LSFSubmissionCommand extends SubmissionCommand {
      * * @return    a String of '{-env {"none", "{all|}(, varName[=varValue](, varName[=varValue])*|}"'
      */
     @Override
-    String assembleVariableExportParameters() {
+    EscapableString assembleVariableExportParameters() {
 
-        List<String> environmentStrings = parameters.collect { key, value ->
+        List<EscapableString> environmentStrings = parameters.collect { key, value ->
             if (null == value)
-                "${key}"              // returning just the variable name makes bsub take the value form the bsub-commands execution environment
+                // Returning just the variable name lets bsub take the value from the bsub-commands execution environment
+                u(key)
             else
-                "${key}=${value}"     // sets value to value
-        } as List<String>
+                // Set value to value
+                u(key) + u("=") + value
+        } as List<EscapableString>
 
         if (passLocalEnvironment) {
-            environmentStrings = ["all"] + environmentStrings
+            environmentStrings = ([u("all")] as List<EscapableString>) + environmentStrings
         } else if (parameters.isEmpty()) {
-            environmentStrings += "none"
+            environmentStrings = [u("none")] as List<EscapableString>
         }
 
-        return "-env \"${environmentStrings.join(", ")}\""
+        return u("-env") + " " + join(environmentStrings, e(", "))
+    }
+
+    @Override
+    protected String composeCommandString(List<EscapableString> parameters) {
+        ConcatenatedString command = c()
+
+        if (job.code) {
+            // LSF can just read the script to execute from the standard input.
+            command += u("echo -ne ") + e(job.code) + u(" | ")
+        }
+
+        if (environmentString) {
+            command += environmentString + u(" ")
+        }
+
+        command += u(submissionExecutableName)
+
+        command += c(u(" "), join(parameters, u(" ")), u(" "))
+
+        if (job.command) {
+            ConcatenatedString commandToBeExecuted = join(job.command, " ")
+            if (quoteCommand) {
+                command += u(" ") + e(commandToBeExecuted)
+            } else {
+                command += u(" ") + commandToBeExecuted
+            }
+        }
+
+        return BashInterpreter.instance.interpret(command)
     }
 
 }

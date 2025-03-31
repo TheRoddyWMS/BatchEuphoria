@@ -21,7 +21,8 @@ import java.time.Duration
 class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<DirectCommand> {
 
 
-    DirectSynchronousExecutionJobManager(BEExecutionService executionService, JobManagerOptions parms) {
+    DirectSynchronousExecutionJobManager(BEExecutionService executionService,
+                                         JobManagerOptions parms) {
         super(executionService, parms)
     }
 
@@ -121,7 +122,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
         ExecutionResult res
 
         /** For direct execution, there may be parent jobs, which failed or were aborted.
-         *  Don't start, if this is the case.  **/
+         *  Don't start, if this is the case. **/
         if (job.parentJobs.findAll {
             BEJob pJob = it as BEJob
             !(pJob.jobState == JobState.COMPLETED_SUCCESSFUL || pJob.jobState == JobState.UNKNOWN)
@@ -129,7 +130,8 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
             jobID = new BEFakeJobID(BEFakeJobID.FakeJobReason.NOT_EXECUTED)
             command.setJobID(jobID)
         } else {
-            jobID = new BEJobID(job.jobCreationCounter.toString()) // Needs to be set before job.run, because console output will be wrong otherwise.
+            // Needs to be set before job.run, because console output will be wrong otherwise.
+            jobID = new BEJobID(job.jobCreationCounter.toString())
             command.job.resetJobID(jobID)
             command.setJobID(jobID)
             res = executionService.execute(command, walltime)
@@ -137,7 +139,7 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
                 throw new BEException("Execution of Job ${jobID} failed: ${res.toStatusLine()}")
         }
 
-        jobResult = new BEJobResult(command, job, res, job.tool, job.parameters, job.parentJobs as List<BEJob>)
+        jobResult = new BEJobResult(command, job, res, job.parameters, job.parentJobs as List<BEJob>)
         job.setRunResult(jobResult)
 
         return jobResult
@@ -161,11 +163,6 @@ class DirectSynchronousExecutionJobManager extends BatchEuphoriaJobManager<Direc
 
     @Override
     protected JobState parseJobState(String stateString) {
-        return null
-    }
-
-    @Override
-    String getSubmissionCommand() {
         return null
     }
 

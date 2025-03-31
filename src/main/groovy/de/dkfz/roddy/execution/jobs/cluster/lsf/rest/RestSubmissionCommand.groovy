@@ -6,7 +6,9 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.lsf.rest
 
+
 import de.dkfz.roddy.config.JobLog
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.SubmissionCommand
 import groovy.transform.CompileStatic
@@ -36,11 +38,16 @@ class RestSubmissionCommand extends SubmissionCommand {
      * @param httpMethod - http Method POST or GET
      */
     RestSubmissionCommand(String resource, String requestBody, List<Header> requestHeaders, Enum<HttpMethod> httpMethod) {
-        super(null, null, null, null, null,null, null)
+        super(null, null, null, null, null)
         this.resource = resource
         this.requestBody = requestBody
         this.requestHeaders = requestHeaders
         this.httpMethod = httpMethod
+    }
+
+    @Override
+    String getSubmissionExecutableName() {
+        return null
     }
 
     @Override
@@ -49,57 +56,68 @@ class RestSubmissionCommand extends SubmissionCommand {
     }
 
     @Override
-    protected String assembleVariableExportParameters() {
+    protected EscapableString assembleVariableExportParameters() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getAdditionalCommandParameters() {
+    protected EscapableString getAdditionalCommandParameters() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getEnvironmentString() {
+    protected EscapableString getEnvironmentString() {
         return LSFRestJobManager.environmentString
     }
 
     @Override
-    protected String getWorkingDirectoryParameter() {
+    protected EscapableString getWorkingDirectoryParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String assembleDependencyParameter(List<BEJobID> jobIds) {
+    protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getUmaskString(String umask) {
+    protected EscapableString getUmaskString(EscapableString umask) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getJobNameParameter() {
+    protected EscapableString getJobNameParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getGroupListParameter(String groupList) {
+    protected EscapableString getGroupListParameter(EscapableString groupList) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getHoldParameter() {
+    protected EscapableString getHoldParameter() {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getEmailParameter(String address) {
+    protected EscapableString getEmailParameter(EscapableString address) {
         throw new NotImplementedException()
     }
 
     @Override
-    protected String getLoggingParameter(JobLog jobLog) {
+    protected EscapableString getLoggingParameter(JobLog jobLog) {
+        throw new NotImplementedException()
+    }
+
+    @Override
+    protected Boolean getQuoteCommand() {
+        false
+    }
+
+
+    @Override
+    protected String composeCommandString(List<EscapableString> parameters) {
         throw new NotImplementedException()
     }
 

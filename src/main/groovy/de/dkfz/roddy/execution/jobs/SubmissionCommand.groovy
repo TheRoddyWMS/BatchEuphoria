@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
+ * Copyright (c) 2023 German Cancer Research Center (Deutsches Krebsforschungszentrum, DKFZ).
  *
  * Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/Roddy/LICENSE.txt).
  */
@@ -7,10 +7,10 @@ package de.dkfz.roddy.execution.jobs
 
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.JobLog
-import de.dkfz.roddy.tools.BashUtils
+import de.dkfz.roddy.tools.EscapableString
 import groovy.transform.CompileStatic
 
-import static de.dkfz.roddy.StringConstants.EMPTY
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 abstract class SubmissionCommand extends Command {
@@ -22,32 +22,29 @@ abstract class SubmissionCommand extends Command {
      */
     Optional<Boolean> passEnvironment = Optional.empty()
 
-    /**
-     * The command which should be called
-     */
-    protected String command
-
-    protected List<String> dependencyIDs
-
     protected final List<ProcessingParameters> processingParameters
+
     /**
      * A command to be executed on the cluster head node, in particular qsub, bsub, qstat, etc.
      *
      * @param parentJobManager
      * @param job
      * @param jobName
+     * @param processingParameters
      * @param environmentVariables
      *
+     * Unfortunately, *all* these parameters can be null.
      */
-    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+    protected SubmissionCommand(BatchEuphoriaJobManager parentJobManager,
+                                BEJob job,
+                                EscapableString jobName,
                                 List<ProcessingParameters> processingParameters,
-                                Map<String, String> environmentVariables, List<String> dependencyIDs,
-                                String command) {
+                                Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, environmentVariables)
         this.processingParameters = processingParameters
-        this.command = command
-        this.dependencyIDs = dependencyIDs ?: new LinkedList<String>()
     }
+
+    protected abstract Boolean getQuoteCommand()
 
     /**
      * Should the local environment be passed?
@@ -64,72 +61,62 @@ abstract class SubmissionCommand extends Command {
         passEnvironment.orElse(parentJobManager.passEnvironment)
     }
 
-    @Override
-    String toBashCommandString() {
+    abstract String getSubmissionExecutableName()
+
+    private List<EscapableString> collectParameters() {
         String email = parentJobManager.getUserEmail()
         String umask = parentJobManager.getUserMask()
         String groupList = parentJobManager.getUserGroup()
         boolean holdJobsOnStart = parentJobManager.isHoldJobsEnabled()
 
         // collect parameters for job submission
-        List<String> parameters = []
+        List<EscapableString> parameters = []
         parameters << assembleVariableExportParameters()
         parameters << getAccountNameParameter()
         parameters << getJobNameParameter()
         if (holdJobsOnStart) parameters << getHoldParameter()
         parameters << getWorkingDirectoryParameter()
         parameters << getLoggingParameter(job.jobLog)
-        parameters << getEmailParameter(email)
-        if (groupList && groupList != "UNDEFINED") parameters << getGroupListParameter(groupList)
-        parameters << getUmaskString(umask)
+        if (email) parameters << getEmailParameter(e(email))
+        if (groupList && groupList != "UNDEFINED") parameters << getGroupListParameter(e(groupList))
+        if (umask) parameters << getUmaskString(e(umask))
         parameters << assembleProcessingCommands()
         parameters << assembleDependencyParameter(creatingJob.parentJobIDs)
         parameters << getAdditionalCommandParameters()
 
-        // create job submission command call
-        StringBuilder command = new StringBuilder(EMPTY)
-
-        if (environmentString) {
-            command << "${environmentString} "
-        }
-
-        if (job.toolScript) {
-            command << "echo " << BashUtils.strongQuote("#!/bin/bash " + System.lineSeparator() + job.toolScript) << " | "
-        }
-
-        command << parentJobManager.submissionCommand
-        command << " ${parameters.join(" ")} "
-
-        if (job.tool) {
-            command << " " << job.tool.absolutePath
-        }
-
-        return command
+        parameters
     }
 
-    abstract protected String getJobNameParameter()
+    abstract protected String composeCommandString(List<EscapableString> parameters)
 
-    abstract protected String getHoldParameter()
-
-    protected String getAccountNameParameter() {
-        return ""
+    @Override
+    String toBashCommandString() {
+        return composeCommandString(collectParameters())
     }
 
-    abstract protected String getWorkingDirectoryParameter()
+    abstract protected EscapableString getJobNameParameter()
 
-    abstract protected String getLoggingParameter(JobLog jobLog)
+    abstract protected EscapableString getHoldParameter()
 
-    abstract protected String getEmailParameter(String address)
+    protected EscapableString getAccountNameParameter() {
+        return c()
+    }
 
-    abstract protected String getGroupListParameter(String groupList)
+    abstract protected EscapableString getWorkingDirectoryParameter()
 
-    abstract protected String getUmaskString(String umask)
+    abstract protected EscapableString getLoggingParameter(JobLog jobLog)
 
-    abstract protected String assembleDependencyParameter(List<BEJobID> jobIds)
+    abstract protected EscapableString getEmailParameter(EscapableString address)
 
-    abstract protected String getAdditionalCommandParameters()
+    abstract protected EscapableString getGroupListParameter(EscapableString groupList)
 
-    abstract protected String getEnvironmentString()
+    abstract protected EscapableString getUmaskString(EscapableString umask)
+
+    abstract protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds)
+
+    abstract protected EscapableString getAdditionalCommandParameters()
+
+    abstract protected EscapableString getEnvironmentString()
 
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
@@ -138,17 +125,15 @@ abstract class SubmissionCommand extends Command {
      *
      * @return A set of parameters for the submission command to achieve the requested variable exports.
      */
-    abstract protected String assembleVariableExportParameters()
+    abstract protected EscapableString assembleVariableExportParameters()
 
-    String assembleProcessingCommands() {
-        StringBuilder commands = new StringBuilder()
-        for (ProcessingParameters pcmd in job.getListOfProcessingParameters()) {
-            if (!(pcmd instanceof ProcessingParameters)) continue
-            ProcessingParameters command = (ProcessingParameters) pcmd
-            if (command == null)
-                continue
-            commands << StringConstants.WHITESPACE << command.getProcessingCommandString()
+    EscapableString assembleProcessingCommands() {
+        EscapableString commands = c()
+        for (ProcessingParameters command in job.getListOfProcessingParameters()) {
+            if (command != null)
+                commands += u(StringConstants.WHITESPACE) + command.getProcessingCommandString()
         }
-        return commands.toString()
+        commands
     }
+
 }

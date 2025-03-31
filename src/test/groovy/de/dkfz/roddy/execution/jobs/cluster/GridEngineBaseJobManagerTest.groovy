@@ -4,6 +4,8 @@ import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.config.ResourceSetSize
+import de.dkfz.roddy.tools.EscapableString
+import de.dkfz.roddy.execution.Executable
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -16,6 +18,10 @@ import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 import org.junit.Before
 import org.junit.Test
+
+import java.nio.file.Paths
+
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 class GridEngineBaseJobManagerTest {
@@ -96,7 +102,7 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected Command createCommand(BEJob job) {
+            Command createCommand(BEJob job) {
                 return null
             }
 
@@ -112,19 +118,43 @@ class GridEngineBaseJobManagerTest {
         }
     }
 
-    private BEJob makeJob(Map<String, String> mapOfParameters) {
-        BEJob job = new BEJob(null, "Test", new File("/tmp/test.sh"), null, null, new ResourceSet(ResourceSetSize.l, new BufferValue(1, BufferUnit.G), 4, 1, new TimeUnit("1h"), null, null, null), [], mapOfParameters, jobManager, JobLog.none(), null)
+    private BEJob makeJob(Map<String, EscapableString> mapOfParameters) {
+        BEJob job = new BEJob
+                (null,
+                 jobManager,
+                 u("Test"),
+                 new Executable(Paths.get("/tmp/test.sh")),
+                 new ResourceSet(ResourceSetSize.l,
+                                 new BufferValue(1, BufferUnit.G),
+                                 4,
+                                 1,
+                                 new TimeUnit("1h"),
+                                 null,
+                                 null,
+                                 null),
+                 [],
+                 mapOfParameters)
         job
     }
 
     @Test
     void testAssembleDependencyStringWithoutDependencies() throws Exception {
-        def mapOfVars = ["a": "a", "b": "b"]
-        GridEngineBasedSubmissionCommand cmd = new GridEngineBasedSubmissionCommand(jobManager, makeJob(mapOfVars),
-                "jobName", null, mapOfVars, null, "/tmp/test.sh") {
+        def mapOfVars = ["a": u("a"), "b": u("b")] as Map<String, EscapableString>
+        GridEngineBasedSubmissionCommand cmd =
+                new GridEngineBasedSubmissionCommand(
+                        jobManager,
+                        makeJob(mapOfVars),
+                        u("jobName"),
+                        null,
+                        mapOfVars) {
             @Override
             protected String getDependsSuperParameter() {
                 return null
+            }
+
+            @Override
+            protected Boolean getQuoteCommand() {
+                true
             }
 
             @Override
@@ -143,56 +173,61 @@ class GridEngineBaseJobManagerTest {
             }
 
             @Override
-            protected String getJobNameParameter() {
+            protected EscapableString getJobNameParameter() {
                 return null
             }
 
             @Override
-            protected String getHoldParameter() {
+            protected EscapableString getHoldParameter() {
                 return null
             }
 
             @Override
-            protected String getWorkingDirectoryParameter() {
+            protected EscapableString getWorkingDirectoryParameter() {
                 return null
             }
 
             @Override
-            protected String getLoggingParameter(JobLog jobLog) {
+            protected EscapableString getLoggingParameter(JobLog jobLog) {
                 return null
             }
 
             @Override
-            protected String getEmailParameter(String address) {
+            protected EscapableString getEmailParameter(EscapableString address) {
                 return null
             }
 
             @Override
-            protected String getGroupListParameter(String groupList) {
+            protected EscapableString getGroupListParameter(EscapableString groupList) {
                 return null
             }
 
             @Override
-            protected String getUmaskString(String umask) {
+            protected EscapableString getUmaskString(EscapableString umask) {
                 return null
             }
 
             @Override
-            protected String getAdditionalCommandParameters() {
+            protected EscapableString getAdditionalCommandParameters() {
                 return null
             }
 
             @Override
-            protected String getEnvironmentString() {
-                return ""
+            protected EscapableString getEnvironmentString() {
+                return u("")
             }
 
             @Override
-            protected String assembleVariableExportParameters() {
+            protected EscapableString assembleVariableExportParameters() {
+                return null
+            }
+
+            @Override
+            protected String composeCommandString(List<EscapableString> parameters) {
                 return null
             }
         }
-        assert cmd.assembleDependencyParameter([]) == ""
+        assert cmd.assembleDependencyParameter([]) == c()
     }
 
 }

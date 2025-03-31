@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs
 import de.dkfz.roddy.BEException
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.io.ExecutionResult
 import spock.lang.Specification
 
@@ -57,11 +58,6 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            String getSubmissionCommand() {
-                return null
-            }
-
-            @Override
             String getQueryJobStatesCommand() {
                 return null
             }
@@ -82,7 +78,7 @@ class SubmissionCommandTest extends Specification {
             }
 
             @Override
-            protected Command createCommand(BEJob job) {
+            Command createCommand(BEJob job) {
                 return null
             }
 
@@ -124,65 +120,86 @@ class SubmissionCommandTest extends Specification {
     }
 
     def makeSubmissionCommand(final BatchEuphoriaJobManager jobManager, final Optional<Boolean> passEnvironment) {
-        return new SubmissionCommand(jobManager, null, null, [], [:] as Map<String,String>, [], "") {
+        return new SubmissionCommand(
+                jobManager,
+                null,
+                null as EscapableString,
+                [],
+                [:] as Map<String, EscapableString>
+        ) {
 
             {
                 this.setPassEnvironment(passEnvironment)
             }
 
             @Override
-            protected String getJobNameParameter() {
+            String getSubmissionExecutableName() {
                 return null
             }
 
             @Override
-            protected String getHoldParameter() {
+            protected Boolean getQuoteCommand() {
+                true
+            }
+
+            @Override
+            protected EscapableString getJobNameParameter() {
                 return null
             }
 
             @Override
-            protected String getWorkingDirectoryParameter() {
+            protected EscapableString getHoldParameter() {
                 return null
             }
 
             @Override
-            protected String getLoggingParameter(JobLog jobLog) {
+            protected EscapableString getWorkingDirectoryParameter() {
                 return null
             }
 
             @Override
-            protected String getEmailParameter(String address) {
+            protected EscapableString getLoggingParameter(JobLog jobLog) {
                 return null
             }
 
             @Override
-            protected String getGroupListParameter(String groupList) {
+            protected EscapableString getEmailParameter(EscapableString address) {
                 return null
             }
 
             @Override
-            protected String getUmaskString(String umask) {
+            protected EscapableString getGroupListParameter(EscapableString groupList) {
                 return null
             }
 
             @Override
-            protected String assembleDependencyParameter(List<BEJobID> jobIds) {
+            protected EscapableString getUmaskString(EscapableString umask) {
                 return null
             }
 
             @Override
-            protected String assembleVariableExportParameters() throws BEException {
+            protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
                 return null
             }
 
             @Override
-            protected String getAdditionalCommandParameters() {
+            protected EscapableString assembleVariableExportParameters() throws BEException {
                 return null
             }
 
             @Override
-            protected String getEnvironmentString() {
-                return ""
+            protected EscapableString getAdditionalCommandParameters() {
+                return null
+            }
+
+            @Override
+            protected EscapableString getEnvironmentString() {
+                c()
+            }
+
+            @Override
+            protected String composeCommandString(List<EscapableString> parameters) {
+                return null
             }
         }
     }

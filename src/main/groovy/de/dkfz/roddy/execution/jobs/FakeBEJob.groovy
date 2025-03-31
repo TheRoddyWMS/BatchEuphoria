@@ -6,9 +6,11 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.config.JobLog
+
 import de.dkfz.roddy.core.InfoObject
 import groovy.transform.CompileStatic
+
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * Created by heinold on 27.02.17.
@@ -17,13 +19,11 @@ import groovy.transform.CompileStatic
 class FakeBEJob extends BEJob {
 
     FakeBEJob(BEFakeJobID jobID) {
-        super(jobID, 'Fakejob', null, null, "", null, [],
-                [:] as Map<String, String>, null, JobLog.none(), null)
+        super(jobID, null, u('Fakejob'))
     }
 
     FakeBEJob() {
-        super(null, 'Fakejob', null, null, "", null, [],
-                [:] as Map<String, String>, null, JobLog.none(), null)
+        super(null, null, u('Fakejob'))
     }
 
     FakeBEJob(InfoObject context) {

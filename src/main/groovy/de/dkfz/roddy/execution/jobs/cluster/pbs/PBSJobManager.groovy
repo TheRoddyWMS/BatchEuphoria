@@ -9,6 +9,7 @@ package de.dkfz.roddy.execution.jobs.cluster.pbs
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.StringConstants
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.BEJob
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
@@ -19,6 +20,8 @@ import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.TimeUnit
 import groovy.transform.CompileStatic
 
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
+
 @CompileStatic
 class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
 
@@ -27,9 +30,9 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
     }
 
     @Override
-    protected PBSSubmissionCommand createCommand(BEJob job) {
-        return new PBSSubmissionCommand(this, job, job.jobName, [], job.parameters, job.parentJobIDs*.id,
-                job.tool?.getAbsolutePath() ?: job.getToolScript())
+    PBSSubmissionCommand createCommand(BEJob job) {
+        return new PBSSubmissionCommand(
+                this, job, u(job.jobName), [], job.parameters)
     }
 
     @Override
@@ -88,7 +91,8 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
     }
 
     @Override
-    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+    void createComputeParameter(ResourceSet resourceSet,
+                                LinkedHashMultimap<String, EscapableString> parameters) {
         int nodes = resourceSet.isNodesSet() ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
         // Currently not active
@@ -98,32 +102,38 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
             if (resourceSet.isAdditionalNodeFlagSet()) {
                 pVal << ':' << resourceSet.getAdditionalNodeFlag()
             }
-            parameters.put("-l", pVal)
+            parameters.put("-l", u(pVal))
         } else {
             String[] nodesArr = enforceSubmissionNodes.split(StringConstants.SPLIT_SEMICOLON)
             nodesArr.each {
                 String node ->
-                    parameters.put('-l', 'nodes=' + node + ':ppn=' + resourceSet.getCores())
+                    parameters.put('-l',
+                                   u('nodes=') + node +
+                                   ':ppn=' + resourceSet.getCores().toString())
             }
         }
     }
 
-    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
-        parameters.put('-q', queue)
+    void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters,
+                              String queue) {
+        parameters.put('-q', e(queue))
     }
 
     @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('-l', 'walltime=' + TimeUnit.fromDuration(resourceSet.walltime))
+    void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters,
+                                 ResourceSet resourceSet) {
+        parameters.put('-l', u('walltime=') + TimeUnit.fromDuration(resourceSet.walltime).toString())
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('-l', 'mem=' + resourceSet.getMem().toString(BufferUnit.M))
+    void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters,
+                               ResourceSet resourceSet) {
+        parameters.put('-l', u('mem=') + resourceSet.getMem().toString(BufferUnit.M))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+    void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters,
+                                 ResourceSet resourceSet) {
     }
 
     @Override

@@ -23,22 +23,23 @@ class BEJobID implements Comparable<BEJobID> {
 
     private final String id
 
-    private static AtomicLong unkownIdCounter = new AtomicLong(0L)
-
-    BEJobID() {
-        id = nextUnknownID()
-    }
+    private static AtomicLong unknownIdCounter = new AtomicLong(0L)
 
     BEJobID(String id) {
         this.id = id.split(/\./)[0]
     }
 
+    static BEJobID getNewUnknown() {
+        new BEJobID(nextUnknownID())
+    }
+
+
     protected static String nextUnknownID(String prefix = "UnkownJobID-") {
-        return prefix + unkownIdCounter.incrementAndGet()
+        return prefix + unknownIdCounter.incrementAndGet()
     }
 
     boolean isValidID() {
-        return !BEFakeJobID.isFakeJobID(this.getId()) && getId() != null && getId() != "none"
+        return !BEFakeJobID.isFakeJobID(id) && id != null && id != "none"
     }
 
     String getId() {

@@ -8,6 +8,7 @@ package de.dkfz.roddy.execution.jobs.cluster.lsf
 
 import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.tools.EscapableString
 import de.dkfz.roddy.execution.BEExecutionService
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
@@ -15,6 +16,8 @@ import de.dkfz.roddy.tools.BufferUnit
 import groovy.transform.CompileStatic
 
 import java.time.Duration
+
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionCommand> {
@@ -66,8 +69,8 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
      *
      * @return a Bash environment variable declaration affecting LSF commands.
      */
-    final static String getEnvironmentString() {
-        return "LSB_NTRIES=5"
+    final static EscapableString getEnvironmentString() {
+        u("LSB_NTRIES=5")
     }
 
     private String durationToLSFWallTime(Duration wallTime) {
@@ -78,12 +81,13 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
     }
 
     @Override
-    void createDefaultManagerParameters(LinkedHashMultimap<String, String> parameters) {
+    void createDefaultManagerParameters(LinkedHashMultimap<String, EscapableString> parameters) {
 
     }
 
     @Override
-    void createComputeParameter(ResourceSet resourceSet, LinkedHashMultimap<String, String> parameters) {
+    void createComputeParameter(ResourceSet resourceSet,
+                                LinkedHashMultimap<String, EscapableString> parameters) {
         int nodes = resourceSet.isNodesSet() && resourceSet.getNodes() > 0 ? resourceSet.getNodes() : 1
         int cores = resourceSet.isCoresSet() ? resourceSet.getCores() : 1
 
@@ -96,31 +100,43 @@ abstract class AbstractLSFJobManager extends ClusterJobManager<LSFSubmissionComm
         // several nodes. To prevent this, we can add the hosts=1 span attribute. BUT: This only works for a
         // span of 1, not for more. To have more hosts, you need ptile.
 
-        def s = ""
-        if (nodes == 1) s = "${cores} -R \"span[hosts=1]\""
-        else s = "${cores * nodes} -R \"span[ptile=${cores}]\""
-        parameters.put("-n", s)
+        EscapableString span
+        EscapableString effective_cores
+        if (nodes == 1) {
+            effective_cores = u(cores.toString())
+            span = e("span[hosts=1]")
+        } else {
+            effective_cores = u((cores * nodes).toString())
+            span = e("span[ptile=$cores]")
+        }
+        parameters.put("-n", effective_cores)
+        parameters.put("-R", span)
     }
 
     @Override
-    void createQueueParameter(LinkedHashMultimap<String, String> parameters, String queue) {
-        parameters.put('-q', queue)
+    void createQueueParameter(LinkedHashMultimap<String, EscapableString> parameters,
+                              String queue) {
+        parameters.put('-q', e(queue))
     }
 
     @Override
-    void createWalltimeParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
-        parameters.put('-W', durationToLSFWallTime(resourceSet.getWalltime()))
+    void createWalltimeParameter(LinkedHashMultimap<String, EscapableString> parameters,
+                                 ResourceSet resourceSet) {
+        parameters.put('-W', e(durationToLSFWallTime(resourceSet.getWalltime()).toString()))
     }
 
     @Override
-    void createMemoryParameter(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+    void createMemoryParameter(LinkedHashMultimap<String, EscapableString> parameters,
+                               ResourceSet resourceSet) {
         // LSF does not like the buffer unit at the end and always takes MB
-        def memval = resourceSet.getMem().toResourceStringWithoutUnit(BufferUnit.M)
-        parameters.put("-M", "${memval} -R \"rusage[mem=${memval}]\"")
+        EscapableString memval = e(resourceSet.getMem().toResourceStringWithoutUnit(BufferUnit.M))
+        parameters.put("-M", memval)
+        parameters.put("-R", e("rusage[mem=") + memval + e("]"))
     }
 
     @Override
-    void createStorageParameters(LinkedHashMultimap<String, String> parameters, ResourceSet resourceSet) {
+    void createStorageParameters(LinkedHashMultimap<String, EscapableString> parameters,
+                                 ResourceSet resourceSet) {
 
     }
 }

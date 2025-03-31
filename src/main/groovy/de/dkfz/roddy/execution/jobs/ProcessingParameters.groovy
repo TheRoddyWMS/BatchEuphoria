@@ -6,19 +6,23 @@
 package de.dkfz.roddy.execution.jobs
 
 import com.google.common.collect.LinkedHashMultimap
+import de.dkfz.roddy.tools.EscapableString
+import de.dkfz.roddy.tools.BashInterpreter
 import groovy.transform.CompileStatic
 
 import java.text.ParseException
 import java.util.regex.Pattern
+
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  */
 @CompileStatic
 class ProcessingParameters implements Serializable {
 
-    private LinkedHashMultimap<String, String> parameters = null
+    private LinkedHashMultimap<String, EscapableString> parameters = null
 
-    ProcessingParameters(LinkedHashMultimap<String, String> parameters) {
+    ProcessingParameters(LinkedHashMultimap<String, EscapableString> parameters) {
         assert (null != parameters)
         this.parameters = parameters
     }
@@ -34,11 +38,13 @@ class ProcessingParameters implements Serializable {
      */
     static ProcessingParameters fromString(String parameterString) {
         def pattern = Pattern.compile(/(?<optionName>[^\s=]+)(?:[\s+=](?<optionValue>.+?\s*))?/)
-        LinkedHashMultimap<String, String> parameters = LinkedHashMultimap.create()
+        LinkedHashMultimap<String, EscapableString> parameters = LinkedHashMultimap.create()
         parameterString.split(/(^|\s+)(?=-)/).findAll { it != '' }.eachWithIndex { String option, int i ->
             def matcher = pattern.matcher(option)
             if (matcher.matches()) {
-                parameters.put(matcher.group("optionName"), matcher.group("optionValue"))
+                String key = matcher.group("optionName")
+                String value = matcher.group("optionValue")
+                parameters.put(key, value != null ? u(value) : null)
                 matcher.reset()
             } else {
                 matcher.reset()
@@ -48,18 +54,22 @@ class ProcessingParameters implements Serializable {
         return new ProcessingParameters(parameters)
     }
 
-    String getProcessingCommandString() {
-        // Careful with this method. We had one problem where an Integer value was in one of the Collections inside the map.
-        // In this particular case, Groovy said there is something wrong with the Integer [1].
-        (parameters.asMap() as Map<String, Collection<String>>).collect { k, vs ->
-            vs.collect { v ->
-                k + ' ' + v
-            }.join(' ')
-        }.join(' ')
+    EscapableString getProcessingCommandString() {
+        // Careful with this method. We had one problem where an Integer value was in one of the
+        // Collections inside the map. In this particular case, Groovy said there is something
+        // wrong with the Integer [1].
+        join(((parameters.asMap() as Map<String, Collection<EscapableString>>).collect {
+            String k, Collection<EscapableString> vs ->
+                join(vs.findAll { it != null }.
+                        collect {
+                             u(k) + u(' ') + it
+                         } as List<EscapableString>,
+                     u(' '))
+        } as List<EscapableString>), u(' '))
     }
 
     @Override
     String toString() {
-        return "" + processingCommandString
+        return BashInterpreter.instance.interpret(processingCommandString)
     }
 }

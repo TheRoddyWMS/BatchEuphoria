@@ -6,12 +6,22 @@
 
 package de.dkfz.roddy.execution.jobs
 
-import de.dkfz.roddy.BEException
+import com.google.common.base.Preconditions
+import de.dkfz.roddy.config.EmptyResourceSet
 import de.dkfz.roddy.config.JobLog
 import de.dkfz.roddy.config.ResourceSet
+import de.dkfz.roddy.tools.EscapableString
+import de.dkfz.roddy.tools.BashInterpreter
+import de.dkfz.roddy.execution.Code
+import de.dkfz.roddy.execution.CommandI
+import de.dkfz.roddy.execution.CommandReferenceI
 import groovy.transform.CompileStatic
+import org.jetbrains.annotations.NotNull
+import org.jetbrains.annotations.Nullable
 
 import java.util.concurrent.atomic.AtomicLong
+
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 /**
  * The job class represents a generic and abstract form of cluster job which can be run using a job manager.
@@ -33,40 +43,30 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * The descriptive name of the job. Can be passed to the execution system.
      */
-    public final String jobName
+    private final EscapableString jobNameEscapable
 
     /**
      * The accounting name under which the job runs. It is the responsibility of the execution system to use this
      * information.
      */
-    public final String accountingName
+    private final EscapableString accountingName
 
 
     /**
      * Jobs can be marked as dirty if they are in a directed acyclic graph of job dependency modelling a workflow.
      */
-    public boolean isDirty
+    protected boolean isDirty
 
     /**
      * An internal job creation count. Has nothing to do with e.g. PBS / cluster / process id's!
      */
-    public final long jobCreationCounter = absoluteJobCreationCounter.incrementAndGet()
+    protected final long jobCreationCounter = absoluteJobCreationCounter.incrementAndGet()
 
     /**
-     * The tool you want to call.
+     * The command to be executed as BEJob on the cluster.
      */
-    protected File tool
+    protected CommandI commandObj
 
-    /**
-     * MD5 sum of the called tool
-     */
-    protected String toolMD5
-
-    /**
-     * A tool script (the actual code!) which will be piped (or whatever...) to the job manager submission command / method
-     * It is either testScript OR tool
-     */
-    String toolScript
     /**
      * The set of resources for this tool / BEJob
      * Contains values for e.g. maxMemory, walltime and so on.
@@ -76,7 +76,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     /**
      * Parameters for the tool you want to call
      */
-    protected final Map<String, String> parameters
+    protected final Map<String, EscapableString> parameters
 
     protected SortedSet<BEJob> parentJobs = new TreeSet<BEJob>()
 
@@ -96,6 +96,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     // Now come some job / command specific settings
     //////////////////////////////////////////////////////////////
 
+    @Nullable
     protected File workingDirectory
 
     /**
@@ -107,50 +108,42 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     BatchEuphoriaJobManager jobManager
 
-    BEJob(BEJobID jobID,
-          String jobName,
-          File tool,
-          String toolScript,
-          String toolMD5,
-          ResourceSet resourceSet,
-          Collection<BEJob> parentJobs,
-          Map<String, String> parameters,
-          BatchEuphoriaJobManager jobManager,
-          JobLog jobLog,
-          File workingDirectory,
-          String accountingName = null) {
-        this.jobID = Optional.ofNullable(jobID).orElse(new BEJobID())
-        this.jobName = jobName
+    BEJob(BEJobID jobID,                        // can be null for FakeBEJob
+          BatchEuphoriaJobManager jobManager,   // can be null for FakeBEJob
+          EscapableString jobNameEscapable = null,
+          CommandI commandObj = null,
+          @NotNull ResourceSet resourceSet = new EmptyResourceSet(),
+          @NotNull Collection<BEJob> parentJobs = [],
+          @NotNull Map<String, EscapableString> parameters = [:],
+          @NotNull JobLog jobLog = JobLog.none(),
+          File workingDirectory = null,
+          EscapableString accountingName = null) {
+        this.jobID = Optional.ofNullable(jobID).orElse(BEJobID.getNewUnknown())
+        this.jobNameEscapable = jobNameEscapable
         this.currentJobState = JobState.UNSTARTED
-        this.tool = tool
-        this.toolScript = toolScript
-        // FakeJobs have neither tool nor toolScript set.
-        if (tool && toolScript)
-            throw new BEException("A job must have exactly one of tool and toolScript set. Found: tool=${tool}, toolScript=${toolScript}")
-        this.toolMD5 = toolMD5
+        this.commandObj = commandObj
+        Preconditions.checkArgument(resourceSet != null)
         this.resourceSet = resourceSet
+        Preconditions.checkArgument(parameters != null)
         this.parameters = parameters
         this.jobManager = jobManager
-        assert jobLog: "jobLog not set"
+        Preconditions.checkArgument(jobLog != null)
         this.jobLog = jobLog
         this.workingDirectory = workingDirectory
         this.accountingName = accountingName
-        this.addParentJobs(Optional.ofNullable(parentJobs).orElse([]))
+        Preconditions.checkArgument(parentJobs != null)
+        this.addParentJobs(parentJobs)
     }
 
-    BEJob(BEJobID jobID, BatchEuphoriaJobManager jobManager) {
-        this(jobID, null, null, null, null, null, [],
-                [:] as Map<String, String>, jobManager, JobLog.none(), null, null)
-    }
-
-    BEJob addParentJobs(Collection<BEJob> parentJobs) {
-        assert (null != parentJobs)
+    BEJob addParentJobs(@NotNull Collection<BEJob> parentJobs) {
+        Preconditions.checkArgument(parentJobs != null)
         this.parentJobs.addAll(parentJobs)
         return this
     }
 
-    BEJob addParentJobIDs(List<BEJobID> parentJobIDs, BatchEuphoriaJobManager jobManager) {
-        assert (null != parentJobIDs)
+    BEJob addParentJobIDs(@NotNull List<BEJobID> parentJobIDs,
+                          @NotNull BatchEuphoriaJobManager jobManager) {
+        Preconditions.checkArgument(parentJobIDs != null)
         this.parentJobs.addAll(parentJobIDs.collect { new BEJob(it, jobManager) })
         return this
     }
@@ -160,7 +153,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     BEJob setRunResult(JR result) {
-        assert (this.jobID == result.jobID)
+        Preconditions.checkArgument(this.jobID == result.jobID)
         this.runResult = result
         return this
     }
@@ -169,7 +162,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         jobID.toString()
         if (this instanceof FakeBEJob)
             return true
-        if (jobName != null && jobName.equals("Fakejob"))
+        if (jobNameEscapable != null && jobNameEscapable.equals("Fakejob"))
             return true
         String jobID = jobID
         if (jobID == null)
@@ -182,7 +175,7 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         this.processingParameters.add(processingParameters)
     }
 
-    Map<String, String> getParameters() {
+    Map<String, EscapableString> getParameters() {
         return parameters
     }
 
@@ -212,17 +205,17 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return parentJobs.collect { it.jobID }
     }
 
-    File getWorkingDirectory() {
+    @Nullable File getWorkingDirectory() {
         return this.workingDirectory
     }
 
-    void resetJobID(BEJobID jobID) {
-        assert (null != jobID)
+    void resetJobID(@NotNull BEJobID jobID) {
+        Preconditions.checkArgument(jobID != null)
         this.jobID = jobID
     }
 
     void resetJobID() {
-        resetJobID(new BEJobID())
+        resetJobID(BEJobID.getNewUnknown())
     }
 
 
@@ -230,16 +223,20 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
         return this.jobID
     }
 
-    File getTool() {
-        return tool
+    EscapableString getAccountingName() {
+        return this.accountingName
     }
 
-    String getToolScript() {
-        return toolScript
+    boolean getIsDirty() {
+        return this.isDirty
     }
 
-    String getToolMD5() {
-        return toolMD5
+    long getJobCreationCounter() {
+        return this.jobCreationCounter
+    }
+
+    @Nullable CommandI getCommandObj() {
+        return commandObj
     }
 
     ResourceSet getResourceSet() {
@@ -247,7 +244,11 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
     }
 
     String getJobName() {
-        return jobName
+        return forBash(jobNameEscapable)
+    }
+
+    EscapableString getJobNameEscapable() {
+        return jobNameEscapable
     }
 
     void setJobState(JobState js) {
@@ -264,15 +265,46 @@ class BEJob<J extends BEJob, JR extends BEJobResult> implements Comparable<BEJob
 
     @Override
     String toString() {
-        if (getToolScript()) {
-            return "BEJob: ${jobName} with piped script:\n\t" + getToolScript().readLines().join("\n\t")
+        if (this.code) {
+            return "BEJob: ${jobName} with code:\n\t" +
+                    BashInterpreter.instance.interpret(code).
+                            split("\n").
+                            join("\n\t")
         } else {
-            return "BEJob: ${jobName} calling tool ${tool?.getAbsolutePath()}"
+            return "BEJob: ${jobName} calling command " +
+                    BashInterpreter.instance.interpret(join(command, " "))
         }
     }
 
     @Override
     int compareTo(BEJob o) {
         return this.jobID.compareTo(o.jobID)
+    }
+
+    /** The following methods simplify the porting of the old code to the CommandI-based handling
+     *  of tools, tool scripts, and (new) commands (with arguments).
+     */
+    File getExecutableFile() {
+        if (commandObj instanceof CommandReferenceI) {
+            (commandObj as CommandReferenceI).executablePath.toFile()
+        } else {
+            null
+        }
+    }
+
+    List<EscapableString> getCommand() {
+        if (commandObj instanceof CommandReferenceI) {
+            (commandObj as CommandReferenceI).toCommandSegmentList()
+        } else {
+            null
+        }
+    }
+
+    EscapableString getCode() {
+        if (commandObj instanceof Code) {
+            (commandObj as Code).toEscapableString()
+        } else {
+            null
+        }
     }
 }

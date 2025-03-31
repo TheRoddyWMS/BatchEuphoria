@@ -6,13 +6,15 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
-import de.dkfz.roddy.execution.jobs.BEJob
-import de.dkfz.roddy.execution.jobs.BEJobID
-import de.dkfz.roddy.execution.jobs.BatchEuphoriaJobManager
-import de.dkfz.roddy.execution.jobs.ProcessingParameters
-import de.dkfz.roddy.execution.jobs.SubmissionCommand
+
+import de.dkfz.roddy.tools.EscapableString
+import de.dkfz.roddy.tools.BashInterpreter
+import de.dkfz.roddy.tools.ConcatenatedString
+import de.dkfz.roddy.execution.jobs.*
 import groovy.transform.CompileStatic
 
+import static de.dkfz.roddy.StringConstants.EMPTY
+import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
 @CompileStatic
 abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
@@ -27,32 +29,35 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
      * @param jobName
      * @param processingParameter s@param environmentVariables *@param dependencyIDs @param command
      */
-    GridEngineBasedSubmissionCommand(BatchEuphoriaJobManager parentJobManager, BEJob job, String jobName,
+    GridEngineBasedSubmissionCommand(BatchEuphoriaJobManager parentJobManager,
+                                     BEJob job,
+                                     EscapableString jobName,
                                      List<ProcessingParameters> processingParameters,
-                                     Map<String, String> environmentVariables,
-                                     List<String> dependencyIDs, String command) {
-        super(parentJobManager, job, jobName, processingParameters, environmentVariables, dependencyIDs, command)
+                                     Map<String, EscapableString> environmentVariables) {
+        super(parentJobManager, job, jobName, processingParameters, environmentVariables)
     }
 
 
     @Override
-    protected String assembleDependencyParameter(List<BEJobID> jobIds) {
-        StringBuilder qsubCall = new StringBuilder("")
-        LinkedList<String> tempDependencies =
+    protected EscapableString assembleDependencyParameter(List<BEJobID> jobIds) {
+        EscapableString qsubCall = c()
+        LinkedList<EscapableString> tempDependencies =
                 jobIds.findAll {
-                    it.getId() != "" && it.getId() != NONE && it.getId() != "-1"
+                    it.id != "" && it.id != NONE && it.id != "-1"
                 }.collect {
-                    it.getId().split("\\.")[0] // Keep the command line short. GE accepts the job number for dependencies.
-                } as LinkedList<String>
+                    e(it.id.split("\\.")[0])
+                    // Keep the command line short. GE accepts the job number for dependencies.
+                } as LinkedList<EscapableString>
         if (tempDependencies.size() > 0) {
-            qsubCall <<
-                    getDependsSuperParameter() <<
-                    getDependencyParameterName() <<
-                    getDependencyOptionSeparator() <<
-                    tempDependencies.join(getDependencyIDSeparator())
+            qsubCall = join([qsubCall,
+                             u(getDependsSuperParameter()),
+                             u(getDependencyParameterName()),
+                             u(getDependencyOptionSeparator())
+                            ], "") +
+                       join(tempDependencies, getDependencyIDSeparator())
         }
 
-        return qsubCall
+        qsubCall
     }
 
     protected abstract String getDependsSuperParameter()
@@ -63,6 +68,45 @@ abstract class GridEngineBasedSubmissionCommand extends SubmissionCommand {
 
     protected abstract String getDependencyIDSeparator()
 
+    @Override
+    protected Boolean getQuoteCommand() {
+        true
+    }
 
+    @Override
+    String getSubmissionExecutableName() {
+        return "qsub"
+    }
 
+    @Override
+    protected String composeCommandString(List<EscapableString> parameters) {
+        StringBuilder command = new StringBuilder(EMPTY)
+
+        if (job.code) {
+            command <<
+            "echo -ne " <<
+            BashInterpreter.instance.interpret(e(job.code)) <<
+            " | "
+        }
+
+        command << getSubmissionExecutableName()
+
+        command << " ${parameters.join(" ")} "
+
+        if (job.command) {
+            // Commands that are appended to the submission command and its parameters, e.g.,
+            // in `bsub ... command ...` need to be quoted to prevent that expressions and
+            // variables are evaluated on the submission site instead of the actual remote
+            // cluster node.
+            // This won't have any effect unless you have Bash special characters in your command.
+            ConcatenatedString commandToBeExecuted = join(job.command, " ")
+            if (quoteCommand) {
+                command += u(" ") + e(commandToBeExecuted)
+            } else {
+                command += u(" ") + commandToBeExecuted
+            }
+        }
+
+        return command
+    }
 }
