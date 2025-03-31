@@ -82,13 +82,13 @@ dependencies {
 
 model {
     tasks.generatePomFileForMavenJavaPublication {
-        destination = file("$buildDir/pom.xml")
+        destination = file("${rootProject.layout.buildDirectory.get()}/pom.xml")
     }
 }
 
 publishing {
     publications {
-        mavenJava(org.gradle.api.publish.maven.MavenPublication) {
+        mavenJava(MavenPublication) {
             from components.java
             pom {
                 name = 'BatchEuphoria'
