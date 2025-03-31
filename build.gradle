@@ -160,7 +160,7 @@ rootProject.configurations.each { Configuration configuration ->
         group = "reporting"
         description = "Creates a CycloneDX SBOM for the configuration ${name}."
 
-        destination = file("${project.buildDir}/reports/cyclonedx")
+        destination = file("${rootProject.layout.buildDirectory.get()}/reports/cyclonedx")
         outputName = name
         includeConfigs = [name]
         schemaVersion = "1.5"
