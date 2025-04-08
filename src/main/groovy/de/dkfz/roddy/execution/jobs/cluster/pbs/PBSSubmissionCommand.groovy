@@ -14,6 +14,8 @@ import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
+import javax.annotation.Nullable
+
 import static de.dkfz.roddy.StringConstants.*
 import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 
@@ -30,7 +32,8 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
     public static final String PARM_DEPENDS = " -W depend="
 
     PBSSubmissionCommand(BatchEuphoriaJobManager parentJobManager,
-                         BEJob job, EscapableString jobName,
+                         BEJob job,
+                         EscapableString jobName,
                          List<ProcessingParameters> processingParameters,
                          Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables)
@@ -53,7 +56,11 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     protected EscapableString getWorkingDirectoryParameter() {
-        u("-w ") + e(job.getWorkingDirectory().toString()) ?: WORKING_DIRECTORY_DEFAULT
+        EscapableString directory =
+                job.workingDirectory != null
+                        ? e(job.workingDirectory.toString())
+                        : WORKING_DIRECTORY_DEFAULT
+        u("-w ") + directory
     }
 
     @Override
@@ -61,7 +68,7 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
         if (!jobLog.out && !jobLog.error) {
             u("-k n")
         } else if (jobLog.out == jobLog.error) {
-            joinLogParameter + u("-o ") + e(jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID'))
+            joinLogParameter + u(" -o ") + e(jobLog.out.replace(JobLog.JOB_ID, '\\$PBS_JOBID'))
         } else {
             join([
                     u("-o"),
@@ -123,15 +130,21 @@ class PBSSubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     EscapableString assembleVariableExportParameters() {
+// TODO For reasons of backwards compatibility, the Job's parameters are ignored.
+//        LinkedHashMap<String, EscapableString> effectiveParameters =
+//                ((job.parameters as LinkedHashMap<String, EscapableString>) + parameters
+//                ) as LinkedHashMap<String, EscapableString>
+        LinkedHashMap<String, EscapableString> effectiveParameters = parameters
 
-        List<EscapableString> environmentStrings = parameters.collect { key, value ->
-            if (null == value)
-                // Returning just the variable name makes qsub take the value form the qsub-commands execution environment
-                u(key)
-            else
-                // Sets value to value
-                u(key) + e("=") + value
-        } as List<EscapableString>
+        List<EscapableString> environmentStrings =
+                effectiveParameters.collect { key, value ->
+                    if (null == value)
+                    // Returning just the variable name makes qsub take the value form the qsub-commands execution environment
+                        u(key)
+                    else
+                    // Sets value to value
+                        u(key) + e("=") + value
+                } as List<EscapableString>
 
         List<EscapableString> parameterStrings = []
 

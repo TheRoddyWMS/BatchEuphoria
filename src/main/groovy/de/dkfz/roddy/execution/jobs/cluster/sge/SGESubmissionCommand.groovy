@@ -14,6 +14,8 @@ import de.dkfz.roddy.execution.jobs.ProcessingParameters
 import de.dkfz.roddy.execution.jobs.cluster.GridEngineBasedSubmissionCommand
 import groovy.transform.CompileStatic
 
+import javax.annotation.Nullable
+
 import static de.dkfz.roddy.StringConstants.COMMA
 import static de.dkfz.roddy.StringConstants.WHITESPACE
 import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
@@ -25,7 +27,8 @@ import static de.dkfz.roddy.tools.EscapableString.Shortcuts.*
 class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     SGESubmissionCommand(BatchEuphoriaJobManager parentJobManager,
-                         BEJob job, EscapableString jobName,
+                         BEJob job,
+                         EscapableString jobName,
                          List<ProcessingParameters> processingParameters,
                          Map<String, EscapableString> environmentVariables) {
         super(parentJobManager, job, jobName, processingParameters, environmentVariables)
@@ -48,7 +51,11 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
 
     @Override
     protected EscapableString getWorkingDirectoryParameter() {
-        u("-wd ") + e(job.getWorkingDirectory().toString()) ?: WORKING_DIRECTORY_DEFAULT
+        EscapableString directory =
+                job.workingDirectory != null
+                        ? e(job.workingDirectory.toString())
+                        : WORKING_DIRECTORY_DEFAULT
+        u("-wd ") + directory
     }
 
     @Override
@@ -115,18 +122,28 @@ class SGESubmissionCommand extends GridEngineBasedSubmissionCommand {
     protected EscapableString assembleVariableExportParameters() {
         List<EscapableString> parameterStrings = []
 
+// TODO For reasons of backwards compatibility, the Job's parameters are ignored.
+//        LinkedHashMap<String, EscapableString> effectiveParameters =
+//                ((job.parameters as LinkedHashMap<String, EscapableString>) + parameters
+//                ) as LinkedHashMap<String, EscapableString>
+        LinkedHashMap<String, EscapableString> effectiveParameters = parameters
+
+
         if (passLocalEnvironment)
             parameterStrings += u("-V")
 
-        List<String> environmentStrings = parameters.collect { key, value ->
-            if (null == value)
-                u(key) // returning just the variable name makes qsub take the value form the qsub-commands execution environment
-            else
-                u("$key=") + value     // sets value to value
-        } as List<String>
+        List<EscapableString> environmentStrings =
+                effectiveParameters.collect { key, value ->
+                    if (null == value)
+                        u(key) // returning just the variable name makes qsub take the value from the qsub-commands execution environment
+                    else
+                        u(key) + e("=") + value     // sets value to value
+                } as List<EscapableString>
 
-        if (!environmentStrings.empty)
-            parameterStrings += u("-v ") + e(environmentStrings.join(","))
+        EscapableString joinedEnvironmentStrings = joinEscapableStrings(environmentStrings, ",")
+
+        if (joinedEnvironmentStrings != c())
+            parameterStrings += u("-v ") + joinedEnvironmentStrings
 
         join(parameterStrings, " ")
     }

@@ -118,6 +118,24 @@ abstract class SubmissionCommand extends Command {
 
     abstract protected EscapableString getEnvironmentString()
 
+    /** Join a sequence of `EscapableString` objects with a separator.
+     *
+     * @param strings
+     * @param separator
+     * @return
+     */
+    protected EscapableString joinEscapableStrings(List<EscapableString> strings,
+                                                   String separator) {
+        EscapableString joinedStrings = c()
+        for(int i = 0; i < strings.size(); ++i) {
+            joinedStrings += strings[i]
+            if (i < strings.size() - 1) {
+                joinedStrings += u(",")
+            }
+        }
+        joinedStrings
+    }
+
     /** If passLocalEnvironment is true, all local variables will be forwarded to the execution host.
      *  If passLocalEnvironment is false, no local variables will be forwarded by default.
      *  In both cases arbitrary variables can be set to specific values or be declared to be forwarded as defined in the local environment (according

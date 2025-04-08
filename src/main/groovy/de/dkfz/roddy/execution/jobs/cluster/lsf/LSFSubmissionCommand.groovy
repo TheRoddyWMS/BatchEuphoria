@@ -139,14 +139,22 @@ class LSFSubmissionCommand extends SubmissionCommand {
     @Override
     EscapableString assembleVariableExportParameters() {
 
-        List<EscapableString> environmentStrings = parameters.collect { key, value ->
-            if (null == value)
-                // Returning just the variable name lets bsub take the value from the bsub-commands execution environment
-                u(key)
-            else
-                // Set value to value
-                u(key) + u("=") + value
-        } as List<EscapableString>
+// TODO For reasons of backwards compatibility, the Job's parameters are ignored.
+//        LinkedHashMap<String, EscapableString> effectiveParameters =
+//                ((job.parameters as LinkedHashMap<String, EscapableString>) + parameters
+//                ) as LinkedHashMap<String, EscapableString>
+        LinkedHashMap<String, EscapableString> effectiveParameters = parameters
+
+
+        List<EscapableString> environmentStrings =
+                effectiveParameters.collect { key, value ->
+                    if (null == value)
+                    // Returning just the variable name lets bsub take the value from the bsub-commands execution environment
+                        u(key)
+                    else
+                    // Set value to value
+                        u(key) + u("=") + value
+                } as List<EscapableString>
 
         if (passLocalEnvironment) {
             environmentStrings = ([u("all")] as List<EscapableString>) + environmentStrings

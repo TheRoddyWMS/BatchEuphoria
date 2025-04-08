@@ -134,11 +134,17 @@ class SlurmSubmissionCommand extends GridEngineBasedSubmissionCommand {
     EscapableString assembleVariableExportParameters() {
         ConcatenatedString parameterStrings = c()
 
+// TODO For reasons of backwards compatibility, the Job's parameters are ignored.
+//        LinkedHashMap<String, EscapableString> effectiveParameters =
+//                ((job.parameters as LinkedHashMap<String, EscapableString>) + parameters
+//                ) as LinkedHashMap<String, EscapableString>
+        LinkedHashMap<String, EscapableString> effectiveParameters = parameters
+
         if (passLocalEnvironment)
             parameterStrings += u("--get-user-env ")
 
         List<EscapableString> environmentStrings =
-                parameters.collect { key, value ->
+                effectiveParameters.collect { key, value ->
                     if (null == value)
                         u(key)
                     else
