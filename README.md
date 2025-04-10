@@ -123,6 +123,10 @@ Change-Log entries have the form
    * patch: A change that does neither add a feature, nor breaks backwards compatibility
 ```
 
+* 0.2.1
+  - patch: Fixed `NullPointerException` in `SGESubmissionCommand` and `PBSSubmissionCommand`
+  - patch: Moved Gradle configuration from CI configuration into `gradle.properties` to better model CI constraints on local system.
+
 * 0.2.0
   - major: `CommandI` classes to model commands and code
   - minor: `ApptainerCommandBuilder` to create a wrapping command to run code in containers
