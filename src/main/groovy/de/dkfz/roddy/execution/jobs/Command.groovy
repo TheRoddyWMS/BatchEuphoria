@@ -80,7 +80,7 @@ abstract class Command {
     }
 
     final String getID() {
-        return this.jobName
+        return this.jobName.toString()
     }
 
     void setJob(BEJob job) {
@@ -92,7 +92,7 @@ abstract class Command {
     }
 
     final String getFormattedID() {
-        return String.format("command:0x%08X", this.jobName)
+        return String.format("command:0x%08X", this.jobName.toString())
     }
 
     /**

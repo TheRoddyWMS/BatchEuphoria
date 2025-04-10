@@ -28,12 +28,8 @@ build:
           - build.gradle
       paths:
         - ~/.gradle/caches
-  variables:
-    # Configure the JVM and Gradle to avoid OOM errors
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
-    _JAVA_OPTIONS: "-Xmx1800m"
   script:
-    - ./gradlew build test allBoms $GRADLE_ARGS
+    - ./gradlew build test allBoms
   artifacts:
     paths:
       - build/test-results/test
