@@ -70,7 +70,7 @@ class LSFJobManager extends AbstractLSFJobManager {
      *    * Short (with status flag)
      *    * Long (with status flag)
      */
-    ZonedDateTime parseTime(String str, ZonedDateTime referenceDate = ZonedDateTime.now()) {
+    static ZonedDateTime parseTime(String str, ZonedDateTime referenceDate = ZonedDateTime.now()) {
         Integer day, month, year, hour, minute, second
         Matcher matcher = str =~ TIMESTAMP_PATTERN
         if (matcher.matches()) {

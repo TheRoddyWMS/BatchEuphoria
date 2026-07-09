@@ -19,8 +19,9 @@ import de.dkfz.roddy.execution.jobs.cluster.lsf.LSFSubmissionCommand
 import de.dkfz.roddy.tools.BufferUnit
 import de.dkfz.roddy.tools.BufferValue
 import groovy.transform.CompileStatic
-import groovy.util.slurpersupport.GPathResult
-import groovy.util.slurpersupport.NodeChild
+import groovy.xml.XmlSlurper
+import groovy.xml.slurpersupport.GPathResult
+import groovy.xml.slurpersupport.NodeChild
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.http.Header
 import org.apache.http.entity.ContentType
