@@ -3,7 +3,7 @@ version: 2.1
 executors:
   docker-executor:
     docker:
-      - image: cimg/openjdk:8.0.322
+      - image: cimg/openjdk:17.0.19
 jobs: # a collection of steps
   build-and-test:
     executor: docker-executor
@@ -11,6 +11,11 @@ jobs: # a collection of steps
     steps:
       - checkout # check out source code to working directory
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+      - run:
+          name: Fetch all tags
+          # CircleCI's checkout step only fetches the triggering tag, not the full tag set,
+          # which makes `git describe` (used for the build version) resolve against a stale cache.
+          command: git fetch --tags --force
       - restore_cache:
           key: v1-gradle-wrapper-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
       - restore_cache:
@@ -43,7 +48,7 @@ jobs: # a collection of steps
             - "reports/tests/test/*"
 
   # See https://circleci.com/docs/2.0/deployment-integrations/ for deploy examples
-  publish-github-release:  # https://circleci.com/blog/publishing-to-github-releases-via-circleci/
+  publish-github-release: # https://circleci.com/blog/publishing-to-github-releases-via-circleci/
     docker:
       - image: cimg/go:1.23
     resource_class: small
@@ -57,7 +62,7 @@ jobs: # a collection of steps
           name: "Publish Release on GitHub"
           command: |
             go install github.com/tcnksm/ghr@v0.17.0
-            VERSION=$(ls ./build/libs/*.jar | sed -r 's/.*BatchEuphoria-([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(-.+)?).jar/\1/')
+            VERSION="$CIRCLE_TAG"
             mkdir -p artifacts/
             tar -C build/reports/tests/ -cvzf artifacts/test-report.tgz test/
             tar -C build/reports/ -cvzf artifacts/cyclonedx-sbom.tgz cyclonedx/
@@ -81,9 +86,9 @@ workflows:
     jobs:
       - build-and-test:
           filters:
-            branches:  # ignore any commit on any branch by default ...
+            branches: # ignore any commit on any branch by default ...
               ignore: /.*/
-            tags:  # ... unless they match the pattern
+            tags: # ... unless they match the pattern
               only: /^\d+\.\d+\.\d+(-.+)?$/
       - publish-github-release:
           context:
@@ -91,7 +96,7 @@ workflows:
           requires:
             - build-and-test
           filters:
-            branches:  # ignore any commit on any branch by default ...
+            branches: # ignore any commit on any branch by default ...
               ignore: /.*/
-            tags:  # ... unless they match the pattern
+            tags: # ... unless they match the pattern
               only: /^\d+\.\d+\.\d+(-.+)?$/

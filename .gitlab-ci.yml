@@ -2,9 +2,6 @@
 #
 # Distributed under the MIT License (license terms are at https://www.github.com/TheRoddyWMS/RoddyToolLib/LICENSE).
 
-services:
-  - docker:dind
-
 variables:
   DOCKER_HOST: "tcp://docker:2375"
   DOCKER_DRIVER: overlay2
@@ -14,7 +11,7 @@ stages:
   - build
 
 build:
-  image: cimg/openjdk:8.0.322
+  image: cimg/openjdk:17.0.19
   stage: build
   # Reuse Gradle files and caches between jobs
   cache:

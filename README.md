@@ -123,6 +123,14 @@ Change-Log entries have the form
    * patch: A change that does neither add a feature, nor breaks backwards compatibility
 ```
 
+* 1.0.0
+  - major: Upgraded Groovy from 2.4.21 to 4.0.29 (`org.codehaus.groovy:groovy-all` → `org.apache.groovy:groovy-all`).
+  - major: Upgraded Spock from 1.1-groovy-2.4 to 2.3-groovy-4.0. Tests now run on the JUnit Platform; added the JUnit Vintage engine to keep running existing plain JUnit 4 tests.
+  - major: Bumped `sourceCompatibility`/`targetCompatibility` from Java 1.8 to 17 to match OTP and RoddyToolLib. Added `jitpack.yml` pinning the build JDK to `openjdk17`, since JitPack's default JDK 8 cannot load RoddyToolLib 3.0.0's Java 17 bytecode.
+  - patch: Bumped RoddyToolLib from 2.5.0 to 3.0.0.
+  - patch: Bumped byte-buddy (1.6.5 → 1.17.7) and objenesis (2.5.1 → 3.4) test dependencies for Spock 2 compatibility.
+  - patch: Bumped CI images (CircleCI, GitLab CI) from `cimg/openjdk:8.0.322` to `cimg/openjdk:17.0.19`.
+
 * 0.2.1
   - patch: Fixed `NullPointerException` in `SGESubmissionCommand` and `PBSSubmissionCommand`
   - patch: Moved Gradle configuration from CI configuration into `gradle.properties` to better model CI constraints on local system.

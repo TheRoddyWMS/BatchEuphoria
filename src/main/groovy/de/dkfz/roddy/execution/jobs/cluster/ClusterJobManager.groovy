@@ -29,7 +29,7 @@ import java.time.Duration
  */
 @CompileStatic
 abstract class ClusterJobManager<C extends Command> extends BatchEuphoriaJobManager<C> {
-    final static Logger log = LoggerFactory.getLogger(ClusterJobManager.class)
+    static Logger log = LoggerFactory.getLogger(ClusterJobManager.class)
 
     ClusterJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)

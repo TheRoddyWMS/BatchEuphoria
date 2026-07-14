@@ -12,6 +12,7 @@ import de.dkfz.roddy.execution.jobs.Command
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestSubmissionCommand
 import de.dkfz.roddy.execution.jobs.cluster.lsf.rest.RestResult
 import groovy.transform.CompileStatic
+import groovy.xml.XmlSlurper
 import org.apache.commons.io.IOUtils
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.http.Header

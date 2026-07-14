@@ -44,8 +44,6 @@ class LSFJobManager extends AbstractLSFJobManager {
             "pend_reason exec_cwd output_file input_file effective_resreq exec_home slots error_file command dependency \""
     private static final String LSF_COMMAND_DELETE_JOBS = "bkill"
 
-    static final DateTimeHelper dateTimeHelper = new DateTimeHelper()
-
     LSFJobManager(BEExecutionService executionService, JobManagerOptions parms) {
         super(executionService, parms)
     }
@@ -70,7 +68,7 @@ class LSFJobManager extends AbstractLSFJobManager {
      *    * Short (with status flag)
      *    * Long (with status flag)
      */
-    ZonedDateTime parseTime(String str, ZonedDateTime referenceDate = ZonedDateTime.now()) {
+    static ZonedDateTime parseTime(String str, ZonedDateTime referenceDate = ZonedDateTime.now()) {
         Integer day, month, year, hour, minute, second
         Matcher matcher = str =~ TIMESTAMP_PATTERN
         if (matcher.matches()) {
@@ -225,7 +223,7 @@ class LSFJobManager extends AbstractLSFJobManager {
                 withCaughtAndLoggedException {
                     ZonedDateTime _finishTime = parseTime(stripAwayStatusInfo(finishTime))
                     Duration timeSpan = Duration.between(_finishTime.toLocalDateTime(), LocalDateTime.now())
-                    if (dateTimeHelper.durationExceeds(timeSpan, maxJobKeepDuration))
+                    if ((maxJobKeepDuration - timeSpan).isNegative())
                         youngEnough = false
                 }
             }

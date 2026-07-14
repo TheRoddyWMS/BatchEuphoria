@@ -6,6 +6,7 @@
 
 package de.dkfz.roddy.execution.jobs.cluster
 
+import groovy.test.GroovyTestCase
 import groovy.transform.CompileStatic
 
 /**

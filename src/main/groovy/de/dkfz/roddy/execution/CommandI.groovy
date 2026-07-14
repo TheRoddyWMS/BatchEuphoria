@@ -58,7 +58,7 @@ abstract class CommandReferenceI extends CommandI {
  */
 @CompileStatic
 @EqualsAndHashCode(includeFields = true,
-                   excludes = ["executablePath", "md5"]) // without this getMd5 will be used, but results in different Optional instances.
+                   excludes = ["md5"]) // without this getMd5 will be used, but results in different Optional instances.
 final class Executable extends CommandReferenceI {
 
     private final Path path

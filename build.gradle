@@ -21,11 +21,11 @@ group = "com.github.theroddywms"
 mainClassName = 'de.dkfz.roddy.BEIntegrationTestStarter'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 // Newer Gradle
 //    toolchain {
-//        languageVersion = JavaLanguageVersion.of(8)
+//        languageVersion = JavaLanguageVersion.of(17)
 //    }
 }
 
@@ -35,7 +35,7 @@ java {
  */
 def getVersionName() {
     def dirtySuffix = grgit.status().isClean() ? '' : '-dirty'
-    return grgit.describe() + dirtySuffix
+    return grgit.describe(tags: true) + dirtySuffix
 }
 
 rootProject.version = getVersionName()
@@ -61,11 +61,12 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-core:2.9.7'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.9.7'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7.1'
-    implementation 'org.codehaus.groovy:groovy-all:2.4.21'
+    implementation 'org.apache.groovy:groovy-all:4.0.29'
     testImplementation 'junit:junit:4.13.1'
-    testImplementation 'org.spockframework:spock-core:1.1-groovy-2.4'
-    testRuntimeOnly "net.bytebuddy:byte-buddy:1.6.5"
-    testRuntimeOnly "org.objenesis:objenesis:2.5.1"
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.12.2'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+    testRuntimeOnly "net.bytebuddy:byte-buddy:1.17.7"
+    testRuntimeOnly "org.objenesis:objenesis:3.4"
     testImplementation 'org.slf4j:slf4j-nop:1.7.25'
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation group: 'commons-io', name: 'commons-io', version: '2.14.0'
@@ -74,7 +75,7 @@ dependencies {
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.0'
     implementation group: 'org.apache.commons', name: 'commons-text', version: '1.11.0'
     implementation group: 'com.google.guava', name: 'guava', version: '33.2.1-jre'
-    implementation 'com.github.theroddywms:RoddyToolLib:2.5.0'
+    implementation 'com.github.theroddywms:RoddyToolLib:3.0.2'
 
     // Runtime retention of @NotNull and annotations.
     implementation 'com.github.bbottema:jetbrains-runtime-annotations:1.0.1'
@@ -102,6 +103,10 @@ publishing {
             }
         }
     }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 jar {
