@@ -22,8 +22,10 @@ jobs: # a collection of steps
           key: v1-gradle-cache-{{ checksum "build.gradle" }}
       - run:
           name: Run tests
+          environment:
+            JAVA_OPTS: -Xmx512m -XX:MaxMetaspaceSize=128m -Dfile.encoding=UTF-8 -XX:+UseSerialGC
           command: |
-            ./gradlew build check allBoms
+            ./gradlew build check allBoms --no-daemon --no-parallel --max-workers=1
       - save_cache:
           paths:
             - ~/.gradle/wrapper

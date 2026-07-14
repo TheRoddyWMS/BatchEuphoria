@@ -107,6 +107,8 @@ publishing {
 
 test {
     useJUnitPlatform()
+    maxHeapSize = "500m"
+    maxParallelForks = 1
 }
 
 jar {
