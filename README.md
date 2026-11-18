@@ -123,6 +123,9 @@ Change-Log entries have the form
    * patch: A change that does neither add a feature, nor breaks backwards compatibility
 ```
 
+* 1.0.1
+  - patch: Fix: `PBSJobManager` dropped the additional node flag from the `-l nodes=...:ppn=...` resource request.
+
 * 1.0.0
   - major: Upgraded Groovy from 2.4.21 to 4.0.29 (`org.codehaus.groovy:groovy-all` → `org.apache.groovy:groovy-all`).
   - major: Upgraded Spock from 1.1-groovy-2.4 to 2.3-groovy-4.0. Tests now run on the JUnit Platform; added the JUnit Vintage engine to keep running existing plain JUnit 4 tests.

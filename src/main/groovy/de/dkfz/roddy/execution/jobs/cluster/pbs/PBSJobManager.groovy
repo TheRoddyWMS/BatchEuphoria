@@ -100,7 +100,7 @@ class PBSJobManager extends GridEngineBasedJobManager<PBSSubmissionCommand> {
         if (!enforceSubmissionNodes) {
             String pVal = 'nodes=' << nodes << ':ppn=' << cores
             if (resourceSet.isAdditionalNodeFlagSet()) {
-                pVal << ':' << resourceSet.getAdditionalNodeFlag()
+                pVal += ':' + resourceSet.getAdditionalNodeFlag()
             }
             parameters.put("-l", u(pVal))
         } else {
