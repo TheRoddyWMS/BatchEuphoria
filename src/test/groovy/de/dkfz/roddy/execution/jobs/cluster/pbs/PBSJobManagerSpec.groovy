@@ -6,14 +6,18 @@
 
 package de.dkfz.roddy.execution.jobs.cluster.pbs
 
+import com.google.common.collect.LinkedHashMultimap
 import de.dkfz.roddy.TestExecutionService
+import de.dkfz.roddy.config.ResourceSet
 import de.dkfz.roddy.execution.jobs.BEJobID
 import de.dkfz.roddy.execution.jobs.GenericJobInfo
 import de.dkfz.roddy.execution.jobs.JobManagerOptions
 import de.dkfz.roddy.execution.jobs.JobState
 import de.dkfz.roddy.execution.jobs.cluster.ClusterJobManager
 import de.dkfz.roddy.tools.BufferUnit
+import de.dkfz.roddy.tools.BashInterpreter
 import de.dkfz.roddy.tools.BufferValue
+import de.dkfz.roddy.tools.EscapableString
 import spock.lang.Specification
 
 import java.lang.reflect.InvocationTargetException
@@ -327,5 +331,21 @@ Output retained on that host in: /var/spool/torque/undelivered/4564045.pbsserver
         then:
         InvocationTargetException e = thrown(InvocationTargetException)
         e.targetException.message == "Duration string is not of the format HH+:MM:SS: '02:42'"
+    }
+
+    void "createComputeParameter, append additional node flag"() {
+        given:
+        LinkedHashMultimap<String, EscapableString> parameters = LinkedHashMultimap.create()
+
+        when:
+        manager.createComputeParameter(new ResourceSet(null, 4, 2, null, null, null, additionalNodeFlag), parameters)
+
+        then:
+        parameters.get("-l").collect { BashInterpreter.instance.interpret(it) } == [expected]
+
+        where:
+        additionalNodeFlag || expected
+        null               || "nodes=2:ppn=4"
+        "gpus=1"           || "nodes=2:ppn=4:gpus=1"
     }
 }
